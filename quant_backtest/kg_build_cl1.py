@@ -394,6 +394,9 @@ def build(dryrun=False):
     cli.upsert_edge(
         S.LBL_SEAT, "name", S.LBL_SECURITY, "ts_code", S.REL_TRADED_ON, traded
     )
+    _ds_map = {"chanlun": "tdx_quote", "volume": "tdx_quote"}  # F2-P2-b
+    for _e in ev1 + ev2:
+        _e["data_source"] = _ds_map.get(_e.get("kind"), "unknown")
     cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], ev1 + ev2)
     cli.upsert_edge(
         S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT, "evt_id", S.REL_HAS_STRUCTURE, e1

@@ -1,0 +1,315 @@
+{
+ "asof": {
+  "bar_dt": "20261106",
+  "entry_dt": "",
+  "scanned_at": "2026-11-07 23:28"
+ },
+ "latest": {
+  "bar_dt": "20261106",
+  "entry_dt": "",
+  "n": {
+   "L0": 21,
+   "L1": 14,
+   "L1n": 0,
+   "L2": 0
+  },
+  "gate_th": 50,
+  "gate_on": {
+   "L1": false,
+   "L1n": false
+  },
+  "items": [
+   {
+    "code": "000429.SZ",
+    "name": "粤高速A",
+    "level": "L1",
+    "board": "主板",
+    "close": 13.73,
+    "industry": "路桥"
+   },
+   {
+    "code": "000525.SZ",
+    "name": "红太阳",
+    "level": "L1",
+    "board": "主板",
+    "close": 5.02,
+    "industry": "农药化肥"
+   },
+   {
+    "code": "000543.SZ",
+    "name": "皖能电力",
+    "level": "L1",
+    "board": "主板",
+    "close": 7.41,
+    "industry": "火力发电"
+   },
+   {
+    "code": "001965.SZ",
+    "name": "招商公路",
+    "level": "L1",
+    "board": "主板",
+    "close": 10.37,
+    "industry": "路桥"
+   },
+   {
+    "code": "002014.SZ",
+    "name": "永新股份",
+    "level": "L1",
+    "board": "主板",
+    "close": 11.71,
+    "industry": "塑料"
+   },
+   {
+    "code": "003816.SZ",
+    "name": "中国广核",
+    "level": "L1",
+    "board": "主板",
+    "close": 4.75,
+    "industry": "新型电力"
+   },
+   {
+    "code": "600036.SH",
+    "name": "招商银行",
+    "level": "L1",
+    "board": "主板",
+    "close": 42.88,
+    "industry": "银行"
+   },
+   {
+    "code": "600323.SH",
+    "name": "瀚蓝环境",
+    "level": "L1",
+    "board": "主板",
+    "close": 30.9,
+    "industry": "环境保护"
+   },
+   {
+    "code": "600642.SH",
+    "name": "申能股份",
+    "level": "L1",
+    "board": "主板",
+    "close": 9.13,
+    "industry": "火力发电"
+   },
+   {
+    "code": "600795.SH",
+    "name": "国电电力",
+    "level": "L1",
+    "board": "主板",
+    "close": 5.37,
+    "industry": "火力发电"
+   },
+   {
+    "code": "601009.SH",
+    "name": "南京银行",
+    "level": "L1",
+    "board": "主板",
+    "close": 12.31,
+    "industry": "银行"
+   },
+   {
+    "code": "601838.SH",
+    "name": "成都银行",
+    "level": "L1",
+    "board": "主板",
+    "close": 20.18,
+    "industry": "银行"
+   },
+   {
+    "code": "601963.SH",
+    "name": "重庆银行",
+    "level": "L1",
+    "board": "主板",
+    "close": 11.26,
+    "industry": "银行"
+   },
+   {
+    "code": "603883.SH",
+    "name": "老百姓",
+    "level": "L1",
+    "board": "主板",
+    "close": 14.97,
+    "industry": "医药商业"
+   },
+   {
+    "code": "600011.SH",
+    "name": "华能国际",
+    "level": "L0",
+    "board": "主板",
+    "close": 7.65,
+    "industry": "火力发电"
+   },
+   {
+    "code": "600583.SH",
+    "name": "海油工程",
+    "level": "L0",
+    "board": "主板",
+    "close": 6.37,
+    "industry": "石油开采"
+   },
+   {
+    "code": "600674.SH",
+    "name": "川投能源",
+    "level": "L0",
+    "board": "主板",
+    "close": 17.74,
+    "industry": "水力发电"
+   },
+   {
+    "code": "600886.SH",
+    "name": "国投电力",
+    "level": "L0",
+    "board": "主板",
+    "close": 15.81,
+    "industry": "水力发电"
+   },
+   {
+    "code": "601398.SH",
+    "name": "工商银行",
+    "level": "L0",
+    "board": "主板",
+    "close": 8.44,
+    "industry": "银行"
+   },
+   {
+    "code": "601988.SH",
+    "name": "中国银行",
+    "level": "L0",
+    "board": "主板",
+    "close": 6.85,
+    "industry": "银行"
+   },
+   {
+    "code": "603730.SH",
+    "name": "岱美股份",
+    "level": "L0",
+    "board": "主板",
+    "close": 9.0,
+    "industry": "汽车配件"
+   }
+  ],
+  "n_code": 21
+ },
+ "shadow": {
+  "n_rec": 15054,
+  "n_day": 43,
+  "settled": 5800,
+  "pending": 9246,
+  "window": [
+   "20260901",
+   "20261106"
+  ],
+  "hold": 20,
+  "bench": {
+   "xs_pct": -11.25,
+   "index_pct": -8.31,
+   "days": 43
+  },
+  "by_level": [
+   {
+    "n": 3055,
+    "avg": -3.82,
+    "alpha": 0.99,
+    "win": 29.8,
+    "day_mean": -5.26,
+    "n_day": 22,
+    "t": -16.9,
+    "t_day": -6.95,
+    "lvl": "L0"
+   },
+   {
+    "n": 1817,
+    "avg": -4.29,
+    "alpha": 0.47,
+    "win": 28.4,
+    "day_mean": -5.85,
+    "n_day": 22,
+    "t": -13.69,
+    "t_day": -7.43,
+    "lvl": "L1"
+   },
+   {
+    "n": 495,
+    "avg": -2.64,
+    "alpha": 2.17,
+    "win": 36.0,
+    "day_mean": -5.57,
+    "n_day": 21,
+    "t": -5.37,
+    "t_day": -3.15,
+    "lvl": "L1n"
+   },
+   {
+    "n": 433,
+    "avg": -2.55,
+    "alpha": 2.28,
+    "win": 36.3,
+    "day_mean": -5.3,
+    "n_day": 21,
+    "t": -4.75,
+    "t_day": -2.82,
+    "lvl": "L2"
+   }
+  ],
+  "by_gate": [
+   {
+    "n": 1626,
+    "avg": -3.97,
+    "alpha": 0.73,
+    "win": 28.7,
+    "day_mean": -4.83,
+    "n_day": 10,
+    "t": -12.05,
+    "t_day": -5.47,
+    "lvl": "L1",
+    "gate": true
+   },
+   {
+    "n": 191,
+    "avg": -6.97,
+    "alpha": -1.73,
+    "win": 25.7,
+    "day_mean": -6.69,
+    "n_day": 12,
+    "t": -7.11,
+    "t_day": -5.47,
+    "lvl": "L1",
+    "gate": false
+   },
+   {
+    "n": 252,
+    "avg": -1.64,
+    "alpha": 3.09,
+    "win": 38.9,
+    "day_mean": -2.26,
+    "n_day": 2,
+    "t": -2.5,
+    "t_day": null,
+    "lvl": "L1n",
+    "gate": true
+   },
+   {
+    "n": 243,
+    "avg": -3.67,
+    "alpha": 1.22,
+    "win": 32.9,
+    "day_mean": -5.91,
+    "n_day": 19,
+    "t": -5.04,
+    "t_day": -3.06,
+    "lvl": "L1n",
+    "gate": false
+   }
+  ],
+  "all": {
+   "n": 5800,
+   "avg": -3.77,
+   "alpha": 1.03,
+   "win": 30.4,
+   "day_mean": -5.53,
+   "n_day": 22,
+   "t": -22.86,
+   "t_day": -6.4
+  }
+ }
+}

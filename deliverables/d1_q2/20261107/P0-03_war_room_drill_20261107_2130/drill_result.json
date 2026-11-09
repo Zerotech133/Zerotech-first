@@ -1,0 +1,129 @@
+{
+  "schema": "d1_p0_03_war_room_result/v1",
+  "started_at": "2026-11-07T21:29:40+08:00",
+  "applied": true,
+  "restored": true,
+  "aborted": false,
+  "host_sha256_during": "1c44bc9a5fb7d4dae91bc68a7f8bbc09a9737827ca3b33ae75b7763bc831794e",
+  "container_sha256_during": "1c44bc9a5fb7d4dae91bc68a7f8bbc09a9737827ca3b33ae75b7763bc831794e",
+  "nginx_test_during": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "nginx_reload_during": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "2026/11/07 13:29:40 [notice] 89#89: signal process started"
+  },
+  "route_matrix_during": {
+    "war_room": {
+      "url": "http://127.0.0.1:8734/api/war-room/snapshot",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "war_room_query": {
+      "url": "http://127.0.0.1:8734/api/war-room/snapshot?probe=1",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "war_room_direct_8091": {
+      "url": "http://127.0.0.1:8091/api/war-room/snapshot",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "api_d1_decisions": {
+      "url": "http://127.0.0.1:8734/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tier\": {\"STRONG_BUY\": 0",
+      "error": ""
+    },
+    "api_health": {
+      "url": "http://127.0.0.1:8734/api/health",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"ts\": \"2026-11-07 21:29:47\", \"services\": [{\"name\": \"portal api\", \"port\": 8091, \"ok\": tr",
+      "error": ""
+    },
+    "d1": {
+      "url": "http://127.0.0.1:8734/d1",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    }
+  },
+  "held_seconds": 60,
+  "restored_at": "2026-11-07T21:30:48+08:00",
+  "host_sha256_after": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "container_sha256_after": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "nginx_test_after": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "nginx_reload_after": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "2026/11/07 13:30:48 [notice] 139#139: signal process started"
+  },
+  "route_matrix_after": {
+    "war_room": {
+      "url": "http://127.0.0.1:8734/api/war-room/snapshot",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "war_room_query": {
+      "url": "http://127.0.0.1:8734/api/war-room/snapshot?probe=1",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "war_room_direct_8091": {
+      "url": "http://127.0.0.1:8091/api/war-room/snapshot",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "api_d1_decisions": {
+      "url": "http://127.0.0.1:8734/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tier\": {\"STRONG_BUY\": 0",
+      "error": ""
+    },
+    "api_health": {
+      "url": "http://127.0.0.1:8734/api/health",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"ts\": \"2026-11-07 21:30:55\", \"services\": [{\"name\": \"portal api\", \"port\": 8091, \"ok\": tr",
+      "error": ""
+    },
+    "d1": {
+      "url": "http://127.0.0.1:8734/d1",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    }
+  },
+  "data_hashes_after": {
+    "d1_decisions": "32b57ebef63524b6baac11b976cb99e0c4c938d3636a76c313a08c80a404762c",
+    "d1_handoffs": "f036704e7716779caeb8c740ec1fe854ef53838d50128ad29b59d20a819fb2a6",
+    "paper_state": "ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb"
+  },
+  "finished_at": "2026-11-07T21:30:55+08:00",
+  "elapsed_seconds": 75.1,
+  "ok": true
+}

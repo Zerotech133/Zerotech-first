@@ -38,10 +38,11 @@ SPECIAL_PROTECTED = (
     ("^~", "/api/jev/review/"),
     ("=", "/api/intel/bus"),
     ("=", "/api/intel/evidence-targets"),
+    ("=", "/api/intel/health"),
 )
 # 公开静态页/JS 里对受保护前缀的引用（这些页面本身要求登录，不参与白名单覆盖）
 PROTECTED_EXACT = {"/api/news/intel", "/api/intel/bus", "/api/intel/evidence-targets",
-                   "/api/trace"}
+                   "/api/intel/health", "/api/trace"}
 PROTECTED_PREFIXES_EXTRA = ("/api/xq/intel", "/api/case/", "/api/trace/")
 
 H4B_START = "    # ===== H4-B（K-ORG-20261101-H4HARDEN"

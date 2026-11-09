@@ -90,7 +90,9 @@ def test_persona_registry_carries_judgment_not_old_line():
 
 
 def test_old_lusu_comm_plan_marked_superseded():
-    text = _read("docs/plans/2026-10-21_鲁肃通信与客户服务部_编制方案_v1.md")
+    # 2026-11-07 归档迁移：旧计划已移到 archive/feishu-20261107/plans/，
+    # 内容仍保留 STATUS superseded / 阚泽 / 判例引用，守卫不降级。
+    text = _read("archive/feishu-20261107/plans/2026-10-21_鲁肃通信与客户服务部_编制方案_v1.md")
     head = "\n".join(text.splitlines()[:6])
     assert "STATUS: superseded" in head
     assert "阚泽" in head

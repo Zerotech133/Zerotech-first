@@ -56,6 +56,25 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
     $('s11-cap').textContent=(d.capacity5_yi??'—')+' 亿';
     const tr=d.tracking||{};
     $('s11-cur').textContent=(tr.cur_ret_pct??'—')+'% / '+(tr.excess_pct??'—')+'%';
+    // 2026-11-08：S11 自 20261030 启动后未续跑（tracking 全程 0、产物停更），
+    // 页面必须显式暴露停更天数，否则与 S12 并列展示时会被误读为仍在跟踪。
+    // 一旦续跑、signal_date 推进，标注自动消失，无需再改代码。
+    const _sig=String(d.signal_date||'');
+    if(/^\d{8}$/.test(_sig)){
+      const _t0=new Date(_sig.slice(0,4)+'-'+_sig.slice(4,6)+'-'+_sig.slice(6,8)+'T00:00:00+08:00').getTime();
+      const _days=Math.floor((Date.now()-_t0)/86400000);
+      if(_days>3){
+        const _ttl=$('s11panel')&&$('s11panel').querySelector('b');
+        if(_ttl&&!_ttl.querySelector('span.stale-badge')){
+          const _b=document.createElement('span');
+          _b.className='stale-badge';
+          _b.textContent='数据停更 '+_days+' 天';
+          _b.style.cssText='background:#b45309;color:#fff;font-size:12px;padding:2px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;font-weight:400';
+          _ttl.appendChild(_b);
+        }
+        $('s11-note').textContent='预警：本影子盘信号日 '+_sig+' 之后未续跑，下列持仓为启动期快照，不代表当前持仓｜阈值敏感性通过；小仓位（容量上限1.5亿）；非投资建议';
+      }
+    }
     $('s11-hold').innerHTML=(d.holdings||[]).slice(0,15).map((h,i)=>`<tr><td>${i+1}</td><td><code>${h.ts_code}</code></td><td>${h.name}</td><td>${h.score}</td><td>${(h.w*100).toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">空仓等待 regime</td></tr>';
   }catch(e){ $('s11-note').textContent='S11 数据加载失败: '+e.message; }
 })();

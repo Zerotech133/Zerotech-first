@@ -8,12 +8,17 @@
 全量可见；run() 的 consec>=8 属长跑自动通道让路语义，不对齐）。
 
 跑法：pytest tests/test_xq_recontent_exit.py -q
-LLM 全程 monkeypatch（urllib.request.urlopen），绝不真调 Ollama；
+LLM 全程 monkeypatch（xc.safe_urlopen），绝不真调 Ollama；
 DB 全程隔离到 tmp_path，绝不碰生产库 C:/aios/ 任何文件。
+
+2026-11-08 修接缝（同 test_xq_classify_retry_degraded 的 P3-5 根因）：
+xq_classify 经 safe_urlopen 出网，loopback 走 _NO_PROXY_OPENER，不经
+urllib.request.urlopen；旧替身完全失效 → 真调本机 Ollama，硬失败模拟不出来，
+本文件 2 项长期假红。
 """
+import socket
 import sqlite3
 import sys
-import urllib.request
 from pathlib import Path
 
 import pytest
@@ -23,8 +28,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import xq_classify as xc
 
 
-def _boom_urlopen(req, timeout=None):
+def _boom_urlopen(req, *args, **kwargs):
     raise OSError("mock network down")
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_llm(monkeypatch):
+    """关租约 + 真实网络即断言（fail-visible，接缝再断开时不会静默打真服务）。"""
+    monkeypatch.setenv("XQ_OLLAMA_LOCK", "0")
+
+    def _no_connect(self, addr, *a, **kw):
+        raise AssertionError(
+            "测试禁止真实网络连接：%r —— LLM 替身接缝已断，"
+            "patch 目标应为 xc.safe_urlopen" % (addr,))
+
+    monkeypatch.setattr(socket.socket, "connect", _no_connect)
 
 
 @pytest.fixture
@@ -62,7 +80,7 @@ def seed_recontent_target(db, status_id):
 
 def test_hard_fail_returns_nonzero(env, monkeypatch):
     seed_recontent_target(xc.DB_PATH, "s1")
-    monkeypatch.setattr(urllib.request, "urlopen", _boom_urlopen)
+    monkeypatch.setattr(xc, "safe_urlopen", _boom_urlopen)
     rc = xc.recontent_run(10)
     assert rc != 0          # 现状 bug：恒 return 0
 
@@ -73,6 +91,6 @@ def test_hard_fail_returns_nonzero(env, monkeypatch):
 def test_consecutive_abort_returns_nonzero(env, monkeypatch):
     for i in range(8):
         seed_recontent_target(xc.DB_PATH, "s%d" % i)
-    monkeypatch.setattr(urllib.request, "urlopen", _boom_urlopen)
+    monkeypatch.setattr(xc, "safe_urlopen", _boom_urlopen)
     rc = xc.recontent_run(50)
     assert rc != 0          # 现状 bug：熔断 break 后仍恒 return 0

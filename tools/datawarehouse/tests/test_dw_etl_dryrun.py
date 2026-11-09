@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """dw-etl-dryrun MCP 测试：只返回计划、不写文件。"""
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path

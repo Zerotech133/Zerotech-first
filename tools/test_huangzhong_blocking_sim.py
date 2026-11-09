@@ -15,7 +15,6 @@ import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import pytest
 
 _TOOLS = Path(__file__).resolve().parent
 TZ = timezone(timedelta(hours=8))
@@ -89,7 +88,7 @@ def _fixture(tmp_path: Path, merges: list[dict], sheets: list | None = None,
     def fake(cmd, cwd=None, timeout=None):
         calls.append({"cmd": [str(c) for c in cmd], "cwd": str(cwd),
                       "timeout": timeout})
-        joined = " ".join(str(c) for c in cmd)
+        " ".join(str(c) for c in cmd)
         if "log" in cmd and "--merges" in cmd:
             state["log_calls"] += 1
             if "--diff-merges=first-parent" in cmd:
@@ -339,7 +338,7 @@ def test_diff_merges_unsupported_falls_back(tmp_path):
 
     def fake2(cmd, cwd=None, timeout=None):
         calls.append({"cmd": [str(c) for c in cmd]})
-        joined = " ".join(str(c) for c in cmd)
+        " ".join(str(c) for c in cmd)
         if "log" in cmd and "--merges" in cmd:
             if "--diff-merges=first-parent" in cmd:
                 return {"ok": True, "rc": 128, "stdout": "", "stderr": "unknown option",

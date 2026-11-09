@@ -21,9 +21,13 @@ def test_registry_schema():
     assert {"S01_H14_quality_trap_guard", "S02_composite_mvp",
             "S03_H18_forecast_revision_watch", "S04_AH_premium_pair"} <= ids
     for s in d["strategies"]:
-        for k in ("id", "name", "type", "status", "owner", "validation", "executable"):
+        for k in ("id", "name", "type", "status", "validation", "executable"):
             assert k in s, (s.get("id"), k)
-        assert s["owner"] == "司马微"
+        if s["id"] == "S12_ZKG_AUTO_C20":
+            # 影子自动共识篮子使用 owner_chain（主管/执行/复核/批准），不是单一 owner。
+            assert s.get("owner_chain"), s["id"]
+        else:
+            assert s["owner"] == "司马微"
 
 
 def test_static_daily_payload():

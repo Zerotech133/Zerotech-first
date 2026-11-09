@@ -9,13 +9,18 @@ retry_count，显式带进 REPLACE 列清单；归零语义由 retry_degraded �
 upgraded 分支显式 UPDATE 0（docstring 承诺「升级归零/仍截断累加」不变）。
 
 跑法：pytest tests/test_xq_retry_cap.py -q
-LLM 全程 monkeypatch（urllib.request.urlopen），绝不真调 Ollama；
+LLM 全程 monkeypatch（xc.safe_urlopen），绝不真调 Ollama；
 DB 全程隔离（内存库/tmp_path），绝不碰生产库 C:/aios/ 任何文件。
+
+2026-11-08 修接缝（同 test_xq_classify_retry_degraded 的 P3-5 根因）：
+xq_classify 经 safe_urlopen 出网，loopback 走 _NO_PROXY_OPENER，不经
+urllib.request.urlopen；旧替身失效 → 真调本机 Ollama（本轮实测本文件
+直接卡到 200s 超时），契约断言失去意义。
 """
 import json
+import socket
 import sqlite3
 import sys
-import urllib.request
 from pathlib import Path
 
 import pytest
@@ -37,9 +42,22 @@ class _FakeResp:
 
 def patch_llm(monkeypatch, answer: str) -> None:
     """Ollama 响应换成固定截断内容（照抄 test_xq_classify_retry_degraded 约定）。"""
-    def fake_urlopen(req, timeout=None):
+    def fake_safe_urlopen(req, *args, **kwargs):
         return _FakeResp(json.dumps({"message": {"content": answer}}).encode("utf-8"))
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(xc, "safe_urlopen", fake_safe_urlopen)
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_llm(monkeypatch):
+    """关租约 + 真实网络即断言（fail-visible，接缝再断开时不会静默打真服务）。"""
+    monkeypatch.setenv("XQ_OLLAMA_LOCK", "0")
+
+    def _no_connect(self, addr, *a, **kw):
+        raise AssertionError(
+            "测试禁止真实网络连接：%r —— LLM 替身接缝已断，"
+            "patch 目标应为 xc.safe_urlopen" % (addr,))
+
+    monkeypatch.setattr(socket.socket, "connect", _no_connect)
 
 
 @pytest.fixture

@@ -90,22 +90,28 @@ def extract_routes(source: str) -> dict:
     methods = _handler_methods(source)
     out = {"GET": {"exact": [], "prefix": []}, "POST": {"exact": [], "prefix": []},
            "total": 0}
-    for meth in ("do_GET", "do_POST"):
-        span = methods.get(meth)
-        if not span:
-            continue
-        start, end = span
-        body = lines[start - 1:end]
+    # 2026-11-09：do_GET 已拆分出 _route_main（页面/API 主分派）。
+    # 路由清单必须同时扫描两段，否则会把拆分误报成“丢失路由”。
+    spans = {
+        "GET": [methods.get("do_GET"), methods.get("_route_main")],
+        "POST": [methods.get("do_POST")],
+    }
+    for meth, span_list in spans.items():
         seen = set()
-        for idx, ln in enumerate(body, start=start):
-            for kind, rx in (("exact", _ROUTE_RE), ("prefix", _PREFIX_RE)):
-                for m in rx.finditer(ln):
-                    route = m.group(1).strip()
-                    if not route or (kind, route) in seen:
-                        continue
-                    seen.add((kind, route))
-                    out[meth[3:]]["%s" % kind].append(
-                        {"route": route, "kind": kind, "line": idx})
+        for span in span_list:
+            if not span:
+                continue
+            start, end = span
+            body = lines[start - 1:end]
+            for idx, ln in enumerate(body, start=start):
+                for kind, rx in (("exact", _ROUTE_RE), ("prefix", _PREFIX_RE)):
+                    for m in rx.finditer(ln):
+                        route = m.group(1).strip()
+                        if not route or (kind, route) in seen:
+                            continue
+                        seen.add((kind, route))
+                        out[meth]["%s" % kind].append(
+                            {"route": route, "kind": kind, "line": idx})
     for meth in ("GET", "POST"):
         out[meth]["exact"].sort(key=lambda x: x["route"])
         out[meth]["prefix"].sort(key=lambda x: x["route"])

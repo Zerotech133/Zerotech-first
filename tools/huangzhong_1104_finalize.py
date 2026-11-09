@@ -803,7 +803,7 @@ def render_md(rep: dict) -> str:
     # 四、④ 满窗
     lines.append("## 四、④ 满窗核对（漏放=0 前置）")
     lines.append("")
-    maturity = maturity_view = receipt.get("maturity") or {}
+    maturity = receipt.get("maturity") or {}
     lines.append("- now 满窗：**%s 单**；跟踪中：**%s 单**；%s 预计满窗：**%s 单**"
                  % (_fmt_num(maturity.get("mature_count")),
                     _fmt_num(maturity.get("tracking_count")),

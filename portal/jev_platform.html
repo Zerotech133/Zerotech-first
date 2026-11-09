@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 中台总览 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    /* 只引用语义 token（tokens.css 单一事实源，禁止硬编码 hex） */
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:14px}
+    .kpi{padding:12px 14px;position:relative}
+    .kpi .k-label{font-size:11.5px;color:var(--gray-5);letter-spacing:.02em}
+    .kpi .k-value{font-size:24px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;margin-top:4px}
+    .kpi .k-sub{font-size:11px;color:var(--gray-5);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .k-ok .k-value{color:var(--color-up)} .k-bad .k-value{color:var(--color-dn)}
+    .kpi .k-flag{position:absolute;top:10px;right:12px;font-size:10px;color:var(--color-warn);border:1px solid var(--color-warn);border-radius:999px;padding:1px 7px}
+
+    /* 哨兵状态条 */
+    .sbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;margin-bottom:14px;font-size:12px}
+    .sbar .lamp{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;cursor:pointer;background:transparent;color:var(--gray-6);font-size:12px}
+    .sbar .lamp:hover{border-color:var(--accent)}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+    .sbar .dot{margin:0}
+    .dot-ok{background:var(--color-ok)} .dot-bad{background:var(--color-err)} .dot-na{background:var(--gray-5)}
+
+    /* 趋势图（零依赖，div 条） */
+    .chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding:6px 2px 0}
+    .cday{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+    .cpair{display:flex;gap:2px;align-items:flex-end;height:96px;width:100%;justify-content:center}
+    .cbar{width:46%;max-width:22px;border-radius:3px 3px 0 0;position:relative;min-height:2px}
+    .cbar.ing{background:var(--blu-500)} .cbar.jud{background:var(--color-up)}
+    .cbar .tip{display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--gray-2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10.5px;color:var(--gray-7);z-index:5;font-family:var(--font-mono)}
+    .cday:hover .tip{display:block}
+    .clab{font-size:9.5px;color:var(--gray-5);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+    .legend{display:flex;gap:14px;font-size:11px;color:var(--gray-5);margin-top:6px}
+    .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+    .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+    @media (max-width:960px){.grid2{grid-template-columns:1fr}}
+    .mini{font-size:12px;color:var(--gray-6)}
+    .q-row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:12.5px;border-bottom:1px dashed var(--border-weak)}
+    .q-row:last-child{border-bottom:none}
+    .agebar{display:inline-block;height:6px;border-radius:3px;vertical-align:1px}
+    .nowrap{white-space:nowrap;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+    /* JEV 族统一动线条 */
+    .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px}
+    .crumb .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none}
+    .crumb .c:hover{border-color:var(--accent);color:var(--link)}
+    .crumb .c.here{border-color:var(--accent);color:var(--text);background:var(--bg-raised);cursor:default}
+    .crumb .sep{color:var(--gray-5);font-size:11px}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 01 总览</span>
+        <h1>中台总览</h1>
+        <p>采集 → 粗筛 → 判读 → 存储 → 交付 → 观测，一页健康。数据面 news.db 只读聚合（/api/jev/platform），哨兵四查内嵌，30 秒自动刷新。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_wordcloud.html">JEV 词云</a>
+        <a class="ui-btn" href="/jev_integration.html">对接面管理台</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <div class="ui-toolbar">
+      <button class="ui-btn ui-btn--sm" id="refresh" title="立即刷新（fresh=1 绕过缓存）">立即刷新</button>
+      <button class="ui-btn ui-btn--sm" id="auto" aria-pressed="true" title="30s 自动刷新开关">自动刷新：开</button>
+      <span style="color:var(--gray-5);font-size:12px">窗口</span>
+      <select id="win" class="ui-btn ui-btn--sm" style="padding:2px 8px">
+        <option value="7">7 天</option><option value="14">14 天</option><option value="30">30 天</option>
+      </select>
+      <span id="meta" style="color:var(--gray-5);font-size:11.5px;margin-left:auto">加载中…</span>
+    </div>
+    <div id="err" class="ui-error" hidden></div>
+    <div id="skel" style="margin-bottom:16px">
+      <div class="ui-skeleton" style="width:60%"></div><div class="ui-skeleton" style="width:45%"></div><div class="ui-skeleton" style="width:52%"></div>
+    </div>
+
+    <div id="body" hidden>
+      <!-- JEV 族动线条：总览 → 判断 → 词云 → 复核 → 对接台 -->
+      <div class="ui-card crumb">
+        <a class="c here">🛰 01 总览</a><span class="sep">→</span>
+        <a class="c" href="/bt-jev">⚖ 02 判断</a><span class="sep">→</span>
+        <a class="c" href="/jev_wordcloud.html">☁ 03 词云</a><span class="sep">→</span>
+        <a class="c" href="/static/jev_review.html">🧾 04 复核</a><span class="sep">→</span>
+        <a class="c" href="/jev_integration.html">🔗 05 对接台</a>
+      <a class="c" href="/jev_api.html">📡 06 能力目录</a>
+        <span style="margin-left:auto;color:var(--gray-5);font-size:11px">动线：健康总览 → 判读面 → 语义面 → 人工复核 → 治理面</span>
+      </div>
+
+      <!-- 哨兵状态条 -->
+      <div class="ui-card sbar" id="sbar"></div>
+
+      <div class="kpis" id="kpis">
+        <div class="ui-card kpi" id="k-feed"><div class="k-label">采集 feed</div><div class="k-value">—</div><div class="k-sub"></div></div>
+        <div class="ui-card kpi" id="k-night"><div class="k-label">夜批 JevNight</div><div class="k-value">—</div><div class="k-sub"></div></div>
+        <div class="ui-card kpi" id="k-queue"><div class="k-label">待判队列</div><div class="k-value">—</div><div class="k-sub"></div></div>
+        <div class="ui-card kpi" id="k-wm"><div class="k-label">水位</div><div class="k-value">—</div><div class="k-sub"></div></div>
+        <div class="ui-card kpi" id="k-tp"><div class="k-label">窗口吞吐</div><div class="k-value">—</div><div class="k-sub"></div></div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 4px;font-size:13.5px">吞吐趋势（xd_ 源 · 入库 / 已判）</h3>
+            <p class="mini" style="margin:0 0 6px">已判含规则粗筛 skip；两柱等高即「判读跟得上入库」。悬停看明细。</p>
+            <div class="chart" id="chart"></div>
+            <div class="legend"><span><i style="background:var(--blu-500)"></i>入库</span><span><i style="background:var(--color-up)"></i>已判</span></div>
+          </div>
+          <div class="ui-card">
+            <h3 style="margin:0 0 10px;font-size:13.5px">采集轮次（近 12 轮 jev_feed）</h3>
+            <div style="max-height:240px;overflow:auto">
+            <table class="ui-table"><thead><tr><th>时间</th><th>ok</th><th>插入</th><th>news/notice</th><th>信号</th></tr></thead><tbody id="fr-body"></tbody></table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 10px;font-size:13.5px">哨兵四查明细</h3>
+            <div id="sentinel-detail"></div>
+          </div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 10px;font-size:13.5px">待判队列（按源 · 年龄分级）</h3>
+            <table class="ui-table"><thead><tr><th>源</th><th>待判</th><th>最老年龄</th></tr></thead><tbody id="q-body"></tbody></table>
+            <p class="mini" style="margin:8px 0 0">年龄条：&lt;2h 灰（白窗常规）· 2–6h 黄（关注）· &gt;6h 红（夜批应已清）</p>
+          </div>
+          <div class="ui-card">
+            <h3 style="margin:0 0 10px;font-size:13.5px">runs 时间线（跨 kind）</h3>
+            <table class="ui-table"><thead><tr><th>kind</th><th>时间</th><th>ok</th><th>new</th></tr></thead><tbody id="tl-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 只读页面 · /api/jev/platform（jev_platform.v1）· 哨兵阈值 feed/夜批 26h、水位 3d、队列 1500</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    var meta=document.getElementById("meta"), err=document.getElementById("err"),
+        skel=document.getElementById("skel"), DATA=null,
+        AUTO=true, COUNTDOWN=null, LEFT=30;
+
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    function fail(msg){err.hidden=false;err.innerHTML=msg}/* 调用方已对动态内容 esc，此处不再整体转义（401 引导链接需原样渲染） */
+    function metaRestore(){ if(DATA)meta.textContent="生成于 "+DATA.generated_at+" · "+DATA.window_days+" 天窗口" }
+
+    function kpi(id, ok, value, sub, flag){
+      var el=document.getElementById(id);
+      el.className="ui-card kpi "+(ok?"k-ok":"k-bad");
+      el.querySelector(".k-value").textContent=value;
+      el.querySelector(".k-sub").textContent=sub||"";
+      var f=el.querySelector(".k-flag");
+      if(flag){ if(!f){f=document.createElement("span");f.className="k-flag";el.appendChild(f)} f.textContent=flag;f.style.display="" }
+      else if(f){f.style.display="none"}
+    }
+    function ageColor(h){ return h==null?"var(--gray-5)" : h<2?"var(--gray-5)" : h<=6?"var(--color-warn)" : "var(--color-err)" }
+    function ageBar(h){ return '<span class="agebar" style="width:'+Math.min(60,(h==null?0:h)/24*60)+'px;background:'+ageColor(h)+'"></span> '+(h!=null?h+"h":"—") }
+
+    function renderSbar(checks){
+      var name={feed:"feed 采集",night:"夜批",watermark:"水位",queue:"队列"};
+      var h='<span style="color:var(--gray-5)">哨兵</span>';
+      checks.forEach(function(c){
+        h+='<span class="lamp" title="'+esc(c.reason||"通过")+'">'
+          +'<span class="dot '+(c.ok?"dot-ok":"dot-bad")+'"></span>'
+          +esc(name[c.check]||c.check)
+          +(c.ok?"":" ✕")+'</span>';
+      });
+      var ok=checks.length && checks.every(function(c){return c.ok});
+      h+='<span style="margin-left:auto;color:var(--gray-5)">'+(ok?"四查全绿":checks.filter(function(c){return !c.ok}).length+" 项违规")+"</span>";
+      document.getElementById("sbar").innerHTML=h;
+    }
+
+    function renderChart(tp){
+      var el=document.getElementById("chart");
+      if(!tp||!tp.length){el.innerHTML='<p class="mini" style="align-self:center;width:100%;text-align:center">窗口内无数据</p>';return}
+      var max=1; tp.forEach(function(d){max=Math.max(max,d.ingested,d.judged)});
+      el.innerHTML=tp.map(function(d){
+        var wi=Math.max(2,d.ingested/max*96), wj=Math.max(2,d.judged/max*96);
+        return '<div class="cday"><div class="cpair">'
+          +'<div class="cbar ing" style="height:'+wi+'px"><span class="tip">入库 '+d.ingested+'</span></div>'
+          +'<div class="cbar jud" style="height:'+wj+'px"><span class="tip">已判 '+d.judged+(d.prefilter_skipped?(" · 粗筛"+d.prefilter_skipped):"")+'</span></div>'
+          +'</div><span class="clab">'+esc(String(d.date).slice(5))+'</span></div>';
+      }).join("");
+    }
+
+    function renderFeedRuns(recent){
+      document.getElementById("fr-body").innerHTML=(recent||[]).map(function(r){
+        var src=r.src||{}, parts=Object.keys(src).map(function(k){
+          var v=src[k]; return k+":"+(v.inserted!=null?v.inserted:"-")+"/"+(v.fetched!=null?v.fetched:"-");
+        }).join(" · ");
+        var flags=[];
+        ["news","notice"].forEach(function(k){
+          var v=src[k]||{};
+          if(v.cap_hit)flags.push('<span class="ui-badge ui-badge--warn">cap_hit·'+k+'</span>');
+          if(v.page_limit)flags.push('<span class="ui-badge ui-badge--info">分页续走·'+k+'</span>');
+          if(v.judge_skipped_night)flags.push('<span class="ui-badge">夜窗让位</span>');
+        });
+        if((r.errors||[]).length)flags.push('<span class="ui-badge ui-badge--err">errors '+r.errors.length+'</span>');
+        return "<tr><td class='nowrap'>"+esc(r.ts)+"</td><td>"+(r.ok?'<span class="dot dot-ok"></span>':'<span class="dot dot-bad"></span>')
+          +"</td><td class='num'>"+(r.inserted!=null?r.inserted:"—")+"</td><td class='mini'>"+esc(parts||"—")
+          +"</td><td>"+(flags.join(" ")||"—")+"</td></tr>";
+      }).join("")||'<tr><td colspan="5" class="mini">无记录</td></tr>';
+    }
+
+    function wmInfo(v){
+      if(v==null)return {txt:"—",flag:null};
+      if(typeof v==="object"){
+        return {txt:String(v.date||"—"), flag:(v.v===2?(v.cur?"游标续走":null):null)};
+      }
+      return {txt:String(v), flag:"v1"};
+    }
+
+    function render(){
+      if(!DATA)return;
+      var s=DATA.sentinel||{}, checks=s.checks||[], cmap={};
+      checks.forEach(function(c){cmap[c.check]=c});
+      var feed=DATA.feed||{}, latest=feed.latest_ok||{}, recent=feed.recent||[];
+      var lastTs=latest.ts||(recent[0]&&recent[0].ts)||"—";
+      var night=DATA.night||{}, q=DATA.queue||{}, tp=DATA.throughput||[];
+
+      renderSbar(checks);
+
+      var fc=cmap.feed||{};
+      kpi("k-feed", !!fc.ok, fc.ok?"正常":"超龄", "最近成功 "+lastTs+(fc.age_h!=null?" · "+fc.age_h+"h 前":""));
+      kpi("k-night", night.ok===true, night.available?(night.ok?"正常":"未完成"):"—",
+        night.last_end?("END "+night.last_end+(night.age_h!=null?" · "+night.age_h+"h 前":"")):"日志无 END");
+      kpi("k-queue", q.total<=1500, String(q.total!=null?q.total:"—"),
+        "阈值 1500 · 最老源 "+((q.sources&&q.sources[0]&&(q.sources[0].source_cn||q.sources[0].source))||"—"));
+      var wm=latest.wm||{};
+      var wmArr=Object.keys(wm).map(function(k){return k+":"+wmInfo(wm[k]).txt});
+      var wc=cmap.watermark||{};
+      var wmFlag=null;
+      Object.keys(wm).forEach(function(k){var f=wmInfo(wm[k]).flag; if(f==="游标续走")wmFlag=f});
+      kpi("k-wm", !!wc.ok, wmArr.join("  ")||"—", wc.ok?"未老化（阈值 3d）":"老化告警", wmFlag);
+      var ing=0,jd=0;tp.forEach(function(d){ing+=d.ingested;jd+=d.judged});
+      kpi("k-tp", true, ing+" / "+jd, DATA.window_days+" 天 · 粗筛 skip "+tp.reduce(function(a,d){return a+(d.prefilter_skipped||0)},0));
+
+      renderChart(tp);
+      renderFeedRuns(recent);
+
+      var sd=document.getElementById("sentinel-detail");
+      sd.innerHTML=checks.length?checks.map(function(c){
+        var extra=c.ok?"通过":(c.reason||"违规");
+        if(c.ok&&c.check==="queue")extra="通过（"+c.pending+" 条）";
+        if(c.ok&&c.check==="feed")extra="通过（"+c.age_h+"h 前）";
+        return '<div class="q-row"><span><span class="dot '+(c.ok?"dot-ok":"dot-bad")+'"></span>'+esc(c.check)
+          +(c.threshold_h!=null?'（阈 '+c.threshold_h+'h）':c.check==="queue"?"（阈 1500）":"")
+          +'</span><span style="color:var(--gray-5);text-align:right">'+esc(extra)+"</span></div>";
+      }).join(""):'<p class="mini">哨兵不可用</p>';
+
+      document.getElementById("q-body").innerHTML=(q.sources||[]).map(function(x){
+        return "<tr><td>"+esc(x.source_cn||x.source)+"</td><td class='num'>"+x.pending+"</td><td class='nowrap'>"+ageBar(x.oldest_age_h)+"</td></tr>";
+      }).join("")||'<tr><td colspan="3" class="mini">队列空</td></tr>';
+
+      document.getElementById("tl-body").innerHTML=(DATA.timeline||[]).map(function(t){
+        return "<tr><td>"+esc(t.kind)+"</td><td class='nowrap'>"+esc(t.ts)+"</td><td>"
+          +(t.ok?'<span class="dot dot-ok"></span>ok':'<span class="dot dot-bad"></span>fail')
+          +"</td><td class='num'>"+(t.new_count!=null?t.new_count:"—")+"</td></tr>";
+      }).join("")||'<tr><td colspan="4" class="mini">无记录</td></tr>';
+
+      skel.hidden=true;document.getElementById("body").hidden=false;
+      metaRestore();
+    }
+
+    function load(){
+      var win=document.getElementById("win").value;
+      err.hidden=true;
+      fetch("/api/jev/platform?days="+win+"&fresh=1").then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(d){
+        if(!d||d.schema!=="jev_platform.v1")throw new Error("schema 不符");
+        DATA=d;render();resetTimer();
+      }).catch(function(e){
+        fail("加载失败："+esc(e.message)+"——若提示 401：本页数据接口需门户登录会话，<a href='/login?next=/jev_platform.html' style='color:var(--link)'>→ 去登录（回跳本页）</a>");
+      });
+    }
+    function tickMeta(){ meta.textContent=(DATA?("生成于 "+DATA.generated_at+" · "):"")+LEFT+"s 后刷新" }
+    function resetTimer(){
+      LEFT=30;
+      if(COUNTDOWN)clearInterval(COUNTDOWN);
+      COUNTDOWN=setInterval(function(){
+        if(!AUTO){clearInterval(COUNTDOWN);metaRestore();return}
+        LEFT-=1;
+        if(LEFT<=0){load();clearInterval(COUNTDOWN)}
+        else tickMeta();
+      },1000);
+    }
+
+    document.getElementById("refresh").addEventListener("click",load);
+    document.getElementById("win").addEventListener("change",load);
+    document.getElementById("auto").addEventListener("click",function(){
+      AUTO=!AUTO; this.textContent="自动刷新："+(AUTO?"开":"关");
+      this.setAttribute("aria-pressed",String(AUTO));
+      if(AUTO)resetTimer(); else if(COUNTDOWN){clearInterval(COUNTDOWN);metaRestore()}
+    });
+    load();
+  })();
+  </script>
+</body>
+</html>

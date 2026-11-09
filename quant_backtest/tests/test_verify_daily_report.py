@@ -135,15 +135,41 @@ def test_smoke_skips_semantics():
 
 # ---------- 退出码三态 + 日志落盘 ----------
 
+def _write_manifest(tmp_path: Path, hot_status: str = "ok") -> str:
+    """本地采集 manifest（只关心 xq_hot_post.status）。
+
+    2026-11-08：此前 run() 只吃默认 MANIFEST_JSON = 线上真实文件，线上
+    hot 源一旦 failed，下面的 rc0 健康路径用例就会假红。改为显式注入。
+    """
+    p = tmp_path / "_manifest.json"
+    p.write_text(json.dumps({"xq_hot_post": {"status": hot_status,
+                                             "note": "test fixture"}},
+                            ensure_ascii=False), encoding="utf-8")
+    return str(p)
+
+
 def test_run_full_ok_rc0(tmp_path):
     latest = _write_latest(tmp_path, full_payload(),
                            mtime=datetime.datetime(2026, 10, 18, 19, 0, 30))
     slog, alog = tmp_path / "s.log", tmp_path / "a.log"
     rc = vdr.run(latest, "full", now=NOW, expect=EXPECT,
-                 status_log=str(slog), alert_log=str(alog))
+                 status_log=str(slog), alert_log=str(alog),
+                 manifest_path=_write_manifest(tmp_path, "ok"))
     assert rc == 0
     assert slog.read_text(encoding="ascii").strip()
     assert not alog.exists()  # 全过不写告警
+
+
+def test_run_full_source_degraded_rc1(tmp_path):
+    """采集侧降级（hot 源 failed）必须判红——此前该分支零覆盖。"""
+    latest = _write_latest(tmp_path, full_payload(),
+                           mtime=datetime.datetime(2026, 10, 18, 19, 0, 30))
+    slog, alog = tmp_path / "s.log", tmp_path / "a.log"
+    rc = vdr.run(latest, "full", now=NOW, expect=EXPECT,
+                 status_log=str(slog), alert_log=str(alog),
+                 manifest_path=_write_manifest(tmp_path, "failed"))
+    assert rc == 1
+    assert "source_degraded" in alog.read_text(encoding="ascii")
 
 
 def test_run_full_fail_rc1(tmp_path):

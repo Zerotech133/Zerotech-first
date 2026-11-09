@@ -224,7 +224,7 @@ def build_structures(bars: pd.DataFrame) -> dict:
     res = cf.analyze_chan(bars)
     days = sorted({_day_of(d) for d in bars["dt"].astype(str)})
     day_pos = {d: i for i, d in enumerate(days)}
-    bar_day_pos = np.asarray([day_pos[_day_of(d)] for d in bars["dt"].astype(str)], dtype=int)
+    np.asarray([day_pos[_day_of(d)] for d in bars["dt"].astype(str)], dtype=int)
     n = len(bars)
 
     def _dp(idx):

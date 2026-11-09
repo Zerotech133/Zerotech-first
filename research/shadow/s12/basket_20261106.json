@@ -1,0 +1,79 @@
+{
+  "strategy": "S12_ZKG_AUTO_C20",
+  "asof": 20261106,
+  "basket": [
+    {
+      "ts_code": "600026.SH"
+    },
+    {
+      "ts_code": "600333.SH"
+    },
+    {
+      "ts_code": "600510.SH"
+    },
+    {
+      "ts_code": "600575.SH"
+    },
+    {
+      "ts_code": "600589.SH"
+    },
+    {
+      "ts_code": "600590.SH"
+    },
+    {
+      "ts_code": "600648.SH"
+    },
+    {
+      "ts_code": "600663.SH"
+    },
+    {
+      "ts_code": "600758.SH"
+    },
+    {
+      "ts_code": "600789.SH"
+    },
+    {
+      "ts_code": "600798.SH"
+    },
+    {
+      "ts_code": "600826.SH"
+    },
+    {
+      "ts_code": "600881.SH"
+    },
+    {
+      "ts_code": "601009.SH"
+    },
+    {
+      "ts_code": "601061.SH"
+    },
+    {
+      "ts_code": "601229.SH"
+    },
+    {
+      "ts_code": "601898.SH"
+    },
+    {
+      "ts_code": "601952.SH"
+    },
+    {
+      "ts_code": "688513.SH"
+    },
+    {
+      "ts_code": "688550.SH"
+    }
+  ],
+  "n": 20,
+  "config": {
+    "universe": "ZKG_AUTO_C20 共识篮子（≥2 晋升因子共振，asof 滚动更新）",
+    "hold": 40,
+    "cooldown": 40,
+    "day_confirm": true,
+    "stop_active": false,
+    "entry_mode": "open（次日开盘+滑点 0.45% 双边）",
+    "sizing": "5% 名义参与率、等权、月频再平衡"
+  },
+  "sizing_per_stock": 0.0025,
+  "recorded_at": "2026-11-08T07:20:00+08:00",
+  "note": "影子建仓基准快照（名义 5% 参与率等权；实盘资金=0）；下一交易日 2026-11-10 起按 ledger 记录"
+}

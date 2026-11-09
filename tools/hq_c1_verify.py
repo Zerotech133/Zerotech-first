@@ -24,7 +24,6 @@ import argparse
 import datetime as _dt
 import json
 import subprocess
-import sys
 import time
 import urllib.error
 import urllib.request

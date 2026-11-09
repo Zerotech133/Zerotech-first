@@ -9,6 +9,10 @@
   ⑤ 席位突变   最近 20 交易日共现突变（KG-V7 口径：新结盟/突增 top5）
   ⑥ 数据健康   graph_check 结果 + 六域覆盖 + 来源断流/catalog 滞后
                （G7 评级产物，与门户红点同源）+ 盲区声明
+  ⑦ 舆情内参   F2-20261107：当日①②标的 × guba 词云（flag 默认关；
+               独立来源计数=近7日不同 user 帖子数去重，N≥2 才命中）
+               F2-P2-a：xq 内容层并列接入（flag F2_XQ_SECTION 默认关；
+               读 xueqiu_info.db xq_status 带 /S/ 标的映射帖）
 
 日期锚：默认 max(HAS_VOL_EVENT.validStart)（最活域，T+1 链后=昨日）。
 幂等：data/kg_brief_state.json 记 last_date（--force 忽略水位）。
@@ -26,7 +30,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -148,10 +152,126 @@ def _surge_lines():
     return out
 
 
+F2_GUBA_SECTION = os.environ.get("F2_GUBA_SECTION", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+
+
+F2_XQ_SECTION = os.environ.get("F2_XQ_SECTION", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+F2_XQ_DB = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")
+
+
+def _f2_tset_add(lst, rows):
+    """F2-20261107：①② 段标的去重保序暂存 helper。"""
+    seen = {tc for tc, _ in lst}
+    for r in rows:
+        if r["tc"] not in seen:
+            lst.append((r["tc"], r["nm"]))
+            seen.add(r["tc"])
+
+
+def _f2_guba_lines(targets, days=7, top_n=40, xq_counts=None):
+    """⑦ 舆情内参（F2-20261107，feature flag 默认关）。
+
+    对当日 ①② 段标的（上限 8 只）逐只调用 guba_sentiment.guba_summary
+    真实读取 data/guba/{code6}.jsonl 内容（NOISE_PAT 过滤）；
+    「独立来源」= 同一标的近 days 日内不同 user 帖子数（去重），
+    热点词命中 ≥3 帖且独立来源 ≥2 才输出命中行。
+    任何异常降级为单行提示，绝不抛出（日报可靠性优先）。
+    """
+    if not F2_GUBA_SECTION:
+        return []
+    if not targets:
+        return ["⑦ 舆情内参(guba, 近7日): flag 开启但当日无①②标的"]
+    out, hits = [], []
+    try:
+        import guba_sentiment
+    except Exception as e:
+        return ["⑦ 舆情内参: guba_sentiment 不可用(%s)" % str(e)[:50]]
+    for tc, nm in targets[:14]:
+        try:
+            sm = guba_sentiment.guba_summary(tc, days=days, top_n=top_n)
+        except Exception as e:
+            continue  # 单只失败不阻塞整段
+        if not sm.get("ok"):
+            continue  # 无采集数据 / 解析失败 → 优雅降级：不输出该标的
+        # 独立来源计数：近 days 日不同 user 去重（复用 _load_posts 过滤口径）
+        try:
+            posts = guba_sentiment._load_posts(tc, days)
+            users = {str(r.get("user") or "") for r in posts}
+            users.discard("")
+        except Exception:
+            users = set()
+        n_src = len(users)
+        if n_src < 2:
+            continue
+        for w in sm.get("words", [])[:3]:
+            if w.get("n", 0) >= 3:
+                _xq_n = (xq_counts or {}).get(tc)
+                _tail = (
+                    " / xq %d 家" % _xq_n if _xq_n else ""
+                )
+                out.append(
+                    "  · %s %s: %d 家独立来源在说【%s】%s"
+                    % (tc, nm, n_src, w.get("w"), _tail)
+                )
+                hits.append(tc)
+                break  # 每标的只取第一个达标热点词
+    head = "⑦ 舆情内参(guba, 近7日): 扫描%d只 · 命中%d只" % (
+        min(len(targets), 14),
+        len(set(hits)),
+    )
+    if out:
+        return [head] + out
+    return [head + "（无达标标的：独立来源≥2 且热点词≥3帖）"]
+
+
+def _f2_xq_lines(targets, days=7):
+    """⑦ 舆情内参 xq 侧（F2-P2-a，flag F2_XQ_SECTION 默认关）。
+
+    读 xueqiu_info.db::xq_status 中 target 形如 /S/{EX}{code6}/ 的
+    帖子（带标的映射）；「独立来源」= 近 days 日不同 user_id 去重；
+    ≥2 源即命中，输出「xq N 家独立来源在说」。与 guba 侧并列，
+    双源行形如「guba N1 家 / xq N2 家」。异常降级不抛出。
+    """
+    if not F2_XQ_SECTION:
+        return {}
+    out = {}
+    try:
+        import sqlite3
+        con = sqlite3.connect("file:%s?mode=ro" % F2_XQ_DB.replace("\\", "/"), uri=True)
+        cur = con.cursor()
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+        for tc, nm in targets[:14]:
+            ex = tc[-2:]
+            c6 = tc.split(".")[0]
+            cur.execute(
+                "SELECT COUNT(*), COUNT(DISTINCT user_id) FROM xq_status "
+                "WHERE target LIKE ? AND created_at >= ?",
+                ("/S/%s%s/%%" % (ex, c6), cutoff),
+            )
+            n, u = cur.fetchone()
+            if u and u >= 2:
+                out[tc] = u
+        con.close()
+    except Exception:
+        return out
+    return out
+
+
 def build(d):
     """六段聚合，返回 (text, meta)。"""
     cli = KgClient(retry=1)
     L = []
+    f2_targets = []  # F2-20261107：①② 段标的暂存（去重保序，⑦ 段消费）
     with cli._session() as s:
         # ① 结构信号
         rows = s.run(
@@ -165,6 +285,7 @@ def build(d):
         if not rows:
             L.append("① 结构信号(%s): 无（含确认窗口内滞后，见⑤）" % d)
         else:
+            _f2_tset_add(f2_targets, rows[:8])
             byt = {}
             for r in rows:
                 byt[r["t"]] = byt.get(r["t"], 0) + 1
@@ -214,6 +335,7 @@ def build(d):
                     -(r["nt"] or 0),
                 ),
             )
+            _f2_tset_add(f2_targets, pri[:6])
             for r in pri[:6]:
                 extra = (
                     "触%d分" % r["nt"]
@@ -281,6 +403,7 @@ def build(d):
 
     # ⑤ 席位突变（KG-V7 口径，画布数据自洽锚最新共现日）
     L.extend(_surge_lines())
+
 
     # ⑥ 数据健康（读 graph_check 产物）
     try:
@@ -350,6 +473,11 @@ def build(d):
     except Exception as e:
         L.append("  影子层: notice_llm.parquet 不可读(%s)" % str(e)[:50])
     L.append("  " + BLIND_NOTE)
+
+    # ⑦ 舆情内参（F2-20261107：flag 默认关；置于⑥后，段序与编号一致）
+    _f2_targets_list = list(f2_targets)
+    _xq_counts = _f2_xq_lines(_f2_targets_list)
+    L.extend(_f2_guba_lines(_f2_targets_list, xq_counts=_xq_counts))
     L.append("· " + DISCLAIMER)
 
     head = "🕸 KG 每日情报简报 %s" % d
@@ -360,7 +488,7 @@ def build(d):
         if line.startswith("· " + DISCLAIMER):
             cur.append(line)
             break
-        if len(line) > 1 and line[0] in "①②③④⑤⑥" + "·" and line[1] in " ":
+        if len(line) > 1 and line[0] in "①②③④⑤⑥⑦" + "·" and line[1] in " ":
             if cur:
                 secs.append("\n".join(cur))
             cur = [line]
@@ -368,7 +496,14 @@ def build(d):
             cur.append(line)
     if cur:
         secs.append("\n".join(cur))
-    return text, {"d": d, "n_lines": len(L), "secs": secs}
+    # KGBRIEF-STATE-20261107：当日①②段标的随 meta 带出（P2-c 焦点池数据源；
+    # 水位文件字段，不受 F2_* flag 控制）
+    return text, {
+        "d": d,
+        "n_lines": len(L),
+        "secs": secs,
+        "last_secs": [{"tc": tc, "nm": nm} for tc, nm in f2_targets],
+    }
 
 
 def _send(text):
@@ -527,7 +662,11 @@ def main():
         _sync_groups(card, text)
     if ok:
         _save_state(
-            {"last_date": d, "sent_at": datetime.now().isoformat(timespec="seconds")}
+            {
+                "last_date": d,
+                "sent_at": datetime.now().isoformat(timespec="seconds"),
+                "last_secs": meta.get("last_secs") or [],  # KGBRIEF-STATE-20261107
+            }
         )
         print("brief %s sent + state saved" % d)
     else:

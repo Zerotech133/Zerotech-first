@@ -555,7 +555,12 @@ def _archive_closed(rows):
 
     为什么不直接丢弃：CLOSED_CAP=5000 的截留让历史胜率永远只反映最近一段
     （审计时 11,441 行池只剩 5,000 笔结算）。归档保留全量证据，又不让
-    chanlun_paper.json 无限膨胀。返回本次新写入条数。
+    chanlun_paper.json 无限膨胀。
+
+    **本函数是 `data/chanlun_paper_archive/` 的唯一写入者**（2026-11-08 起）。
+    该目录只存产线实际入场（paper 风格，带 sig_dt）。回填结算集
+    （`chanlun_ledger_maint.rebuild` 的重算）写在 `data/chanlun_paper_backfill/`，
+    两者混在同一文件会让读方把模拟当真实入场。返回本次新写入条数。
     """
     if not rows:
         return 0

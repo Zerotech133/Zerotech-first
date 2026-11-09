@@ -49,9 +49,10 @@ from api_portfolio import (
 from api_screen import build_screen, _kline_data, _kline_qy, _chips_data
 import api_screen  # 模块名绑定（多继承基类引用）
 import api_misc  # 模块名绑定（多继承基类引用）
-from api_misc import (build_overview,
+from api_misc import (build_overview, overview_cached,  # noqa: F401  build_overview 保留再导出（历史引用面）
     build_brief, build_home_cockpit, build_os_cockpit)
 import api_chanlun_pages  # 模块名绑定（多继承基类引用）
+import api_chanlun_buy  # 🛒 买点实战台（/bt-buy，K-ORG-20261107-BUYDESK）
 import api_pages_portal  # B1 页面渲染族 Mixin（A5，2026-10-31）
 import api_health_portal  # B2 健康/观测族 Mixin（A5，2026-10-31）
 from api_health_portal import _lock  # B2b：锁对象与健康模块共享同一实例
@@ -103,6 +104,7 @@ import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二�
 import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，2026-10-19）
 import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读 2026-10-19）
 import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
+import api_intel_health  # 采集链健康只读出口 mixin（L0/L1 观测面→工作台面板 2026-11-08）
 import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
 import api_zhuge_adoption  # WO-LEGION-ZHUGE-ADOPTROUTE C3 建议采纳率只追加 /api/zhuge/adoption（2026-10-27）
 import api_zhuge_review  # WO-LEGION-ZHUGE-REVIEW-P0 诸葛亮 IDE 只读复核 API（2026-10-30）
@@ -119,7 +121,6 @@ import glob
 import hmac
 import http.server
 import json
-import getpass
 import os
 import re
 import subprocess
@@ -219,6 +220,7 @@ _MUTATION_POSTS = frozenset((
 _EARLY_TOKEN_PREFIXES = (
     "/api/analysis/",
     "/api/jev/review/",
+    "/api/factor/",   # P1 因子服务：compute 为计算型 POST，须先过 token 闸门
 )
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -269,6 +271,11 @@ def _rate_hit(key, max_per_min, window_sec=60.0):
         return False
 
 _cache = {"t": 0.0, "data": None}
+# 2026-11-08 K-ORG-20261108-OVWSPLIT：overview 专用锁。
+# 原先复用 api_health_portal._lock（该锁同时罩着 /api/health、jev 缓存与
+# _rate_hit 限流计数），一次 12s+ 的 overview 重建会连带堵住健康检查，
+# 监控侧会误判服务不可用。缓存各管各的锁，互不放大等待。
+_overview_lock = threading.Lock()
 
 # P1 总览门户（2026-10-17 前端重规划）：/api/health 七口探活 + 五守护任务
 
@@ -569,7 +576,7 @@ def _read_dw_body(handler, max_bytes=None):
     return True, body, ""
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_chanlun_buy.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_intel_health.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -1068,6 +1075,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 "（该变更端点需 token；本机页面自动携带，脚本请带"
                 " header X-Portal-Token）"), 403)
             return
+        if path.startswith('/api/factor/'):
+            # P1 因子服务计算型入口（token 闸门之后；worker 子进程 + 缓存）。
+            import api_factor
+            api_factor.handle_post(self, path)
+            return
         if path == '/api/zhuge/review' or path.startswith('/api/zhuge/review/'):
             # P0/运营化：只读复核 + <id>/adoption 子资源（模块内校验 feature flag/
             # 门户 session/正文大小/限额；默认关）
@@ -1101,8 +1113,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
         if path.startswith('/api/jev/review/'):
             # 2026-10-30 K-JEV-20261030-QUEUEUI：低置信复核裁决写回
-            import api_jev_review
-            api_jev_review.handle_post(self, path)
+            import api_jev_access, api_jev_review
+            api_jev_access.wrap_dispatch(
+                self, path, "", "POST", api_jev_review.handle_post, path)
             return
         if path.startswith('/api/customer/'):
             import api_customer
@@ -1655,6 +1668,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path.startswith('/api/factor/'):
+            # P1 因子服务只读目录/健康 + 计算型 POST（独立文件 api_factor.py）。
+            # GET 只读；POST 在 do_POST 的 token 闸门后分派。
+            import api_factor
+            api_factor.handle_get(self, path, qs)
+            return
         if path.startswith('/api/data/catalog/'):
             # 数据打通 2026-11-05：catalog 258 表实时元数据/样本只读通道。
             # data 已在 nginx 公开族 B 白名单 → 无需改 nginx；8091 由 SYSTEM 托管，
@@ -1732,6 +1751,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             api_analysis_internal.handle_get(self, path, qs)
             return
         if path.startswith('/api/monitor/'):
+            # K-ORG-20261107-GUARDDECK：看护驾驶舱（独立文件 api_guard_deck.py，
+            # 须在 api_monitor 的 503 兜底前分派——monitor 引擎缺失不连坐看护面）
+            if path.startswith('/api/monitor/guard/'):
+                import api_guard_deck
+                api_guard_deck.handle_get(self, path, qs)
+                return
             import api_monitor
             api_monitor.handle_get(self, path, qs)
             return
@@ -1768,13 +1793,84 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
         if path.startswith('/api/jev/review/'):
             # 2026-10-30 K-JEV-20261030-QUEUEUI：低置信复核只读列表/汇总
-            import api_jev_review
-            api_jev_review.handle_get(self, path, qs)
+            import api_jev_access, api_jev_review
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev_review.handle_get, path, qs)
+            return
+        if path == '/api/jev/platform':
+            # 2026-11-07 情报中台复盘建设：中台健康聚合（哨兵四查/队列/吞吐/
+            # 夜批/runs 时间线）；独立文件 api_jev_platform.py；只读 mode=ro；
+            # 须在 /api/jev/ 兜底前。
+            import api_jev_access, api_jev_platform
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev_platform.handle_get, path, qs)
+            return
+        if path == '/api/jev/wordcloud':
+            # 2026-11-07 WO-INTEL-WORDC1-JEV-20261107-001：JEV 判定加权词云
+            # （独立文件 api_jev_wordcloud.py；只读 mode=ro；须在 /api/jev/ 兜底前）
+            import api_jev_access, api_jev_wordcloud
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev_wordcloud.handle_get, path, qs)
             return
         if path.startswith('/api/jev/'):
             # 2026-10-26 JEVAPI：JEV 判定只读查询（独立文件 api_jev.py；Hermes MCP 消费）
-            import api_jev
-            api_jev.handle_get(self, path, qs)
+            # 板块联动图（2026-11-08 Step 5：板块排名 × 传播链 × 分钟异动）
+            if path == '/api/jev/graph':
+                import api_jev_access, api_jev_graph
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_graph.handle_get, path, qs)
+                return
+            # 标的三面聚合（2026-11-07 目录卡 jev_target_drill 聚合形态）
+            if path.startswith('/api/jev/target/'):
+                import api_jev_access, api_jev_target
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_target.handle_get, path, qs)
+                return
+            # AI 解读结论（2026-11-07：老田令——数据要出结论告知人）
+            if path == '/api/jev/interpret':
+                import api_jev_access, api_jev_interpret
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_interpret.handle_get, path, qs)
+                return
+            # 日内 5 分钟回溯（2026-11-07：老田令盘中反应量化）
+            if path.startswith('/api/jev/intraday/'):
+                import api_jev_access, api_jev_intraday
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_intraday.handle_get, path, qs)
+                return
+            # 个股叙事线（2026-11-07：判定串联+信源战绩+变化验证）
+            if path.startswith('/api/jev/story/'):
+                import api_jev_access, api_jev_story
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_story.handle_get, path, qs)
+                return
+            # 单条证据四级溯源（2026-11-07：证据链能力——原文→判定→后验→归组）
+            if path == '/api/jev/evidence/item':
+                import api_jev_access, api_jev_evidence_item
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_evidence_item.handle_get, path, qs)
+                return
+            # 消息举证链（2026-11-07：老田令举证级溯源）
+            if path == '/api/jev/evidence':
+                import api_jev_access, api_jev_evidence
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_evidence.handle_get, path, qs)
+                return
+            # 能力开放层端点（2026-11-07）：目录 + 溯源（先于兜底）
+            if path == '/api/jev/capabilities':
+                import api_jev_access
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET",
+                    api_jev_access.handle_capabilities, path, qs)
+                return
+            if path == '/api/jev/trace':
+                import api_jev_access
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_access.handle_trace, path, qs)
+                return
+            import api_jev_access, api_jev
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev.handle_get, path, qs)
             return
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
@@ -1782,6 +1878,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/intel/bus':
             # 情报总线唯一出口（六域→总线→量化/飞书双路径，只读 2026-10-19）
             self._intel_bus(qs)
+            return
+        if path == '/api/intel/health':
+            # 采集链健康只读面板出口（L0/L1 SLA 观测面→工作台，零写入 2026-11-08；
+            # 复用 feedback_dry 干跑内核，面板数字=每日 08:35 干跑台账数字）
+            self._api_intel_health()
             return
         if path == '/api/notify/queue':
             # K-ORG-201 通知指挥四态队列（三本账只读聚合，零写入 2026-10-19）
@@ -1955,6 +2056,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
                 " 或 C:\\Temp\\portal_api_token）"), 403)
             return
+        return self._route_main(path, qs)
+
+    def _route_main(self, path, qs):
         if path == "/":
             # 根路径引导：8091 是 API+页面后端，首页在 nginx 8080——
             # 直接访问 8091/ 曾得 404 白页误判「网络不通」，302 到真首页
@@ -1963,13 +2067,24 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self.send_header("Content-Length", "0")
             self.end_headers()
         elif path == "/api/overview":
-            with _lock:
-                now = time.time()
-                if _cache["data"] is None or now - _cache["t"] > CACHE_TTL:
-                    _cache["data"] = build_overview()
-                    _cache["t"] = now
-                data = _cache["data"]
-            self._json(data)
+            # 2026-11-08 K-ORG-20261108-OVWSPLIT：不再用跨模块共享的 _lock
+            # 包住构建。原写法持锁跑 build_overview()（含 docker ps + schtasks，
+            # 实测 12.6s、按内部 timeout 最坏 70s），期间 /api/health 与限流
+            # 计数全被堵住。现在换成 overview 专用锁 + 分层取数：轻项同步、
+            # 重项只读后台刷新的缓存，请求线程不再调用任何外部进程。
+            now = time.time()
+            with _overview_lock:
+                cached, cached_t = _cache["data"], _cache["t"]
+            if cached is not None and now - cached_t <= CACHE_TTL:
+                self._json(cached)
+            else:
+                data, meta = overview_cached()
+                # 附加字段（非破坏性）：冷启时 containers/tasks 是空壳，
+                # 前端/巡检据此区分"正在后台刷新"与"确实没有容器"。
+                data["overview_meta"] = meta
+                with _overview_lock:
+                    _cache["data"], _cache["t"] = data, time.time()
+                self._json(data)
         elif path == "/health":
             self._json({"ok": True, "ts": time.strftime("%Y-%m-%d %H:%M:%S")})
         elif path == "/api/watch-tower/strategy-pool/membership":
@@ -2492,6 +2607,42 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     except Exception as _e:
                         r2["mt_warn"] = str(_e)[:100]
                 self._json(r2)
+        elif path == "/api/chanlun/buy/sectors":
+            # 🛒 买点实战台：今日买点按板块归并（只读，进程内 1 小时缓存）
+            self._chanlun_buy_sectors(qs)
+        elif path == "/api/chanlun/pool/heat":
+            # K-ORG-20261107-CHANDECK：市场信号热度（只读扫 chanlun_pool.jsonl
+            # 最新 detect_date，六类买卖点计数；流式逐行，不整库载入）
+            import json as _jheat
+            from collections import Counter as _Cnt
+            _pool_p = os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl")
+            _det, _cnt = None, _Cnt()
+            try:
+                with open(_pool_p, encoding="utf-8") as _f:
+                    for _ln in _f:
+                        try:
+                            _r = _jheat.loads(_ln)
+                        except ValueError:
+                            continue
+                        _d = _r.get("detect_date")
+                        if _d and (not _det or _d > _det):
+                            _det = _d
+            except OSError:
+                pass
+            if _det:
+                try:
+                    with open(_pool_p, encoding="utf-8") as _f:
+                        for _ln in _f:
+                            try:
+                                _r = _jheat.loads(_ln)
+                            except ValueError:
+                                continue
+                            if _r.get("detect_date") == _det:
+                                _cnt[_r.get("type") or "?"] += 1
+                except OSError:
+                    pass
+            self._json({"ok": True, "detect_date": _det,
+                        "counts": dict(_cnt)})
         elif path == "/api/chanlun/backtest":
             # 缠论 P4：三类买卖点事件统计 + 策略回测（理论价口径）
             from urllib.parse import parse_qs as _pqst
@@ -3145,6 +3296,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         "12.5px'>进入选股中心 →</span></div></a>"
                         % (href, border, icon, name, desc, stat, border))
             cards = "".join([
+                _card("/bt-buy", "#f85149", "🛒", "买点实战台 · 决策流",
+                      "只做 1买/2买/3买（三卖不碰）· 环境分子决定动不动手 ·"
+                      " 板块聚集 · 持仓盯市 · 绝对/超额双口径战绩",
+                      "实战入口 · 一屏走完买入决策"),
                 _card("/bt-qpzm", "#58a6ff", "🌊", "青萍之末 · 选股中心",
                       "四市场自选池 · 多维加权评分（技术.35/JEV.25/"
                       "RPS.25/环境.15）· 环境闸门一票否决",
@@ -3579,6 +3734,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._qpzm_page(path[len("/bt-qpzm"):].strip("/"))
         elif path in route_table._GET_EXACT_13:
             getattr(self, route_table._GET_EXACT_13[path])()
+        elif path == "/bt-buy":
+            # 🛒 买点实战台：只做 1买/2买/3买（三卖不碰），实战决策流一屏到底
+            self._chanlun_buy_page(qs)
         elif path == "/bt-chanlun-pool":
             # 缠论扫描 → 预警池 → 模拟交易（影子观察；?m=US|HK 切市场池链）
             self._chanlun_pool_page(qs)

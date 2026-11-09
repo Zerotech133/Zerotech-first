@@ -7,8 +7,18 @@ GET（只读）：
   /api/analysis/latest?code=         最近一次运行（含 analysis.json 摘要）
   /api/analysis/report?run_id=       返回 report.md 文本（限 300KB）
   /api/analysis/queue                队列计数
+  /api/analysis/strategy/list        策略库列表（H3 策略工作室）
+  /api/analysis/strategy/get?slug=   策略详情（StrategySpec v1）
 POST（写队列，需 X-Portal-Token，已加入 _MUTATION_POSTS）：
   /api/analysis/submit   {"code":"600337.SH","llm":false,"push":false}
+  /api/analysis/strategy/validate {"spec": {...}}              校验 + 编译预览（只读计算）
+  /api/analysis/strategy/save     {"spec": {...}, "slug": "?"} 保存策略库
+
+H3 策略工作室同源代理（K-STOCK-ANALYSIS-H3-20261104）：
+  浏览器无法携带内部网关的 X-Analysis-Token，故在门户进程内复用
+  analysis.strategy（StrategySpec v1 校验/编译/策略库），走门户既有鉴权语义
+  （本机直连放行 / 局域网 X-Portal-Token），供 /sa/strategy 页面同源调用；
+  strategy 模块缺失时 fail-closed 503。策略仅研究用途，不构成投资建议。
 """
 import json
 import os
@@ -67,6 +77,150 @@ def _run_dir(run_id):
     if os.path.isdir(p):
         return p
     return None
+
+
+# ---------------- H3 策略工作室同源代理（StrategySpec v1；模块缺失 fail-closed 503） ----------------
+def _load_strategy_module():
+    """返回 analysis.strategy 模块；缺失/导入失败 → None（端点 503）。"""
+    try:
+        import importlib
+        import sys
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        return importlib.import_module("analysis.strategy")
+    except Exception:
+        return None
+
+
+def _strategy_error(handler, status, error, **extra):
+    obj = {"ok": False, "error": error}
+    obj.update(extra)
+    return _json(handler, obj, status)
+
+
+def _engine_missing(mod, errors):
+    """validate/compile 是否因 H2a 引擎缺失失败（契约：代理层转 503）。"""
+    sentinel = str(getattr(mod, "ENGINE_MISSING", "选股引擎未就绪"))
+    return isinstance(errors, list) and errors == [sentinel]
+
+
+def _strategy_compiled(comp, description):
+    """compile() → F3/规范 §5.2 的 compiled 结构（失败时给空壳，errors 由外层承载）。"""
+    comp = comp if isinstance(comp, dict) else {}
+    return {
+        "screener_spec": comp.get("screener_spec"),
+        "rebalance": comp.get("rebalance"),
+        "cost_bps": comp.get("cost_bps"),
+        "warnings": comp.get("warnings") or [],
+        "spec_hash": comp.get("spec_hash"),
+        "schema_version": comp.get("schema_version") or "v1",
+        "description": description or "",
+    }
+
+
+def _empty_compiled():
+    return {"screener_spec": None, "rebalance": None, "cost_bps": None, "warnings": [],
+            "spec_hash": None, "schema_version": "v1", "description": ""}
+
+
+def _get_strategy_list(handler):
+    mod = _load_strategy_module()
+    if mod is None:
+        return _strategy_error(handler, 503, "策略工作室后端未就绪（analysis.strategy 缺失）")
+    try:
+        r = mod.list_strategies()
+    except Exception as e:  # noqa: BLE001
+        return _strategy_error(handler, 500, "策略列表读取失败: " + str(e)[:120])
+    strategies = r.get("strategies") or []
+    return _json(handler, {"ok": True, "count": len(strategies),
+                           "strategies": strategies,
+                           "warnings": r.get("warnings") or []})
+
+
+def _get_strategy_detail(handler, slug):
+    slug = (slug or "").strip()
+    if not slug:
+        return _strategy_error(handler, 400, "缺少 slug")
+    mod = _load_strategy_module()
+    if mod is None:
+        return _strategy_error(handler, 503, "策略工作室后端未就绪（analysis.strategy 缺失）")
+    try:
+        r = mod.load_strategy(slug)
+    except Exception as e:  # noqa: BLE001
+        return _strategy_error(handler, 500, "策略读取失败: " + str(e)[:120])
+    if not r.get("ok"):
+        err = str(r.get("error") or "not found")
+        return _strategy_error(handler, 400 if "slug" in err else 404,
+                               "策略不存在" if err == "not found" else err)
+    return _json(handler, {"ok": True, "slug": r.get("slug") or slug,
+                           "spec": r.get("spec"), "meta": r.get("meta") or {}})
+
+
+def _post_strategy(handler, path, body):
+    mod = _load_strategy_module()
+    if mod is None:
+        return _strategy_error(handler, 503, "策略工作室后端未就绪（analysis.strategy 缺失）")
+    spec = body.get("spec")
+    if not isinstance(spec, dict):
+        return _strategy_error(handler, 400, "spec 必须为 JSON 对象")
+    if path == "/api/analysis/strategy/validate":
+        try:
+            v = mod.validate(spec)
+        except Exception as e:  # noqa: BLE001
+            return _strategy_error(handler, 500, "策略校验失败: " + str(e)[:120])
+        if not isinstance(v, dict):
+            return _strategy_error(handler, 500, "策略校验返回非法结构")
+        errors = list(v.get("errors") or [])
+        if not v.get("ok") and _engine_missing(mod, errors):
+            return _strategy_error(handler, 503, "选股引擎未就绪（H2a analysis.screener 缺失）")
+        if not v.get("ok"):
+            return _json(handler, {
+                "ok": False, "errors": errors, "warnings": v.get("warnings") or [],
+                "normalized": v.get("normalized"),
+                "compiled": _empty_compiled(), "describe": "",
+            })
+        try:
+            comp = mod.compile(spec)
+        except Exception as e:  # noqa: BLE001
+            return _strategy_error(handler, 500, "策略编译失败: " + str(e)[:120])
+        if not isinstance(comp, dict) or not comp.get("ok"):
+            errs = list((comp or {}).get("errors") or ["编译失败"]) if isinstance(comp, dict) else ["编译失败"]
+            if _engine_missing(mod, errs):
+                return _strategy_error(handler, 503, "选股引擎未就绪（H2a analysis.screener 缺失）")
+            return _json(handler, {"ok": False, "errors": errs,
+                                   "warnings": v.get("warnings") or [],
+                                   "normalized": v.get("normalized"),
+                                   "compiled": _empty_compiled(), "describe": ""})
+        try:
+            description = mod.describe(spec)
+        except Exception:  # noqa: BLE001  描述失败不阻断校验主结果
+            description = ""
+        compiled = _strategy_compiled(comp, description)
+        return _json(handler, {
+            "ok": True, "errors": [], "warnings": v.get("warnings") or [],
+            "normalized": v.get("normalized"), "compiled": compiled,
+            "describe": description,
+        })
+    # /api/analysis/strategy/save
+    slug = body.get("slug")
+    if slug is not None and not isinstance(slug, str):
+        return _strategy_error(handler, 400, "slug 必须为字符串")
+    slug_arg = (slug or "").strip() or None
+    try:
+        r = mod.save_strategy(spec, slug=slug_arg)
+    except Exception as e:  # noqa: BLE001
+        return _strategy_error(handler, 500, "策略保存失败: " + str(e)[:120])
+    if not isinstance(r, dict) or not r.get("ok"):
+        r = r if isinstance(r, dict) else {}
+        errs = r.get("errors") or [r.get("error") or "保存失败"]
+        if _engine_missing(mod, r.get("errors") or []) or r.get("engine_missing"):
+            return _strategy_error(handler, 503, "选股引擎未就绪（H2a analysis.screener 缺失）")
+        return _json(handler, {"ok": False, "error": r.get("error") or "校验失败",
+                               "errors": errs, "warnings": r.get("warnings") or []}, 400)
+    return _json(handler, {"ok": True, "slug": r.get("slug"),
+                           "created": bool(r.get("created")),
+                           "updated": r.get("updated"), "path": r.get("path"),
+                           "spec_hash": r.get("spec_hash")})
 
 
 def handle_get(handler, path, qs):
@@ -181,6 +335,10 @@ def handle_get(handler, path, qs):
             handler.end_headers()
             handler.wfile.write(data)
         return
+    if path == "/api/analysis/strategy/list":
+        return _get_strategy_list(handler)
+    if path == "/api/analysis/strategy/get":
+        return _get_strategy_detail(handler, q.get("slug"))
     return _json(handler, {"ok": False, "error": "unknown analysis api: " + path}, 404)
 
 
@@ -195,15 +353,27 @@ def handle_post(handler, path, qs):
     if not handler._check_portal_token():
         return _json(handler, {"ok": False,
                                "error": "forbidden: 缺失或不匹配的 X-Portal-Token"}, 403)
-    if path not in ("/api/analysis/submit", "/api/analysis/review"):
+    if path not in ("/api/analysis/submit", "/api/analysis/review",
+                    "/api/analysis/strategy/validate", "/api/analysis/strategy/save"):
         return _json(handler, {"ok": False, "error": "unknown analysis post"}, 404)
+    try:
+        _ln = int(handler.headers.get("Content-Length") or 0)
+    except Exception:
+        _ln = 0
+    if path in ("/api/analysis/strategy/validate", "/api/analysis/strategy/save") \
+            and _ln > 64 * 1024:
+        return _json(handler, {"ok": False, "error": "body 过大（策略 Spec ≤64KB）"}, 413)
     try:
         body = _read_body(handler)
     except Exception:
         return _json(handler, {"ok": False, "error": "bad json"}, 400)
+    if not isinstance(body, dict):
+        return _json(handler, {"ok": False, "error": "body 必须为 JSON 对象"}, 400)
     import sys
     if ROOT not in sys.path:
         sys.path.insert(0, ROOT)
+    if path in ("/api/analysis/strategy/validate", "/api/analysis/strategy/save"):
+        return _post_strategy(handler, path, body)
 
     if path == "/api/analysis/review":
         event_id = str(body.get("event_id") or "").strip()

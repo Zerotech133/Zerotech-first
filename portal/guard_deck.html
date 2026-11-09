@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>看护驾驶舱 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <style>
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+    .kpi{padding:12px 14px;position:relative}
+    .kpi .k-label{font-size:11.5px;color:var(--gray-5);letter-spacing:.02em}
+    .kpi .k-value{font-size:24px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;margin-top:4px}
+    .kpi .k-sub{font-size:11px;color:var(--gray-5);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .k-ok .k-value{color:var(--color-up)} .k-bad .k-value{color:var(--color-dn)} .k-warn .k-value{color:var(--color-warn)}
+    .sbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 14px;margin-bottom:14px;font-size:12px}
+    .sbar .lamp{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;background:transparent;color:var(--gray-6);font-size:12px}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+    .dot-ok{background:var(--color-ok)} .dot-bad{background:var(--color-err)} .dot-na{background:var(--gray-5)}
+    table.g{width:100%;border-collapse:collapse;font-size:12.5px}
+    table.g th{text-align:left;font-weight:600;color:var(--gray-5);font-size:11px;letter-spacing:.03em;padding:7px 10px;border-bottom:1px solid var(--border)}
+    table.g td{padding:8px 10px;border-bottom:1px solid var(--border-weak);vertical-align:middle}
+    table.g tr:hover td{background:var(--gray-1)}
+    .mono{font-family:var(--font-mono)}
+    .pill{display:inline-block;border-radius:999px;padding:1px 9px;font-size:10.5px;font-family:var(--font-mono)}
+    .pill-ok{color:var(--color-ok);border:1px solid var(--color-ok)}
+    .pill-bad{color:var(--color-err);border:1px solid var(--color-err)}
+    .pill-na{color:var(--gray-5);border:1px solid var(--gray-5)}
+    .pill-tcp{color:var(--color-warn);border:1px solid var(--color-warn)}
+    .logbox{margin:0;padding:10px 12px;background:var(--gray-1);border:1px solid var(--border-weak);border-radius:8px;font-family:var(--font-mono);font-size:11px;line-height:1.75;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+    .logbox .act{color:var(--color-warn)} .logbox .ok{color:var(--color-ok)} .logbox .bad{color:var(--color-err)}
+    .sec{margin-top:18px}
+    .sec h3{font-size:13px;font-weight:600;color:var(--gray-7);margin:0 0 8px}
+    .sec .hint{font-size:11px;color:var(--gray-5);margin-bottom:6px}
+    .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .toolbar button{font-size:12px;padding:4px 12px}
+    #age{font-size:11px;color:var(--gray-5);margin-left:auto;font-family:var(--font-mono)}
+    .err-banner{display:none;padding:9px 14px;border:1px solid var(--color-err);border-radius:8px;color:var(--color-err);font-size:12px;margin-bottom:14px}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="page-head">
+    <h1>看护驾驶舱</h1>
+    <p class="sub">四端口看护 + /ready 数据面 + 看门狗日志 —— <span class="mono" id="ts">…</span></p>
+  </div>
+
+  <div id="err" class="err-banner"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sbar" id="sbar"></div>
+
+  <div class="sec">
+    <h3>服务明细</h3>
+    <table class="g">
+      <thead><tr><th>端口</th><th>服务</th><th>探活</th><th>就绪面</th><th>详情</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <h3>看门狗日志</h3>
+    <div class="hint">路径 <span class="mono" id="wdpath">C:\Temp\watchdog_9899.log</span> · 动作行高亮（spawn/REVIVED/FAIL）。<b>日志静默 ≠ 没跑</b>：四口全活时 main() 不写日志，这是设计。</div>
+    <div class="toolbar">
+      <button id="refresh" class="ui-btn">刷新</button>
+      <span id="age"></span>
+    </div>
+    <pre class="logbox" id="log"></pre>
+  </div>
+</main>
+<script>
+(function () {
+  var API = '/api/monitor/guard/summary?loglines=40';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+  }
+
+  function pill(ok, text) {
+    var cls = ok === true ? 'pill-ok' : ok === false ? 'pill-bad' : 'pill-na';
+    return '<span class="pill ' + cls + '">' + esc(text) + '</span>';
+  }
+
+  function readyCell(s) {
+    if (s.ready === true) return pill(true, 'READY');
+    if (s.ready === false) return pill(false, 'NOT-READY');
+    if (s.ready_detail === 'tcp_only') return '<span class="pill pill-tcp">TCP</span>';
+    if (s.ready_detail === 'no_endpoint') return '<span class="pill pill-na">无端点</span>';
+    return pill(null, '—');
+  }
+
+  function fmtDetail(s) {
+    var d = s.ready_detail;
+    if (s.ready === true && d && typeof d === 'object' && d.checks) {
+      var parts = [];
+      var ck = d.checks || {};
+      for (var k in ck) {
+        if (!ck.hasOwnProperty(k)) continue;
+        var c = ck[k];
+        parts.push(esc(k) + '=' + (c.ok ? 'ok' : 'FAIL') + (c.ms != null ? ' ' + c.ms + 'ms' : ''));
+      }
+      return '<span class="mono" style="font-size:10.5px">' + parts.join(' · ') + '</span>';
+    }
+    if (s.ready === false) return '<span class="mono" style="font-size:10.5px">' + esc(d) + '</span>';
+    return '<span style="color:var(--gray-5)">—</span>';
+  }
+
+  function lineClass(l) {
+    if (l.indexOf('SPAWN_FAILED') >= 0 || l.indexOf('REVIVE_FAIL') >= 0) return 'bad';
+    if (l.indexOf('REVIVED') >= 0) return 'ok';
+    if (l.indexOf('DOWN x2 -> spawn') >= 0 || l.indexOf('REVIVE_UNCONFIRMED') >= 0) return 'act';
+    return '';
+  }
+
+  function render(d) {
+    document.getElementById('ts').textContent = d.ts || '';
+    var svcs = d.services || [];
+    var aliveN = 0, readyN = 0, tcpN = 0, downN = 0;
+    svcs.forEach(function (s) {
+      if (!s.alive) { downN++; return; }
+      aliveN++;
+      if (s.ready === true) readyN++;
+      else if (s.ready === false) {}
+      else tcpN++;
+    });
+    document.getElementById('kpis').innerHTML =
+      kpi(aliveN === svcs.length, aliveN + '/' + svcs.length, '端口存活', downN ? downN + ' 个 DOWN' : '全部在线') +
+      kpi(readyN > 0, readyN, 'READY 数据面', 'HTTP 200') +
+      kpi(null, tcpN + (downN ? ' / ' + downN : ''), 'TCP-only / DOWN', '无就绪端点的口') +
+      kpi(d.watchdog_log && d.watchdog_log.tail ? true : null,
+          d.watchdog_log && d.watchdog_log.mtime_age_s != null ? Math.round(d.watchdog_log.mtime_age_s / 60) + 'm' : '—',
+          '日志距今', d.watchdog_log ? '上次动作写入' : '日志缺失');
+
+    document.getElementById('sbar').innerHTML = svcs.map(function (s) {
+      var dot = s.alive ? '<i class="dot dot-ok"></i>' : '<i class="dot dot-bad"></i>';
+      var rdy = s.ready === true ? ' ✓ready' : s.ready === false ? ' ✗ready' : '';
+      return '<span class="lamp">' + dot + esc(s.name) + ' <span class="mono">:' + s.port + '</span>' + rdy + '</span>';
+    }).join('');
+
+    document.getElementById('rows').innerHTML = svcs.map(function (s) {
+      return '<tr><td class="mono">:' + s.port + '</td><td>' + esc(s.name) +
+        '<div style="font-size:10.5px;color:var(--gray-5)">' + esc(s.desc) + '</div></td>' +
+        '<td>' + (s.alive ? pill(true, 'LISTEN') : pill(false, 'DOWN')) + '</td>' +
+        '<td>' + readyCell(s) + '</td><td>' + fmtDetail(s) + '</td></tr>';
+    }).join('');
+
+    var wd = d.watchdog_log || {};
+    var tail = wd.tail || [];
+    document.getElementById('log').innerHTML = tail.length
+      ? tail.map(function (l) { return '<span class="' + lineClass(l) + '">' + esc(l) + '</span>'; }).join('\n')
+      : '(空 —— 四口全活时看门狗不写日志，属设计行为)';
+    document.getElementById('age').textContent = wd.mtime_age_s != null
+      ? '日志 mtime 距今 ' + Math.round(wd.mtime_age_s) + 's' : '';
+  }
+
+  function kpi(ok, value, label, sub) {
+    var cls = ok === true ? 'k-ok' : ok === false ? 'k-bad' : 'k-warn';
+    return '<div class="kpi ' + cls + '"><div class="k-label">' + esc(label) +
+      '</div><div class="k-value">' + esc(value) + '</div><div class="k-sub">' + esc(sub || '') + '</div></div>';
+  }
+
+  function load() {
+    fetch(API, {cache: 'no-store'}).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(render).catch(function (e) {
+      var el = document.getElementById('err');
+      el.style.display = 'block';
+      el.textContent = '加载失败：' + e.message + '（若 401 请先登录）';
+    });
+  }
+
+  document.getElementById('refresh').addEventListener('click', load);
+  load();
+  setInterval(load, 30000);
+})();
+</script>
+</body>
+</html>

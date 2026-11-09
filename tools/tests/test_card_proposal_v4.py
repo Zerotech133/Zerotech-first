@@ -113,7 +113,7 @@ def test_candidates_quality():
 def test_dry_run_preview_and_no_mutation():
     d = report()
     pv = d["preview"]
-    cards = load(CARDS)["cards"]
+    load(CARDS)["cards"]
     assert pv["base_cards"] == d["summary"]["cards_total"] == 124
     assert pv["candidates"] == len(d["candidates"]) == 24
     assert pv["resulting_cards_if_all_merged"] == pv["base_cards"] + 24 == 148

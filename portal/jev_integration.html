@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 对接面管理台 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    /* 页面级微样式：只引用语义 token，禁止硬编码 hex */
+    .dir-tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:10.5px;border:1px solid var(--border)}
+    .dir-out{color:var(--pur-500);border-color:color-mix(in srgb,var(--pur-500) 42%,transparent)}
+    .dir-in{color:var(--blu-500);border-color:color-mix(in srgb,var(--blu-500) 42%,transparent)}
+    .dir-both{color:var(--gray-5)}
+    .guard-miss{color:var(--color-warn)}
+    .guard-ok{color:var(--gray-5)}
+    .mech{color:var(--gray-6);font-size:11.5px}
+    .name{color:var(--text);font-weight:600;white-space:nowrap}
+    .hook{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border-weak);font-size:12.5px;color:var(--gray-6)}
+    .hook:last-child{border-bottom:none}
+    .hook .t{flex:none;width:118px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+    .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;background:var(--blu-500)}
+    .dot.g{background:var(--color-ok)} .dot.o{background:var(--color-warn)}
+    .pend{border:1px solid var(--border);border-left:3px solid var(--color-warn);border-radius:10px;padding:12px 14px}
+    .pend h3{font-size:13px;color:var(--text);margin-bottom:4px}
+    .pend p{margin:0 0 4px}
+    .pend .anchor{color:var(--blu-500);font-size:11.5px}
+    .layer h3{font-size:13px;color:var(--text)}
+    .layer .no{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--blu-600);color:#fff;font-size:11px;margin-right:6px}
+    .layer ul{margin:6px 0 0;padding-left:18px;color:var(--gray-5);font-size:12px}
+    .layer li{margin:4px 0}
+    .layer b{color:var(--gray-6)}
+    .slogan{font-size:12.5px;color:var(--gray-6);margin:0 0 2px}
+    .slogan b{color:var(--blu-500)}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 05 对接台</span>
+        <h1>JEV 对接面管理台</h1>
+        <p class="slogan">JEV 同时是<b>判读数据源</b>（Hermes / 情报总线 / 事件图 / 盘后页在消费）与<b>判读消费者</b>（Ollama / Tushare / datamart / 飞书在供给）——当前 <b>12 条通道，无断线项</b>。台账基线 <span id="baseline">2026-11-07 08:25</span>，与《JEV 项目最终总结》§10 同源。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_platform.html">🛰 中台总览</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <!-- JEV 族动线条：总览 → 判断 → 词云 → 复核 → 对接台 -->
+    <div class="ui-card" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px">
+      <a style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none" href="/jev_platform.html">🛰 01 总览</a><span style="color:var(--gray-5);font-size:11px">→</span>
+      <a style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none" href="/bt-jev">⚖ 02 判断</a><span style="color:var(--gray-5);font-size:11px">→</span>
+      <a style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none" href="/jev_wordcloud.html">☁ 03 词云</a><span style="color:var(--gray-5);font-size:11px">→</span>
+      <a style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none" href="/static/jev_review.html">🧾 04 复核</a><span style="color:var(--gray-5);font-size:11px">→</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--accent);border-radius:999px;padding:3px 11px;color:var(--text);background:var(--bg-raised)">🔗 05 对接台</span>>🔗 05 对接台</span>
+      <span style="color:var(--gray-5);font-size:11px">→</span>
+      <a style="display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none" href="/jev_api.html">📡 06 能力目录</a>
+      <span style="margin-left:auto;color:var(--gray-5);font-size:11px">治理面：12 通道台账 + 四层管理机制</span>
+    </div>
+
+    <!-- KPI 行 -->
+    <div class="ui-grid ui-grid--4" style="margin-bottom:6px">
+      <div class="ui-kpi"><span>对接通道</span><b>12</b><small>上线 10 · 闭环 2 · 部分落地 1 · 断线 0</small></div>
+      <div class="ui-kpi"><span>近 24h 判定（/api/jev/query 实时）</span><b id="kpi-total">…</b><small id="kpi-bias">加载中</small></div>
+      <div class="ui-kpi"><span>判读积压（11-07 快照）</span><b>144</b><small>全部为高价值（left_high）</small></div>
+      <div class="ui-kpi"><span>待批口子</span><b>4</b><small>D1 / D3 / O6 / O4 已归口</small></div>
+    </div>
+    <div id="live-err" class="ui-error" hidden></div>
+
+    <!-- Tabs -->
+    <div class="ui-tabs" role="tablist">
+      <button class="ui-tab" role="tab" aria-selected="true" data-tab="ledger">通道台账</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="layers">四层管理</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="pending">待批归口</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="hooks">验证钩子</button>
+    </div>
+
+    <!-- Tab 1：通道台账 -->
+    <section class="ui-tabpanel" role="tabpanel" data-panel="ledger">
+      <div class="ui-toolbar">
+        <div class="ui-search"><input id="q" type="search" placeholder="搜索通道 / 机制 / 守卫…" aria-label="搜索通道"></div>
+        <button class="ui-btn ui-btn--sm on" data-f="dir" data-v="all">全部方向</button>
+        <button class="ui-btn ui-btn--sm" data-f="dir" data-v="出">出</button>
+        <button class="ui-btn ui-btn--sm" data-f="dir" data-v="入">入</button>
+        <button class="ui-btn ui-btn--sm" data-f="dir" data-v="双">双向</button>
+        <button class="ui-btn ui-btn--sm on" data-f="st" data-v="all">全部状态</button>
+        <button class="ui-btn ui-btn--sm" data-f="st" data-v="上线">上线</button>
+        <button class="ui-btn ui-btn--sm" data-f="st" data-v="闭环">闭环</button>
+        <button class="ui-btn ui-btn--sm" data-f="st" data-v="部分">部分落地</button>
+      </div>
+      <div class="ui-card" style="padding:6px 10px">
+        <table class="ui-table">
+          <thead><tr><th>#</th><th>通道</th><th>方向</th><th>机制 / 契约</th><th>守卫</th><th>状态</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="ui-empty" id="empty" hidden>无匹配通道——请调整筛选或搜索词。</div>
+      </div>
+      <p class="mech" style="margin-top:10px">横向能力：jev-eval 评测九件套 · P1-2 RAG grounding 观测（M2 决策）· trace 链路（LLM_TRACE_DB → api_trace_drilldown → kg_health）· 每日 09:00 七天影子快照（11-07 → 11-14）。</p>
+    </section>
+
+    <!-- Tab 2：四层管理 -->
+    <section class="ui-tabpanel" role="tabpanel" data-panel="layers" hidden>
+      <div class="ui-grid ui-grid--2">
+        <div class="ui-card layer"><h3><span class="no">1</span>台账层</h3>
+          <ul><li>通道台账即基线，<b>变更随当轮改动同步台账</b>（本页 + 最终总结 §10 联动）</li>
+              <li>build_catalog 重生成时核对「JEV 已接线情报总线」注记不漂移</li></ul></div>
+        <div class="ui-card layer"><h3><span class="no">2</span>契约层</h3>
+          <ul><li><b>破坏性契约变更</b>（MCP 工具集 / bus domain / cap 水位语义）→ 先 RFC + 双端同版本窗口 + 回滚说明</li>
+              <li>非破坏改动 → 观察期统一提交（11-14）</li></ul></div>
+        <div class="ui-card layer"><h3><span class="no">3</span>观测层</h3>
+          <ul><li>每通道一个健康信号：#1/#2/#4/#5 进每日 09:00 快照；#6/#7 已有 runs.detail + cap_hit；#9/#11 各有通道自报</li>
+              <li>BUG-3 教训制度化：<b>入口×开关矩阵 → 通道×契约矩阵</b>，preflight 逐项校验（O3 哨兵落地后断线自动告警）</li></ul></div>
+        <div class="ui-card layer"><h3><span class="no">4</span>变更层</h3>
+          <ul><li>普通改动随观察期 commit；契约级改动单独 RFC + 批复</li>
+              <li>凭据轮换走控制台并同步 jev-gate.env.enc</li></ul></div>
+      </div>
+    </section>
+
+    <!-- Tab 3：待批归口 -->
+    <section class="ui-tabpanel" role="tabpanel" data-panel="pending" hidden>
+      <div class="ui-grid ui-grid--2">
+        <div class="pend"><h3>D1 · --cap 方案②（连续水位 + 稳定游标）</h3>
+          <p class="mech">归属：datamart 通道 #7 ｜ 影响面：入队量抬 1.2–6.8×，A/B 收益须全量样本重算</p>
+          <div class="anchor">挂点：docs/changes/20261107_jev_cap_data_loss_p0_rfc.md §5</div></div>
+        <div class="pend"><h3>D3 · 历史补数（6,000–9,000 条）</h3>
+          <p class="mech">归属：datamart 通道 #7 ｜ 需排补数窗口与算力预算</p>
+          <div class="anchor">挂点：同上 cap RFC</div></div>
+        <div class="pend"><h3>O6 · 影子复判（MCP 受控写回）</h3>
+          <p class="mech">归属：Hermes MCP 通道 #1 ｜ 受控三件套：幂等 + 限额 + 审计，仅触发 review_loop、写 runs.detail</p>
+          <div class="anchor">挂点：单独立 RFC</div></div>
+        <div class="pend"><h3>O4 · Intel* 注册表漂移</h3>
+          <p class="mech">归属：事件图 KG 通道 #3 ｜ 图内 10+ 标签与 5 边型未注册、BENCHMARK_OF 注册但图内空</p>
+          <div class="anchor">挂点：TBox Steward 裁定（未擅修）</div></div>
+      </div>
+    </section>
+
+    <!-- Tab 4：验证钩子 -->
+    <section class="ui-tabpanel" role="tabpanel" data-panel="hooks" hidden>
+      <div class="ui-card">
+        <div class="hook"><span class="dot g"></span><span class="t">11-07 07:30</span><span>启动器总开关 <code>JEV_PREFILTER=safe</code> 落地——feed 与 backfill / night 三入口口径对齐（BUG-3 闭环）</span></div>
+        <div class="hook"><span class="dot"></span><span class="t">11-07 21:00</span><span>JevFeed-Daily 首轮生效：看 <code>C:/Temp/jev_feed_out.log</code> 的 <code>pref_skipped</code> / <code>NIGHT-PREFILTER</code> 行（准点走正常路径，延迟落夜窗走 _night_prefilter）</span></div>
+        <div class="hook"><span class="dot"></span><span class="t">11-08 09:00</span><span>自动快照应首次 <code>notice_skip&gt;0</code>、<code>new_code_effective_in_prod=True</code></span></div>
+        <div class="hook"><span class="dot o"></span><span class="t">11-14</span><span>观察期满 → 影子抽样评审 → 全部改动统一 git commit + 文档二次定稿</span></div>
+      </div>
+    </section>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 只读页面 · 建议采纳/审批仍走人工 · 台账基线 2026-11-07</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    /* ── 通道台账数据（与最终总结 §10 同源；变更须同步两处）── */
+    var CH=[
+      {no:1,name:"Hermes Agent",dir:"出",st:"上线",mech:"tools/jev_mcp.py 只读 MCP（jev_query/jev_calibration），数据面走 8091 /api/jev/query，零直连库（K-ORG-20261026-JEVAPI）",guard:"缺 tools/list 冒烟钉子（与 O3 哨兵同批，P2）",miss:true},
+      {no:2,name:"情报总线 intel bus",dir:"出",st:"上线",mech:"event_graph.py bus_query(domain=\"jev\") 水位增量、坏行推游标、AN 号跨源去重",guard:"语义锁在 BUG-8 回归"},
+      {no:3,name:"事件图谱 KG",dir:"出",st:"闭环",mech:"Neo4j 挂图 + C4 双时态（56/56 索引 ONLINE，R6 PASS）",guard:"test_bitemporal 10 项 + gate R6"},
+      {no:4,name:"盘后复盘页",dir:"出",st:"上线",mech:"afterhours.py 现算聚合消费 JEV news.db（标注「+ JEV/TDX」）",guard:"复用工具函数"},
+      {no:5,name:"数据健康面板",dir:"出",st:"上线",mech:"data_health.py 扫 news.db 统计 JEV 判断数",guard:"只读"},
+      {no:6,name:"Ollama 判读",dir:"入",st:"闭环",mech:"ollama_lock 租约互斥（300s 让位 / 1800s deadline，M3 错峰）",guard:"test_jev_backfill_contend 11 项"},
+      {no:7,name:"datamart 读层",dir:"入",st:"部分",mech:"datamart.read('news'/'notice')，cap/水位语义（--cap P0 所在通道）",guard:"cap_hit 信号已落；②连续水位待批 D1",miss:true},
+      {no:8,name:"Tushare 公告源",dir:"入",st:"上线",mech:"anns_d（2000+ 积分），TushareSync 23:30 前置刷新 datamart",guard:"tushare_note 诊断回执"},
+      {no:9,name:"飞书告警 / 卡片",dir:"双",st:"上线",mech:"feishu_client 全仓唯一底座 + push_message；卡片按钮 open_id 白名单（webhook 已弃）",guard:"失败静默不吃退出码（约定）"},
+      {no:10,name:"QuantDinger 桥",dir:"双",st:"上线",mech:"jev_qd_bridge.py（JevStack 四组件之一），凭据 jev-gate.env.enc",guard:"QD 改密须同步 env.enc"},
+      {no:11,name:"PG 直连通道",dir:"入",st:"上线",mech:"jev_common（P1-7）psycopg2 参数化 + 失联重连，降级 docker exec psql（JEV-DSN-20261105）",guard:"通道自报 db_channel_report"},
+      {no:12,name:"zhice OS v2",dir:"入",st:"上线",mech:"后台登录凭据（2026-09-24 已轮换弱密码）",guard:"—"}
+    ];
+    var ST_CLS={"上线":"ui-badge ui-badge--ok","闭环":"ui-badge ui-badge--info","部分":"ui-badge ui-badge--warn"};
+    var DIR_CLS={"出":"dir-tag dir-out","入":"dir-tag dir-in","双":"dir-tag dir-both"};
+    var rows=document.getElementById("rows"),empty=document.getElementById("empty"),
+        q=document.getElementById("q"),btns=[].slice.call(document.querySelectorAll(".ui-toolbar .ui-btn--sm")),
+        f={dir:"all",st:"all"};
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    function render(){
+      var kw=q.value.trim().toLowerCase(),html="",n=0;
+      CH.forEach(function(c){
+        var hit=(f.dir==="all"||c.dir===f.dir)&&(f.st==="all"||c.st===f.st)
+          &&(!kw||(c.name+c.mech+c.guard).toLowerCase().indexOf(kw)>-1);
+        if(!hit)return;n++;
+        html+="<tr><td class='num'>"+c.no+"</td><td class='name'>"+esc(c.name)+"</td>"
+          +"<td><span class='"+DIR_CLS[c.dir]+"'>"+c.dir+"</span></td>"
+          +"<td class='mech'>"+esc(c.mech)+"</td>"
+          +"<td class='"+(c.miss?"guard-miss":"guard-ok")+"'>"+esc(c.guard)+"</td>"
+          +"<td><span class='"+ST_CLS[c.st]+"'>"+(c.st==="部分"?"部分落地":c.st)+"</span></td></tr>";
+      });
+      rows.innerHTML=html; empty.hidden=!!n;
+    }
+    q.addEventListener("input",render);
+    btns.forEach(function(b){
+      b.addEventListener("click",function(){
+        var g=b.dataset.f;
+        btns.filter(function(x){return x.dataset.f===g}).forEach(function(x){x.classList.remove("on")});
+        b.classList.add("on"); f[g]=b.dataset.v; render();
+      });
+    });
+    /* 筛选按钮 on 态 */
+    var st=document.createElement("style");
+    st.textContent=".ui-btn--sm.on{background:var(--blu-600);border-color:var(--blu-600);color:#fff}";
+    document.head.appendChild(st);
+    render();
+
+    /* ── Tabs ── */
+    var tabs=[].slice.call(document.querySelectorAll(".ui-tab")),
+        panels=[].slice.call(document.querySelectorAll(".ui-tabpanel"));
+    tabs.forEach(function(t){
+      t.addEventListener("click",function(){
+        tabs.forEach(function(x){x.setAttribute("aria-selected",x===t?"true":"false")});
+        panels.forEach(function(p){p.hidden=p.dataset.panel!==t.dataset.tab});
+      });
+    });
+
+    /* ── 实时数据：/api/jev/query（只读；失败降级为静态基线不报错弹窗）── */
+    var kT=document.getElementById("kpi-total"),kB=document.getElementById("kpi-bias"),
+        err=document.getElementById("live-err");
+    fetch("/api/jev/query?hours=24&limit=1").then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
+      .then(function(d){
+        var s=d.summary_window||{};
+        kT.textContent=d.total!=null?d.total:"—";
+        kB.textContent="多 "+(s.bull||0)+" / 空 "+(s.bear||0)+" / 中性 "+(s.neutral||0)
+          +"（窗口 "+(d.window_hours||24)+"h"+(d.posterior_band_pct?" · 中性带宽 ±"+d.posterior_band_pct+"%":"")+"）";
+      })
+      .catch(function(e){
+        kT.textContent="—"; kB.textContent="实时通道未响应，展示静态基线";
+        err.hidden=false; err.textContent="/api/jev/query 不可达（"+e.message+"）：本页台账区为静态基线，不受影响。";
+      });
+  })();
+  </script>
+</body>
+</html>

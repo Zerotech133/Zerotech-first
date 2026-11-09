@@ -18,7 +18,6 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import parse_qs
 
 REPO = Path(__file__).resolve().parents[1]
 STATIC = REPO / "portal" / "static"

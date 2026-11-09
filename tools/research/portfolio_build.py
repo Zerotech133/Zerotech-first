@@ -121,7 +121,7 @@ def build(date: str, target_vol: float = 0.15, top: int = 20, single_cap: float 
 def build_baseline(date: str, top: int = 20, single_cap: float = 0.05, ind_cap: float = 0.30) -> dict:
     """S01 基线：过滤后候选池内按流通市值降序取 top，等权（无 alpha 排序因子）。"""
     import selection_engine as se  # 同目录
-    sel = se.build(date, max(top * 3, 60))  # 复用过滤后的候选（含选中池）
+    se.build(date, max(top * 3, 60))  # 复用过滤后的候选（含选中池）
     # 重新取候选池：用 build 内部逻辑不可直接拿；改为对 picks 的父候选做近似：
     # 简化且透明：用 picks（S02 排名结果）不合适 → 重新加载候选池：调用 se.build 的 filters 后无池返回。
     # 因此此处直接调用 se.build 拿候选数，但池需要独立；为保持简单，使用 picks 的行业/市值不可靠。

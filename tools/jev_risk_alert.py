@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -142,6 +143,9 @@ def main(argv=None) -> int:
     ap.add_argument("--limit", type=int, default=300)
     ap.add_argument("--emit-outbox", action="store_true")
     ap.add_argument("--emit-flag", action="store_true")
+    ap.add_argument("--notify", action="store_true",
+                    help="S3 红即到人：新告警经 notify_hub 直发飞书（2026-11-08 批准自动外发；"
+                         "去重靠本工具 seen 状态机，notify_hub 4h 窗口兜底）")
     ap.add_argument("--json", default="")
     a = ap.parse_args(argv)
     try:
@@ -158,6 +162,19 @@ def main(argv=None) -> int:
         result["emitted"]["outbox"] = emit_outbox(new)
     if new and a.emit_flag:
         result["emitted"]["flag"] = str(emit_flag(new))
+    if new and a.notify:
+        # S3：新告警红即直发（每条单独发，news_id 指纹去重交 notify_hub）
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from notify_hub import notify_red
+            for x in new[:5]:
+                body = "%s｜%s｜conf=%s｜%s" % (
+                    str(x.get("ts") or "")[5:16], x.get("severity"), x.get("conf"), x.get("title"))
+                sent = notify_red("jev_risk_alert", body, key="news:%s" % x.get("news_id"))
+                result["emitted"].setdefault("notify", []).append(
+                    {"news_id": x.get("news_id"), "sent": sent})
+        except Exception as e:  # noqa: BLE001 —— 通知失败不改判定，留痕
+            print("notify err: %s" % str(e)[:100])
     if new:
         state.setdefault("seen", []).extend(x["news_id"] for x in new)
         save_state(state)

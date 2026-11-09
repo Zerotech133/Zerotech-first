@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 import json
-import math
 import re
 from pathlib import Path
 from typing import Any
@@ -396,7 +395,7 @@ class _Engine:
         raise FormulaError(f"函数未实现: {name}")
 
     def variable(self, name: str) -> Any:
-        low = name.lower()
+        name.lower()
         if name in ("Close", "Open", "High", "Low", "Volume"):
             return self._field({"Close": "close", "Open": "open", "High": "high",
                                 "Low": "low", "Volume": "vol"}[name])

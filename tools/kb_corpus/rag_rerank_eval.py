@@ -413,7 +413,7 @@ def render_markdown(p: dict) -> str:
     L = ["# 检索重排实验（W25 · 2026-11-04）", "",
          f"> 数据集：W13 40 题（可答 {p['datasets']['w13_40']['evaluated']} + 不可答 "
          f"{p['datasets']['w13_40']['unanswerable']}）与 held-out 50 题 · 文档 {p['datasets']['docs']} 篇",
-         f"> 候选：复用已落盘 top10（W13=hybrid；heldout=W12 向量）· 重排=规则（无本地 reranker，不联网下载）",
+         "> 候选：复用已落盘 top10（W13=hybrid；heldout=W12 向量）· 重排=规则（无本地 reranker，不联网下载）",
          f"> 规则分：{p['method']['score']}", "",
          "## 一、核心对比（baseline → rerank）", "",
          "| 数据集 | n | rerank@5 基→重 | Δ | recall@5 基→重 | Δ | MRR 基→重 | Δ | gold_top3 基→重 | Δ |",

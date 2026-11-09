@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """分析任务队列（文件队列）：门户提交 -> worker/batch 消费。
 
-目录结构（默认 C:\\项目\\work\\analysis\\queue）：
+目录结构（默认 WORK/analysis/queue）：
   pending/<ts>-<code>.json   待执行
   running/<job>.json         执行中（rename 原子占位）
   done/<job>.json            结果

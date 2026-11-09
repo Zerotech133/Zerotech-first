@@ -133,10 +133,8 @@ def main() -> int:
     px2["month"] = px2["trade_date"].str[:6]
     last_day = px2.groupby("month")["trade_date"].max().to_dict()
     all_by_month = {ym: g2["ts_code"].tolist() for ym, g2 in m.groupby("month")}
-    month_car_cache = {}
 
     def cohort_mean(codes_list, ym, hold):
-        key = (ym, hold)
         d = last_day.get(ym)
         if d is None:
             return np.nan
@@ -207,7 +205,7 @@ def main() -> int:
     (OUT / "walkforward_20261031.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
 
     L = ["# walk-forward 稳健性评估（H30 / H34–H36）", "",
-         f"- 逐年独立估计因子 spread（触发组-控制组），方向已按假设统一（正值=符合预期）；cost 30bp；2019–2026",
+         "- 逐年独立估计因子 spread（触发组-控制组），方向已按假设统一（正值=符合预期）；cost 30bp；2019–2026",
          "- 命中率=用过去年份均值方向预测下一年的正确率；last3_same_sign=最近3年同向；", "",
          "| 因子 | 年度 spread(%) | 命中率 | 最近3年同向 | 判定 |", "|---|---|---|---|---|"]
     for name, st in list(rep["report_rc_factors"].items()) + [("H30", rep["H30"])]:

@@ -82,6 +82,30 @@ ASSUMPTIONS = {
 # ============================================================
 # 数据装载（惰性单例；hfq 后复权，263a 铁律）
 # ============================================================
+def _load_px(path, columns=None):
+    """读 A 股 parquet，缺 pct_chg 时用 close/pre_close 补（210 只新抓文件缺该列）。
+
+    实测等价：54 只抽样最大偏差 0.005 个百分点，0 只 >0.02。
+    """
+    if columns is None:
+        b = pd.read_parquet(path)
+    else:
+        # 按 schema 过滤：文件没有的列不能出现在 columns 里（pyarrow 会硬报错），
+        # 但推导 pct_chg 需要的 close/pre_close 必须一并读出来。
+        import pyarrow.parquet as _pq
+
+        have = set(_pq.read_schema(path).names)
+        take = [c for c in columns if c in have]
+        take += [c for c in ("close", "pre_close") if c in have and c not in take]
+        b = pd.read_parquet(path, columns=take)
+    if "pct_chg" in b.columns:
+        return b
+    if "close" not in b.columns or "pre_close" not in b.columns:
+        return None
+    b["pct_chg"] = (b["close"] / b["pre_close"] - 1.0) * 100.0
+    return b
+
+
 def _ensure_loaded(progress=None):
     global _LOADED, books, rets, cal, cal_idx_all, idx_nav, ma20, ma60
     if _LOADED:
@@ -92,7 +116,10 @@ def _ensure_loaded(progress=None):
         f = os.path.join(DATA, s.replace(".", "_") + ".parquet")
         if not os.path.exists(f):
             continue
-        b = pd.read_parquet(f).sort_values("trade_date").reset_index(drop=True)
+        b = _load_px(f)
+        if b is None:
+            continue
+        b = b.sort_values("trade_date").reset_index(drop=True)
         r = b["pct_chg"] / 100.0
         r.iloc[0] = 0.0
         kfac = (1.0 + r).cumprod() / b["close"]
@@ -126,6 +153,19 @@ def px(s, day, kind):
     return float(row.iloc[0]["adj_" + kind])
 
 
+def px_raw(s, day, kind="close"):
+    """真实成交价（未复权）。中枢上下沿 zg/zd 由 market_scan 用原始 high/low 算出，
+    是「真实价格」量纲；而 px() 返回的是 cumprod 归一化复权序列（上市首日≈1），
+    两者直接比大小必然恒真——三买失效线曾因此每笔都在买入当日击穿。"""
+    b = _book(s)
+    if b is None:
+        return None
+    row = b[b.trade_date == day]
+    if row.empty:
+        return None
+    return float(row.iloc[0][kind])
+
+
 _BOOK_CACHE = {}
 
 
@@ -137,7 +177,11 @@ def _book(s):
     if not os.path.exists(f):
         _BOOK_CACHE[s] = None
         return None
-    b = pd.read_parquet(f).sort_values("trade_date").reset_index(drop=True)
+    b = _load_px(f)
+    if b is None:
+        _BOOK_CACHE[s] = None
+        return None
+    b = b.sort_values("trade_date").reset_index(drop=True)
     r = b["pct_chg"] / 100.0
     r.iloc[0] = 0.0
     kfac = (1.0 + r).cumprod() / b["close"]
@@ -165,7 +209,9 @@ def _ensure_market_loaded(progress=None):
         f = os.path.join(DATA, s.replace(".", "_") + ".parquet")
         if not os.path.exists(f):
             continue
-        b = pd.read_parquet(f, columns=["trade_date", "pct_chg"])
+        b = _load_px(f, columns=["trade_date", "pct_chg"])
+        if b is None:
+            continue
         rets[s] = b.set_index("trade_date")["pct_chg"] / 100.0
         if progress and i % 500 == 0:
             progress(
@@ -221,11 +267,13 @@ BUY_TYPES = {"1买", "2买", "3买"}
 BUY_FILTERS = {
     "all": {"1买", "2买", "3买"},
     "23": {"2买", "3买"},
+    "1": {"1买"},
     "2": {"2买"},
     "3": {"3买"},
 }
 BUY_FILTER_LABEL = {
     "23": "仅二买+三买（一买不入选·10-13拍板）",
+    "1": "仅一买",
     "2": "仅二买",
     "3": "仅三买",
     "all": "一/二/三类全要",
@@ -635,6 +683,7 @@ class BacktestConfig:
     limit_check: bool = False  # 涨停开盘买不进/跌停开盘卖不出（智策 market_rules.can_buy/can_sell 同源思想）
     trail_activate: float = 0.0  # 移动止损启动浮盈（0=关；智策 CHAN 族 0.05）
     trail_drawdown: float = 0.0  # 启动后自峰值回落此幅度离场（智策 CHAN 族 0.035）
+    max_ext_pct: float = 0.0  # 追高门槛：开盘价高于中枢上沿超过该比例即放弃（0=关）
 
     def cap_of(self, regime_lv):
         """总仓位帽：fixed=固定值；regime=按三档映射（档位可配，不再写死 80/50/30）。"""
@@ -691,6 +740,9 @@ def run_backtest(
     zg_pending = {}  # pending_buy 买入候选的中枢（信号日随单携带）
     score_pending = {}  # pending_buy 买入候选的评分要素（信号日随单携带）
     holding_since = {}
+    n_min_hold_blocked = [0]  # 被最短持有期拦下的卖出触发次数（降换手证据）
+    n_time_stop = [0]  # 到期强平笔数
+    n_3b_same_day = [0]  # 买入当日即触发三买失效的次数（量纲错配会飙到 ≈100%）
     n_trim = 0
     n_mid_slot_days = 0  # 317：mid 档联动槽数生效天数（生效证据）
     prev_eq = 1.0
@@ -765,6 +817,16 @@ def run_backtest(
                     }
                 )
                 rec(day, "SELL", s, "trail_stop", pnl)
+            elif why == "time_stop":
+                actions.append(
+                    {
+                        "type": "sell",
+                        "stock": s,
+                        "note": "持有到期离场（T+1 开盘）",
+                        "pnl_pct": round(pnl * 100, 2),
+                    }
+                )
+                rec(day, "SELL", s, "time_stop", pnl)
             else:
                 actions.append(
                     {
@@ -866,6 +928,27 @@ def run_backtest(
                         }
                     )
                     continue
+            # 追高门槛（降换手实验·2026-11-09）：3买信号触发时价格常已离中枢上沿
+            # 十余个点，此时买进=先付一笔溢价；若离场线又锚在上沿，这笔溢价必亏。
+            # max_ext_pct>0 时，开盘价高于中枢上沿超过该比例 → 放弃该机会。
+            if cfg.max_ext_pct > 0:
+                _fz0 = zg_pending.get(s)
+                if _fz0 and _fz0[0]:
+                    _ro = px_raw(s, day, "open")  # 必须与 zg 同量纲
+                    if _ro and _ro / _fz0[0] - 1 > cfg.max_ext_pct:
+                        zg_pending.pop(s, None)
+                        score_pending.pop(s, None)
+                        actions.append(
+                            {
+                                "type": "skip",
+                                "stock": s,
+                                "note": "追高门槛：开盘价高于中枢上沿 %+.1f%% >%.0f%%，放弃（评分%s）"
+                                % ((_ro / _fz0[0] - 1) * 100,
+                                   cfg.max_ext_pct * 100,
+                                   sc if sc is not None else "-"),
+                            }
+                        )
+                        continue
             # 单票仓位（297 三模式）：fixed=固定 X%；random=区间均匀随机（固定种子可复现）；
             # score=评分权重（该票评分/当日候选评分和 × 总仓位帽，评分越高仓位越大）
             if cfg.slot_mode == "random":
@@ -948,6 +1031,29 @@ def run_backtest(
 
         # D. 收盘事件
         if cfg.strategy == "chanlun":
+            # 持有期门槛（降换手实验·2026-11-09）：买入当日 _held=0，次日=1。
+            # 旧版 min_holding_days 只在 double_knife 分支被读取，缠论分支的三买失效线
+            # 与卖点直接击穿 → 768 笔里 765 笔持仓恰好 1 日、换手 60 倍本金。
+            _mh = max(0, int(cfg.min_holding_days or 0))
+            _mx = max(0, int(cfg.holding_max_days or 0))
+
+            def _held(s):
+                return di - holding_since.get(s, di)
+
+            def _gated(s, why):
+                """未满最短持有期 → 拦下本次卖出；条件次日仍成立会再次触发。"""
+                if _mh and _held(s) < _mh:
+                    n_min_hold_blocked[0] += 1
+                    actions.append(
+                        {
+                            "type": "note",
+                            "stock": s,
+                            "note": f"{why}触发，但持有 {_held(s)}/{_mh} 日未满→暂缓离场",
+                        }
+                    )
+                    return True
+                return False
+
             if three_fail and sig_zg is not None:
                 # 三买失效离场（缠论理论内规则）：收盘跌破失效线 = 三买被否定 → 明日开盘卖
                 for s in list(pos):
@@ -959,10 +1065,14 @@ def run_backtest(
                         if fail_level == "zd" and fz[1]
                         else fz[0] * (1 - fail_buffer)
                     )
-                    c = px(s, day, "close")
+                    c = px_raw(s, day, "close")  # 必须与 zg 同量纲（真实价）
                     if c is not None and c < thr and s not in pending_sell:
+                        if _gated(s, "三买失效"):
+                            continue
                         pending_sell.add(s)
                         pos[s]["exit_why"] = "3b_fail"
+                        if _held(s) == 0:
+                            n_3b_same_day[0] += 1
                         actions.append(
                             {
                                 "type": "note",
@@ -972,10 +1082,28 @@ def run_backtest(
                         )
             for s in sorted(sig_sell.get(day, set())):
                 if s in pos:
+                    if _gated(s, "卖点确认"):
+                        continue
                     pending_sell.add(s)
                     actions.append(
                         {"type": "note", "stock": s, "note": "卖点确认→明日开盘卖"}
                     )
+            # 到期强平（holding_max_days）：卖点常年不出现（一年仅 2 次）时兜底换手节奏
+            if _mx:
+                for s in list(pos):
+                    if s in pending_sell or pos[s].get("exit_why"):
+                        continue
+                    if _held(s) + 1 >= _mx:
+                        pending_sell.add(s)
+                        pos[s]["exit_why"] = "time_stop"
+                        n_time_stop[0] += 1
+                        actions.append(
+                            {
+                                "type": "note",
+                                "stock": s,
+                                "note": f"持有满{_mx}日→到期平仓（明日开盘）",
+                            }
+                        )
             # 移动止损（智策对照移植·CHAN 族 5%启动/3.5%跟随）：浮盈达标布防→自峰值回撤即离场。
             # 解「三卖等不到」（291 闭环率 1/634）——利润兑现不依赖缠论三卖出现。
             if cfg.trail_activate > 0 and cfg.trail_drawdown > 0:
@@ -1166,6 +1294,9 @@ def run_backtest(
         ),
         "n_trim": n_trim,
         "n_mid_slot_days": n_mid_slot_days,
+        "n_min_hold_blocked": n_min_hold_blocked[0],
+        "n_time_stop": n_time_stop[0],
+        "n_3b_same_day": n_3b_same_day[0],
     }
     return {
         "meta": {
@@ -1420,6 +1551,14 @@ def run_job(params: dict, job_id: str, progress=None):
         )
         _trail_act = max(0.0, min(0.5, _r("trail_activate", 0.0)))
         _trail_dd = max(0.0, min(0.5, _r("trail_drawdown", 0.0)))
+        # 单边成本：参数里给了就用（含 0=零成本对照），没给沿用 COST。
+        # 注意不能用 _r()——它对 0.0 会走 `or dflt` 回落成默认值，零成本变不出来。
+        _cost_raw = p.get("cost")
+        _cost = (
+            max(0.0, min(0.01, float(_cost_raw)))
+            if _cost_raw not in (None, "")
+            else COST
+        )
         cfg = BacktestConfig(
             name={"chanlun": "缠论等机会轮动", "double_knife": "量子双刀日内纪律"}[
                 strategy
@@ -1453,6 +1592,8 @@ def run_job(params: dict, job_id: str, progress=None):
             limit_check=_limit_check,
             trail_activate=_trail_act,
             trail_drawdown=_trail_dd,
+            max_ext_pct=max(0.0, min(1.0, _r("max_ext_pct", 0.0))),
+            cost=_cost,
         )
         if progress:
             progress(
@@ -1467,7 +1608,15 @@ def run_job(params: dict, job_id: str, progress=None):
             p["three_fail_exit"] is not False and str(p["three_fail_exit"]) != "false"
         )
         if strategy == "chanlun":
-            buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "3"
+            # 严禁静默回退：未知 buy_filter 会把「只做1买」悄悄变成「只做3买」，
+            # 跑出来的数字看着正常、结论完全错（2026-11-09 踩中，1买/3买 同值）。
+            _bf_raw = str(p["buy_filter"])
+            if _bf_raw not in BUY_FILTERS:
+                raise ValueError(
+                    "buy_filter=%r 不在 %s 内，请显式给合法值（禁止静默回落 3买）"
+                    % (_bf_raw, sorted(BUY_FILTERS))
+                )
+            buy_filter = _bf_raw
             if universe == "market":
                 _hst = p.get("hist_st")
                 _hist_st = _hst is True or (

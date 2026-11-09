@@ -463,6 +463,9 @@ def main(argv=None) -> int:
                     help="仓库根（默认工具所在仓库；worktree 内评估主仓时显式指定）")
     ap.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT,
                     help="health 子进程超时秒（默认 180）")
+    ap.add_argument("--notify", action="store_true",
+                    help="S3 红即到人：would_alert 时经 notify_hub 直发飞书（2026-11-08 批准；"
+                         "flag 链保留不拆，直发与 flag 并行")
     args = ap.parse_args(argv)
     rep = run(apply=args.apply, dry_run_flag=args.dry_run,
               threshold=args.threshold, dedupe_hours=args.dedupe_hours,
@@ -470,6 +473,25 @@ def main(argv=None) -> int:
               work_dir=args.work_dir or None,
               repo_root=args.repo_root or None,
               timeout=args.timeout)
+    if args.notify:
+        ev = rep.get("evaluation") or {}
+        if ev.get("would_alert") and not rep.get("apply"):
+            # dry-run + would_alert：仅提示不外发（dry-run 语义零副作用）
+            print("notify：dry-run 下不外发（--apply 后红即直发）")
+        elif ev.get("would_alert") and rep.get("apply"):
+            # S3：apply 触发与写 flag 同点位直发（去重窗口由本工具 dedupe-hours 先行把关，
+            # notify_hub 侧 4h 窗口兜底防重）
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                from notify_hub import notify_red
+                fail_items = rep.get("health", {}).get("failed_items") or []
+                reason = "连续 %s 次 fail（health=%s）%s" % (
+                    ev.get("consecutive_fail"), rep["health"].get("status"),
+                    ("；失败项：" + "、".join(str(x) for x in fail_items[:5])) if fail_items else "")
+                sent = notify_red("huangzhong_health", reason, key="hz-consec-fail")
+                print("notify：%s" % ("已直发" if sent else "直发失败（见上）"))
+            except Exception as e:  # noqa: BLE001 —— 通知失败不改判定，留痕
+                print("notify err: %s" % str(e)[:100])
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     else:

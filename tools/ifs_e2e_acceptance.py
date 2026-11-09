@@ -242,7 +242,7 @@ def run_acceptance(pool_mode="live", pool_snapshot=None, code=None, tmp_root=Non
     :return: report dict（``ok`` 为 True 即 PASS）
     """
     from agent_platform import d1_decision, d1_handoff, trading_bot_flow
-    from agent_platform import watch_plan_consumer, watch_trigger_adapter
+    from agent_platform import watch_plan_consumer
     from agent_platform.paper import trade_receipt
     from agent_platform.training import outcome_chain
 

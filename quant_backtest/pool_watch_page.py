@@ -46,13 +46,13 @@ DIR_LABEL = {"pull": "回踩", "break": "突破"}
 MAX_EVENT_ROWS = 20  # 事件流最多展示最近 20 条（append-only 全量在池）
 
 _CSS = """
-  :root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--txt:#1c2330;--sub:#6b7686;
-        --up:#d92b2b;--down:#0a9e5c;--accent:#2456c4;--warn:#b7791f;--cool:#8a5fc4;
-        --sb-bg:#fff7e8;--sb-line:#f0d9a8}
+  :root{--bg:#0d1117;--card:#131a24;--line:#1f2937;--txt:#e6edf3;--sub:#7b8698;
+        --up:#e3554f;--down:#3fa96a;--accent:#5b9bd5;--warn:#e0b95c;--cool:#a98fd6;
+        --sb-bg:#2a2312;--sb-line:#4a3d1c}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--txt);
        font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif;padding:20px}
-  .wrap{max-width:1280px;margin:0 auto}
+  .wrap{max-width:1180px;margin:0 auto}
   h1{font-size:20px;display:flex;align-items:center;gap:10px}
   .sub{color:var(--sub);font-size:12px;margin:4px 0 16px}
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
@@ -63,26 +63,26 @@ _CSS = """
   .card .note{font-size:11px;color:var(--sub);margin-top:2px}
   .badge{display:inline-block;font-size:11px;border-radius:4px;padding:1px 8px}
   .b-shadow{background:var(--sb-bg);color:var(--warn);border:1px solid var(--sb-line)}
-  .b-off{background:#f1f2f4;color:var(--sub);border:1px solid var(--line)}
+  .b-off{background:#161d27;color:var(--sub);border:1px solid var(--line)}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;
          overflow:hidden;margin-bottom:14px}
   .panel h2{font-size:14px;padding:10px 14px;border-bottom:1px solid var(--line);
             display:flex;align-items:center;gap:8px}
   .panel h2 .hint{font-weight:normal;font-size:11px;color:var(--sub);margin-left:auto}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th{background:#fafbfc;color:var(--sub);font-weight:normal;text-align:left;
+  th{background:#0f1620;color:var(--sub);font-weight:normal;text-align:left;
      padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px;
      white-space:nowrap}
-  td{padding:8px 10px;border-bottom:1px solid #f0f2f5;white-space:nowrap}
-  tr:hover td{background:#f8faff}
+  td{padding:8px 10px;border-bottom:1px solid #1f2937;white-space:nowrap}
+  tr:hover td{background:#182231}
   .up{color:var(--up);font-weight:bold}
   .down{color:var(--down);font-weight:bold}
   .pill{display:inline-block;font-size:11px;border-radius:10px;padding:1px 9px}
-  .p-buy{background:#fdeaea;color:var(--up)}
-  .p-watch{background:#eef1f5;color:var(--sub)}
-  .p-hit{background:#e8f0fe;color:var(--accent);font-weight:bold}
-  .p-reg{background:#fff2f2;color:#c0392b;border:1px dashed #e5b1ab}
-  .p-rest{background:#f6f7f9;color:#9aa3b0}
+  .p-buy{background:#2b1618;color:var(--up)}
+  .p-watch{background:#1f2937;color:var(--sub)}
+  .p-hit{background:#101d2e;color:var(--accent);font-weight:bold}
+  .p-reg{background:#2b1618;color:#c0392b;border:1px dashed #e8807f}
+  .p-rest{background:#161d27;color:#7b8698}
   .sid{font-family:Consolas,monospace;font-size:11px;color:var(--sub)}
   .filter{padding:8px 14px;border-bottom:1px solid var(--line)}
   .filter a{font-size:12px;color:var(--sub);text-decoration:none;

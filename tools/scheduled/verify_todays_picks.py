@@ -276,7 +276,7 @@ def load_json(path: Path) -> dict | None:
         return None
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, now: datetime | None = None) -> int:
     ap = argparse.ArgumentParser(description="TodaysPicks 18:20 首跑验收（只读）")
     ap.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"),
                     help="验收日 YYYY-MM-DD（默认今天）")
@@ -289,7 +289,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     day = args.date
-    now = datetime.now()
+    now = now or datetime.now()
     picks_path = Path(args.picks)
     picks = load_json(picks_path)
     archive_path = Path(args.history_dir) / f"todays_{day.replace('-', '')}.json"

@@ -1,0 +1,336 @@
+{
+ "meta": {
+  "n": 35828,
+  "days": 675,
+  "axis": 686,
+  "window": [
+   "20240102",
+   "20261027"
+  ],
+  "cost": 0.002,
+  "hold": 20
+ },
+ "decomp": {
+  "per_trade_pct": -0.031,
+  "per_day_pct": 0.4867,
+  "gap_pct": 0.5177,
+  "cov_n_mean": -0.275189,
+  "cov_predicted_gap_pct": 0.5185,
+  "n_days_mean": 53.1,
+  "n_days_median": 36,
+  "n_max": 1464
+ },
+ "by_crowd": [
+  {
+   "bin": "1-10",
+   "days": 40,
+   "n": 232,
+   "per_day": 2.66,
+   "per_trade": 3.36,
+   "alpha": -1.25,
+   "idx": 7.18
+  },
+  {
+   "bin": "10-30",
+   "days": 234,
+   "n": 4577,
+   "per_day": -0.77,
+   "per_trade": -0.95,
+   "alpha": -1.04,
+   "idx": 0.24
+  },
+  {
+   "bin": "30-60",
+   "days": 224,
+   "n": 9451,
+   "per_day": 1.49,
+   "per_trade": 1.44,
+   "alpha": 0.03,
+   "idx": 1.47
+  },
+  {
+   "bin": "60-100",
+   "days": 112,
+   "n": 8461,
+   "per_day": 0.39,
+   "per_trade": 0.49,
+   "alpha": -0.36,
+   "idx": 0.94
+  },
+  {
+   "bin": "100-300",
+   "days": 57,
+   "n": 8363,
+   "per_day": 0.67,
+   "per_trade": 0.86,
+   "alpha": 0.28,
+   "idx": 0.64
+  },
+  {
+   "bin": "300-999999999",
+   "days": 8,
+   "n": 4744,
+   "per_day": -1.7,
+   "per_trade": -4.75,
+   "alpha": -0.26,
+   "idx": -4.54
+  }
+ ],
+ "limit_random": [
+  {
+   "k": 3,
+   "total_med": 13.61,
+   "total_lo": -0.46,
+   "total_hi": 34.59,
+   "cagr_med": 4.6,
+   "sharpe_med": 0.49
+  },
+  {
+   "k": 5,
+   "total_med": 17.47,
+   "total_lo": 3.31,
+   "total_hi": 29.66,
+   "cagr_med": 5.83,
+   "sharpe_med": 0.66
+  },
+  {
+   "k": 10,
+   "total_med": 17.38,
+   "total_lo": 9.75,
+   "total_hi": 26.61,
+   "cagr_med": 5.8,
+   "sharpe_med": 0.73
+  },
+  {
+   "k": 20,
+   "total_med": 16.79,
+   "total_lo": 12.04,
+   "total_hi": 22.23,
+   "cagr_med": 5.62,
+   "sharpe_med": 0.74
+  },
+  {
+   "k": 30,
+   "total_med": 17.1,
+   "total_lo": 13.62,
+   "total_hi": 20.11,
+   "cagr_med": 5.71,
+   "sharpe_med": 0.77
+  },
+  {
+   "k": 50,
+   "total_med": 16.88,
+   "total_lo": 15.24,
+   "total_hi": 18.4,
+   "cagr_med": 5.64,
+   "sharpe_med": 0.76
+  },
+  {
+   "k": 100,
+   "total_med": 16.91,
+   "total_lo": 16.44,
+   "total_hi": 17.48,
+   "cagr_med": 5.66,
+   "sharpe_med": 0.77
+  }
+ ],
+ "limit_rule": [
+  {
+   "rule": "type",
+   "k": 5,
+   "total": 26.02,
+   "cagr": 8.48,
+   "mdd": -25.45,
+   "sharpe": 1.02
+  },
+  {
+   "rule": "type",
+   "k": 10,
+   "total": 25.58,
+   "cagr": 8.35,
+   "mdd": -24.37,
+   "sharpe": 1.1
+  },
+  {
+   "rule": "type",
+   "k": 20,
+   "total": 21.49,
+   "cagr": 7.09,
+   "mdd": -26.52,
+   "sharpe": 0.95
+  },
+  {
+   "rule": "type",
+   "k": 50,
+   "total": 17.71,
+   "cagr": 5.91,
+   "mdd": -26.57,
+   "sharpe": 0.81
+  },
+  {
+   "rule": "depth",
+   "k": 5,
+   "total": 17.66,
+   "cagr": 5.89,
+   "mdd": -27.82,
+   "sharpe": 0.59
+  },
+  {
+   "rule": "depth",
+   "k": 10,
+   "total": 23.15,
+   "cagr": 7.6,
+   "mdd": -27.62,
+   "sharpe": 0.84
+  },
+  {
+   "rule": "depth",
+   "k": 20,
+   "total": 16.58,
+   "cagr": 5.55,
+   "mdd": -28.46,
+   "sharpe": 0.7
+  },
+  {
+   "rule": "depth",
+   "k": 50,
+   "total": 16.72,
+   "cagr": 5.59,
+   "mdd": -26.71,
+   "sharpe": 0.74
+  },
+  {
+   "rule": "beta",
+   "k": 5,
+   "total": -0.15,
+   "cagr": -0.05,
+   "mdd": -26.63,
+   "sharpe": -0.01
+  },
+  {
+   "rule": "beta",
+   "k": 10,
+   "total": 3.89,
+   "cagr": 1.35,
+   "mdd": -28.46,
+   "sharpe": 0.22
+  },
+  {
+   "rule": "beta",
+   "k": 20,
+   "total": 6.92,
+   "cagr": 2.38,
+   "mdd": -27.71,
+   "sharpe": 0.36
+  },
+  {
+   "rule": "beta",
+   "k": 50,
+   "total": 17.64,
+   "cagr": 5.88,
+   "mdd": -25.65,
+   "sharpe": 0.83
+  },
+  {
+   "rule": "lag",
+   "k": 5,
+   "total": -10.84,
+   "cagr": -3.96,
+   "mdd": -32.41,
+   "sharpe": -0.46
+  },
+  {
+   "rule": "lag",
+   "k": 10,
+   "total": -4.23,
+   "cagr": -1.51,
+   "mdd": -32.17,
+   "sharpe": -0.19
+  },
+  {
+   "rule": "lag",
+   "k": 20,
+   "total": 12.57,
+   "cagr": 4.25,
+   "mdd": -27.95,
+   "sharpe": 0.55
+  },
+  {
+   "rule": "lag",
+   "k": 50,
+   "total": 15.87,
+   "cagr": 5.32,
+   "mdd": -26.42,
+   "sharpe": 0.71
+  },
+  {
+   "rule": "type_depth",
+   "k": 5,
+   "total": 33.07,
+   "cagr": 10.58,
+   "mdd": -27.49,
+   "sharpe": 1.14
+  },
+  {
+   "rule": "type_depth",
+   "k": 10,
+   "total": 28.78,
+   "cagr": 9.31,
+   "mdd": -28.73,
+   "sharpe": 1.08
+  },
+  {
+   "rule": "type_depth",
+   "k": 20,
+   "total": 25.11,
+   "cagr": 8.21,
+   "mdd": -27.79,
+   "sharpe": 1.06
+  },
+  {
+   "rule": "type_depth",
+   "k": 50,
+   "total": 18.94,
+   "cagr": 6.29,
+   "mdd": -26.63,
+   "sharpe": 0.85
+  }
+ ],
+ "reference": {
+  "all": {
+   "total": 16.96,
+   "cagr": 5.67,
+   "mdd": -26.09,
+   "sharpe": 0.77
+  },
+  "drop_ge_100": {
+   "total": 15.58,
+   "cagr": 5.23,
+   "mdd": -25.43,
+   "sharpe": 0.74
+  },
+  "drop_ge_200": {
+   "total": 17.17,
+   "cagr": 5.74,
+   "mdd": -26.36,
+   "sharpe": 0.79
+  },
+  "drop_ge_300": {
+   "total": 17.76,
+   "cagr": 5.92,
+   "mdd": -26.09,
+   "sharpe": 0.81
+  },
+  "counterfactual_per_trade": {
+   "per_trade_pct": -0.031,
+   "total": -1.04,
+   "note": "假想对照：把日组均换成全局笔均后同一框架的累计，非可实现策略"
+  }
+ },
+ "feasibility": {
+  "weight_per_stock_med_pct": 0.1389,
+  "weight_per_stock_max_pct": 5.0,
+  "trades_total": 35828,
+  "note": "全买口径下单只平均只占 1/hold/n 权益；按 100 股最小手，资金小时无法等权"
+ }
+}

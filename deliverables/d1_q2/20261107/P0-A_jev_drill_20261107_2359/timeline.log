@@ -1,0 +1,8 @@
+2026-11-08T00:00:25+08:00 PREFLIGHT ok host=5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac temp=d934643ac4e086d432a21cc5ad83cc0279e6398967408b23bc301c4e0e89ac98
+2026-11-08T00:00:42+08:00 APPLY begin
+2026-11-08T00:00:42+08:00 APPLY nginx -t rc=0 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026-11-08T00:00:43+08:00 APPLY nginx reload rc=0 2026/11/07 16:00:43 [notice] 275#275: signal process started
+2026-11-08T00:00:45+08:00 DURING verified 13x503; health/d1/direct ok; holding
+2026-11-08T00:01:45+08:00 RESTORE bytes host=5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac
+2026-11-08T00:01:48+08:00 END restored=True duration=65.8s

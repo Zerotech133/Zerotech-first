@@ -8,7 +8,8 @@
 安全设计：
 - 零明文口令：dump 命令在容器内执行，直接引用容器 env（$MYSQL_ROOT_PASSWORD /
   $POSTGRES_USER / $POSTGRES_DB），宿主侧不出现任何凭据
-- 长跑纪律：全部输出落日志文件（dump_latest.log），不用管道回传
+- 长跑纪律：全部输出落日志文件（logs/db_dump_daily.log，2026-11-08 前在
+  backups/db/dump_latest.log），不用管道回传
 - 删除纪律：14 天轮转删除走回收站（SHFileOperationW FOF_ALLOWUNDO），
   返回值不可信 → 删除后逐个 os.path.exists 复核
 - 幂等：同日重跑覆盖当日目录
@@ -49,7 +50,14 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_BASE = os.path.join(ROOT, "backups", "db")
-LOG_PATH = os.path.join(OUT_BASE, "dump_latest.log")
+# 2026-11-08（G-09b 重采基线一并处理）：日志不再落在 backups/db 内。
+# 原因不是「日志放错地方」这么简单——G-09b 对 backups/db 全库做
+# size + mtime_ns + 首 1MiB sha256 指纹，而本脚本每日追加一行，
+# 于是「既有产物零删改」变成**结构性必红**：谁都没改坏，判据自己会红。
+# 日志属运行态观测，移到 logs/（.gitignore 已收口 logs/），仍与产物同机、
+# 同样可审计，只是不再进入备份产物指纹集合。历史日志整份迁移，不截断。
+LOG_BASE = os.path.join(ROOT, "logs")
+LOG_PATH = os.path.join(LOG_BASE, "db_dump_daily.log")
 KEEP_DAYS = 14
 
 GZIP_MAGIC = b"\x1f\x8b"
@@ -252,6 +260,7 @@ def rotate(keep_days):
 def main():
     global LOG_FP
     os.makedirs(OUT_BASE, exist_ok=True)
+    os.makedirs(LOG_BASE, exist_ok=True)
     LOG_FP = open(LOG_PATH, "a", encoding="utf-8")
     day = datetime.date.today().isoformat()
     out_dir = os.path.join(OUT_BASE, day)

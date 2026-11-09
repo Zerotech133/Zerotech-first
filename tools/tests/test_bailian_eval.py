@@ -51,6 +51,15 @@ def test_build_prompt_contains_context_and_rules():
     assert prompt.rstrip().endswith("回答：") or "问题：什么是因子分解？" in prompt
 
 
+def test_build_prompt_strict_nocite_has_refusal_guard(monkeypatch):
+    """2026-11-09 A/B：拒答固定句不带引用，且长度不低于 answer_eval 的 15 字阈值。"""
+    monkeypatch.setattr(be, "PROMPT_PROFILE", "strict_nocite")
+    prompt = be.build_prompt("如何申请申根旅游签证？", CTX)
+    assert "资料不足，现有资料无法回答该问题。" in prompt
+    assert "不要添加任何其他文字" in prompt
+    assert "每个事实句句末必须标注来源编号" in prompt
+
+
 # ------------------------------------------------------------------ 2. 解析
 def test_parse_answer_object_and_dict():
     class Obj:
@@ -127,7 +136,6 @@ def test_dry_run_no_api_and_limit(monkeypatch):
 class _BoomClient:
     @property
     def chat(self):
-        client = self
 
         class _Completions:
             def create(self, **kwargs):

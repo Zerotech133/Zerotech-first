@@ -340,6 +340,8 @@ def build(cli, dryrun=False):
         % (len(evs), len(by), dict(sorted(by.items())[-3:]))
     )
     if not dryrun and evs:
+        for _e in evs:
+            _e["data_source"] = "ts_top_list"  # F2-P2-b
         cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
         cli.upsert_edge(
             S.LBL_SECURITY,
@@ -431,6 +433,8 @@ def sync(cli, date=None):
     evs, edges = _limit_rows([date])
     print("sync %s：limit 事件 %d（池内）" % (date, len(evs)))
     if evs:
+        for _e in evs:
+            _e["data_source"] = "ts_top_list"  # F2-P2-b
         cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
         cli.upsert_edge(
             S.LBL_SECURITY,

@@ -2,7 +2,6 @@
 """D1 交棒回执测试（WO-D1-HANDOFF-20261101）。离线文件。"""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 

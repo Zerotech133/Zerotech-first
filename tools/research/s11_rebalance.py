@@ -18,7 +18,28 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-REPO = Path(r"C:\项目\老田的AI助手")
+def _repo_root() -> Path:
+    """仓根探测：支持普通克隆与 git worktree（.git 为文件时解析 gitdir 指针）。
+
+    原实现硬编码 r"C:\项目\老田的AI助手"，换机器 / 在 worktree 里跑都会指错仓，
+    与 tools/datawarehouse/dataset_registry.py 同一处坑，统一改为自探测。
+    """
+    here = Path(__file__).resolve().parent
+    for cand in (here, *here.parents):
+        g = cand / ".git"
+        if g.is_dir():
+            return cand
+        if g.is_file():
+            raw = g.read_text(encoding="utf-8", errors="replace").strip()
+            if raw.startswith("gitdir:"):
+                gitdir = Path(raw.split(":", 1)[1].strip())
+                # .git/worktrees/<name> → parents[2] 即主仓根
+                if len(gitdir.parents) >= 3:
+                    return gitdir.parents[2]
+    return here.parents[1]
+
+
+REPO = _repo_root()
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 SHADOW = REPO / "research" / "shadow" / "s11"
 STATIC = REPO / "portal" / "static"
@@ -126,6 +147,22 @@ def main(argv=None) -> int:
     lf = SHADOW / "ledger.jsonl"
     if lf.exists():
         ledger = [json.loads(x) for x in lf.read_text(encoding="utf-8").splitlines() if x.strip()]
+    else:
+        # 2026-11-08 迁移：s11 账本原件已归档到 research/shadow/s12/ledger.stale_*.jsonl
+        # （两处去 CR 后逐字节相同）。账本缺失时从归档回填并**立即落地**，
+        # 否则下面的 append 只写新行，会把启动基线（20261030）永久冲掉。
+        for arch in sorted((REPO / "research" / "shadow" / "s12").glob("ledger.stale_*.jsonl")):
+            try:
+                rows = [json.loads(x) for x in arch.read_text(encoding="utf-8").splitlines() if x.strip()]
+            except (OSError, ValueError):
+                continue
+            if rows:
+                ledger = rows
+                SHADOW.mkdir(parents=True, exist_ok=True)
+                lf.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+                              encoding="utf-8")
+                print("ledger 已从归档回填:", arch.name, len(rows), "行 →", lf, flush=True)
+                break
     if cur is not None and (not ledger or ledger[-1]["date"] != latest):
         row = {"date": latest, "from": prev_sig, "ret": round(cur, 6), "market": round(mkt_r or 0.0, 6),
                "excess": round(cur - (mkt_r or 0.0), 6), "active": bool(prev.get("holdings")), "n": prev.get("n", 0)}

@@ -171,7 +171,8 @@ def test_cli_exit_code_pending(tmp_path, monkeypatch, capsys):
     archive.write_text(json.dumps(make_archive()), encoding="utf-8")
     out = tmp_path / "report.json"
     rc = v.main(["--date", DAY, "--picks", str(picks), "--history-dir", str(tmp_path),
-                 "--json-out", str(out)])
+                 "--json-out", str(out)],
+                now=datetime(2026, 11, 5, 18, 24, 0))  # 修复：注入时钟（原依赖 datetime.now()，18:25 后跑必挂）
     assert rc == 3
     assert out.exists()
     assert "status=PENDING" in capsys.readouterr().out

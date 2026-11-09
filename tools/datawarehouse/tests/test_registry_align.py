@@ -17,7 +17,6 @@ from unittest import mock
 
 TOOLS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS))
-import common  # noqa: E402
 import registry_align as ra  # noqa: E402
 
 

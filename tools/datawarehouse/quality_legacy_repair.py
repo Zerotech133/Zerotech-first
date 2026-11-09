@@ -303,7 +303,7 @@ def run_verify() -> dict:
         tools[name] = {"rc": p.returncode, "stdout_tail": (p.stdout or "")[-800:]}
     c7_ok = manifest["all_ok"]
     c6_ok = dups["all_ok"]
-    c8 = fresh.get("explanation")
+    fresh.get("explanation")
     return {"C6_duplicates": dups, "C6_ok": c6_ok,
             "C7_manifest": manifest, "C7_ok": c7_ok,
             "C8_freshness": fresh, "C8_ok": True,

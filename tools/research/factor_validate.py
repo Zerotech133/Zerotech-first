@@ -904,7 +904,7 @@ def _write_md(rep: dict) -> str:
         f"**主判定（verdict）**：中性化 **毛**（未扣交易成本）OOS（2025-2026）超额 > 0 "
         f"**且** 毛 OOS 日频超额 t ≥ {THRESHOLD_T:g} **且** 逐年同向（毛超额>0）≥ "
         f"{MIN_POSITIVE_YEARS}/4 年 → **pass**，否则 **fail**。",
-        f"**成本容量判定（verdict_net）**：同一阈值套在 **净**（30bp 单边、周频换手）超额上。",
+        "**成本容量判定（verdict_net）**：同一阈值套在 **净**（30bp 单边、周频换手）超额上。",
         "多空价差 / IC 为参考项，不单独决定 pass/fail。",
         "",
         "> 为什么主判定用毛口径：中性化检验的问题是「剥离市值/行业暴露后是否还有 alpha」；"
@@ -953,7 +953,7 @@ def _write_md(rep: dict) -> str:
     if s.get("net_fail"):
         lines.append(f"- 成本容量口径（30bp 单边×周频，verdict_net）fail：{', '.join(s['net_fail'])}；"
                      "该口径下全部候选因子的超额被换手成本拖累为负，不能据此否定中性化 alpha。")
-    lines.append(f"- 负对照 mom20（direction=+1）：毛 OOS 超额/IC/多空均为负 → 流程方向自洽，"
+    lines.append("- 负对照 mom20（direction=+1）：毛 OOS 超额/IC/多空均为负 → 流程方向自洽，"
                  "未出现「负对照也 pass」的假阳性。")
     lines.append("")
     lines.append("| 因子 | IC OOS 符号 | 多空 Q5−Q1 符号 | 中性毛 OOS 超额符号 | 方向自洽 |")
@@ -1023,7 +1023,7 @@ def _write_md(rep: dict) -> str:
                      f"（t={_fmt(npf['gross_oos_t'], 2)}）；OOS 净超额 {_cell(npf['oos_excess_compound'])}"
                      f"（t={_fmt(npf['oos_t'], 2)}）；IS 毛 {_cell(npf['gross_is_excess_compound'])}"
                      f"（t={_fmt(npf.get('gross_is_t'), 2)}）/净 {_cell(npf['is_excess_compound'])}")
-        lines.append(f"- 逐年（毛/净）：" + "；".join(
+        lines.append("- 逐年（毛/净）：" + "；".join(
             f"{y}: {_cell(npf['gross_excess_by_year'].get(y))}/{_cell(npf['excess_by_year'].get(y))}"
             for y in YEARS))
         gis = npf.get("gross_is_excess_compound")

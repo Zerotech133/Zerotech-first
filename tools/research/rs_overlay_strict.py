@@ -129,7 +129,7 @@ def decide_verdict(c: dict) -> tuple[str, str]:
       无增量 = 其余（C 模式无改善/不显著，或严格残差为负）。
     """
     q = c.get("q")
-    m0, t0 = c.get("m0_mean"), c.get("t_m0")
+    m0, _t0 = c.get("m0_mean"), c.get("t_m0")
     m2, t2 = c.get("m2_mean"), c.get("t_m2")
     base = c.get("baseline_m0")
     improve = None if (m0 is None or base is None) else m0 - base

@@ -58,14 +58,22 @@ def _file_lock(path: str) -> Iterator[None]:
     # 16%），异常直接抛给调用方 → 看到的是"账本写入失败"，而加锁侧明明会等
     # 10s。同一函数里两套等待语义，与 tools/devtask.py::_tasks_file_lock 的
     # 正确形态（open 也在重试循环内）不一致。超时后仍按原异常类型抛出。
-    deadline = time.time() + _LOCK_TIMEOUT_S
+    #
+    # 2026-11-08 K-ORG-20261108-MONO：deadline 改用 time.monotonic()。
+    # 原用 time.time() 有两类真实故障：① 墙钟被外部改动（NTP 回跳 / 用户改
+    # 时间），deadline 变成过去的时刻或远未来；② 测试里直接 patch 全局
+    # time.time（同目录 test_ifs_idempotency / test_os_auth_hardening 都这么
+    # 干）时 deadline = 冻结值 + timeout 恒大于 time.time()，两处重试循环
+    # 永不退出 —— 2026-11-08 全量跑 portal 卡死 120s+ 的栈就停在下面那个
+    # time.sleep。单调钟不受墙钟影响的语义正是"超时"需要的。
+    deadline = time.monotonic() + _LOCK_TIMEOUT_S
     fd = None
     while True:
         try:
             fd = os.open(path, os.O_CREAT | os.O_RDWR)
             break
         except PermissionError:
-            if time.time() > deadline:
+            if time.monotonic() > deadline:
                 raise
             time.sleep(0.05)
     locked = False
@@ -81,7 +89,7 @@ def _file_lock(path: str) -> Iterator[None]:
                     locked = True
                     break
                 except OSError:
-                    if time.time() > deadline:
+                    if time.monotonic() > deadline:
                         raise LedgerError("获取账本写锁超时：%s" % path)
                     time.sleep(0.05)
         except ImportError:  # 非 Windows：回退进程内锁

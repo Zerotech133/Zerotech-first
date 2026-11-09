@@ -237,12 +237,12 @@ def test_flow_pg_kwargs_delegate_to_jev_common(monkeypatch):
 
 
 @pytest.mark.skipif(not HAVE_FLOW, reason="api_flow 依赖不可用")
-def test_flow_pg_kwargs_fallback_when_jev_common_missing(monkeypatch):
+def test_flow_pg_kwargs_fail_closed_when_jev_common_missing(monkeypatch):
+    # 安全口径对齐（api_flow._pg_connect_kwargs）：jev_common 缺失时 fail-closed，
+    # 拒绝回落 _zhice_pg_password/env 等本地默认口令（口令唯一来源 jev_common.DB_DSN）。
     monkeypatch.setattr(flow, "_jev_common", lambda: None)
     monkeypatch.setattr(flow, "_zhice_pg_password", lambda: "fallback-pw")
     monkeypatch.setenv("ZHICE_PG_PORT", "5446")
-    kw = flow._pg_connect_kwargs(2)
-    assert kw["port"] == 5446
-    assert kw["password"] == "fallback-pw"
-    assert kw["connect_timeout"] == 2
+    with pytest.raises(RuntimeError, match="拒绝使用本地默认口令"):
+        flow._pg_connect_kwargs(2)
     assert flow._pg_dsn_provenance() is None

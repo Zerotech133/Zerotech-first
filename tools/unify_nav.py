@@ -37,6 +37,8 @@ SELF_NAV_PAGES = {
                        r'<a\s+href="/zero_proto\.html#product"[^>]*>\s*← 返回产品建设'),
     "home_v3.html": (r'<nav\s+class="nav"[^>]*aria-label="主导航"',
                      r'href="/home\.html"[^>]*>打开旧总览'),
+    # JEV 情报工作台原型：嵌入式自有返回按钮，不注入全局深色顶栏（2026-11-09）
+    "jev_intel.html": (r'id="embedBack"', r'←\s*返回板块总览'),
 }
 
 def _self_nav_valid(name, src):

@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import importlib.util
-import sys
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -99,7 +98,7 @@ def test_derive_limit_matrices():
     p = panel.pct_chg.copy()
     c = panel.close.copy()
     h = panel.high.copy()
-    lo = panel.low.copy()
+    panel.low.copy()
     p.iloc[1, p.columns.get_loc("600000.SH")] = 10.0
     c.iloc[1, c.columns.get_loc("600000.SH")] = 110.0
     h.iloc[1, h.columns.get_loc("600000.SH")] = 110.0

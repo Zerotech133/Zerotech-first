@@ -38,7 +38,42 @@ import time
 from pathlib import Path
 from typing import Any
 
-REPO = Path(r"C:\项目\老田的AI助手")
+def _repo_root() -> Path:
+    """仓根：worktree 内运行也解析回主仓（与 tools/datawarehouse/common.py 同口径）。
+
+    2026-11-08（K-CI-20261108-PATH）：原为硬编码 ``Path(r"C:\\项目\\老田的AI助手")``。
+    干净检出（GitHub runner / 新克隆 / 换盘符 / 换机器）上该路径不存在 →
+    ALLOWED_ROOTS 全灭、inventory 与 registry 全部读空 → datawarehouse 整片判红。
+    这是路径可移植性缺陷，不是"数据缺失"，不能靠 CI 环境豁免糊过去。
+    """
+    here = Path(__file__).resolve().parent
+    for cand in (here, *here.parents):
+        g = cand / ".git"
+        try:
+            if g.is_dir():
+                return cand
+            if g.is_file():
+                txt = g.read_text(encoding="utf-8", errors="replace").strip()
+                if txt.lower().startswith("gitdir:"):
+                    raw = txt.split(":", 1)[1].strip()
+                    gitdir = Path(raw)
+                    if not gitdir.is_absolute():
+                        gitdir = (cand / gitdir).resolve()
+                    try:
+                        return gitdir.parents[2]  # <main>/.git/worktrees/<n> → <main>
+                    except IndexError:
+                        return cand
+                return cand
+        except OSError:
+            continue
+    # 兜底：按目录层级找 agent_platform（主仓必有）；绝不回落硬编码绝对路径
+    for cand in (here, *here.parents):
+        if (cand / "agent_platform").is_dir():
+            return cand
+    return here.parents[1]
+
+
+REPO = _repo_root()
 ALLOWED_ROOTS = [
     REPO / "quant_backtest",
     REPO / "research",
@@ -709,6 +744,14 @@ def _pg_connect_default(dsn):
     - kwargs dict：jev_common fallback（连接密码只在内存中，不打印/不落盘）；
     - 异常向上抛（fail-visible）；连接建立后强制只读会话。
     """
+    # 2026-11-08（K-CI-20261108-PGVALID）：空 DSN 属**参数校验**，必须在加载驱动之前判。
+    # 原顺序先 import psycopg2 → 干净 runner 未装驱动时抛 driver_missing，把"参数为空"这个
+    # 更根本的错误盖住了（test_empty_target_rejected 于是只在装了驱动的机器上过，云端必红）。
+    target = None
+    if not isinstance(dsn, dict):
+        target = _normalize_dsn(str(dsn or ""))
+        if not target:
+            raise ConnectorUnavailable("missing_dsn: DSN 为空", status="missing_dsn")
     try:
         import psycopg2 as pg
     except ImportError:
@@ -722,9 +765,6 @@ def _pg_connect_default(dsn):
         connect_kwargs.setdefault("connect_timeout", PG_TIMEOUT_S)
         con = pg.connect(**connect_kwargs)
     else:
-        target = _normalize_dsn(str(dsn or ""))
-        if not target:
-            raise ConnectorUnavailable("missing_dsn: DSN 为空", status="missing_dsn")
         con = pg.connect(target, connect_timeout=PG_TIMEOUT_S)
     try:
         con.set_session(readonly=True, autocommit=True)
@@ -1948,7 +1988,6 @@ class DatasetRegistry:
 
     def _query_parquet(self, p: Path, disc: dict, where, order, limit, offset,
                        since, columns, count) -> dict:
-        import pyarrow.dataset as ds
         files = disc.get("parquet") or []
         if not files:
             return self._query_no_data("未发现 parquet 文件", disc)

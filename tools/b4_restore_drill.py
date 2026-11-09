@@ -37,7 +37,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 # D4 (2026-11-06, L2 已批准)：接入 F2 的 should_select 自动过滤坏档，

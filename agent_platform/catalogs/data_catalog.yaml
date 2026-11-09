@@ -7,9 +7,13 @@
 # v5→v6 变更摘要（2026-11-01）：登记 strategy_classics_kb（策略经典：米勒维尼 SEPA 18 条单元/回测证据/资源库）。
 # v7→v8 变更摘要（2026-11-05）：登记 tushare_factor_list（Tushare factor_list 因子清单元数据：272 因子/9 类，
 #   静态字典表；真实 API code=0 拉取，JSON+Parquet 快照 + manifest sha256；catalog v40 同步登记 factor_list）。
+# v9→v10 变更摘要（2026-11-09，OSINT 板块补登记）：开源情报情绪管线 7 源补登（此前未登记=黑户，本次补登）：
+#   taoguba_posts / irm_qa_posts / sse_irm_posts / qianping_daily / xq_timeline（采集层）+
+#   sent_cards / market_sentiment（衍生层）。均为队列回填制或 SentimentSnapshot 每日 08:00 计划任务；
+#   datasets:/dataset_registry: 区的登记与 inventory 刷新待 DATA1（张松）例行同步。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
-version: 8
-updated: '2026-11-05'
+version: 10
+updated: '2026-11-09'
 registrar: DATA1（兰台令）/ DSH-Lead · v7 合并 2026-11-02（S2-01）
 resources:
   - id: ashare_kline
@@ -363,6 +367,111 @@ resources:
     verify_period: 按需（Tushare 因子库扩容/换 token 后重拉）
     fail_mode: 无因子库权限（Tushare 40203/40204）→ 拉取退出码 2；快照缺失时 catalog 条目 placeholder/manifest_missing，metadata_consistency 可检
     verified: 2026-11-05（真实 API code=0/272 行；sha256 80892d70…；catalog v40 factor_list、registry physical 305）
+
+  - id: taoguba_posts
+    kind: jsonl
+    uri: data/taoguba/
+    what: 淘股吧帖子（按标的 jsonl 归档；主帖+跟帖，作者/时间/标题/摘要/赞/浏览/评论；游资情绪信号来源，按源路由走词典法打分）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 队列回填制（2026-11-09 全队列 465 只回填在跑）；日更挂计划任务待扩
+    access: 只读 GET SSR 页面；采集器 news_collector/taoguba_collector.py（tgb.cn SSR 直通免渲染）
+    backup: 无（可重采）
+    verify_period: 每次回填后（文件存在性+行数+行级 code 校验）
+    fail_mode: 反爬限流/改版→当日缺采；情绪信号降级为缺失，不插值
+    grants: [invest, quality]
+    verified: 2026-11-09（OSINT 板块实测：400 票 5700 行，回填进行中）
+
+  - id: irm_qa_posts
+    kind: jsonl
+    uri: data/irm/
+    what: 深交所互动易问答（问题+回答全文 getQuestionDetail 实采；行级 code 护栏防异公司污染；官方问答情绪信号来源，走 FinBERT 模型通道）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 队列回填制（2026-11-09 全队列 --days 180 回填）；日更挂计划任务待扩
+    access: 只读公开接口；采集器 news_collector/irm_collector.py（queryKeyboardInfo→secid + searchResult + getQuestionDetail）
+    backup: 无（可重采）
+    verify_period: 每次回填后（行级 code==目标校验护栏复验）
+    fail_mode: searchResult 忽略 stockCodes 过滤（污染判例在案）→护栏丢弃异公司行；answered 由 updateDate 推断
+    grants: [invest, quality]
+    verified: 2026-11-09（OSINT 板块实测：216 票 3460 行；回答全文回填 368/518 批次另存 irm_backfill）
+
+  - id: sse_irm_posts
+    kind: jsonl
+    uri: data/sse/
+    what: 上证e互动问答（userfeeds.do GET 块级解析，问题+已回复内容；uid 映射 allcompany.do 2321 家；沪市官方问答信号来源）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 队列回填制（2026-11-09 全队列沪市补齐）；日更挂计划任务待扩
+    access: 只读 GET；采集器 news_collector/sse_collector.py（两段式 uid 映射+拉问答）
+    backup: 无（可重采；uid_map.json 可重建）
+    verify_period: 每次回填后（文件存在性+行数）
+    fail_mode: 仅覆盖沪市（结构性边界）；POST 返 209B 空壳→必须 GET；翻页穿透全历史
+    grants: [invest, quality]
+    verified: 2026-11-09（OSINT 板块实测：16 票 181 行）
+
+  - id: qianping_daily
+    kind: jsonl+json
+    uri: news_collector/data/qianping/
+    what: 东财千股千评（全市场日快照 qianping_{交易日}.jsonl 约 5202 家 + latest.json 队列投影含全市场横截面分位；机构参与度/综合得分/排名/关注指数/距主力成本；聪明钱维度，R2/R3 协变量）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日 08:00（SentimentSnapshot 计划任务第三步；交易日以服务端为准，盘前拿 T-1 合法）
+    access: 只读；采集器 news_collector/qianping_collector.py（akshare stock_comment_em 一次拉齐）
+    backup: 无（可重拉）
+    verify_period: 每日（latest.json 存在性+队列命中数）
+    fail_mode: 920xxx 北交所不覆盖（结构性边界）；交易日未更新→沿用 T-1 快照
+    grants: [invest, quality]
+    verified: 2026-11-09（首跑 5202 行；队列命中 57/65，缺 8 只全为 920xxx）
+
+  - id: xq_timeline
+    kind: jsonl
+    uri: news_collector/data/xq_timeline/
+    what: 雪球按票定向时间线（个股页实时帖流，status_id 去重；补雪球 LLM 标注只覆盖热门票的缺口）
+    layer: 采集层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 队列回填制（2026-11-09 全队列 465 只首采在跑）；日更挂计划任务待扩
+    access: 活登录 profile + 页内 fetch（xq_kol 合规判例：WAF 自愈停轮+2-4s 抖动限速+只读 GET）；采集器 news_collector/xq_stock_timeline.py
+    backup: 无（可重采）
+    verify_period: 每次回填后（文件存在性+status_id 唯一性）
+    fail_mode: WAF 挑战→自愈停轮缺采；登录态失效→退出码非 0 待人工
+    grants: [invest, quality]
+    verified: 2026-11-09（先验 2 票 40 条实时帖；全队列 201 票 7986 行采集中）
+
+  - id: sent_cards
+    kind: json
+    uri: news_collector/data/sentiment_cards.json
+    what: 六源情绪分布卡（机读契约：按标的×源聚合 n/多空中/polarity；生成器 sentiment_card.py；portal /api/daily/data sent 节消费，reports/ 出人读报告）
+    layer: 衍生层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日 08:00（SentimentSnapshot 计划任务）+ 手动复跑即覆盖
+    access: 只读契约文件；上游=股吧/淘股吧/互动易/e互动/雪球/新闻流六源
+    backup: 无（生成器幂等可重建）
+    verify_period: 每日（portal 探活 sent 节 top20 非空）
+    fail_mode: 上游源缺采→该源字段缺省，卡仍出（n=0 不打分）；FinBERT 加载失败→词典降级
+    grants: [invest, quality]
+    verified: 2026-11-09（498 标的 7197 样本首卡；雪球 LLM 标注覆盖 7 天窗 7 命中为已知短板）
+
+  - id: market_sentiment
+    kind: json+jsonl
+    uri: news_collector/data/market_sentiment.json（当日读数）+ news_collector/data/market_sentiment_history.jsonl（日快照 append-only）
+    what: 市场级情绪指数（0-100 五档状态机+广度+分源极性加权；源权重 股吧0.40/淘股吧0.20/雪球0.20/互动易0.10/e互动0.10 缺源自动归一；portal market 节消费；RiskGuard R1 双序列校准数据源）
+    layer: 衍生层
+    owner: DATA1
+    steward: DATA1（张松）
+    freshness: 每日 08:00（SentimentSnapshot 计划任务）；序列自 2026-11-09 起积累
+    access: 只读契约文件；生成器 news_collector/market_sentiment.py（纯函数+8 测试）
+    backup: 无（幂等可重建；history 同日重跑覆盖同日行）
+    verify_period: 每日（portal 探活 market 节出数）
+    fail_mode: 上游卡缺失→缺源权重自动归一；序列不足 60 日前不用于校准（纪律在案）
+    grants: [invest, quality, ops_runtime]
+    verified: 2026-11-09（首期 55.2/中性/广度 47.5%；test 8/8 PASS）
 
 # ===== v7（2026-11-02 S2-01）：数据集级登记（314 条，来自 dataset_registry_v1.yaml）=====
 dataset_registry:
@@ -3204,6 +3313,52 @@ datasets:
     label: yt_review（复核）
     kind: corpus_layer
     path: C:/项目/知识库/80_复核
+    owner: DSH-Lead
+    registered: true
+    exposed: false
+    access: read_only
+
+  - dataset_id: sph_video_corpus_db
+    domain: 学习派生
+    label: learning.db（视频号文案结构化层，12,160 行）
+    kind: corpus_layer
+    path: C:/项目/知识库/00_数据仓/learning.db
+    owner: DSH-Lead
+    registered: true
+    exposed: true
+    access: read_only
+  - dataset_id: sph_dim_video_blogger
+    domain: 学习派生
+    label: learning.db.dim_video_blogger（89 博主聚合指标）
+    kind: sqlite_table
+    path: C:/项目/知识库/00_数据仓/learning.db
+    owner: DSH-Lead
+    registered: true
+    exposed: false
+    access: read_only
+  - dataset_id: sph_fact_video_copy
+    domain: 学习派生
+    label: learning.db.fact_video_copy（12,160 条视频/全文/互动指标）
+    kind: sqlite_table
+    path: C:/项目/知识库/00_数据仓/learning.db
+    owner: DSH-Lead
+    registered: true
+    exposed: true
+    access: read_only
+  - dataset_id: sph_units_video_corpus
+    domain: 学习派生
+    label: 视频号全部文案知识单元（34,466 单元/10,514 视频）
+    kind: corpus_layer
+    path: C:/项目/知识库/30_知识单元/视频号学习_全部文案_20261108_units_draft.jsonl
+    owner: DSH-Lead
+    registered: true
+    exposed: false
+    access: read_only
+  - dataset_id: sph_llm_cards_pilot
+    domain: 学习派生
+    label: 视频号 LLM 观点卡试点（Top10，13 卡）
+    kind: corpus_layer
+    path: C:/项目/work/ingest_20261108/llm_cards_top10.json
     owner: DSH-Lead
     registered: true
     exposed: false

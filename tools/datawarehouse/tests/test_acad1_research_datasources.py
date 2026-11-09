@@ -35,6 +35,9 @@ CANONICAL = {
     "dataset/pg/v2_lusu_decision": ("v2_lusu_decision", "D1"),
 }
 
+# manifest 里 dataset/file/acad1_evidence_bundle 指向的本地契约产物（不入库）
+ACAD1_EVIDENCE = Path(r"C:\Temp\acad1_evidence_bundle.json")
+
 
 # ── 工具 ──────────────────────────────────────────────────────────────
 def _inventory(tmp_path: Path) -> Path:
@@ -229,8 +232,23 @@ class TestDeclaredAndManifests:
             assert item["owner"] == owner
             assert item["registered"] is True and item["exposed"] is True
 
-    @pytest.mark.parametrize("name", ["acad1-legion/manifest.yaml",
-                                      "lusu-d1-flow/manifest.yaml"])
+    # 2026-11-08（K-CI-20261108-ACAD1SKIP）：acad1-legion 的 manifest 引用
+    # dataset/file/acad1_evidence_bundle = C:\Temp\acad1_evidence_bundle.json
+    # （契约产物，不入库）。干净 runner 上没有该文件 → composition validate --strict
+    # 必报 `dataset 未在登记/路径不存在`，属环境不可判定，不是 manifest 写错。
+    # 实测证据：run #16 的 artifact 套件日志里该用例报错原文即此条。
+    # 本机有产物时照常真跑（不 skip），仍盯 manifest 回归。
+    @pytest.mark.parametrize("name", [
+        pytest.param(
+            "acad1-legion/manifest.yaml",
+            marks=pytest.mark.skipif(
+                not ACAD1_EVIDENCE.exists(),
+                reason="manifest 引用 dataset/file/acad1_evidence_bundle=%s"
+                       "（契约产物未入库），缺失时 --strict 必报 error" % ACAD1_EVIDENCE,
+            ),
+        ),
+        "lusu-d1-flow/manifest.yaml",
+    ])
     def test_composition_validate_strict_no_new_errors(self, name):
         proc = subprocess.run(
             [sys.executable, "-X", "utf8",

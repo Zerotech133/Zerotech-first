@@ -55,9 +55,9 @@ except ImportError:  # 直接以目录导入（测试/脚本场景）
 
 try:
     # W-C3 共识引擎（HQCONS）；编排器只调判定，不建卡/不发飞书
-    from .consensus import ConsensusError, build_consensus, ensure_countersign
+    from .consensus import build_consensus, ensure_countersign
 except ImportError:  # 直接以目录导入
-    from consensus import ConsensusError, build_consensus, ensure_countersign  # type: ignore
+    from consensus import build_consensus, ensure_countersign  # type: ignore
 
 SCHEMA = "hq_orchestrator/v1"
 REPORT_SCHEMA = "hq_orchestrator_report/v1"

@@ -21,6 +21,7 @@ xq_pump/xueqiu_live 各自持有）。
 """
 from __future__ import annotations
 
+import os
 import sys
 import traceback
 from datetime import datetime, timezone
@@ -36,9 +37,25 @@ _XQ_PUMP_LOADED = False
 
 
 def _load_xq_pump():
-    """惰性加载 xq_pump（兄弟目录 quant_backtest/ 挂 sys.path）。"""
+    """惰性加载 xq_pump（候选根目录探测 + 环境变量覆盖）。
+
+    2026-11-08 修正：原实现只认 parents[2]/quant_backtest（= C:/项目/quant_backtest，
+    不存在）；xq_pump 实际位于 C:/aios/quant_backtest（与量化主区同址）。
+    探测顺序：ZB_XQ_PUMP_ROOT 环境变量 > 本区兄弟目录 > aios 主区。
+    """
     global _XQ_PUMP_LOADED
-    qb = Path(__file__).resolve().parents[2] / "quant_backtest"
+    here = Path(__file__).resolve()
+    candidates = []
+    env_root = os.environ.get("ZB_XQ_PUMP_ROOT")
+    if env_root:
+        candidates.append(Path(env_root))
+    candidates.append(here.parents[2] / "quant_backtest")
+    candidates.append(Path(r"C:\aios\quant_backtest"))
+    qb = next((c for c in candidates if (c / "xq_pump").is_dir()), None)
+    if qb is None:
+        raise FileNotFoundError(
+            "xq_pump 未找到：探测过 %s（可用 ZB_XQ_PUMP_ROOT 指定）"
+            % ", ".join(str(c) for c in candidates))
     if str(qb) not in sys.path:
         sys.path.insert(0, str(qb))
     _XQ_PUMP_LOADED = True

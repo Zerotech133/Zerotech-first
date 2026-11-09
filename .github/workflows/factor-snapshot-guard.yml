@@ -1,0 +1,112 @@
+name: factor-snapshot-guard
+
+on:
+  pull_request:
+    paths:
+      - "quant_backtest/data/factor_library/tushare_factor_list/latest.json"
+      - "quant_backtest/data/factor_library/tushare_factor_list/snapshots/**"
+      - "tools/research/factor_lib_tushare.py"
+      - "tools/data_sources/tushare_factor_sync.py"
+      - ".github/workflows/factor-snapshot-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factor-snapshot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  snapshot-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Extract base snapshot
+        id: baseline
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline=".ci/factor_list_baseline.json"
+          mkdir -p .ci
+          path="quant_backtest/data/factor_library/tushare_factor_list/latest.json"
+          if git cat-file -e "origin/${BASE_REF}:${path}" 2>/dev/null; then
+            git show "origin/${BASE_REF}:${path}" > "$baseline"
+            echo "path=$baseline" >> "$GITHUB_OUTPUT"
+            echo "base_sha=$(git rev-parse --short "origin/${BASE_REF}")" >> "$GITHUB_OUTPUT"
+          elif [ -f "$path" ]; then
+            # 首次引入快照的 PR：base 还没有文件，用 PR 自身快照做基线；
+            # 这样仍会检查 TYPE_NAMES 是否覆盖 PR 的最新清单。
+            cp "$path" "$baseline"
+            echo "path=$baseline" >> "$GITHUB_OUTPUT"
+            echo "base_sha=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::base branch ${BASE_REF} has no factor_list latest.json; using PR snapshot as bootstrap baseline"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "::warning::neither base nor PR has factor_list latest.json; skip snapshot guard"
+          fi
+
+      - name: Check snapshot files are reflected in latest.json
+        if: steps.baseline.outputs.path != ''
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          base="origin/${BASE_REF}"
+          snapshots_changed="$(git diff --name-only "${base}...HEAD" -- 'quant_backtest/data/factor_library/tushare_factor_list/snapshots/')"
+          latest_changed="$(git diff --name-only "${base}...HEAD" -- 'quant_backtest/data/factor_library/tushare_factor_list/latest.json')"
+          if [ -n "$snapshots_changed" ] && [ -z "$latest_changed" ]; then
+            echo "::error title=factor_list 快照未同步 latest.json::检测到 snapshots/ 变更，但 latest.json 未更新；请重新 fetch 或把新快照复制为 latest.json。"
+            exit 1
+          fi
+
+      - name: Check TYPE_NAMES sync
+        if: steps.baseline.outputs.path != ''
+        shell: bash
+        run: |
+          set +e
+          python tools/data_sources/tushare_factor_sync.py diff \
+            --baseline "${{ steps.baseline.outputs.path }}" \
+            --new quant_backtest/data/factor_library/tushare_factor_list/latest.json \
+            --out-dir ci-artifacts \
+            --check
+          rc=$?
+          set -e
+          if [ "$rc" -eq 1 ]; then
+            {
+              echo "::error file=tools/research/factor_lib_tushare.py,line=40,title=factor_list 快照变更未同步 TYPE_NAMES::因子清单有新增/删除/移动，请运行 tools/data_sources/tushare_factor_sync.py diff，更新 TYPE_NAMES 后再提交。"
+              echo "### factor-list snapshot changed"
+              echo "latest.json differs from base '${{ github.base_ref }}', and factor_lib_tushare.py::TYPE_NAMES is not in sync."
+              echo
+              echo "Run locally:"
+              echo '```powershell'
+              echo "python tools/data_sources/tushare_factor_sync.py diff --baseline <base-latest.json> --new quant_backtest/data/factor_library/tushare_factor_list/latest.json --out-dir ci-artifacts"
+              echo '```'
+              echo "Then review `ci-artifacts/TYPE_NAMES.patch.diff` / `diff.json`; update TYPE_NAMES and commit."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          elif [ "$rc" -ne 0 ]; then
+            echo "::error title=factor snapshot diff 执行失败::exit code ${rc}; 检查快照 JSON/schema 或脚本错误。"
+            exit "$rc"
+          fi
+
+      - name: Upload diff artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factor-snapshot-diff
+          path: ci-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

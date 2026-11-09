@@ -375,6 +375,39 @@
     "hao": "大贤",
     "title": "苍天已死"
    }
+  },
+  {
+   "id": "factor-mining",
+   "name": "因子挖掘产线",
+   "tagline": "FACTOR1 蒋琬 · 每交易日 18:10 自动挖掘/IC/衰减/候选",
+   "status": "tool",
+   "status_note": "自动研究产线 · 只产出日报/候选/告警，不广播、不写策略库",
+   "task": "FactorDaily",
+   "href": "",
+   "badge": "研究",
+   "metrics": [
+    {
+     "k": "负责人",
+     "v": "FACTOR1 蒋琬（数据智能部）"
+    },
+    {
+     "k": "节奏",
+     "v": "每交易日 18:10 自动跑"
+    },
+    {
+     "k": "产出",
+     "v": "factor_daily_*.json/.md + ledger + portal static"
+    },
+    {
+     "k": "边界",
+     "v": "只出研究证据，四关前不产信号"
+    }
+   ],
+   "since": "2026-11-07",
+   "persona": {
+    "name": "蒋琬",
+    "title": "因子挖掘师"
+   }
   }
  ]
 }

@@ -63,7 +63,6 @@ if str(_HERE) not in sys.path:
 import factor_lib as fl                  # noqa: E402
 import reverse_avoid_test as rav         # noqa: E402  复用 LX20 信号/统计口径（不修改）
 import portfolio_build as pb             # noqa: E402  S01 基线口径来源
-import selection_engine as se            # noqa: E402  基线数据装载（校验用）
 
 VERSION = "0.1.0-wave5"
 ANNUAL_DAYS = 252
@@ -696,7 +695,7 @@ def _variant_order(ev: dict) -> list[str]:
 # ================================================================ 渲染
 def render_markdown(payload: dict) -> str:
     meta, ev = payload["meta"], payload["meta"]["eval"]
-    base = payload["variants"]["BASELINE"]["overall"]
+    payload["variants"]["BASELINE"]["overall"]
     lines: list[str] = []
     a = lines.append
     a("# S05 规避规则 × S01 基线叠加测试（2026-11-01，wave5 支线 N）")

@@ -38,7 +38,7 @@ def main() -> int:
     dts = pre + [d for d in ds if d >= "20190101"]
     P = load(dts)
     dates = P["a_close"].index.tolist()
-    start_i = dates.index(next(d for d in dates if d >= "20190101"))
+    dates.index(next(d for d in dates if d >= "20190101"))
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names = sb["name"]
     def listed_at(dt_):
@@ -75,7 +75,6 @@ def main() -> int:
 
     s = pd.Series(dates)
     mends = [g.iloc[-1] for _, g in s.groupby(s.str[:6]) if g.iloc[-1] >= "20190101"]
-    rows_out = {"npy": [], "rev": [], "roe": []}
     ic_rows = {"npy": [], "rev": [], "roe": []}
     bucket = {t: [] for t in THRESHOLDS}
     for j in range(len(mends) - 1):

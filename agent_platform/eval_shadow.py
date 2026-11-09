@@ -30,9 +30,13 @@ except Exception as exc:
     logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/eval_shadow.py", exc)
 
 BASE = Path(__file__).parent
-sys.path.insert(0, str(BASE / "engine"))
+# 2026-11-07 审计修复：原为 sys.path.insert(0, BASE/"engine") + `from tools import`，
+# 仓库根同名 `tools` 包先被导入时 `from tools` 会命中根包 →
+# ImportError: cannot import name 'quote_snapshot'（pytest --collect-only 直接 ERROR）。
+# 改为把 agent_platform 放首位、显式 `from engine.tools import`，与根 tools 无歧义。
+sys.path.insert(0, str(BASE))
 
-from tools import quote_snapshot, kline_daily  # noqa: E402
+from engine.tools import quote_snapshot, kline_daily  # noqa: E402
 
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"

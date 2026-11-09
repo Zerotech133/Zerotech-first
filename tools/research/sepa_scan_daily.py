@@ -23,7 +23,7 @@ STATIC = REPO / "portal" / "static"
 LEDGER = REPO / "research" / "ledger"
 
 sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
-from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+from safe_json import backup_then_atomic_write  # noqa: E402
 
 
 def export_payload(payload: dict, static_dir: Path | str | None = None) -> dict:

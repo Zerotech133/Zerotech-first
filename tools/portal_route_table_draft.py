@@ -132,9 +132,11 @@ def build_draft(source: str, table_path=None) -> dict:
     entries = []
     scanned = 0
     for m in cls.body:
-        if not isinstance(m, ast.FunctionDef) or m.name not in ("do_GET", "do_POST"):
+        if not isinstance(m, ast.FunctionDef) or m.name not in (
+                "do_GET", "_route_main", "do_POST"):
             continue
-        method = m.name[3:]
+        # 2026-11-09：do_GET 已拆分出 _route_main，主分派也要纳入草案。
+        method = "GET" if m.name in ("do_GET", "_route_main") else "POST"
         # 递归遍历方法体内所有 If（含 elif/嵌套分支），提取路由谓词
         for node in ast.walk(m):
             if not isinstance(node, ast.If):

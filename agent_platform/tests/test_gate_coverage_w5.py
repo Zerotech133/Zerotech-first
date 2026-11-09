@@ -52,9 +52,11 @@ SUITE_DIRS = (
     "agent_platform/tests",
     "quant_backtest/tests",
     "tools/tests",
+    "analysis/tests",
+    "commercial/tests",
 )
 FAST_SUITES = ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key",
-               "datawarehouse"]
+               "datawarehouse", "analysis", "commercial"]
 # IDE 关键集：W5 审计结论是“ide 相关测试仅 test_legion_ide_audit.py 未入门”，
 # 本单补齐后冻结；集合只增不减（新增 IDE 测试可以直接进 ide 套件，不影响本断言）。
 IDE_KEY_FILES = {
@@ -132,7 +134,8 @@ def _gated_files(gate: str) -> set:
     """fast gate 实际覆盖的测试文件全集：目录套件全量 + 文件列表套件。"""
     lists = _file_lists(gate)
     gated = set()
-    for d in ("portal/tests", "k_stock/tests", "tools/datawarehouse/tests"):
+    for d in ("portal/tests", "k_stock/tests", "tools/datawarehouse/tests",
+              "analysis/tests", "commercial/tests"):
         gated.update(p.relative_to(REPO).as_posix() for p in (REPO / d).rglob("test_*.py"))
     for key in ("ide", "agent_key", "quant_key", "tools_key"):
         gated.update(lists.get(key, []))
@@ -244,6 +247,11 @@ def test_baseline_suite_key_fallback_ready():
 PORTAL_ROOT_REGRESSIONS = {
     "portal/test_bot_ws_backoff.py",
     "portal/test_km_card_kind.py",
+    # 2026-11-08 P1-6 分层落地：portal/conftest.py 把 portal/ append 进 sys.path 后，
+    # 两个 watch_tower 根级测试由「收集即错」变为 2 + 6 条全绿，纳入 fast 防回退。
+    # 同批 alerts_level / alert_source_health 实测红、整模块 skip 挂起，不进套件。
+    "portal/test_watch_tower_linkage.py",
+    "portal/test_watch_tower_snapshot.py",
 }
 
 
@@ -257,7 +265,7 @@ def _portal_suite_targets(gate: str) -> list:
 
 
 def test_portal_root_regressions_gated():
-    """portal 根级两个回归测试必须显式在 fast portal 套件内。"""
+    """portal 根级四个可达回归测试必须显式在 fast portal 套件内。"""
     gate = _gate_text()
     targets = _portal_suite_targets(gate)
     assert "portal/tests" in targets, (

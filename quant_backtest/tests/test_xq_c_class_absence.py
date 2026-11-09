@@ -53,7 +53,15 @@ def test_xueqiu_common_importable_without_c_class():
 
 
 def test_absent_modules_really_blocked():
-    """钩子自检：缺席钩子确实拦截（防止测试假绿）。"""
+    """钩子自检：缺席钩子确实拦截（防止测试假绿）。
+
+    2026-11-08 修隔离缺陷：Python 的 import 语句**先查 sys.modules**，命中即
+    直接返回，根本不走 meta_path。xq_proxy 在盘上真实存在（16.8KB），全量跑
+    时前序任何一次导入都会把它缓存进 sys.modules，本自检就恒 DID NOT RAISE
+    而假红（单独跑本文件时无人缓存，所以是绿的——典型的顺序依赖）。
+    修法：断言前把 4 件从 sys.modules 摘掉，结束后连同前序状态一起还原。
+    """
+    saved = {m: sys.modules.pop(m, None) for m in _ABSENT}
     block = _BlockModules()
     sys.meta_path.insert(0, block)
     try:
@@ -61,6 +69,9 @@ def test_absent_modules_really_blocked():
             import xq_proxy  # noqa: F401
     finally:
         sys.meta_path.remove(block)
-        # 清理可能半导入的模块状态
+        # 清理可能半导入的模块状态，再把前序测试留下的缓存放回去（不污染下游）
         for m in _ABSENT:
             sys.modules.pop(m, None)
+        for m, mod in saved.items():
+            if mod is not None:
+                sys.modules[m] = mod

@@ -62,7 +62,7 @@ def main() -> int:
     passed = 0
     try:
         tools = c.list_tools()
-        names = {t.get("name") for t in tools}
+        {t.get("name") for t in tools}
         for q, tool, args in CASES:
             rec = {"q": q, "tool": tool, "args": args, "expected": "ok", "got": "",
                    "passed": False, "text": ""}

@@ -35,7 +35,7 @@ LEDGER = REPO / "research" / "ledger"
 STATIC = REPO / "portal" / "static"
 
 sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
-from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402,F401
 # 已过四关/已证伪的已知因子（用于衰减监控）
 KNOWN = {
     "vol_20": {"verdict": "四关 PASS（LS）", "dir": "低波", "expect_ic": -0.09},
@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
         if len(cc) < 300:
             continue
         amt20 = amt.loc[:dt].iloc[-20:].mean().reindex(cc)
-        ret1 = hist.pct_change().iloc[-1].reindex(cc)
+        hist.pct_change().iloc[-1].reindex(cc)
         # 口径与 mining/四关一致（不带方向翻转，expect_ic 符号才可比）：
         # vol_20=20日波动(期望负IC)；mom_20/mom_120=历史收益(期望负IC=反转)；rev_5=-5日收益(期望正IC)
         factors = {
