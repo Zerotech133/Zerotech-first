@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta charset="utf-8">
+<title>数据源列对账报告摘要 · 2026-11-09 06:10</title>
+<style>
+body{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+     background:#0d1117;color:#e6edf3;margin:0;padding:24px;line-height:1.6}
+h1{font-size:20px;border-bottom:1px solid #30363d;padding-bottom:10px}
+h2{font-size:16px;color:#58a6ff;margin-top:28px}
+.dim{color:#8b949e;font-size:12px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;
+      padding:14px 16px;margin:10px 0}
+.g{color:#3fb950;font-weight:600}.r{color:#f85149;font-weight:600}
+.y{color:#d29922;font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
+th,td{border:1px solid #30363d;padding:5px 9px;text-align:left}
+th{background:#21262d;color:#8b949e}
+code{background:#0d1117;border:1px solid #30363d;border-radius:4px;
+     padding:1px 6px;font-size:12px;color:#a5d6ff}
+.kpi{display:flex;gap:12px;flex-wrap:wrap}
+.kpi .card{flex:1 1 160px;text-align:center}
+.kpi b{font-size:26px;display:block}
+</style>
+<style id="pf-nav-css">
+#pf-nav{position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;
+ flex-wrap:wrap;padding:8px 12px;margin:0 0 10px;background:#11161d;
+ border-bottom:1px solid #232a34;font:13px/1.5 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif;
+ color:#c8d2df}
+#pf-nav a{color:#8fb4e8;text-decoration:none;white-space:nowrap}
+#pf-nav a:hover{text-decoration:underline}
+#pf-nav .pf-sep{color:#4a5568}
+#pf-nav .pf-title{color:#e6edf3;font-weight:600;flex:1 1 auto;min-width:0;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pf-nav .pf-badge{font-size:11.5px;padding:2px 8px;border-radius:10px;white-space:nowrap;
+ background:#1c2735;color:#9fb0c4;border:1px solid #2b3949}
+#pf-nav .pf-ok{background:#14261b;color:#7fd18b;border-color:#22452e}
+#pf-nav .pf-warn{background:#2a2312;color:#e0b95c;border-color:#4a3d1c}
+#pf-nav .pf-old{background:#2b1618;color:#e8807f;border-color:#4d2528}
+.pf-dead{color:#6b7787;border-bottom:1px dotted #4a5568;cursor:help}
+@media (max-width:640px){#pf-nav{font-size:12px;padding:7px 10px}
+ #pf-nav .pf-sub{display:none}}
+</style>
+</head>
+<body><div id="pf-nav"><a href="index.html">← 平台</a><span class="pf-sep">/</span><span class="pf-sub" style="color:#8a93a3">数据</span><span class="pf-sep pf-sub">/</span><span class="pf-title">数据源列对账</span><span class="pf-badge pf-ok" title="数据基准日">2026-11-09 · 最新</span></div>
+<h1>数据源列对账报告摘要 <span class="dim">· 生成于 2026-11-09 06:10 · 系列 K165~K180</span></h1>
+<div class="kpi">
+<div class="card"><b class="g">全绿</b>对账结论</div>
+<div class="card"><b>18</b>底册表</div>
+<div class="card"><b class="g">0</b>断源嫌疑</div>
+<div class="card"><b>0</b>Skip</div>
+<div class="card"><b>可达</b>图内链</div>
+</div>
+
+<h2>一、说明</h2>
+<div class="card">
+<p>本页由 <b>AIColAudit</b> 周批任务（每周日 06:20）自动再生，数据来自
+<code>reports/col_audit.json</code>；对账工具 <code>source_col_audit.py</code>
+（K175）三大模块：①源列快照（arrow footer）②消费端底册交叉（本页表格）
+③图内 presence（MarketEvent/Seat/边，图内链 可达）。</p>
+<p>断源嫌疑处置：先判定「tushare 改名 vs 消费端写错」，再改对应头；
+任务 FAIL 已自动经 alert_fail_wrap.py 推飞书。</p>
+</div>
+
+<h2>二、底册状态（18 表）</h2>
+<div class="card">
+<table>
+<tr><th>仓</th><th>表</th><th>消费端</th><th>状态</th></tr>
+<tr><td>ashare</td><td>*.parquet</td><td>nine_dim._bars/_load；chanlun_scan._bars_from_parquet / chanlun_tbe_stats；premarket_backtest / rps_resonance:365</td><td class='g'>OK</td></tr>
+<tr><td>features</td><td>chanlun_sig_dataset.parquet</td><td>chanlun_mlf:442</td><td class='g'>OK</td></tr>
+<tr><td>features</td><td>kg_features.parquet</td><td>nine_dim:360 KG_FEAT</td><td class='g'>OK</td></tr>
+<tr><td>semantica</td><td>notice_llm.parquet</td><td>kg_brief / distill_pool / kg_notice_llm</td><td class='g'>OK</td></tr>
+<tr><td>tdx</td><td>ts_daily</td><td>kg_distill:68 / portal_api:2652 / premarket_backtest:38</td><td class='g'>OK</td></tr>
+<tr><td>tdx</td><td>ts_stock_basic</td><td>kg_features:106</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>anns_d</td><td>verify_tushare_sync</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>cyq_perf</td><td>kg_bclass._cyq_feat</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>hk_fina_indicator</td><td>portal_api._stock_fundamental</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>index_global</td><td>kg_build_p3:94</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>limit_list_d</td><td>kg_bclass._limit_rows</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>stk_holdernumber</td><td>kg_bclass._holder_feat</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>stk_managers</td><td>kg_build_p2</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>stk_mins</td><td>kg_candle.sync/detect_day</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>stock_basic</td><td>kg_build(p3 前置补列)；tushare_sync:927</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>sw_l1_member</td><td>kg_build_p2_sw</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>top10_floatholders</td><td>kg_bclass._holds_rows</td><td class='g'>OK</td></tr>
+<tr><td>tushare</td><td>trade_cal</td><td>runner._today_open/premarket/ts_daily_deep/verify</td><td class='g'>OK</td></tr>
+</table>
+<p class="dim">消费列全集见 source_col_audit.py CONSUMERS 底册（K165~K173
+实读背书）；部分覆盖率语义（尾盘量/封单额等稀疏特征）非断源。</p>
+</div>
+
+<h2>三、历史断源账本（均已修复）</h2>
+<div class="card">
+<table>
+<tr><th>断源</th><th>实伤</th><th>修复</th></tr>
+<tr><td>tushare <code>limit_type</code> → <code>limit</code> 改名</td>
+<td>1413 行涨跌停静默错标（K161）</td>
+<td>源列对齐 + 消费端三态化（涨停/跌停/炸板）</td></tr>
+<tr><td>图内 first/last_seal_time 缺失</td>
+<td>Neo4j property warning 每查询触发</td>
+<td>K164 映射 + K165 重刷 3470/3470</td></tr>
+</table>
+</div>
+
+<h2>四、防线范式（四级）</h2>
+<div class="card">
+<ol>
+<li><b>date_col_of 权威映射器</b>（tdx_read）——列名单点定义</li>
+<li><b>issubset/keepc 显式检查</b>（chanlun_scan / nine_dim_backtest）</li>
+<li><b>_warn_missing 读入点 WARN</b>（kg_bclass，K164）</li>
+<li><b>try 兜底降级</b>——自产仓可，外部源仓弱</li>
+</ol>
+<p class="dim">遗留挂池：tushare 仓 TABLE_DEFS 共享映射器（中量级）。
+历史摘要滚动保留 4 份。</p>
+</div>
+</body></html>

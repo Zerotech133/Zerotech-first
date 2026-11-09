@@ -67,10 +67,33 @@ def run_case(base, qs, expect_sc):
         pg.on("response", lambda r: errs.append("HTTP %d %s" % (r.status, r.url))
               if r.status >= 400 else None)
 
-        # ① 入口（分享链接落点）
+        # ① 入口（分享链接落点）—— 现在是平台门面，不是结构日报
         pg.goto(base + "/index.html" + qs)
         pg.wait_for_timeout(500)
         print("[1] 入口 →", pg.title() or "(无标题)")
+
+        # ①a 门面点「结构日报」卡片进分析页。这一步以前不存在（入口直接就是日报），
+        #     现在必须验：卡片 href 是静态的，sharecode 全靠门面的脚本补，
+        #     补不上线上就是 403。
+        card = pg.query_selector('a.card[href^="pool_report_h5.html"]')
+        if not card:
+            print("[!!] 门面没有「结构日报」卡片")
+            return False
+        href = card.get_attribute("href") or ""
+        if expect_sc and "sharecode=" not in href:
+            print("[!!] 门面卡片没补上 sharecode —— 线上点进去会 403")
+            ok = False
+        card.click()
+        pg.wait_for_load_state()
+        pg.wait_for_timeout(600)
+        if "pool_report_h5.html" not in pg.url:
+            print("[!!] 门面卡片没跳到结构日报：", pg.url.replace(base, "")[:70])
+            ok = False
+        elif expect_sc and "sharecode=" not in pg.url:
+            print("[!!] 卡片跳转丢了 sharecode —— 线上会 403")
+            ok = False
+        else:
+            print("[1a] 门面 → 结构日报 OK  %s" % pg.url.replace(base, "")[:60])
 
         # ①b 首页的「板块操作平台」入口：从分享链接进来的人，这是唯一能到板块页的路
         sgo = pg.query_selector(".sgo")
