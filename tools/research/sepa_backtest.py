@@ -175,7 +175,7 @@ def main(argv=None) -> int:
     start_i = dates.index(next(d for d in dates if d >= "20190101"))
     print("panel:", P["a_close"].shape, "start", dates[start_i], flush=True)
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
-    names, industry = sb["name"], sb["industry"].fillna("未知")
+    names, _industry = sb["name"], sb["industry"].fillna("未知")
     def listed_at(dt_):
         return listed_days(sb, dt_)
     csum = P["a_close"].cumsum()

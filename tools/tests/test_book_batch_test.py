@@ -129,7 +129,7 @@ def test_result_schema_and_grade_distribution(small_batch):
         assert key in meta["eval"], key
     assert meta["eval"]["horizon_days"] == 20
     assert meta["eval"]["cost_bp_oneway"] == 30
-    assert meta["eval"]["block_bootstrap"]["block"] == 5
+    assert meta["eval"]["block_bootstrap"]["block"] == 20
 
     results = payload["results"]
     assert len(results) == 17

@@ -17,7 +17,6 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
 
 _TOOLS = Path(__file__).resolve().parent
 TZ = timezone(timedelta(hours=8))

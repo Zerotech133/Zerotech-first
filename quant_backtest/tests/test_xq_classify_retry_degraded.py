@@ -8,12 +8,21 @@
   ④ 升级后行退出待重试集
   ⑤ retry_count 列 ALTER 迁移幂等（跑两遍不炸）
 跑法：pytest tests/test_xq_classify_retry_degraded.py -q
-LLM 全程 monkeypatch（urllib.request.urlopen），绝不真调 Ollama。
+LLM 全程 monkeypatch（xc.safe_urlopen），绝不真调 Ollama。
+
+2026-11-08 修接缝（P3-5 xq 41 项根因，非产品 BUG）：xq_classify 自 2026-10-30
+（d6505161d）起一律经 safe_urlopen 出网，且 **loopback 目标**（Ollama 就在
+127.0.0.1:11434）走 safe_urlopen._NO_PROXY_OPENER（OpenerDirector.open），
+根本不经过 urllib.request.urlopen。旧写法
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+对本文件完全失效 —— 拦截没生效，测试真调本机 qwen3.5:9b，答案随机 →
+38 项假红；单文件耗时由秒级涨到 78s。正解是 patch 被测模块命名空间里的
+safe_urlopen（与 test_peak_shift_gates.py patch xc.log / xc.ollama_probe_busy 同法）。
 """
 import json
+import socket
 import sqlite3
 import sys
-import urllib.request
 from pathlib import Path
 
 import pytest
@@ -36,10 +45,29 @@ class _FakeResp:
 
 
 def patch_llm(monkeypatch, answer: str) -> None:
-    """把 Ollama 响应换成固定内容（good=可解析 JSON / bad=截断文本）。"""
-    def fake_urlopen(req, timeout=None):
+    """把 Ollama 响应换成固定内容（good=可解析 JSON / bad=截断文本）。
+
+    接缝是 xc.safe_urlopen（模块级绑定名），不是 urllib.request.urlopen —— 见
+    模块 docstring 的 2026-11-08 说明。误改回去会让本文件真调本机模型。
+    """
+    def fake_safe_urlopen(req, *args, **kwargs):
         return _FakeResp(json.dumps({"message": {"content": answer}}).encode("utf-8"))
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(xc, "safe_urlopen", fake_safe_urlopen)
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_llm(monkeypatch):
+    """① 关掉全局 ollama 租约（并行会话持锁时 acquire 会等满 120s → pytest-timeout）。
+    ② fail-visible 兜底：任何真实 connect() 立刻断言失败，替身接缝若再断开，
+       会当场报「禁止真实网络」，而不是静默打真服务跑出随机答案。"""
+    monkeypatch.setenv("XQ_OLLAMA_LOCK", "0")
+
+    def _no_connect(self, addr, *a, **kw):
+        raise AssertionError(
+            "测试禁止真实网络连接：%r —— LLM 替身接缝已断，"
+            "patch 目标应为 xc.safe_urlopen" % (addr,))
+
+    monkeypatch.setattr(socket.socket, "connect", _no_connect)
 
 
 @pytest.fixture

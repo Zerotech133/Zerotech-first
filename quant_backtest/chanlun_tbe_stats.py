@@ -281,7 +281,7 @@ def _render_html(o):
 body{background:#0d1117;color:#e6edf3;font:14px/1.7 -apple-system,
 "Segoe UI","Microsoft YaHei",sans-serif;margin:0;padding:24px}
 .wrap{max-width:1060px;margin:0 auto}
-h1{font-size:22px;margin:0 0 4px}
+h1{font-size:20px;margin:0 0 4px}
 h2{font-size:16px;margin:28px 0 8px;color:#58a6ff}
 .meta{color:#8b949e;font-size:12px;margin-bottom:16px}
 table{border-collapse:collapse;width:100%%;font-size:13px;

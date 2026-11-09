@@ -21,7 +21,6 @@ def test_all_compositions_resolve():
 
 
 def test_unknown_agent_is_error():
-    m = {"metadata": {"id": "t"}, "spec": {"seats": [{"ref": "agent/NOT_EXIST"}]}}
     # 直接检查解析核心（不落 manifest 文件）
     regs = __import__("composition").load_registries()
     errs, warns = [], []

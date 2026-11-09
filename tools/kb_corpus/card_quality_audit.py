@@ -38,6 +38,10 @@ REQUIRED = ("q", "a", "concept", "source", "topic", "evidence")
 MIN_ANSWER, MAX_ANSWER = 20, 500
 SOURCE_RE = re.compile(r"《(.+?)》\s*(.*?)\s*p(\d+)\s*-\s*(\d+)")
 PROVENANCE_RE = re.compile(r"^(.+?)\s*·\s*(.+?)\s*·\s*L(\d+)")
+# 视频号来源格式：视频号 @作者《标题》YYYY-MM-DD
+VIDEO_SOURCE_RE = re.compile(
+    r"^视频号\s+@?(?P<author>[^《]+?)\s*《(?P<title>[\s\S]+?)》"
+    r"(?:\s*(?P<date>\d{4}-\d{2}-\d{2}))?(?:\s*·.*)?$")
 NOISE = re.compile(r"[\s\u3000（）()【】\[\]《》「」『』“”\"'’·、，,。.：:；;？?！!—-]+")
 
 
@@ -85,7 +89,14 @@ def parse_source(source: str) -> dict:
             out.update({"book": project, "chapter": fname, "p1": line, "p2": line, "kind": kind,
                         "ok": True})
             return out
-        out["errors"].append("无法匹配《书名》…pX-Y 或「项目 · 文件 · L行号」格式")
+        vm = VIDEO_SOURCE_RE.match(raw)
+        if vm:
+            # 视频号卡片没有页码；用作者+标题做 provenance，p1/p2 置 0 仅为结构完整。
+            out.update({"book": vm.group("author").strip(),
+                        "chapter": vm.group("title").strip(),
+                        "p1": 0, "p2": 0, "kind": "视频号", "ok": True})
+            return out
+        out["errors"].append("无法匹配《书名》…pX-Y、「项目 · 文件 · L行号」或「视频号 @作者《标题》」格式")
         return out
     book, chapter, p1, p2 = m.group(1).strip(), m.group(2).strip(), int(m.group(3)), int(m.group(4))
     if not book:
@@ -131,6 +142,9 @@ def trace_card(card: dict, src: dict, unit_index: dict) -> dict:
         if exact:
             return {"traceable": True, "method": "concept+book", "unit": exact[0]}
         return {"traceable": True, "method": "concept", "unit": candidates[0]}
+    if src.get("kind") == "视频号" and src.get("book") and src.get("chapter"):
+        # 视频号来源用“作者+标题”做 provenance；无页码，不要求 p1。
+        return {"traceable": True, "method": "video_source", "unit": None}
     if src.get("kind") in ("视频号", "笔记") and src.get("chapter") and src.get("p1"):
         return {"traceable": True, "method": "provenance(file+line)", "unit": None}
     ev = str(card.get("evidence") or "")

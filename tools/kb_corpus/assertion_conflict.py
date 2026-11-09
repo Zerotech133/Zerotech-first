@@ -231,7 +231,7 @@ def main(argv=None) -> int:
             r[side + "_src"] = m.group(1) if m else ""
 
     from collections import Counter
-    cnt = Counter(r["relation"] for r in res)
+    Counter(r["relation"] for r in res)
     cost = sum(r["cost"] for r in res)
     print()
     print("=" * 64)

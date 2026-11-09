@@ -125,3 +125,43 @@ def test_quoted_password_in_py_hits_and_masks(tmp_path):
     hits = _hits(tmp_path, 'password: "Px9FgOtU0vrNqW9z"\n', "t.py")
     assert any(h[1] == "PASSWORD_LITERAL" for h in hits), hits
     assert any("Px9F****" in str(h[2]) for h in hits), hits
+
+
+# ── 第9轮（2026-11-07 K-ORG-20261107-ENTROPY）：文档引用「带扩展名的路径成分」 ──
+# 文件名主体（如 test_legion_live_boot_p0，24 字符，全小写+数字+下划线）恰好落进
+# HIGH_ENTROPY 字符集，正文只要提到这个文件就必然命中，改措辞消不掉——命中的是
+# 文件名本身。V4 判据三条**同时**满足才豁免：全小写候选 + 左侧紧邻 '/' + 右侧紧跟
+# 已知扩展名。本组用例即该规则的首个单测（此前 8 轮误报治理全靠人工打补丁）。
+
+@pytest.mark.parametrize("content,fname", [
+    ("见 portal/test_legion_live_boot_p0.py 的 token 校验\n", "t.md"),
+    ("2. `portal/test_legion_live_boot_p0.py` 既有失败（与 token 无关）\n", "t.md"),
+    ("路径 tools\\test_legion_live_boot_p0.py 里的 token\n", "t.md"),
+    ("见 docs/test_legion_live_boot_p0.json 的 token 字段\n", "t.md"),
+])
+def test_path_component_filename_exempt(tmp_path, content, fname):
+    """文件名主体被当高熵候选 → 路径两侧闭合时豁免。"""
+    assert _hits(tmp_path, content, fname) == []
+
+
+@pytest.mark.parametrize("content,fname,why", [
+    ("test_legion_live_boot_p0 的 token 校验\n", "t.md", "无左侧 '/'"),
+    ("见 portal/test_legion_live_boot_p0 的 token 校验\n", "t.md", "右侧无扩展名"),
+    ("token abcdef1234567890abcd.py 待查\n", "t.md", "有扩展名但无左侧 '/'"),
+    ("token: /Xk9mQ2pL7vR4wZ8bN3tY.py 待查\n", "t.md", "混合大小写 token 不在豁免范围"),
+])
+def test_path_component_exempt_boundary(tmp_path, content, fname, why):
+    """V4 的三条件是 AND：只缺一条就不许豁免（防把真 token 一起放行）。"""
+    hits = _hits(tmp_path, content, fname)
+    assert any(h[1] == "HIGH_ENTROPY" for h in hits), (
+        "边界形态仍须命中（%s）：%r → %r" % (why, content, hits))
+
+
+def test_high_entropy_path_component_predicate():
+    """直接对判定函数做真值表，避开 scan_file 的行级预过滤。"""
+    cand = "test_legion_live_boot_p0"
+    assert ss.is_high_entropy_candidate(cand, "见 portal/%s.py 的 token" % cand) is False
+    assert ss.is_high_entropy_candidate(cand, "见 portal/%s 的 token" % cand) is True
+    assert ss.is_high_entropy_candidate(cand, "见 %s.py 的 token" % cand) is True
+    tok = "Xk9mQ2pL7vR4wZ8bN3tY"
+    assert ss.is_high_entropy_candidate(tok, "token: /%s.py" % tok) is True

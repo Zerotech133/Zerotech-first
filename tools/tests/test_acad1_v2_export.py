@@ -2,7 +2,6 @@
 """acad1_v2_export 测试（WO-ACAD1-BRIDGE-EXPORT-20261101）。"""
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path

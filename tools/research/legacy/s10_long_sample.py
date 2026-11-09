@@ -153,7 +153,7 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"s10_long_sample_{tag}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     L = ["# S10 长样本验证（2015-2026）", "",
-         f"- 配置：行业中性 3 因子（低波+20日反转+120日反转）top20 月频；2023+ 含换手为 4 因子",
+         "- 配置：行业中性 3 因子（低波+20日反转+120日反转）top20 月频；2023+ 含换手为 4 因子",
          "- 成本 0.15% 单边 × 换手",
          "", "| 样本 | 因子 | CAGR | MDD | 月均超额 | t | 正收益年 |", "|---|---|---|---|---|---|---|"]
     for k, v in out.items():

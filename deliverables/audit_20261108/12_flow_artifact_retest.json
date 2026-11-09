@@ -1,0 +1,21 @@
+{
+  "port": 18092,
+  "cases": {
+    "local_loopback": {
+      "status": 200,
+      "bytes": 202016,
+      "preview": "{\"path\": \"portal_api.py\", \"size\": 198119, \"mtime\": \"2026-11-08 07:30\", \"type\": \"text\", \"data\": \"# -*- coding: utf-8 -*-\\n\\\"\\\"\\\"OS 控制台 API 桥（纯标准库）— 127.0.0.1:8091\\n\\n聚合工作�"
+    },
+    "remote_anonymous": {
+      "status": 403,
+      "bytes": 100,
+      "preview": "{\"ok\": false, \"error\": \"unauthorized\", \"message\": \"forbidden: 缺失或不匹配的 X-Portal-Token\"}"
+    },
+    "remote_with_token": {
+      "status": 200,
+      "bytes": 202016,
+      "preview": "{\"path\": \"portal_api.py\", \"size\": 198119, \"mtime\": \"2026-11-08 07:30\", \"type\": \"text\", \"data\": \"# -*- coding: utf-8 -*-\\n\\\"\\\"\\\"OS 控制台 API 桥（纯标准库）— 127.0.0.1:8091\\n\\n聚合工作�"
+    }
+  },
+  "ok": true
+}

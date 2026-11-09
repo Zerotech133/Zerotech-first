@@ -185,7 +185,8 @@ def investable_masks(panel, names: dict[str, str], cfg: PortfolioConfig) -> tupl
 def rebalance_indices(panel, start: str | None, end: str | None, every: int) -> list[int]:
     dates = [str(d) for d in panel.dates]
     lo = 0 if start is None else int(np.searchsorted(dates, str(start), side="left"))
-    hi = len(dates) - 1 if end is None else int(np.searchsorted(dates, str(end), side="left"))
+    # end 为信号日上界（含）。非交易日不能顺延到下一个交易日，否则会用到 end 之后的数据。
+    hi = len(dates) - 1 if end is None else int(np.searchsorted(dates, str(end), side="right")) - 1
     out = []
     i = lo
     while i <= hi:
@@ -389,6 +390,13 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     rets = adj.pct_change().iloc[1:]
     sel_mask, trade_mask = investable_masks(panel, names, cfg)
     idxs = rebalance_indices(panel, start, end, cfg.rebalance_days)
+    # 窗口末端：end 之后不再计收益/持仓；之前的 nxt 无条件落到面板末日是 P0 bug。
+    panel_dates = pd.Index(panel.dates)
+    end_i = len(panel_dates) - 1
+    if end is not None:
+        end_key = str(end)[:10]
+        end_i = int(panel_dates.searchsorted(end_key, side="right")) - 1
+        end_i = max(-1, min(end_i, len(panel_dates) - 1))
     cost_rate = float(cfg.cost_bp) / 10000.0
     industry = panel.load_meta.get("industry") if hasattr(panel, "load_meta") else None
 
@@ -408,17 +416,19 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     daily_weights: list[dict] = []
     trades: list[dict] = []
     w = pd.Series(dtype=float)
-    prev_entry: int | None = None
 
     for pos, i in enumerate(idxs):
         entry = i + 1
-        nxt = idxs[pos + 1] + 1 if pos + 1 < len(idxs) else len(panel.dates) - 1
+        if entry > end_i:
+            continue
+        nxt = min(idxs[pos + 1] + 1, end_i) if pos + 1 < len(idxs) else end_i
         if nxt <= entry:
             continue
         if w.empty:
             prior = pd.Series(0.0, index=panel.codes, dtype=float)
         else:
-            prior = _drift_weights(w, rets, prev_entry + 1, entry)
+            # 日循环已把 w 漂移到 entry 收盘；这里不能再重复计 prev_entry+1..entry。
+            prior = w.copy()
         ind_signal = _industry_at(panel.dates[i])
         ind_entry = _industry_at(panel.dates[entry])
         target = _target_weights_constrained(
@@ -438,7 +448,9 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
         base_w = prior.reindex(all_idx).fillna(0.0)
         one_way = float(0.5 * (tgt - base_w).abs().sum())
         alpha = 1.0
-        if cfg.max_one_way_turnover is not None and one_way > cfg.max_one_way_turnover > 0:
+        # 首次建仓不是“换手”，不应受单次换手上限截断（旧版只建 60% gross，口径错误）。
+        if (not w.empty and cfg.max_one_way_turnover is not None
+                and one_way > cfg.max_one_way_turnover > 0):
             alpha = float(cfg.max_one_way_turnover) / one_way
         traded = base_w + alpha * (tgt - base_w)
         actual_turn = float(0.5 * (traded - base_w).abs().sum())
@@ -478,7 +490,6 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
             nav_dates.append(str(panel.dates[d]))
             nav_values.append(nav)
             daily_rets.append(port_r)
-        prev_entry = entry
 
     nav_ser = pd.Series(nav_values, index=pd.Index(nav_dates, name="trade_date"), dtype=float)
     ret_ser = pd.Series(daily_rets, index=nav_ser.index, dtype=float)

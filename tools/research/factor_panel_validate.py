@@ -43,7 +43,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parents[1]
@@ -228,7 +227,8 @@ def cross_check_limits(limit_up: pd.DataFrame, limit_down: pd.DataFrame,
 # ---------------------------------------------------------------- 面板构造
 def build_factor_panel(panel, factor_name: str, signal_dates: list[str], *,
                        st_matrix: pd.DataFrame, limit_up: pd.DataFrame,
-                       limit_down: pd.DataFrame, horizon: int = DEFAULT_HORIZON) -> tuple:
+                       limit_down: pd.DataFrame, horizon: int = DEFAULT_HORIZON,
+                       limit_actual: pd.DataFrame | None = None) -> tuple:
     """按周频信号日构造 [date,symbol,factor,forward_return] + 过滤计数。
 
     PIT：T 日因子（factor_lib 保证只用过去数据）；收益 adj(T+1+h)/adj(T+1)-1。
@@ -247,7 +247,7 @@ def build_factor_panel(panel, factor_name: str, signal_dates: list[str], *,
     stats = {"candidates": 0, "skipped_untradable": 0, "skipped_st": 0,
              "skipped_limit_signal": 0, "skipped_limit_entry": 0,
              "skipped_missing_data": 0, "rows": 0, "weeks": 0}
-    check_up = check_n = 0
+    stats["limit_check"] = cross_check_limits(limit_up, limit_down, limit_actual)
     for signal_date in signal_dates:
         i = pos.get(signal_date)
         if i is None or i + 1 + int(horizon) >= len(dates):

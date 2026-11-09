@@ -30,7 +30,7 @@ STATIC = REPO / "portal" / "static"
 SID = "S08_mom120_long"
 
 sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
-from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+from safe_json import backup_then_atomic_write  # noqa: E402
 TOPN = 50
 WINDOW = 120
 

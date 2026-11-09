@@ -1,0 +1,79 @@
+{
+  "schema": "d1_p0_03_drill_preflight/v1",
+  "checked_at": "2026-11-07T18:46:07+08:00",
+  "approval": "C:\\项目\\老田的AI助手\\deliverables\\d1_q2\\20261107\\P0-03_drill_20261107_1900\\approval.md",
+  "approval_ok": true,
+  "git_head": "8ddf8a19802e4f77973f78a2f7b7233fae4ba524",
+  "host_conf": "C:\\项目\\老田的AI助手\\portal\\nginx.conf",
+  "host_sha256_before": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "backup": "C:\\项目\\老田的AI助手\\deliverables\\d1_q2\\20261107\\P0-03_drill_20261107_1900\\nginx.conf.before",
+  "backup_sha256": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "container_sha256_before": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "temp_conf_sha256": "58425cc3bce9962523c7034885e8e73cbb8208f73a7b94f04d5c6ead637b4e5a",
+  "nginx_test_before": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "route_matrix_before": {
+    "d1": {
+      "url": "http://127.0.0.1:8734/d1",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1",
+      "error": ""
+    },
+    "d1_slash": {
+      "url": "http://127.0.0.1:8734/d1/",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1",
+      "error": ""
+    },
+    "d1_research": {
+      "url": "http://127.0.0.1:8734/d1/research",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1",
+      "error": ""
+    },
+    "d1_signoff": {
+      "url": "http://127.0.0.1:8734/d1/q2/signoff",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1",
+      "error": ""
+    },
+    "d1_query": {
+      "url": "http://127.0.0.1:8734/d1?x=1",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1",
+      "error": ""
+    },
+    "d1_q2_direct": {
+      "url": "http://127.0.0.1:8734/d1_q2/signoff.html",
+      "status": 404,
+      "body_prefix": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not F",
+      "error": ""
+    },
+    "api_health": {
+      "url": "http://127.0.0.1:8091/api/health",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"ts\": \"2026-11-07 18:46:08\", \"services\": [{\"name\": \"portal api\", \"p",
+      "error": ""
+    },
+    "api_d1_decisions": {
+      "url": "http://127.0.0.1:8091/api/d1/decisions",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tie",
+      "error": ""
+    },
+    "watch_health": {
+      "url": "http://127.0.0.1:8789/health",
+      "status": 404,
+      "body_prefix": "{\"error\": \"not_found\", \"path\": \"/health\", \"routes\": [\"/watch-admin\", \"/api/watch",
+      "error": ""
+    }
+  },
+  "data_hashes_before": {
+    "d1_decisions": "32b57ebef63524b6baac11b976cb99e0c4c938d3636a76c313a08c80a404762c",
+    "d1_handoffs": "f036704e7716779caeb8c740ec1fe854ef53838d50128ad29b59d20a819fb2a6",
+    "paper_state": "ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb"
+  }
+}

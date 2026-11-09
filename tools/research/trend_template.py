@@ -23,7 +23,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
@@ -91,7 +90,7 @@ def main(argv=None) -> int:
     s200 = s200_series.iloc[-1]
     s200_ago21 = s200_series.iloc[-22]
     # 年度窗口
-    ywin = close.iloc[-YEAR_BARS:]
+    close.iloc[-YEAR_BARS:]
     hi = high.iloc[-YEAR_BARS:].max()
     lo = low.iloc[-YEAR_BARS:].min()
     # RS 近似：12m + 3m 加权（最近一季额外权重），横截面百分位 1..99

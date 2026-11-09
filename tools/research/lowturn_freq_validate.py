@@ -194,7 +194,7 @@ def buffered_bucket_weights(scores: pd.Series, eligible: pd.Series,
         k_hold = max(k_buy, int(math.ceil((hold_frac + buf) * n_b)))
         codes = [str(c) for c in group.index]
         buy_top = set(codes[:k_buy])
-        keep_top = set(codes[:k_hold])
+        set(codes[:k_hold])
         picked = [c for c in codes[:k_hold] if (c in buy_top or c in held)]
         if not picked:  # 理论不可达（k_buy≥1 保证 buy_top 非空）
             picked = codes[:1]

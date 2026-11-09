@@ -51,6 +51,7 @@ def _probe_service(spec):
     import socket as _sk
     import time as _time
     t0 = _time.time()
+    note = ""
     try:
         if http_path:
             ok = safe_urlopen("http://127.0.0.1:%d%s" % (port, http_path), timeout=2.5).status == 200
@@ -58,10 +59,19 @@ def _probe_service(spec):
             s = _sk.create_connection(("127.0.0.1", port), timeout=2)
             s.close()
             ok = True
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
         ok = False
-    return {"name": name, "port": port, "ok": ok, "optional": optional,
-            "ms": int((_time.time() - t0) * 1000)}
+        # K-ORG-20261107-S3：/ready 是新端点，老版本 8097 回 404。版本错配不该
+        # 判红（否则「先重启 8091、后换血 8097」的顺序问题会凭空制造红灯），
+        # 记为「存活但无就绪面」，等 8097 换血后自然升级为真实 readiness。
+        if http_path == "/ready" and getattr(exc, "code", None) == 404:
+            ok = True
+            note = "no_ready_endpoint"
+    out = {"name": name, "port": port, "ok": ok, "optional": optional,
+           "ms": int((_time.time() - t0) * 1000)}
+    if note:
+        out["note"] = note
+    return out
 
 
 class Handler:  # Mixin 壳：经基座多继承并入
@@ -210,7 +220,6 @@ class Handler:  # Mixin 壳：经基座多继承并入
         """P1 总览门户健康聚合（JSON）：七口探活（端口判活=判例3 正源）
         + PID 侧写（netstat，S4U 下 Win32_Process 不可信）+ 五守护任务
         schtasks 状态。60s TTL 缓存，探测全部线程池并发。"""
-        import socket as _sk
         import subprocess as _sp
         from concurrent.futures import ThreadPoolExecutor
 
@@ -225,8 +234,12 @@ class Handler:  # Mixin 壳：经基座多继承并入
 
         # W3 清债（2026-10-25）：9104 card 已按 W3 回执退役（按需拉起，
         # OPTIONAL_OFFLINE）；不再作为整体健康阻断，仅保留观测位。
+        # K-ORG-20261107-S3（2026-11-07 裁决）：8097 由纯 TCP 判活改为探
+        # /ready（readiness）——端口活着不代表数据面能服务（decision DB 锁死
+        # 时 /api/decisions 仍回 200 空列表，肉眼不可见）。8097 侧保持
+        # /health=liveness 不动，两档语义分离；503 → 本项 ok=False。
         _spec = [("portal api", 8091, "/health"),
-                 ("push hub", 8097, None),
+                 ("push hub", 8097, "/ready"),
                  ("hermes", 8787, None),
                  ("gate", 9101, None),
                  ("review", 9102, None),

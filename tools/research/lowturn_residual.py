@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from datetime import datetime
@@ -305,9 +304,9 @@ def write_md(rep: dict) -> str:
     L.append("")
     L.append(f"- 生成：{meta['generated_at']}；区间 {meta['start']}~{meta['end']}；"
              f"有效信号区间 {meta['effective_start']}~{meta['effective_end']}")
-    L.append(f"- 回归（PIT，每月末）：`signed_low_turnover(−换手率) ~ 1 + z(log流通市值) + "
-             f"z(20日波动率) + 行业哑变量`，残差=新信号；周频/hold60 调仓使用最近月末残差面板"
-             f"（滞后 ≤1 个月，无未来函数）")
+    L.append("- 回归（PIT，每月末）：`signed_low_turnover(−换手率) ~ 1 + z(log流通市值) + "
+             "z(20日波动率) + 行业哑变量`，残差=新信号；周频/hold60 调仓使用最近月末残差面板"
+             "（滞后 ≤1 个月，无未来函数）")
     L.append(f"- 组合：{meta['neutrality']}；T+1 收盘建仓、复权、缺价冻结；"
              f"主成本 {meta['cost_bp']:.0f}bp 单边，成本网格 "
              f"{', '.join(str(int(x)) for x in meta['cost_grid_bp'])}bp")
@@ -428,9 +427,9 @@ def build_conclusion_text(rep: dict) -> list[str]:
     comps = {(c["signal"], c["frequency"]): c for c in rep["comparisons"]}
     lines: list[str] = []
     res_rows = [c for c in rep["comparisons"] if c["signal"] == "residual"]
-    orig_rows = [c for c in rep["comparisons"] if c["signal"] == "original"]
+    [c for c in rep["comparisons"] if c["signal"] == "original"]
     any_pass = any(c["verdict"]["independent_alpha"] for c in res_rows)
-    any_gross_pass = any(c["verdict"]["independent_alpha_gross"] for c in res_rows)
+    any(c["verdict"]["independent_alpha_gross"] for c in res_rows)
     lines.append(f"**总判定：{'残差仍有独立 alpha（至少一档频率通过净口径阈值）' if any_pass else '残差未能通过净口径阈值 → low_turnover 主要是风格代理（停止该方向）'}**")
     lines.append("")
     lines.append("**核心对比：**")

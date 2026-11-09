@@ -28,7 +28,6 @@ REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 OUT = REPO / "research" / "reports"
 sys.path.insert(0, str(REPO / "tools" / "research"))
-import stat_utils  # noqa: E402
 
 START, END = "20210101", "20261029"
 IS_END = "20231231"

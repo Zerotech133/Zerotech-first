@@ -24,7 +24,18 @@ reports/
 *.sqlite3
 
 # 量化产线数据与产出
-quant_backtest/data/
+quant_backtest/data/*
+# Tushare factor_list 是 272 行静态元数据快照，不是时序行情；CI 门禁需要版本化。
+# 只放行 latest/manifest/snapshots 的 JSON，parquet 与其余 data 仍不入库。
+!quant_backtest/data/factor_library/
+quant_backtest/data/factor_library/*
+!quant_backtest/data/factor_library/tushare_factor_list/
+quant_backtest/data/factor_library/tushare_factor_list/*
+!quant_backtest/data/factor_library/tushare_factor_list/latest.json
+!quant_backtest/data/factor_library/tushare_factor_list/manifest.json
+!quant_backtest/data/factor_library/tushare_factor_list/snapshots/
+quant_backtest/data/factor_library/tushare_factor_list/snapshots/*
+!quant_backtest/data/factor_library/tushare_factor_list/snapshots/*.json
 quant_backtest/logs/
 quant_backtest/outbox/
 quant_backtest/reports/
@@ -41,6 +52,37 @@ jev-eval/data/
 # 门户运行产物
 portal/data/
 portal/static/uploads/
+
+# 结构池看板 /board 数据源（2026-11-08）
+# 由 tools/research/{trade_book,observe_board,hf_variants,hf_ab}.py 等生成，
+# 站点靠 start_portal_nginx.ps1 的 -v 整目录挂载直接生效，不依赖 git。
+# 体量：trade_trades.json 4.5MB + hf_trades.json 480KB（成交明细），
+# 一旦被 git add -A 收进历史就永久无法瘦身 → 显式排除。
+# 例外说明：portal/hf_phase4.json 已于 5091adeb4 入库，暂保留跟踪，
+# 但它是 20KB 无换行单行 JSON，且 tools/research/hf_phase4.py:342 用
+# time.strftime 写 generated_at —— 每次运行必产生 diff（整行全量重写）。
+# 属待处置技术债：建议 git rm --cached 后与上述 8 份同列排除。
+portal/observe_board.json
+portal/trade_book.json
+portal/trade_trades.json
+portal/hf_book.json
+portal/hf_trades.json
+portal/hf_ab.json
+portal/hf_variants.json
+# hf_phase 系列随 qbt 轮次持续新增（13 轮已加到 phase5，见 1c038cce1），
+# 用通配一次覆盖；已入库的 phase4 不受 ignore 影响，仍保持跟踪。
+portal/hf_phase*.json
+# 自检/探针中间产物（hf_selfcheck.py:68-69 等写出，nginx 零引用）
+portal/_hf_*.json
+# 逐笔路径落盘（hf_path.py --dump，1.3MB，18 秒可再生）。
+# 上游信号一改就整份重写，进历史等于永久背 1.3MB × 轮次。
+portal/hf_trades_path.jsonl
+# 入场特征面板（hf_feat2.py 建，5.5MB / 6900 行，72 秒可再生）。
+# 它只是 hf_feat2.json 的中间产物，产物本身（筛表/holdout/诊断）已入库。
+portal/hf_feat2_panel.jsonl
+# 社交面快照（tools/jev_social_fetch.py 按日生成，一天一个、内容全是当日
+# 榜单与帖子，没有长期保存价值；真正要吃的是当日的排名与背离，不是文件）
+portal/social_*.json
 
 # 第三方二进制
 tools/ffmpeg-9.0.2-essentials_build/
@@ -165,6 +207,10 @@ prototypes/ai_chat_web/*.db
 
 # ===== 本地密钥（K-ORG-039：绝不进版本库）=====
 config/*.local.json
+# 2026-11-07 补：云端 LLM 配置含真实 api_key，此前既未跟踪也未忽略，
+# 任何人 git add -A / git add config 都会把它提交进库。禁止入库。
+# （文件名沿用 cloud_llm.json 不改：8091 运行期按此路径读取，改名需重启服务。）
+config/cloud_llm.json
 
 # picks 发布链运行态文件（2026-10-14 安全审计 F-002）
 portal/work/
@@ -345,7 +391,10 @@ quant_backtest/_ts_tail_probe.json
 # 以下目录/文件保留在磁盘作为审计证据，但不入库；历史已跟踪文件不受影响。
 # 审计/研发实验目录（一次性回测与中间 json/html，含大批量输出）
 quant_backtest/_qpzm_audit_20261105/
-quant_backtest/_qpzm_rd_20261106/
+# 研发工作区整体不入库；例外：冻结标准与每日作业入口（签 b 重冻 2026-11-09，老田批准）
+quant_backtest/_qpzm_rd_20261106/*
+!quant_backtest/_qpzm_rd_20261106/M2_FROZEN.json
+!quant_backtest/_qpzm_rd_20261106/daily_run.py
 # 训练运行记录/快照（可再生成，体积大）
 research/training_snapshots/
 research/training_runs/
@@ -370,3 +419,11 @@ agent_platform/portal/data/dev_events.jsonl
 
 # D1 原始 SLO 采样（每日运行时数据；窗口汇总报告另存，不逐日入库）
 /deliverables/d1_q2/slo_window/*.json
+
+# 2026-11-09 portal/daily_report 入库分拣：代码/模板入库，运行态产物不入库（可由 build.py 再生）
+portal/daily_report/cohorts/
+portal/daily_report/shots/
+portal/daily_report/*.log
+portal/daily_report/hold_*.json
+portal/daily_report/index.html
+portal/daily_report/houfeng.html

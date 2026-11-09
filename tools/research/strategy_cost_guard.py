@@ -139,10 +139,8 @@ def build_alert_card(payload: dict) -> dict | None:
         headroom = float(payload["headroom_bp"])
         if payload.get("estimated_ann_return") is not None:
             est = "%.2f%%" % (payload["estimated_ann_return"] * 100)
-            est_note = "<font color='grey'>60d 成本曲线线性插值</font>"
         else:
             est = "超出曲线"
-            est_note = "<font color='grey'>已测区间 0–250bp</font>"
 
         metrics_1 = {
             "tag": "column_set",

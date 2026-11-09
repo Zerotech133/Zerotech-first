@@ -48,7 +48,28 @@ SOURCE_NAMES = {
 }
 MORNING_SOURCES = ("chanlun", "nine_dim")
 EOD_SOURCES = ("premarket", "chanlun", "nine_dim", "weak", "cross")
-CORE_SOURCES = ("premarket", "chanlun", "nine_dim")
+# 2026-11-08 A0口径对齐（S1修复）：chanlun/nine_dim/weak 生产线已于 2026-11-05
+# 定档停跑（chanlun_scan 头注：结构标注工具，非入场依据；成本模型 v4 证伪信号价值）。
+# 三源移出 CORE、保留 EOD 通报位：恢复生产则照常推送（有则推）；停跑期间不计入
+# bad（覆盖不足）、不参与 good（防止把停更前最后批次经 EXEC-R35 对账复活成"当期"），
+# EOD 卡注记"结构标注线已停"。CORE 收缩为仍健在的 premarket+cross。
+CORE_SOURCES = ("premarket", "cross")
+HALT_SOURCES = ("chanlun", "nine_dim", "weak")
+HALT_NOTE = "结构标注线已停（缠论/九维/弱于板块，2026-11-05 定档非入场依据）"
+
+
+def _halt_active(res):
+    """停跑注记是否适用：任一 HALT 源在 health 中非 ok/empty（恢复生产则不注）。"""
+    try:
+        srcs = res["source_health"]["sources"]
+        return any(
+            isinstance(srcs.get(s), dict) and srcs[s].get("status") not in ("ok", "empty")
+            for s in HALT_SOURCES
+        )
+    except Exception:
+        return False
+
+
 SOURCE_ERROR_REASONS = {
     "missing",
     "invalid_schema",
@@ -60,6 +81,10 @@ SOURCE_ERROR_REASONS = {
     "upstream_blocked",
     "upstream_degraded",
     "source_error",
+    # 2026-11-08 补：生产侧 2026-11-05 起 mark("council","retired","producer_retired")
+    # （portal/api_common_alert.py:322，避免每天重复 P2 核对）。消费端白名单未跟上，
+    # retired 不在 (ok,empty,error,stale) 四态内 → 整包 return None，推送链陪停。
+    "producer_retired",
 }
 SHANGHAI = timezone(timedelta(hours=8))
 
@@ -412,6 +437,7 @@ def validated_alerts(res, morning=False, include_baseline=False):
             "empty",
             "error",
             "stale",
+            "retired",  # 2026-11-08：council 源 11-05 起固定 retired（producer_retired）
         ):
             return None
         reason = item.get("reason")
@@ -456,17 +482,33 @@ def validated_alerts(res, morning=False, include_baseline=False):
             ):
                 reconciled.add(source)
     scope = MORNING_SOURCES if morning else EOD_SOURCES
+    # A0口径对齐：生产线已停的源记 halted——不计 good（防 EXEC-R35 把停更前
+    # 最后批次对账复活成"当期"）、不计 bad（停跑≠覆盖故障）。恢复生产
+    # （status 回 ok/empty 且批次当期）当日即自动回归原语义。
+    halted = {
+        source
+        for source in HALT_SOURCES
+        if sources[source]["status"] not in ("ok", "empty")
+    }
     good = {
         source
         for source in scope
-        if (sources[source]["status"] in ("ok", "empty") and source not in outdated)
-        or source in reconciled
+        if source not in halted
+        and (
+            (sources[source]["status"] in ("ok", "empty") and source not in outdated)
+            or source in reconciled
+        )
     }
     # Weak/cross are UI summaries; without a direct core feed they cannot
     # establish actionable partial coverage even if their status says ok.
     if not good or (not morning and not good.intersection(CORE_SOURCES)):
-        return None
-    bad = tuple(source for source in scope if source not in good)
+        # 晨报双源（缠论/九维）全在停跑名单：非数据故障——放行为空报，
+        # 卡面注记停跑原因；不伪装成「暂无预警」的数据链路故障，也不静默失败。
+        if not (morning and set(scope) <= halted):
+            return None
+    bad = tuple(
+        source for source in scope if source not in good and source not in halted
+    )
     filtered = []
     seen = set()
     for alert in res["alerts"]:
@@ -557,6 +599,7 @@ def main():
         _save_last(False, morning, res, {}, status="source_unavailable")
         print("ALERT_PUSH_SOURCE_UNAVAILABLE partial=%s" % ",".join(bad))
         return 1
+    halt_note_on = _halt_active(res)
     if not res["alerts"]:
         # K-STOCK-098 #1 归因修复：晨扫/盘后「无预警数据」不是推送失败——
         # 原实现直接 return 1，计划任务记 rc=1 且无人知晓（静默失败假象）。
@@ -570,8 +613,12 @@ def main():
         now = time.strftime("%Y-%m-%d %H:%M")
         if morning:
             ititle, isub = "⚠️ 预警速览 · 晨", now + " · 当日新扫描暂无缠论/九维预警"
+            if halt_note_on:
+                isub += " · " + HALT_NOTE
         else:
             ititle, isub = "⚠️ 预警日报 · 盘后", now + " · 五路预警今日均为空"
+            if halt_note_on:
+                isub += " · " + HALT_NOTE
         empty_res = {"alerts": [], "empty": True}
         blocks = build_blocks(empty_res, morning, fetch_index())
         card = card_build.build_card3(  # K-PUSH-008：空报走 v3 绿域例行
@@ -620,6 +667,8 @@ def main():
         if bad
         else ""
     )
+    if halt_note_on and not coverage:
+        coverage = HALT_NOTE  # 停跑源不误标"覆盖不足"，单列注记
     if coverage:
         blocks.insert(0, "**⚠️ " + coverage + "**")
 

@@ -167,7 +167,7 @@ def main() -> int:
 
     L = ["# 量学知识单元 → 特征 → 事件研究（H24–H27）", "",
          f"- 样本：{START}~{END}，{rep['meta']['codes']} 只，{rep['meta']['rows']:,} 行；T+1 收盘入场；相对等权市场 CAR；成本 30bp；IS≤2023 / OOS≥2024",
-         f"- 来源知识：`knowledge_docs/量学_伏击涨停与涨停密码_OCR摘要.md`（知识单元→特征映射）", "",
+         "- 来源知识：`knowledge_docs/量学_伏击涨停与涨停密码_OCR摘要.md`（知识单元→特征映射）", "",
          "| 假设 | 特征 | 事件数 | 10日 IS(β调整) | 10日 OOS(β调整) | 10日 OOS(原始) | bootstrap p(≤0) | 判定 | 反向显著 |",
          "|---|---|---|---|---|---|---|---|---|"]
     for hid, grp in rep["hypotheses"].items():

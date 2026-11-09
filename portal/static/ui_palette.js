@@ -175,8 +175,80 @@
     trigger.className = 'wb-palette-trigger';
     trigger.textContent = '⌘K 命令';
     trigger.setAttribute('aria-label', '打开命令面板');
+    trigger.title = '命令面板（Ctrl/⌘ + K）';
     trigger.addEventListener('click', open);
     document.body.appendChild(trigger);
+
+    /* —— 避让：只在按钮自己身上调，绝不改宿主页布局 ——
+       量出内容栏右边线（扣掉栏自身右内边距），把按钮逐级收窄钉进右侧留白。
+       判定用「改完样式后实测 left ≥ 边线+2」，不用视口宽度做算术——
+       有无经典滚动条、栏是否满幅，都不会算错。留白连 30px 角标都放不下时隐藏，
+       键盘 Ctrl/⌘+K 与页头菜单里的入口仍在，不牺牲可读性。 */
+    var LABEL = { full: '⌘K 命令', mini: '⌘K', corner: '⌘' };
+    var TIERS = [
+      { dock: null, label: LABEL.full, right: '18px' },
+      { dock: 'mini', label: LABEL.mini, right: '10px' },
+      { dock: 'corner', label: LABEL.corner, right: '6px' },
+      { dock: 'dot', label: LABEL.corner, right: '4px' }
+    ];
+    var dockQueued = false;
+
+    function contentRight() {
+      var sels = ['.ui-page', 'main', '#app', '.wrap', '.container', '#root'];
+      var best = 0;
+      for (var i = 0; i < sels.length; i++) {
+        var el = document.querySelector(sels[i]);
+        if (!el) continue;
+        var r = el.getBoundingClientRect();
+        if (r.width < 320) continue;
+        var pad = parseFloat(window.getComputedStyle(el).paddingRight) || 0;
+        if (r.right - pad > best) best = r.right - pad;
+      }
+      return best || null;
+    }
+
+    function apply(t) {
+      if (t.dock) trigger.setAttribute('data-dock', t.dock);
+      else trigger.removeAttribute('data-dock');
+      trigger.textContent = t.label;
+      trigger.style.right = t.right;
+    }
+
+    function dock() {
+      dockQueued = false;
+      trigger.removeAttribute('aria-hidden');
+      trigger.style.bottom = '18px';
+      var edge = contentRight();
+      if (!edge) { apply(TIERS[0]); liftOverOrb(); return; }   // 认不出内容容器：维持旧行为
+      for (var i = 0; i < TIERS.length; i++) {
+        apply(TIERS[i]);
+        if (trigger.getBoundingClientRect().left >= edge + 2) { liftOverOrb(); return; }
+      }
+      trigger.setAttribute('data-dock', 'hidden');      // 留白不足，收起（⌘K 仍可用）
+      trigger.setAttribute('aria-hidden', 'true');
+    }
+    /* 「菜鸟蛋」悬浮球同在右下角、同为 z-index 900，两个浮层会叠在一起。
+       球贴近右下角时把按钮抬到球上方，球被拖走后自然回落。 */
+    function liftOverOrb() {
+      var orb = document.getElementById('ai-orb');
+      if (!orb) return;
+      var r = orb.getBoundingClientRect();
+      var nearCorner = r.bottom > window.innerHeight - 140 && r.right > window.innerWidth - 140;
+      if (!nearCorner) return;
+      trigger.style.bottom = Math.max(18, Math.round(window.innerHeight - r.top + 10)) + 'px';
+    }
+    function queueDock() {
+      if (dockQueued) return;
+      dockQueued = true;
+      window.requestAnimationFrame(dock);
+    }
+    dock();
+    window.addEventListener('resize', queueDock);
+    window.addEventListener('load', queueDock);
+    document.addEventListener('pointerup', function (e) {
+      var t = e.target;
+      if (t && t.closest && t.closest('#ai-orb')) queueDock();   // 球被拖走后重算
+    }, true);
   }
 
   if (document.readyState === 'loading') {

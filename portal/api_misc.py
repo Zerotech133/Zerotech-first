@@ -30,10 +30,11 @@ from api_common import (
     build_alerts,
     _PILL, _PILL_ON)
 
-from api_misc_home import (  # A5FROZEN：K-STOCK-167 驾驶舱数据面拆出
-    _HOME_ORG_JSON, _HOME_PAPER_DB, _HOME_ROOT, _HOME_SHADOW,
-    _home_cal, _home_money, _home_mt, _home_now_context, _home_org,
-    _home_timeline, build_home_cockpit)
+from api_misc_home import (  # noqa: F401
+    _HOME_ORG_JSON, _HOME_PAPER_DB, _HOME_ROOT, _HOME_SHADOW,  # noqa: F401
+    _home_cal, _home_money, _home_mt, _home_now_context, _home_org,  # noqa: F401
+    _home_timeline, build_home_cockpit)  # noqa: F401
+
 TASKS = ["AI工作站每日备份", "AI工作站告警转发", "JevFOCUS首期报告",
          "ZhiceWatchdog", "金融新闻采集", "金融新闻日报", "金融新闻AI晨报",
          "金融新闻收盘复盘", "自选股行情快照", "公众号选题撰文",
@@ -415,29 +416,28 @@ def build_os_cockpit():
     out["biz"] = biz
     return out
 
-def build_overview():
-    services = [
-        {"name": "智策页面(/quant/)", "port": 8734},
-        {"name": "智策 API", "port": 8105},
-        {"name": "卡片回调", "port": 9104},
-        {"name": "Ollama", "port": 11434},
-    ]
-    for s in services:
-        s["ok"] = tcp_ok(s["port"])
-    return {
-        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "containers": get_containers(),
-        "tasks": get_tasks(),
-        "backups": get_backups(),
-        "alerts": get_alerts(),
-        "disks": get_disks(),
-        "services": services,
-        "news": get_news(),
-        "quotes": get_quotes(),
-        "backtest": get_backtest(),
-        "gzh": get_gzh(),
-        "video": get_video(),
-    }
+# ── overview 分层（2026-11-08 K-ORG-20261108-OVWSPLIT）────────────────────
+# 机器已搬到 overview_layers.py：本文件在 tools/check_portal_split.py 的
+# 冻结名单内（基线 2710 行，只减不增，--strict 增长即判失败）。
+# 原样搬出 + 顶部 import 回流保持命名空间，同 api_misc_home.py 先例（2026-10-31）。
+# 依赖单向：overview_layers 不 import 本模块，getter 在调用时现取，
+# 故 monkeypatch api_misc._overview_heavy 的测试 seam 依旧生效。
+from overview_layers import (  # noqa: F401  命名空间回流
+    _OVERVIEW_HEAVY_RETRY_S,
+    _OVERVIEW_HEAVY_TTL_S,
+    _OVERVIEW_LIGHT_TTL_S,
+    _OV_HEAVY,
+    _OV_HEAVY_LOCK,
+    _OV_LIGHT,
+    _OV_LIGHT_LOCK,
+    _kick_overview_heavy_refresh,
+    _overview_heavy,
+    _overview_light,
+    _refresh_overview_heavy,
+    build_overview,
+    overview_cached,
+)
+
 def get_video():
     try:
         with open(os.path.join(STATION, "video", "output", "index.json"),

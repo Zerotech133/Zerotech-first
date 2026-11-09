@@ -1,0 +1,22 @@
+# 8870 启动链证据（只读）
+captured_at: 2026-11-08 10:25:03 +08:00
+
+[launcher script]
+C:\Users\t\AppData\Local\Temp\codebuddy-shell-payload-53604-PfZTEX\script.sh
+
+[line 10]
+eval 'cd "C:/项目/zerobound-kg/factor_proto/factor_console" && /c/项目/py312/python.exe server.py'
+
+[process chain]
+PID 62340 python  C:\项目\py312\python.exe server.py  (start 2026-11-08 09:54:51.801)
+  parent 50528 bash.exe  (start 2026-11-08 09:54:51)
+  parent 63108 bash.exe
+  parent 54832 bash.exe
+  parent 39176 sandbox-cli.exe  (start 2026-11-08 01:26:24)
+  parent 53604 (WorkBuddy session shell)
+
+[interpretation]
+- 该进程由 WorkBuddy 会话 92de345a-65e8-449d-830e-08dfd422e777 的临时 shell payload 启动。
+- 启动器不是 Windows 服务，也不是计划任务；payload 位于用户临时目录，可能在会话结束后清理。
+- factor_console 目录内没有独立的 start.ps1/start.bat/start.sh；持久化启动方式尚未建立。
+- 审计时的 PID 37264 已不存在；8870 当前由 PID 62340 接替，说明该服务发生过重启/重拉。

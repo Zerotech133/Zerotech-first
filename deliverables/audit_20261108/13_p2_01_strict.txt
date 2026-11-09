@@ -1,0 +1,14 @@
+# check_ports.py --strict 证据（8870 相关）
+captured_at: 2026-11-08 10:25:03 +08:00
+command: C:\项目\py312\python.exe -X utf8 C:\项目\老田的AI助手\tools\check_ports.py --strict
+
+[8870]
+⚠ 8870 由 python.exe 监听——我方服务未上注册表！
+
+[汇总]
+注册 65 个，离线 23，未登记 3，瞬态监听 0，冲突 0
+STRICT FAIL（未登记 3，端口冲突 0）
+
+[其他未登记项（不在 P2-01 范围）]
+- 8001 由 python.exe 监听——我方服务未上注册表
+- 8897 由 python.exe 监听——我方服务未上注册表

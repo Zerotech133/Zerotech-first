@@ -12,7 +12,6 @@ import json
 import pathlib
 import sys
 
-import pytest
 
 HERE = pathlib.Path(__file__).resolve().parent
 PLATFORM = HERE.parent

@@ -13,7 +13,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
-import data_hub  # noqa: E402
 from data_hub import govern, net, probe, registry  # noqa: E402
 
 
@@ -339,23 +338,6 @@ def test_aggregate_empty_returns_empty_frame():
 
     out = sentiment.aggregate(pd.DataFrame())
     assert out.empty and "trade_date" in out.columns
-
-def test_read_daily_missing_returns_empty(tmp_path):
-    from data_hub import sentiment
-
-    assert sentiment.read_daily(tmp_path / "nope.parquet").empty
-
-
-def test_run_without_landing_data_writes_nothing(tmp_path, monkeypatch):
-    import pandas as pd
-
-    from data_hub import sentiment
-
-    monkeypatch.setattr(sentiment, "OUT", tmp_path / "sd")
-    monkeypatch.setattr(sentiment, "read_landing", lambda a, d: pd.DataFrame())
-    res = sentiment.run(["600519"], fetch=False)
-    assert res["written"] is False and res["rows"] == 0
-    assert not (tmp_path / "sd").exists()
 
 def test_read_daily_missing_returns_empty(tmp_path):
     from data_hub import sentiment

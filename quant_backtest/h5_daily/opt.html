@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>全池参数寻优榜单</title><style>
+body{margin:0;background:#0d1117;color:#e6edf3;font:14px/1.6 "Segoe UI",
+system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:20px;margin:0 0 4px} .meta{color:#8b949e;font-size:12px;margin-bottom:22px}
+section{background:#161b22;border:1px solid #30363d;border-radius:10px;
+padding:18px;margin-bottom:20px}
+h2{font-size:16px;margin:0 0 2px} .win{color:#8b949e;font-size:12px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+gap:10px;margin-bottom:16px}
+.kpi{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px 12px}
+.kpi .l{color:#8b949e;font-size:11px}.kpi .v{font-size:17px;font-weight:600;margin-top:2px}
+.up{color:#f85149}.dn{color:#3fb950}.mu{color:#d2a8ff}
+svg{width:100%;height:auto;display:block;background:#0d1117;border:1px solid #30363d;
+border-radius:8px}
+.leg{color:#8b949e;font-size:11px;margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #21262d}
+th{color:#8b949e;font-weight:500}
+.cmp{font-size:13px;margin:4px 0 0;padding-left:0;list-style:none}
+.cmp li{padding:3px 0;border-bottom:1px dashed #21262d}
+.foot{color:#8b949e;font-size:11px;text-align:center;margin-top:8px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.nav a{display:inline-block;padding:6px 13px;border:1px solid #30363d;
+border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;
+background:#161b22}
+.nav a:hover{border-color:#58a6ff;background:#1c2a3a}
+
+td{padding:5px 10px;border-bottom:1px solid #21262d}
+th{padding:6px 10px;color:#8b949e;font-weight:600;text-align:left}
+table{border-collapse:collapse;width:100%;font-size:13px}
+</style>
+<style id="pf-nav-css">
+#pf-nav{position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:10px;
+ flex-wrap:wrap;padding:8px 12px;margin:0 0 10px;background:#11161d;
+ border-bottom:1px solid #232a34;font:13px/1.5 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif;
+ color:#c8d2df}
+#pf-nav a{color:#8fb4e8;text-decoration:none;white-space:nowrap}
+#pf-nav a:hover{text-decoration:underline}
+#pf-nav .pf-sep{color:#4a5568}
+#pf-nav .pf-title{color:#e6edf3;font-weight:600;flex:1 1 auto;min-width:0;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pf-nav .pf-badge{font-size:11.5px;padding:2px 8px;border-radius:10px;white-space:nowrap;
+ background:#1c2735;color:#9fb0c4;border:1px solid #2b3949}
+#pf-nav .pf-ok{background:#14261b;color:#7fd18b;border-color:#22452e}
+#pf-nav .pf-warn{background:#2a2312;color:#e0b95c;border-color:#4a3d1c}
+#pf-nav .pf-old{background:#2b1618;color:#e8807f;border-color:#4d2528}
+/* 同域兄弟页：此前只有面包屑，从一页去同域另一页必须先回门面 */
+#pf-nav .pf-sibs{display:flex;gap:5px;flex-wrap:wrap;order:3;flex:1 0 100%;
+ padding-top:7px;margin-top:5px;border-top:1px solid #1c232d}
+#pf-nav .pf-sib{font-size:12px;padding:2px 9px;border-radius:11px;
+ background:#161d27;border:1px solid #232d3a;color:#93a3b6}
+#pf-nav .pf-sib:hover{color:#cfe0f5;border-color:#31414f;text-decoration:none}
+#pf-nav .pf-sib.on{background:#1b2c40;border-color:#33506e;color:#a8cdf0}
+.pf-dead{color:#6b7787;border-bottom:1px dotted #4a5568;cursor:help}
+@media (max-width:640px){#pf-nav{font-size:12px;padding:7px 10px}
+ #pf-nav .pf-sub{display:none}
+ #pf-nav .pf-sibs{gap:4px;padding-top:6px}
+ #pf-nav .pf-sib{font-size:11.5px;padding:2px 7px}}
+</style>
+</head><body><div id="pf-nav"><a href="index.html">← 平台</a><span class="pf-sep">/</span><span class="pf-sub" style="color:#8a93a3">回测</span><span class="pf-sep pf-sub">/</span><span class="pf-title">全池参数寻优榜单</span><span class="pf-badge pf-old" title="数据基准日">2026-09-26 · 26 个交易日未更新</span><span class="pf-sibs"><a class="pf-sib" href="report.html">每日扫描 Top5 回测</a><a class="pf-sib" href="bt_strat_trend_follow.html">趋势跟随</a><a class="pf-sib" href="bt_strat_ma_cross.html">均线交叉</a><a class="pf-sib" href="bt_strat_rsi_reversal.html">RSI 反转</a><a class="pf-sib" href="bt_strat_boll_breakout.html">布林突破</a><a class="pf-sib" href="chanlun_tbe_report.html">背驰分层影子报表</a><a class="pf-sib" href="bt10m_sweep.html">降换手实验</a><a class="pf-sib" href="bt10m.html">1000 万</a></span></div><div class="wrap">
+<h1>📊 全池参数寻优榜单</h1>
+<div class="meta">生成于 2026-09-26 06:48 · 51 只自选 · 近 365 天 · 季度自动重调（季首 10:00）·
+<a href="javascript:window.print()">🖨 打印 / 存 PDF</a></div>
+<div style='display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 18px'><div style='display:flex;align-items:center;gap:7px;flex-wrap:wrap'><a href='/' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>🏠 首页</a><span style='color:#8b949e;font-size:11px'>›</span><a href='/quant' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>📈 量化</a><span style='color:#8b949e;font-size:11px'>›</span><span style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22;color:#e6edf3;border-color:#58a6ff;font-weight:600'>📊 寻优</span></div><details style='position:relative;display:inline-block'><summary style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22;cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:5px'>☰ 域内导航 <span style='font-size:9px'>▾</span></summary><div style='position:absolute;right:0;top:calc(100% + 6px);z-index:60;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:8px 14px 10px;min-width:320px;box-shadow:0 10px 28px rgba(0,0,0,.45)'><div style='color:#8b949e;font-size:10px;letter-spacing:1px;margin:5px 0 3px'>🌅 盘前与驾驶</div><div style='display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;line-height:2'><a href='/premarket' style='color:#58a6ff;text-decoration:none'>🌅 盘前</a><a href='/fin' style='color:#58a6ff;text-decoration:none'>🏠 驾驶舱</a><a href='/sa' style='color:#58a6ff;text-decoration:none'>🔍 个股分析</a><a href='/nl' style='color:#58a6ff;text-decoration:none'>💬 查数</a></div><div style='color:#8b949e;font-size:10px;letter-spacing:1px;margin:5px 0 3px'>🎖 策略资产</div><div style='display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;line-height:2'><a href='/strategies' style='color:#58a6ff;text-decoration:none'>🎖 策略中心</a><a href='/bt-qpzm' style='color:#58a6ff;text-decoration:none'>🌊 青萍之末</a><a href='/bt-chanlun' style='color:#58a6ff;text-decoration:none'>🧭 缠论</a><a href='/bt-chanlun-pool' style='color:#58a6ff;text-decoration:none'>🛟 预警池</a><a href='/bt-linkage' style='color:#58a6ff;text-decoration:none'>🔗 三线联动</a><a href='/bt-weak' style='color:#58a6ff;text-decoration:none'>📚 弱于板块案例</a><a href='/bt-9dim' style='color:#58a6ff;text-decoration:none'>🧮 九维</a><a href='/bt-cross' style='color:#58a6ff;text-decoration:none'>🎯 共振</a></div><div style='color:#8b949e;font-size:10px;letter-spacing:1px;margin:5px 0 3px'>🚦 实盘跟踪</div><div style='display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;line-height:2'><span class="pf-dead" title="需本机门户服务（127.0.0.1:8091），本平台为静态托管，此跳转不提供">🚦 信号</span><a href='/bt-positions' style='color:#58a6ff;text-decoration:none'>💼 持仓</a><a href='/bt-report' style='color:#58a6ff;text-decoration:none'>📄 报告</a></div><div style='color:#8b949e;font-size:10px;letter-spacing:1px;margin:5px 0 3px'>🧰 研究与数据</div><div style='display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;line-height:2'><a href='/bt' style='color:#58a6ff;text-decoration:none'>📊 量化中心</a><span style='color:#e6edf3;font-weight:600'>📊 寻优</span><a href='/bt-sectors' style='color:#58a6ff;text-decoration:none'>🔥 板块</a><a href='/bt-data-health' style='color:#58a6ff;text-decoration:none'>🗄 数据仓</a></div></div></details></div>
+
+<h2 style="margin-top:18px;font-size:14px">趋势跟随 <span style="color:#8b949e;
+font-weight:400">· 当前 {&quot;n&quot;: 20, &quot;slope_lookback&quot;: 3}</span></h2>
+<table><tr><th>#</th><th>参数组合</th><th>全池平均收益</th><th>平均夏普</th>
+<th>Top3命中</th></tr><tr style="background:#1c2a3a"><td>★</td><td>{&quot;n&quot;: 20, &quot;slope_lookback&quot;: 3}（当前）</td><td class="up">+13.9%</td><td><b>0.42</b></td><td>25/51</td></tr><tr><td>2</td><td>{&quot;n&quot;: 10, &quot;slope_lookback&quot;: 3}</td><td class="up">+8.5%</td><td><b>0.35</b></td><td>23/51</td></tr><tr><td>3</td><td>{&quot;n&quot;: 20, &quot;slope_lookback&quot;: 5}</td><td class="up">+10.7%</td><td><b>0.30</b></td><td>22/51</td></tr><tr><td>4</td><td>{&quot;n&quot;: 30, &quot;slope_lookback&quot;: 5}</td><td class="up">+10.7%</td><td><b>0.26</b></td><td>20/51</td></tr><tr><td>5</td><td>{&quot;n&quot;: 30, &quot;slope_lookback&quot;: 3}</td><td class="up">+12.6%</td><td><b>0.25</b></td><td>23/51</td></tr></table>
+<h2 style="margin-top:18px;font-size:14px">均线交叉 <span style="color:#8b949e;
+font-weight:400">· 当前 {&quot;fast&quot;: 8, &quot;slow&quot;: 20}</span></h2>
+<table><tr><th>#</th><th>参数组合</th><th>全池平均收益</th><th>平均夏普</th>
+<th>Top3命中</th></tr><tr style="background:#1c2a3a"><td>★</td><td>{&quot;fast&quot;: 8, &quot;slow&quot;: 20}（当前）</td><td class="up">+17.7%</td><td><b>0.55</b></td><td>27/51</td></tr><tr><td>2</td><td>{&quot;fast&quot;: 3, &quot;slow&quot;: 20}</td><td class="up">+13.3%</td><td><b>0.42</b></td><td>20/51</td></tr><tr><td>3</td><td>{&quot;fast&quot;: 5, &quot;slow&quot;: 20}</td><td class="up">+13.1%</td><td><b>0.39</b></td><td>18/51</td></tr><tr><td>4</td><td>{&quot;fast&quot;: 8, &quot;slow&quot;: 30}</td><td class="up">+15.1%</td><td><b>0.37</b></td><td>20/51</td></tr><tr><td>5</td><td>{&quot;fast&quot;: 3, &quot;slow&quot;: 30}</td><td class="up">+14.8%</td><td><b>0.35</b></td><td>16/51</td></tr></table>
+<h2 style="margin-top:18px;font-size:14px">布林突破 <span style="color:#8b949e;
+font-weight:400">· 当前 {&quot;period&quot;: 20, &quot;k&quot;: 1.5}</span></h2>
+<table><tr><th>#</th><th>参数组合</th><th>全池平均收益</th><th>平均夏普</th>
+<th>Top3命中</th></tr><tr style="background:#1c2a3a"><td>★</td><td>{&quot;period&quot;: 20, &quot;k&quot;: 1.5}（当前）</td><td class="up">+13.6%</td><td><b>0.39</b></td><td>35/51</td></tr><tr><td>2</td><td>{&quot;period&quot;: 10, &quot;k&quot;: 1.5}</td><td class="up">+7.3%</td><td><b>0.34</b></td><td>25/51</td></tr><tr><td>3</td><td>{&quot;period&quot;: 30, &quot;k&quot;: 1.5}</td><td class="up">+12.0%</td><td><b>0.21</b></td><td>24/51</td></tr><tr><td>4</td><td>{&quot;period&quot;: 10, &quot;k&quot;: 2}</td><td class="up">+2.6%</td><td><b>0.13</b></td><td>15/51</td></tr><tr><td>5</td><td>{&quot;period&quot;: 30, &quot;k&quot;: 2}</td><td class="up">+4.9%</td><td><b>-0.06</b></td><td>15/51</td></tr></table>
+<h2 style="margin-top:18px;font-size:14px">RSI 反转 <span style="color:#8b949e;
+font-weight:400">· 当前 {&quot;period&quot;: 6, &quot;oversold&quot;: 30, &quot;overbought&quot;: 75}</span></h2>
+<table><tr><th>#</th><th>参数组合</th><th>全池平均收益</th><th>平均夏普</th>
+<th>Top3命中</th></tr><tr><td>1</td><td>{&quot;period&quot;: 6, &quot;oversold&quot;: 30, &quot;overbought&quot;: 65}</td><td class="up">+15.4%</td><td><b>0.80</b></td><td>24/51</td></tr><tr><td>2</td><td>{&quot;period&quot;: 6, &quot;oversold&quot;: 25, &quot;overbought&quot;: 65}</td><td class="up">+14.4%</td><td><b>0.76</b></td><td>20/51</td></tr><tr style="background:#1c2a3a"><td>★</td><td>{&quot;period&quot;: 6, &quot;oversold&quot;: 30, &quot;overbought&quot;: 75}（当前）</td><td class="up">+14.9%</td><td><b>0.70</b></td><td>25/51</td></tr><tr><td>4</td><td>{&quot;period&quot;: 6, &quot;oversold&quot;: 25, &quot;overbought&quot;: 75}</td><td class="up">+13.5%</td><td><b>0.67</b></td><td>23/51</td></tr><tr><td>5</td><td>{&quot;period&quot;: 14, &quot;oversold&quot;: 30, &quot;overbought&quot;: 65}</td><td class="up">+7.9%</td><td><b>0.58</b></td><td>16/51</td></tr></table>
+<div class="leg">按（全池平均夏普, Top3 命中数）排序取前 5 · ★ 当前生效参数 ·
+样本内寻优仅供敏感性参考，谨防过拟合</div>
+</div></body></html>

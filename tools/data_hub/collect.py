@@ -23,7 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, date
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -92,7 +92,6 @@ def fetch_sina_quote(codes: str) -> tuple[pd.DataFrame, str, str]:
                     source_id="collect:sina")
     if not res.get("ok"):
         raise RuntimeError(f"sina 取数失败: {res.get('error') or res.get('status')}")
-    from io import StringIO
 
     records = []
     for line in (res.get("text") or "").splitlines():

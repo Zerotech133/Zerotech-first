@@ -74,7 +74,9 @@ def test_budget_strict_currently_passes():
 
 def test_b1_b2_not_regressed():
     import re
-    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 17)):
+    # 2026-11-08 同步：quant_key 23→27（xq 接缝修复 +4）、tools_key 20→22
+    # （worktree mech +1、行尾守卫 +1）
+    for name, count in (("agent_key", 52), ("quant_key", 27), ("tools_key", 22)):
         m = re.search(r"'%s'\s*=\s*@\((.*?)\n    \)" % name, GATE, re.S)
         assert m, "缺 %s 文件清单" % name
         assert len(re.findall(r"'([^']+\.py)'", m.group(1))) == count, "%s 清单应 %d 文件" % (
@@ -82,7 +84,8 @@ def test_b1_b2_not_regressed():
     m = re.search(r"'fast'\s*\{\s*\$suites\s*=\s*@\(([^)]*)\)", GATE)
     assert m
     assert re.findall(r"'([a-z_]+)'", m.group(1)) == [
-        "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse"]
+        "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse",
+                              "analysis", "commercial"]
 
 
 def test_gate_ps1_bom_and_parser(tmp_path):

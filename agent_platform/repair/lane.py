@@ -215,7 +215,10 @@ def run_batch(batch_id: str, timeout: int = 300) -> dict:
             env2["TEMP"] = env2["TMP"] = base
             return subprocess.run(
                 [sys.executable, "-m", "pytest", str(target), "-q",
-                 "-p", "no:cacheprovider", "--basetemp", base],
+                 "-p", "no:cacheprovider",
+                 "--rootdir", str(MAIN_REPO),
+                 "--confcutdir", str(MAIN_REPO),
+                 "--basetemp", base],
                 cwd=str(MAIN_REPO),
                 env=env2,
                 capture_output=True,

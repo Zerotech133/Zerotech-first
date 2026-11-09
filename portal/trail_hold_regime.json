@@ -1,0 +1,267 @@
+{
+ "meta": {
+  "pool": "chanlun_pool_ext_v2.jsonl",
+  "sig_th": 0.4843,
+  "zt_q": 0.7,
+  "trail": 0.08,
+  "hold": 20,
+  "n_rows": 15342,
+  "window": [
+   "20231009",
+   "20261106"
+  ],
+  "hot_days": 135,
+  "sig_pass_days": 212
+ },
+ "rules": {
+  "R0 全信号": {
+   "trail": {
+    "days": 729,
+    "avg": 0.857,
+    "win": 47.5,
+    "p_vs_random": null,
+    "null_p50": null,
+    "null_p95": null,
+    "by_year": {
+     "2023": {
+      "days": 60,
+      "avg": 0.27
+     },
+     "2024": {
+      "days": 236,
+      "avg": 0.991
+     },
+     "2025": {
+      "days": 242,
+      "avg": 1.99
+     },
+     "2026": {
+      "days": 191,
+      "avg": -0.558
+     }
+    }
+   },
+   "hold": {
+    "days": 729,
+    "avg": 2.029,
+    "win": 57.3,
+    "p_vs_random": null,
+    "null_p50": null,
+    "null_p95": null,
+    "by_year": {
+     "2023": {
+      "days": 60,
+      "avg": 1.163
+     },
+     "2024": {
+      "days": 236,
+      "avg": 2.599
+     },
+     "2025": {
+      "days": 242,
+      "avg": 4.405
+     },
+     "2026": {
+      "days": 191,
+      "avg": -1.415
+     }
+    }
+   }
+  },
+  "R1 sigdens pass": {
+   "trail": {
+    "days": 212,
+    "avg": 0.091,
+    "win": 40.1,
+    "p_vs_random": 0.9925,
+    "null_p50": 0.867,
+    "null_p95": 1.421,
+    "by_year": {
+     "2023": {
+      "days": 13,
+      "avg": -1.205
+     },
+     "2024": {
+      "days": 89,
+      "avg": 0.656
+     },
+     "2025": {
+      "days": 57,
+      "avg": 0.767
+     },
+     "2026": {
+      "days": 53,
+      "avg": -1.267
+     }
+    }
+   },
+   "hold": {
+    "days": 212,
+    "avg": 1.058,
+    "win": 54.2,
+    "p_vs_random": 0.9575,
+    "null_p50": 2.069,
+    "null_p95": 2.988,
+    "by_year": {
+     "2023": {
+      "days": 13,
+      "avg": -3.269
+     },
+     "2024": {
+      "days": 89,
+      "avg": 2.788
+     },
+     "2025": {
+      "days": 57,
+      "avg": 3.809
+     },
+     "2026": {
+      "days": 53,
+      "avg": -3.746
+     }
+    }
+   }
+  },
+  "R2 排除 hot": {
+   "trail": {
+    "days": 594,
+    "avg": 0.898,
+    "win": 47.1,
+    "p_vs_random": 0.3325,
+    "null_p50": 0.853,
+    "null_p95": 1.005,
+    "by_year": {
+     "2023": {
+      "days": 60,
+      "avg": 0.27
+     },
+     "2024": {
+      "days": 166,
+      "avg": 0.864
+     },
+     "2025": {
+      "days": 220,
+      "avg": 2.028
+     },
+     "2026": {
+      "days": 148,
+      "avg": -0.49
+     }
+    }
+   },
+   "hold": {
+    "days": 594,
+    "avg": 2.327,
+    "win": 58.8,
+    "p_vs_random": 0.025,
+    "null_p50": 2.026,
+    "null_p95": 2.29,
+    "by_year": {
+     "2023": {
+      "days": 60,
+      "avg": 1.163
+     },
+     "2024": {
+      "days": 166,
+      "avg": 2.377
+     },
+     "2025": {
+      "days": 220,
+      "avg": 4.632
+     },
+     "2026": {
+      "days": 148,
+      "avg": -0.682
+     }
+    }
+   }
+  },
+  "R3 sigdens pass 且非 hot": {
+   "trail": {
+    "days": 165,
+    "avg": 0.026,
+    "win": 39.4,
+    "p_vs_random": 0.9825,
+    "null_p50": 0.831,
+    "null_p95": 1.486,
+    "by_year": {
+     "2023": {
+      "days": 13,
+      "avg": -1.205
+     },
+     "2024": {
+      "days": 54,
+      "avg": 0.312
+     },
+     "2025": {
+      "days": 55,
+      "avg": 0.795
+     },
+     "2026": {
+      "days": 43,
+      "avg": -0.942
+     }
+    }
+   },
+   "hold": {
+    "days": 165,
+    "avg": 1.359,
+    "win": 55.8,
+    "p_vs_random": 0.7975,
+    "null_p50": 1.954,
+    "null_p95": 3.161,
+    "by_year": {
+     "2023": {
+      "days": 13,
+      "avg": -3.269
+     },
+     "2024": {
+      "days": 54,
+      "avg": 2.761
+     },
+     "2025": {
+      "days": 55,
+      "avg": 3.89
+     },
+     "2026": {
+      "days": 43,
+      "avg": -2.239
+     }
+    }
+   }
+  }
+ },
+ "vs_baseline": {
+  "R0 全信号": {
+   "vs_R0_trail": 0.0,
+   "vs_R0_hold": 0.0,
+   "same_sign": true
+  },
+  "R1 sigdens pass": {
+   "vs_R0_trail": -0.766,
+   "vs_R0_hold": -0.971,
+   "same_sign": true
+  },
+  "R2 排除 hot": {
+   "vs_R0_trail": 0.041,
+   "vs_R0_hold": 0.298,
+   "same_sign": true
+  },
+  "R3 sigdens pass 且非 hot": {
+   "vs_R0_trail": -0.831,
+   "vs_R0_hold": -0.67,
+   "same_sign": true
+  }
+ },
+ "sigdens_diagnosis": {
+  "trail": {
+   "avg": 0.091,
+   "p": 0.9925
+  },
+  "hold": {
+   "avg": 1.058,
+   "p": 0.9575
+  },
+  "verdict": "两种口径方向一致 → 口径不是问题"
+ }
+}

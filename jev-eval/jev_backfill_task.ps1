@@ -54,12 +54,12 @@ try {
     $ErrorActionPreference = 'Stop'
     W ('P2 exit=' + $code + ' out=' + ($out -join ' | '))
     # 2026-10-30 JEVALERTB (user approved B): JEV risk bridge -> LOCAL OUTBOX ONLY.
-    # High-impact bear events (last 2h, conf>=0.8) appended to risk_alerts.jsonl; NO push.
+    # High-impact bear events (last 2h, conf>=0.8) appended to risk_alerts.jsonl; 2026-11-08 老田批准 S3:加 --notify 红即到人(seen 去重+hub 4h 指纹).
     $riskPy = Join-Path (Split-Path $dir -Parent) 'tools\jev_risk_alert.py'
     if (-not (Test-Path -LiteralPath $riskPy)) { $riskPy = 'C:\aios\tools\jev_risk_alert.py' }
     if (Test-Path -LiteralPath $riskPy) {
         $ErrorActionPreference = 'Continue'
-        $riskOut = & $py -X utf8 -B $riskPy --hours 2 --emit-outbox 2>&1
+        $riskOut = & $py -X utf8 -B $riskPy --hours 2 --emit-outbox --notify 2>&1
         $riskLine = ($riskOut | Select-Object -Last 1)
         if ($null -eq $riskLine) { $riskLine = '' }
         $riskLine = ([string]$riskLine).Substring(0, [Math]::Min(220, ([string]$riskLine).Length))

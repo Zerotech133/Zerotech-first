@@ -45,7 +45,7 @@ def main() -> int:
     dts = pre + [d for d in ds if d >= "20190101"]
     P = load(dts)
     dates = P["a_close"].index.tolist()
-    csum = P["a_close"].cumsum()
+    P["a_close"].cumsum()
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names, industry = sb["name"], sb["industry"].fillna("未知")
     def listed_at(dt: str) -> pd.Series:

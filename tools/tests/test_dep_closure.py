@@ -6,7 +6,6 @@
 `api_trace_drilldown` 已入库却 import 了从未入库的 `kg_cq`，导致新 clone 起不来。
 """
 import importlib.util
-import sys
 from pathlib import Path
 
 import pytest

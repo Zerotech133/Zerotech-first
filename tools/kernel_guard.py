@@ -19,7 +19,6 @@ import argparse
 import fnmatch
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 try:

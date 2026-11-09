@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "research"))
 
 import factor_lib  # noqa: E402
-from factor_lib import Panel, evaluate_panel, FACTORS  # noqa: E402
+from factor_lib import Panel, evaluate_panel  # noqa: E402
 from factor_neutralize import (
     build_neutralized_specs,
     neutralize_matrix,

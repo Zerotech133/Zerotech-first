@@ -1,0 +1,117 @@
+{
+  "schema": "d1_p0_05_runtime_ledger_check/v1",
+  "checked_at": "2026-11-08T21:14:22+08:00",
+  "mode": "readiness",
+  "ok": true,
+  "ready": false,
+  "structural_errors": [],
+  "incomplete_books": [
+    "training"
+  ],
+  "books": {
+    "d1_decisions": {
+      "exists": true,
+      "rows": 4,
+      "invalid_lines": 0,
+      "errors_sample": [],
+      "unique_ids": 4,
+      "duplicate_ids": [],
+      "tiers": {
+        "HOLD": 4
+      },
+      "paper_only_all": true,
+      "clean": true
+    },
+    "meetings": {
+      "exists": true,
+      "rows": 1,
+      "schema_ok": 1,
+      "invalid_files": 0,
+      "errors_sample": [],
+      "status": {
+        "open": 1
+      },
+      "data_unavailable": false,
+      "clean": true
+    },
+    "training": {
+      "exists": false,
+      "rows": 0,
+      "invalid_lines": 0,
+      "errors_sample": [],
+      "valid_ids": 0,
+      "duplicate_ids": [],
+      "data_unavailable": true,
+      "clean": true
+    },
+    "chain": {
+      "decisions": 4,
+      "decisions_with_handoff": 4,
+      "handoffs": 4,
+      "handoffs_with_plan": 4,
+      "plans": 4,
+      "plans_with_trigger": 4,
+      "triggers": 4,
+      "triggers_with_confirmation": 4,
+      "confirmations": 4,
+      "paper_positions": 0,
+      "paper_trade_ids": 0,
+      "missing_links": {
+        "decisions_without_handoff": [],
+        "handoffs_without_plan": [],
+        "plans_without_trigger": []
+      }
+    },
+    "paper_state": {
+      "path": "C:\\项目\\老田的AI助手\\agent_platform\\data\\paper\\state.json",
+      "positions": {},
+      "nav": 0.99464
+    }
+  },
+  "api": {
+    "/api/d1/decisions": {
+      "path": "/api/d1/decisions",
+      "http": 200,
+      "expected_rows": 4,
+      "error": "",
+      "api_rows": 4,
+      "data_unavailable": false,
+      "match": true
+    },
+    "/api/d1/handoffs": {
+      "path": "/api/d1/handoffs",
+      "http": 200,
+      "expected_rows": 4,
+      "error": "",
+      "api_rows": 4,
+      "data_unavailable": false,
+      "match": true
+    },
+    "/api/d1/meeting": {
+      "path": "/api/d1/meeting",
+      "http": 200,
+      "expected_rows": 1,
+      "error": "",
+      "api_rows": 1,
+      "data_unavailable": false,
+      "match": true
+    },
+    "/api/d1/training/episodes": {
+      "path": "/api/d1/training/episodes",
+      "http": 200,
+      "expected_rows": 0,
+      "error": "",
+      "api_rows": 0,
+      "data_unavailable": true,
+      "match": true
+    }
+  },
+  "gaps": [
+    "未齐备账本：training；P0-05 需真实 D1 会议与 episode，禁止造数",
+    "trigger 已能追到 confirmation，但 paper 当前空仓、无 trade_id；decision→handoff→watch plan→trigger 已通，trade 段未有真实成交可追"
+  ],
+  "next_actions": [
+    "由真实 paper 成交/outcome 链生成 training_episode → training/episodes.jsonl",
+    "P0-05 验收前重跑本检查；不把空态或样例当真实事件"
+  ]
+}

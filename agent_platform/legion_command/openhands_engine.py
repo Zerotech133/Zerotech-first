@@ -38,7 +38,6 @@ def _resolve_sandbox_base() -> str:
     explicit = str(os.environ.get("OPENHANDS_SANDBOX_URL") or "").strip()
     if explicit:
         return explicit.rstrip("/")
-    import urllib.request
     # 1) 优先 loopback（Docker Desktop 下 host 不可达未 publish 的容器 IP）
     try:
         with safe_urlopen("http://127.0.0.1:8771/health", timeout=1.5) as r:

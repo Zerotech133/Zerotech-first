@@ -27,6 +27,11 @@ def _connect(path=None):
     c = sqlite3.connect(p)
     c.row_factory = sqlite3.Row
     c.executescript(SCHEMA)
+    cols = {row[1] for row in c.execute("PRAGMA table_info(events)")}
+    for _col in ("category_final", "review_note", "reviewed_at"):
+        if _col not in cols:
+            c.execute("ALTER TABLE events ADD COLUMN %s TEXT" % _col)
+    c.commit()
     return c
 
 

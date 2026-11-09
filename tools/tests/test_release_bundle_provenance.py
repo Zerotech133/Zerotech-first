@@ -23,7 +23,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
 
 TOOLS = Path(__file__).resolve().parents[1]
 PROV_TOOL = TOOLS / "release_provenance.py"

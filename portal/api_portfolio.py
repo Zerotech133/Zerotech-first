@@ -89,8 +89,8 @@ from api_common import (
     _council_pending,
     _PILL, NO_WINDOW, _screen_cache)
 
-from api_portfolio_csv import (  # A5FROZEN：portfolio 摘要/CSV/生效段拆出
-    _pf_apply, _pf_csv, _pf_reason_cat, _pf_summary)
+from api_portfolio_csv import (  # noqa: F401
+    _pf_apply, _pf_csv, _pf_reason_cat, _pf_summary)  # noqa: F401
 
 
 def _portfolio_market(qs):

@@ -2,7 +2,6 @@
 """A2A cards API：7 卡 discovery、单卡、未知 404。"""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 

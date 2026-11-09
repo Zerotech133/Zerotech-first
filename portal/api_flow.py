@@ -46,7 +46,7 @@ def _jev_common():
     背景：本文件与 `jev_common.py` 曾各自维护一份「env → .env.local → 旧默认」
     口令回落链与 host/port/user/db 拼装，R5 口令轮换时两处漂移。现统一委托
     jev_common（`DB_DSN` / `dsn_provenance()` / `_resolve_pg_password()` 同源）。
-    导入失败返回 None，调用方回退旧链（fail-open，不影响 stats 主链）。
+    导入失败返回 None，调用方必须 fail-closed，不得在本地维护第二份凭据链。
     """
     try:
         import sys  # noqa: WPS433
@@ -62,54 +62,38 @@ def _jev_common():
 
 
 def _zhice_pg_password() -> str:
-    """PG 凭据（S1-04 F4 去重后：优先 jev_common 唯一真源；不可用时回退旧链）。
-
-    旧链保留仅为 fail-open：env → zhice 活部署 .env.local V2_DB_PASSWORD → 旧默认。
-    """
+    """只从 jev_common.DB_DSN 取口令；无凭据返回空串，不回落本地 env/file/default。"""
     jc = _jev_common()
-    if jc is not None:
-        try:
-            return str(jc.DB_DSN["password"])
-        except Exception:  # noqa: BLE001
-            pass
-    pw = os.environ.get("ZHICE_PG_PASSWORD", "").strip()
-    if pw:
-        return pw
+    if jc is None:
+        return ""
     try:
-        with open(r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("V2_DB_PASSWORD=") and not line.startswith("#"):
-                    return line.split("=", 1)[1].strip()
-    except OSError:
-        pass
-    return "zhice_pass"
+        return str(jc.DB_DSN["password"] or "")
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _pg_connect_kwargs(connect_timeout: int = 3) -> dict:
-    """PG 连接参数（S1-04 F4）：优先 jev_common.DB_DSN，删本地重复拼装；不可用回退旧链。"""
+    """PG 连接参数：唯一来源 jev_common.DB_DSN；缺凭据 fail-closed。"""
     jc = _jev_common()
-    if jc is not None:
-        try:
-            kw = {
-                "host": jc.DB_DSN["host"],
-                "port": jc.DB_DSN["port"],
-                "user": jc.DB_DSN["user"],
-                "password": jc.DB_DSN["password"],
-                "dbname": jc.DB_DSN["dbname"],
-                "connect_timeout": connect_timeout,
-            }
-            return kw
-        except Exception:  # noqa: BLE001
-            pass
-    return {
-        "host": "127.0.0.1",
-        "port": int(os.environ.get("ZHICE_PG_PORT", "5446")),
-        "user": os.environ.get("ZHICE_PG_USER", "zhice"),
-        "password": _zhice_pg_password(),
-        "dbname": os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
-        "connect_timeout": connect_timeout,
-    }
+    if jc is None:
+        raise RuntimeError("PG 凭据不可用：jev_common 导入失败，拒绝使用本地默认口令")
+    try:
+        kw = {
+            "host": jc.DB_DSN["host"],
+            "port": jc.DB_DSN["port"],
+            "user": jc.DB_DSN["user"],
+            "password": jc.DB_DSN["password"],
+            "dbname": jc.DB_DSN["dbname"],
+            "connect_timeout": connect_timeout,
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError("PG 凭据不可用：jev_common.DB_DSN 读取失败") from exc
+    if not kw["password"]:
+        raise RuntimeError(
+            "PG 密码未配置：请设置 ZHICE_PG_PASSWORD 或补齐 jev_common 凭据文件；"
+            "拒绝使用默认口令"
+        )
+    return kw
 
 
 def _pg_dsn_provenance():
@@ -687,6 +671,13 @@ class Handler:
                         "%Y-%m-%d %H:%M:%S")})
 
     def _flow_artifact(self, qs):
+        # P1-01（K-SEC-20261108-FLOW-ARTIFACT-AUTH）：产物预览是文件读取面，
+        # 必须与本机/局域网鉴权口径一致，不能因 nginx 公开白名单而匿名可读。
+        # 本机直连/本机浏览器放行；反代+局域网须 X-Portal-Token（与 _ACTION_GETS 同规则）。
+        if not self._check_portal_token():
+            self._json({"ok": False, "error": "unauthorized",
+                        "message": "forbidden: 缺失或不匹配的 X-Portal-Token"}, 403)
+            return
         from urllib.parse import unquote
         params = dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
         rel = unquote(params.get("p", "")).replace("\\", "/").strip("/")

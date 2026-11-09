@@ -128,7 +128,7 @@ def build_schedule(panel: fl.Panel, masks: dict, window: np.ndarray,
         plan[f"M{m:g}"] = []
     for k in shares:
         plan[f"K{int(round(k * 100))}"] = []
-    n_codes = len(panel.codes)
+    len(panel.codes)
     for i in dec_idx:
         base = masks["picks"].get(i, [])
         if not base:
@@ -567,7 +567,7 @@ def build_conclusions(payload: dict) -> dict:
     else:
         gross_positive = (primary.get("excess_gross_ann_pct") or -1) > 0
         bullets.append(
-            f"结论：**反向（超配）假设未成立**（四关未全部通过）→ 不进 S05 validation/影子盘。"
+            "结论：**反向（超配）假设未成立**（四关未全部通过）→ 不进 S05 validation/影子盘。"
             + (f" 原因：毛超额（{ov._fmt(primary.get('excess_gross_ann_pct'))}%）为正但换手成本"
                f"（{ov._fmt(primary['overall'].get('ann_cost_pct'))}%/年 vs 基线 "
                f"{ov._fmt(base.get('ann_cost_pct'))}%/年）吃掉后净超额为负；"
@@ -592,9 +592,9 @@ def build_conclusions(payload: dict) -> dict:
 # ================================================================ 渲染
 def render_markdown(payload: dict) -> str:
     meta, ev = payload["meta"], payload["meta"]["eval"]
-    base = payload["variants"]["BASELINE"]["overall"]
+    payload["variants"]["BASELINE"]["overall"]
     primary_name = ev["primary_variant"]
-    primary = payload["variants"][primary_name]
+    payload["variants"][primary_name]
     gates = payload["gates"]
     lines: list[str] = []
     a = lines.append

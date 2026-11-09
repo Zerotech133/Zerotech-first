@@ -1,0 +1,69 @@
+{
+  "schema": "d1_p0_03_war_room_preflight/v1",
+  "checked_at": "2026-11-07T21:18:58+08:00",
+  "approval": "C:\\项目\\老田的AI助手\\deliverables\\d1_q2\\20261107\\P0-03_war_room_drill_20261107_2130\\approval.md",
+  "approval_ok": true,
+  "git_head": "157d2e0c1b16d3592a13def3f8c8db06cfe8a442",
+  "host_conf": "C:\\项目\\老田的AI助手\\portal\\nginx.conf",
+  "host_sha256_before": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "backup": "C:\\项目\\老田的AI助手\\deliverables\\d1_q2\\20261107\\P0-03_war_room_drill_20261107_2130\\nginx.conf.before",
+  "backup_sha256": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "container_sha256_before": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "temp_conf": "C:\\Temp\\p0_03_war_room_nginx_drill.conf",
+  "temp_conf_sha256": "1c44bc9a5fb7d4dae91bc68a7f8bbc09a9737827ca3b33ae75b7763bc831794e",
+  "temp_inserted_lines": 3,
+  "nginx_test_before": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "route_matrix_before": {
+    "war_room": {
+      "url": "http://127.0.0.1:8734/api/war-room/snapshot",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "war_room_query": {
+      "url": "http://127.0.0.1:8734/api/war-room/snapshot?probe=1",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "war_room_direct_8091": {
+      "url": "http://127.0.0.1:8091/api/war-room/snapshot",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"mode\": \"war_room_live\", \"date\": \"2026-11-06\", \"data_date\": \"2026-11-06\", \"generated_at",
+      "error": ""
+    },
+    "api_d1_decisions": {
+      "url": "http://127.0.0.1:8734/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tier\": {\"STRONG_BUY\": 0",
+      "error": ""
+    },
+    "api_health": {
+      "url": "http://127.0.0.1:8734/api/health",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"ts\": \"2026-11-07 21:19:02\", \"services\": [{\"name\": \"portal api\", \"port\": 8091, \"ok\": tr",
+      "error": ""
+    },
+    "d1": {
+      "url": "http://127.0.0.1:8734/d1",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    }
+  },
+  "data_hashes_before": {
+    "d1_decisions": "32b57ebef63524b6baac11b976cb99e0c4c938d3636a76c313a08c80a404762c",
+    "d1_handoffs": "f036704e7716779caeb8c740ec1fe854ef53838d50128ad29b59d20a819fb2a6",
+    "paper_state": "ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb"
+  }
+}

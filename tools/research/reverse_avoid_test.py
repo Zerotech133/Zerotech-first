@@ -962,7 +962,7 @@ def render_markdown(payload: dict) -> str:
     a(f"- 生成时间：{meta['generated_at']}")
     a(f"- 数据：`{meta['data']['root']}` · 请求 {meta['data']['start']}~{meta['data']['end']} · "
       f"面板 {meta['panel']['dates']} 交易日 × {meta['panel']['codes']} 只（载入 {meta['panel']['load_sec']}s）")
-    a(f"- 信号定义：复用 `tools/research/book_batch_test.py`（lx06/lx12/lx20）+ `factor_lib.FACTORS['aokou']`（LX22），**不修改上游文件**")
+    a("- 信号定义：复用 `tools/research/book_batch_test.py`（lx06/lx12/lx20）+ `factor_lib.FACTORS['aokou']`（LX22），**不修改上游文件**")
     a(f"- 规避组合 = 每日等权全市场 **剔除**过去 N 日（N={ev['ns']}，主口径 N={ev['primary_n']}）触发信号的股票；"
       f"基准 = 同一可交易池（同样剔除 T 日收盘涨停不可买）")
     a(f"- 时点口径：{ev['timing']}；收益 = {ev['return']}；成本 = 单边 {ev['cost_bp_oneway']}bp；"
@@ -986,7 +986,7 @@ def render_markdown(payload: dict) -> str:
     a("> 毛/净超额 = 规避组合日收益 − 等权基准日收益 的年化（×252）；净超额 = 毛超额 − 增量单边换手×2×30bp×252。")
     bear_def = _bear_definition(payload)
     if bear_def:
-        a(f">")
+        a(">")
         a(f"> {bear_def}")
     a("")
 

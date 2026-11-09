@@ -248,6 +248,152 @@ python -m analysis.reclass --apply       # 落库（自动备份 DB；保留 rev
 ```
 - 用途：清掉历史规则残留（如 2026-09 重整投资协议仍标"退市/ST"），避免报告事件表误导。
 
+## 盘中实时盯盘（W1/W2）
+
+> 设计：`C:\项目\deliverables\2026-11-05_盘中实时盯盘与飞书推送_设计方案_v1.md`（本阶段=W1 采集器 + W2 规则引擎）。
+> **研究提示，不构成投资建议**：只做异动提示，不下单、不给买卖指令。
+
+### 职责
+
+`analysis/intraday_watch.py`（单文件、纯 stdlib + pandas 可选、自包含；**不 import** `news_collector/quote_snapshot.py`）：
+
+| 层 | 函数 | 说明 |
+|---|---|---|
+| 池 | `build_pool()` | `watchlist.txt` ∪ 近 14 天 `analysis.db` runs ∪ `analysis_work/intraday_watch_subscriptions.json`；去重、上限 50，写 `analysis_work/intraday_watch/pool.json`（带 `generated_at`）；库缺失优雅降级 |
+| 行情 | `fetch_quotes()` / `fetch_em_snapshot()` | 新浪批量（≤50/次，GBK，Referer finance.sina.com.cn，失败重试 1 次）+ 东财 push2 补量比/换手（失败返回 `{}`，不影响主流程） |
+| 新闻 | `fetch_news_incremental()` | `news.db` 只读（`mode=ro`，WAL 安全），`ts>watermark` 且 `stocks` 非空；公司名→代码用 `stock_basic.parquet` 精确匹配（缺失退化 `data/tushare/stock_basic`） |
+| 板块 | `fetch_sectors()` / `sector_map_for()` | 东财行业榜（名称/涨幅/主力净流）；个股→板块用 `analysis_work/sector_alias.json`，缺省用申万一级行业名直接匹配，匹配不上返回 `None` |
+| 规则 | `evaluate()` | A 量价（pct_cross ±3/5/7/涨跌停、fast_move 3min±2%、vol_ratio≥2.5、limit_open、key_level MA20/MA60/前20日高低、stop_hit）+ B 新闻（JEV high / medium&conf≥0.8 / 标题强关键词）+ C 板块（前5/后5 且个股同向≥1%，或板块 3min ±1.5%） |
+| 状态 | `StateStore` | `analysis_work/intraday_watch/watchtower.db`（alerts/pushes/state）：fingerprint=sha1(code\|rule\|state\|date) 去重、同规则冷却、单票 ≤6/日、全局 ≤40/日、critical 豁免；跨进程重启保持 |
+| 推送 | `to_push_payload()` | 只生成卡片字段 dict（title/price/pct/amount/vol_ratio/reason/news/sector/ts/buttons），**不发送**；W3 才接 8097 `/api/send` |
+
+### CLI
+
+```bash
+# 只看盯盘池（不落库：--dry-run）
+python -X utf8 -m analysis.intraday_watch --print-pool --dry-run
+
+# 跑一轮并打印拟推送 payload（真实网络；--dry-run 不写 watchtower.db）
+python -X utf8 -m analysis.intraday_watch --once --dry-run
+
+# 跑一轮并落库（alerts/pushes/state + pool.json）
+python -X utf8 -m analysis.intraday_watch --once
+
+# 常驻 60s tick（仅交易时段执行；W4 计划任务才启用，本阶段不要启动）
+python -X utf8 -m analysis.intraday_watch --loop --tick 60
+
+# 自检：跳过网络采集
+python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
+```
+
+参数：`--once` / `--loop` / `--dry-run` / `--print-pool` / `--tick N`（默认 60）/ `--config PATH` / `--no-fetch` /
+`--stop-at HH:MM`（常驻模式到点优雅退出，供 W4 计划任务 15:10 收工）/
+`--push`（L2 后：本轮触发发送飞书）/ `--push-test`（L2 后：发 1 张测试卡，需 `WATCH_PUSH_APPROVED=1`）。
+日志一律 `[MM-DD HH:MM:SS]` 前缀；`--loop` 异常自愈，非交易时段 sleep。
+
+### W3 飞书推送（8097 中台唯一通路）
+
+- 发送：`push_via_hub()` → `POST http://127.0.0.1:8097/api/send`，header `X-Push-Hub-Key`
+  （secret 读 `portal/work/push_secrets.json` 的 `push_hub_key`，环境变量 `PUSH_HUB_KEY` 优先），
+  `kind=watch:realtime`，`receive_id` 从 `quant_backtest/receivers.json` 按名字解析（默认 `个人`）。
+- 卡片：`build_feishu_card()` 生成 interactive 卡（A 股红涨绿跌 header、现价/涨跌/成交额/量比、
+  触发原因、新闻/板块、footer「研究提示，不构成投资建议」），按钮只放纯 URL「查看报告」
+  （hub 的 `card_actions.check_card` 会跳过 `open_url`；回调动作待动作中心注册后再加）。
+- 安全门：`push.enabled` 默认 **false**（不发送）；`--push` 显式开启；`--push-test` 需人工批准
+  `WATCH_PUSH_APPROVED=1`；发送失败 fail-safe 并 `forget_alert()` 撤销触发，下一 tick 自动重试
+  （避免 hub 短暂故障漏报）；`pushes` 表记录 sent=True/False 流水。
+- 依赖：hub 8097 不可达/鉴权失败时**不回落直发**（closed on failure，防绕过静默/配额/审计）。
+
+### 开盘首扫固定摘要（open_scan，2026-11-05 新增）
+
+- 每个交易日 09:25 后第一轮，无论是否触发规则，都发 **1 张固定摘要卡**（池内行情快照 +
+  领涨板块前 3 + 本轮触发数），作为「引擎活着 + 今日池」的信标；成功一天只发一次（KV
+  `open_scan_done:<date>`）；推送失败不置完成标记，下一 tick 自动重试。
+- 实现：`build_open_scan_payload()` + `maybe_open_scan()`（在 `run_once` 末尾、触发卡推送后调用）；
+  卡片由 `_build_open_scan_card()` 渲染（blue header、行情行、板块行、footer、纯 URL 按钮）。
+- 配置：`open_scan_enabled`（默认 true）、`open_scan_time`（默认 `09:25`）、
+  `open_scan_max_rows`（默认 10，行情行上限）；`--push-test` 仍是独立测试卡，不占用首扫额度。
+- 日志：`开盘首扫：已推送（池 N 只，行情 M 条，触发 K 条）`；heartbeat 增加 `open_scan` 字段。
+
+### 配置
+
+缺省用内置默认（与设计一致），可用 `analysis_work/intraday_watch_config.json` 深层覆盖；
+模板见 `analysis_work/intraday_watch_config.example.json`。主要键：
+
+| 键 | 默认 | 含义 |
+|---|---|---|
+| `pct_steps` | `[3, 5, 7]` | 涨跌幅穿越档位（%，另含涨跌停档） |
+| `fast_move_pct` / `fast_move_window_sec` | `2.0` / `180` | 3 分钟急拉/跳水阈值 |
+| `vol_ratio_threshold` / `amount_ratio_threshold` | `2.5` / `2.0` | 量比 / 成交额放大阈值 |
+| `limit_band_pct` / `limit_open_drop_pct` | `0.2` / `1.0` | 封板判定带宽 / 开板回落幅度 |
+| `key_level_band_pct` / `key_level_min_amplitude` | `0.5` / `2.0` | 关键位带宽 / 当日振幅门槛 |
+| `stops` | `{}` | 止损位 `{code: price}`（也读订阅文件 stops） |
+| `news_conf_min` / `news_event_types` / `news_keywords` | `0.8` / 事件白名单 / 强关键词 | 新闻门槛 |
+| `sector_top_n` / `sector_stock_sync_pct` / `sector_fast_move_pct` | `5` / `1.0` / `1.5` | 板块规则 |
+| `cooldown_min` | `default 30`（fast_move 15、limit_open/stop_hit 1440、news 0…） | 同规则冷却（分钟） |
+| `max_per_code_day` / `max_global_day` / `critical_exempt` | `6` / `40` / `true` | 限流与豁免 |
+| `session` | `09:25–11:30 / 13:00–15:00` | 交易时段（周一至周五） |
+| `em_enrich_limit` / `news_lookback_min` | `40` / `30` | 东财补充只数 / 新闻回看分钟 |
+| `sector_refresh_sec` | `180` | 板块榜刷新节流（缓存 KV，失败退回旧缓存） |
+| `open_scan_enabled` / `open_scan_time` / `open_scan_max_rows` | `true` / `09:25` / `10` | 开盘首扫固定摘要（每交易日 1 张） |
+| `push` | `{kind: watch:realtime, receiver: 个人, enabled: false}` | W3 推送目标、方式与总开关 |
+
+### 测试
+
+```bash
+python -m pytest analysis/tests/test_intraday_watch.py analysis/tests/test_intraday_watch_sector.py analysis/tests/test_intraday_watch_push.py analysis/tests/test_intraday_watch_review_fix.py analysis/tests/test_intraday_watch_open_scan.py -q -p no:cacheprovider
+```
+
+全部离线：`urllib` 打桩、新闻库/状态库落 tmp、构造 quote dict；**禁止测试访问真实网络**。
+覆盖新浪解析（停牌/缺字段）、交易时段、池构建降级、六类量价规则、新闻 JEV 与名称精确匹配、
+板块同向/急拉/分页全量/f127 映射、去重/冷却/限流/豁免、状态持久化、配置覆盖、payload 字段；
+W3 另覆盖卡片红涨绿跌/纯 URL 按钮、receiver 解析、hub 鉴权与开关、网络失败 fail-safe、
+`--push-test` 批准门、推送失败撤销 alert 重试语义；open_scan 覆盖 payload/卡片渲染、
+每交易日仅一次、09:25 前/收盘后不发、push 关闭与 dry-run 不发、失败重试、空行情降级。
+
+### 边界
+
+- 只读：`news.db`、`quant_backtest/data`、`analysis.db`；只写 `analysis_work/intraday_watch/` 与本模块产物。
+- 不 import/不改 `news_collector/`；推送只经 8097 hub；W4 任务（`IntradayWatch` / `IntradayWatchGuard`）
+  已于 2026-11-05 06:00 按 L2 批准激活（临时指向 worktree，合并后按回执切主仓）。
+- 停牌（现价 0、昨收>0）以昨收计价且 `pct=None`，不出任何量价信号；坏数据一律 fail-safe 丢弃。
+
+### 收盘小结（close_summary）与可靠性加固（2026-11-07）
+
+- **收盘小结自动发送**：引擎在 `--loop --stop-at 15:10` 收工分支调用
+  `maybe_closing_summary()`，统计当日 alerts 总数 / critical / 规则分布 /
+  pushes 成功失败，发 `rule=close_summary` 的蓝色摘要卡（code=POOL）。
+  每日一次（KV `close_summary_done:<date>`），推送失败不置标记、下一轮重试；
+  不依赖外部提醒脚本。CLI 手动补发：`python -m analysis.intraday_watch --closing-summary`（预留）。
+- **心跳**：`--loop` 启动即写一次 `status=loop_start` 心跳，非交易时段每轮
+  （约 60s）写 `status=idle` 心跳；交易时段轮次结束写 `status=idle/run`。
+  守护脚本据此判断引擎存活，不再出现 09:10–09:25「任务在跑但心跳陈旧」误报。
+- **launcher 退出码**：引擎返回 3（`engine.lock` 被占用，说明已有实例）在
+  `C:\Temp\run_intraday_watch.py` 中归一为 0，避免计划任务 RestartOnFailure 抖动。
+- **守护判据**（`C:\Temp\intraday_watch_guard.py`）：
+  1) 先查引擎进程（python.exe + CommandLine 含 `analysis.intraday_watch` 与 `--loop`）；
+  2) 心跳 ≤300s 视为正常；300–600s 只观察；>600s 且进程存活判僵死，
+     `taskkill /F` 命中 pid 后拉起任务；
+  3) 仅在无进程且任务 Ready 时拉起（每日上限 3 次）；
+  4) 计划任务状态只作辅助信号（launcher 退出后任务 Ready 但引擎仍可能存活）。
+- **计划任务加固**：IntradayWatch / IntradayWatchGuard 均为
+  `DisallowStartIfOnBatteries=false`、`StopIfGoingOnBatteries=false`、
+  `WakeToRun=true`、`StartWhenAvailable=true`、`ExecutionTimeLimit=PT8H/PT10M`；
+  IntradayWatch NextRun 周一 09:10，任务日 MON–FRI。
+- **2026-11-06 事故**：10:14 电源事件触发 `StopIfGoingOnBatteries=true` 停掉 launcher，
+  引擎子进程成孤儿继续跑到 13:27；旧守护只看任务状态，误判后空转重启 3 次耗尽配额；
+  13:28 笔记本睡眠至 16:39，收盘前 1.5h 无盯盘（当日 17 条告警、19 条推送，无 15:15 小结）。
+  当日 alerts/pushes/state 全部按日期分键，不影响次日。
+
+### 推送分级与午间简报（2026-11-09）
+
+- `push.routes={customer,ops}`：客户面（个股异动/个性化简报）→ 客户单聊 open_id（默认 `个人`）；运营面（首扫/收盘/午间公共摘要）→ 群 chat_id（默认 `量化群`）。旧键 `push.receiver`、`alert`、`brief` 保持兼容。
+- 总开关 `push.routes_active`（默认 **false**）：配置可提前写好 `routes` 与 `midday_brief_enabled=true`，但未置 true 前维持旧行为（全部发 `push.receiver`、不发午间简报）；上线只需把该键改 true。
+- 接收人严格匹配且校验类型（customer→open_id / ops→chat_id），不回落其他接收人；缺失 fail-closed。
+- 新增 11:30 午间简报（`midday_summary`，11:30–14:00 一次，KV `midday_done:<date>`），发运营群。
+- `pushes` 表新增 `receiver` 列（启动自动迁移）。
+- 配置：`midday_brief_enabled`、`midday_time`、`push.routes`、`push.routes_active`。
+
 ### H2 选股引擎（2026-11-03）
 
 - `analysis/screener.py`：ScreeningDSL v1（字段/算子白名单、PIT、可解释）；`validate()` → `run()`；

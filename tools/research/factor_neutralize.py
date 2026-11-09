@@ -156,9 +156,11 @@ def build_neutralized_specs(panel, names: list[str] | tuple[str, ...], *,
             compute=(lambda _panel, _mat=neut: _mat),
         )
         infos[name] = info
+    snap = panel.load_meta.get("industry") if hasattr(panel, "load_meta") else None
     return result, {"factors": infos, "industry": bool(industry), "size": bool(size),
                     "min_obs": int(min_obs),
-                    "industry_source": _industry_source_name(industry, industry_map, industry)}
+                    "industry_source": _industry_source_name(
+                        industry, industry_map, snap is not None)}
 
 
 def parse_modes(text: str | None) -> tuple[bool, bool]:

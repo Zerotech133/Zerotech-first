@@ -2,12 +2,12 @@
 #
 # 用法（仓库任意目录）:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\test_gate.ps1 -Suite fast
-# -Suite: fast(portal+k_stock+ide+agent_key+quant_key+tools_key+datawarehouse) | portal | kstock | ide |
+# -Suite: fast(portal+k_stock+ide+agent_key+quant_key+tools_key+datawarehouse+analysis+commercial) | portal | kstock | ide |
 #         agent_key | quant_key | tools_key | datawarehouse | agent | quant | tools | all
 # 退出码: 0=无新增失败(允许既存失败) | 1=有新增失败/收集错误 | 2=脚本错误
 # 产物:  C:\Temp\test_gate_<suite>_<ts>.log
 #
-# 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures（tools 套件供夜间/手动全量，不进 fast）
+# 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures（tools 套件仅手工触发、不进 fast；关键单文件请登记进 tools_key）
 #       得到"新增失败"; 新增=0 才放行。
 #
 # 2026-10-31 W5 P1-6（docs/audit/2026-10-31_W5质量还债_v1.md）：
@@ -24,7 +24,7 @@
 #   只进 fast 不进 all（all 保持夜间全量口径，避免时长失控）。冻结守卫同批同步。
 param(
     [ValidateSet('fast', 'portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key',
-                 'datawarehouse', 'agent', 'quant', 'tools', 'all')]
+                 'datawarehouse', 'analysis', 'commercial', 'agent', 'quant', 'tools', 'all')]
     [string]$Suite = 'fast',
     [int]$PytestTimeout = 120
 )
@@ -34,6 +34,12 @@ $baselineBroken = $false
 if ($PSScriptRoot) { $repo = Split-Path -Parent $PSScriptRoot } else { $repo = 'C:\项目\老田的AI助手' }
 $baselinePath = Join-Path $repo 'tools\test_baseline.json'
 $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
+# 2026-11-08（K-CI-20261108-LOGDIR）：日志目录可注入。云端 runner 的 $env:TEMP 是
+# C:\Users\RUNNER~1\AppData\Local\Temp，而 upload-artifact 的 ${{ runner.temp }} 是
+# D:\a\_temp —— 两者不同，artifact 恒空（if-no-files-found: ignore 还把它吞了），
+# 几十项失败明细随 runner 一起销毁，只能靠猜补登记。CI 侧传 TEST_GATE_LOG_DIR 对齐。
+$logDir = $env:TEMP
+if ($env:TEST_GATE_LOG_DIR) { $logDir = $env:TEST_GATE_LOG_DIR }
 
 # ===== 2026-10-31 K-ORG-20261031-BUNDLEB5：clean worktree 缺 ignored bundle 时先自愈 =====
 # Phase2-B 后 bundle 不再 tracked；干净 worktree/CI 没有该文件，会让读取 bundle 的测试假红。
@@ -69,12 +75,55 @@ if (Test-Path -LiteralPath $baselinePath) {
     }
 }
 
+# 2026-11-08 CI 上移（K-CI-20261108-PROFILE）：环境覆盖层。
+# 干净 runner 上必然缺的本机运行时资产——reports/ 整目录未入库、.worktrees/、
+# C://项目//_vault、PG catalog、行情湖 parquet、docker / schtasks——会让一批
+# 用例在云端必然红。把这些人肉登记进 test_baseline.json 会连带放宽本机判定，
+# 真回归被一起糊掉（这是本仓明令禁止的"假绿"）。故改为按 profile 加载独立
+# 基线：TEST_GATE_PROFILE=ci 时叠加 tools/test_baseline.ci.json。
+# 本机不设该变量 → profile=local → 判定与今天完全一致，严格性零放宽。
+$profileName = 'local'
+if ($env:TEST_GATE_PROFILE) { $profileName = $env:TEST_GATE_PROFILE.Trim().ToLower() }
+if ($profileName -ne 'local') {
+    $profilePath = Join-Path $repo ('tools\test_baseline.' + $profileName + '.json')
+    if (-not (Test-Path -LiteralPath $profilePath)) {
+        # profile 名写错必须可见：静默回落到 local 会满屏假红，静默放宽则是假绿。
+        Write-Host "[ERR] 环境基线不存在: $profilePath (profile=$profileName)" -ForegroundColor Red
+        $baselineBroken = $true
+    } else {
+        try {
+            $pb = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+            foreach ($prop in $pb.PSObject.Properties) {
+                if ($prop.Name -like '_*') { continue }
+                if ($prop.Value.env_failures) {
+                    if (-not $envKnown.ContainsKey($prop.Name)) { $envKnown[$prop.Name] = @() }
+                    $envKnown[$prop.Name] += @($prop.Value.env_failures)
+                }
+                if ($prop.Value.known_failures) {
+                    if (-not $known.ContainsKey($prop.Name)) { $known[$prop.Name] = @() }
+                    $known[$prop.Name] += @($prop.Value.known_failures)
+                }
+                if ($prop.Value.flaky) {
+                    if (-not $flaky.ContainsKey($prop.Name)) { $flaky[$prop.Name] = @() }
+                    $flaky[$prop.Name] += @($prop.Value.flaky)
+                }
+            }
+            Write-Host "[baseline] 环境覆盖层: $profileName"
+        } catch {
+            Write-Host "[ERR] 环境基线解析失败: $($_.Exception.Message)" -ForegroundColor Red
+            $baselineBroken = $true
+        }
+    }
+}
+
 $suites = @()
 switch ($Suite) {
     # 2026-10-30 P1：LDE HTTP 契约进 fast 门（单独文件，不拖入整个 agent 套件）
     # 2026-10-31 W5 P1-6 / K-ORG-20261031-GATEB2：B1+B2 关键集三套件进 fast（88 文件）
     # 2026-11-02 S2-08：datawarehouse 目录套件（158 项）进 fast；只进 fast 不进 all。
-    'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse') }
+    # 2026-11-08 GATEHEALTH2：analysis/commercial 纳入 fast（此前从不进门）。
+    'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse',
+                            'analysis', 'commercial') }
     'portal'  { $suites = @('portal') }
     'kstock'  { $suites = @('kstock') }
     'ide'     { $suites = @('ide') }
@@ -82,6 +131,8 @@ switch ($Suite) {
     'quant_key' { $suites = @('quant_key') }
     'tools_key' { $suites = @('tools_key') }
     'datawarehouse' { $suites = @('datawarehouse') }
+    'analysis' { $suites = @('analysis') }
+    'commercial' { $suites = @('commercial') }
     'agent'   { $suites = @('agent') }
     'quant'   { $suites = @('quant') }
     'tools'   { $suites = @('tools') }
@@ -92,17 +143,28 @@ $paths = @{
     # 2026-10-31 WO-QUAL-GATE-PORTAL-20261031：portal 根级回归测试显式纳入 fast 门。
     # 背景：fast 只收 portal/tests 目录，导致 portal/ 根级 test_bot_ws_backoff.py /
     # test_km_card_kind.py 长期失败不被门拦（2026-10-31 task-16 修复时才暴露）。
-    # 只显式加这两条，不全量纳入 portal 根 140 个测试（性能）；覆盖守卫见
-    # agent_platform/tests/test_gate_coverage_w5.py::test_portal_root_regressions_gated。
+    # 只显式加入口可达的根级回归，不全量纳入 portal 根 163 个测试（性能）；
+    # 覆盖守卫见 agent_platform/tests/test_gate_coverage_w5.py::test_portal_root_regressions_gated。
+    # 2026-11-08 P1-6 分层落地：test_watch_tower_{linkage,snapshot} 原是「收集即错」的
+    # 根级测试（--import-mode=importlib 下 portal/ 不入 sys.path），portal/conftest.py
+    # 补 append 后实测 2 + 6 条全绿，纳入 fast 防回退；同批 test_alerts_level /
+    # test_alert_source_health 实测红（13/14 方法含失败），整模块 skip 挂起待 owner
+    # 定性，故不进套件——「挂起」不等于「纳入」。
     'portal' = @(
         'portal/tests',
         'portal/test_bot_ws_backoff.py',
-        'portal/test_km_card_kind.py'
+        'portal/test_km_card_kind.py',
+        'portal/test_watch_tower_linkage.py',
+        'portal/test_watch_tower_snapshot.py'
     )
     'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
     # 2026-11-02 S2-08：数据仓工具测试（158 项，目录套件；独立 pytest 防 sys.path 冲突）
+    # 2026-11-08 GATEHEALTH2：两套目录此前从不进 fast（覆盖率审计：analysis 177 用例、
+    # commercial 41 用例零门禁），现与其它目录套件同款独立 pytest。
+    'analysis' = 'analysis/tests'
+    'commercial' = 'commercial/tests'
     'datawarehouse' = 'tools/datawarehouse/tests'
     'ide'    = @(
         # W5 P1-7（WO-LEGION-W5-GATE-20261031，2026-10-31）：IDE 关键缺口补入——
@@ -236,6 +298,17 @@ $paths = @{
         'quant_backtest/tests/test_osleg_http_contract.py',
         'quant_backtest/tests/test_proxy_dialogue.py',
         'quant_backtest/tests/test_xq_offline_chain_e2e.py',
+        # ---- 2026-11-08 P3-5 xq 41 项修完纳管（K-ORG-20261108-XQSEAM）----
+        # 这 4 个文件修复前红 41 项（38+2+1），是 quality-gate 激活的唯一前置。
+        # 根因是 LLM 替身接缝断开：xq_classify 经 safe_urlopen 出网，loopback
+        # 目标走 _NO_PROXY_OPENER（OpenerDirector.open），不经
+        # urllib.request.urlopen，旧 monkeypatch 完全失效 → 测试真调本机
+        # Ollama（qwen3.5:9b），答案随机。修法=patch 模块内 safe_urlopen，
+        # 并加 socket.connect 守卫防接缝再断。详见各文件 docstring。
+        'quant_backtest/tests/test_xq_classify_retry_degraded.py',
+        'quant_backtest/tests/test_xq_recontent_exit.py',
+        'quant_backtest/tests/test_xq_retry_cap.py',
+        'quant_backtest/tests/test_verify_daily_report.py',
         'quant_backtest/tests/test_chanlun_learn.py'
     )
     'tools_key' = @(
@@ -263,7 +336,31 @@ $paths = @{
         'tools/tests/test_learning_pipeline_curation.py',
         # ---- 盘后分析工程（2026-11-06 POSTMARKET-ENG，+1）----
         # 宽度/涨跌停/分桶/限期降级登记共 16 条；纯合成数据，无生产依赖，5s。
-        'tools/tests/test_market_analysis.py'
+        'tools/tests/test_market_analysis.py',
+        # ---- 回环禁代理豁免副本一致性（2026-11-07 K-ORG-20261107-GATESAFEURL，+1）----
+        # 每份 safe_urlopen.py 必须含 is_loopback/_open_no_proxy；legion_command/safe_http.py
+        # 必须委派。第 7 份退化副本曾静默存在半个月，扫描器按「调的是 safe_urlopen」判
+        # GUARDED，看不见它。8 条纯离线，约 1s。
+        'tools/tests/test_safe_urlopen.py',
+        # ---- 凭据扫描器误报回归（2026-11-07 K-ORG-20261107-SCANFPGATE，+1）----
+        # scan_secrets.py 是每次 commit 都跑的 pre-commit 闸门，也是 devtask merge
+        # 硬门的引擎；但它自己的检测逻辑此前零自动覆盖（-Suite tools 无人自动调）。
+        # 退化方向是「少报」，假阴性不报错、只会让硬门变纸门。42 条全合成夹具，0.6s。
+        'tools/tests/test_scan_secrets_fp.py',
+        # ---- 看护预算契约（2026-11-07 K-ORG-20261107-WATCHDOG，+1） ----
+        'tools/tests/test_keepalive_budget.py',
+        # ---- worktree 判活 + 删不动兜底（2026-11-08 K-ORG-20261108-OVWSPLIT，+1）----
+        # 该文件 2026-10-31 就存在，却一直没进套件：devtask 的并发闸与回收逻辑
+        # 此前没有自动覆盖。2026-11-08 两个真坑都是人工发现的：
+        #   ① 空壳登记（.git 指针已失）让 `git -C <path> status` 向上读到主仓状态，
+        #      把主树的未提交改动误判成"这个 worktree 脏了"；
+        #   ② Windows 删大目录 186~251s，180s 超时必然误判，留下"指针没了树还在"。
+        # 两者都会让闸门判断失真，故纳入常态门。21 条纯合成夹具，约 8s。
+        'tools/tests/test_devtask_worktree_mech.py',
+        # 行尾守卫回归（2026-11-08 K-EOL-20261108，+1）：.gitattributes 的 eol 只在
+        # 检出时生效，工作区存量文件不会自动重写 —— 该缺陷静默（status 恒脏、本机红云端绿），
+        # 守卫自身若被改坏也不会显式报错，故纳入套件常驻。
+        'tools/tests/test_git_hooks_eol_guard.py'
     )
 }
 
@@ -282,7 +379,7 @@ if (-not (Test-Path -LiteralPath $bundlePath)) {
     } else {
         $builder = Join-Path $repo 'tools\build_agent_ide_bundle.py'
         if (Test-Path -LiteralPath $builder) {
-            $blog = Join-Path $env:TEMP "test_gate_bundle_$ts.log"
+            $blog = Join-Path $logDir "test_gate_bundle_$ts.log"
             $bsw = [System.Diagnostics.Stopwatch]::StartNew()
             Push-Location -LiteralPath $repo
             try {
@@ -318,7 +415,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $guardTool = Join-Path $repo 'tools\release_artifact_guard.py'
         $releaseRoot = 'C:\项目\_vault\legion_ide\release\legion-ide'
-        $glog = Join-Path $env:TEMP "test_gate_artifact_$ts.log"
+        $glog = Join-Path $logDir "test_gate_artifact_$ts.log"
         if (-not (Test-Path -LiteralPath $guardTool)) {
             Write-Host "[artifact] ⚠ 缺 tools/release_artifact_guard.py（只告警，不阻断；开发机/旧 worktree）" -ForegroundColor Yellow
             $summary += [pscustomobject]@{
@@ -381,7 +478,7 @@ try {
     foreach ($s in $suites) {
         $name = $s
         $targets = @($paths[$name])
-        $log = Join-Path $env:TEMP "test_gate_${name}_$ts.log"
+        $log = Join-Path $logDir "test_gate_${name}_$ts.log"
         Write-Host "===== [$name] $($targets -join ' ') ====="
         $sw = [System.Diagnostics.Stopwatch]::StartNew()
         python -m pytest @targets -q --timeout=$PytestTimeout -p no:cacheprovider *> $log
@@ -438,7 +535,10 @@ try {
         }
         if ($new.Count -gt 0) {
             Write-Host "[$name] 新增失败 $($new.Count) 项:" -ForegroundColor Red
-            $new | Select-Object -First 20 | ForEach-Object { Write-Host "  - $_" }
+            # 2026-11-08：原为 -First 20。datawarehouse 一轮 43 项时只看得见前 20，
+            # 云端红一次就要靠猜补登记（实测浪费两轮 CI ~20 分钟）。长清单必须
+            # 完整可读；300 条足以覆盖任何单套件规模，又不至于刷爆日志。
+            $new | Select-Object -First 300 | ForEach-Object { Write-Host "  - $_" }
         } else {
             Write-Host "[$name] 无新增失败(既存 $($failed.Count) 项已登记) [${secs}s]" -ForegroundColor Green
         }
@@ -451,7 +551,7 @@ try {
     # 硬规则 + 建议项（冻结增长/新文件 >1200）全部阻断；缺脚本/执行异常 fail-closed 可见（不假绿）。
     if ($Suite -in @('fast', 'all')) {
         $budget = Join-Path $repo 'tools\check_portal_split.py'
-        $blog = Join-Path $env:TEMP "test_gate_budget_$ts.log"
+        $blog = Join-Path $logDir "test_gate_budget_$ts.log"
         if (Test-Path -LiteralPath $budget) {
             $bsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $budget --strict *> $blog
@@ -485,7 +585,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $navTool = Join-Path $repo 'tools\unify_nav.py'
         if (Test-Path -LiteralPath $navTool) {
-            $nlog = Join-Path $env:TEMP "test_gate_nav_$ts.log"
+            $nlog = Join-Path $logDir "test_gate_nav_$ts.log"
             $nsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $navTool --check *> $nlog
             $nrc = $LASTEXITCODE
@@ -516,7 +616,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $routeTool = Join-Path $repo 'tools\portal_route_inventory.py'
         if (Test-Path -LiteralPath $routeTool) {
-            $rlog = Join-Path $env:TEMP "test_gate_route_$ts.log"
+            $rlog = Join-Path $logDir "test_gate_route_$ts.log"
             $rsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $routeTool --check *> $rlog
             $rrc = $LASTEXITCODE
@@ -549,7 +649,7 @@ try {
     # fail-closed（不假绿）。实测耗时 <0.5s。
     if ($Suite -in @('fast', 'all')) {
         $wtTool = Join-Path $repo 'tools\devtask.py'
-        $wlog = Join-Path $env:TEMP "test_gate_wtcheck_$ts.log"
+        $wlog = Join-Path $logDir "test_gate_wtcheck_$ts.log"
         if (Test-Path -LiteralPath $wtTool) {
             $wsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $wtTool audit-worktrees *> $wlog
@@ -592,7 +692,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $orgTool = Join-Path $repo 'tools\org_model_consistency.py'
         if (Test-Path -LiteralPath $orgTool) {
-            $olog = Join-Path $env:TEMP "test_gate_org_$ts.log"
+            $olog = Join-Path $logDir "test_gate_org_$ts.log"
             $osw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $orgTool --json *> $olog
             $orc = $LASTEXITCODE

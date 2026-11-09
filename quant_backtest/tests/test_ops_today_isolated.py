@@ -27,6 +27,7 @@ _POOL_FILE = "poc_adapter_chanlun_offline.json"
 # Pin the exact extracted function: changes require a manual safety review before execution.
 # Re-anchored 2026-10-19: anchor was computed against a pre-c90d2546 compute;
 # current HEAD compute reviewed (no forbidden nodes, calls within whitelist) and re-pinned.
+# 2026-11-09 复核：产线解释器是 Python 3.11；Python 3.12 的 ast.dump 不兼容，不能作为锚点环境。
 _COMPUTE_AST_SHA256 = "15c24bc3322d2241b8bb14f37a707b2b6a219d36257cc409544f5632429bc5e5"
 _ALLOWED_CALLS = frozenset({
     "(chan_analyze(bars) or {}).get", "_latest_pool_file", "_load_books",
@@ -143,32 +144,37 @@ def _compute_from_ast(tmp_path: Path, load_books: Any) -> Any:
 
 
 def _ops_get_branch() -> ast.If:
-    """Require one direct equality branch in the unique Handler.do_GET chain."""
+    """Require one direct equality branch in the Handler GET dispatch chain.
+
+    GET 分派可能直接在 ``do_GET``，也可能拆到 ``_route_main``（2026-11 路由拆分）；
+    两种结构都要能静态审计，不能因为拆分而误判路由不存在。
+    """
     tree = _parse_source(_PORTAL_SOURCE)
     handlers = [
         method
         for cls in tree.body
         if isinstance(cls, ast.ClassDef) and cls.name == "Handler"
         for method in cls.body
-        if isinstance(method, ast.FunctionDef) and method.name == "do_GET"
+        if isinstance(method, ast.FunctionDef) and method.name in ("do_GET", "_route_main")
     ]
-    if len(handlers) != 1:
-        raise RuntimeError("expected exactly one Handler.do_GET")
-    handler = handlers[0]
-    if not any(
-        isinstance(statement, ast.Assign)
-        and len(statement.targets) == 1
-        and isinstance(statement.targets[0], ast.Name)
-        and statement.targets[0].id == "path"
-        and isinstance(statement.value, ast.Subscript)
-        and isinstance(statement.value.value, ast.Call)
-        and isinstance(statement.value.value.func, ast.Attribute)
-        and statement.value.value.func.attr == "split"
-        and isinstance(statement.value.value.func.value, ast.Name)
-        and statement.value.value.func.value.id == "raw"
-        for statement in handler.body
-    ):
-        raise RuntimeError("GET path normalization must be reviewed")
+    if not handlers:
+        raise RuntimeError("expected Handler.do_GET or Handler._route_main")
+    for handler in handlers:
+        if handler.name == "do_GET":
+            if not any(
+                isinstance(statement, ast.Assign)
+                and len(statement.targets) == 1
+                and isinstance(statement.targets[0], ast.Name)
+                and statement.targets[0].id == "path"
+                and isinstance(statement.value, ast.Subscript)
+                and isinstance(statement.value.value, ast.Call)
+                and isinstance(statement.value.value.func, ast.Attribute)
+                and statement.value.value.func.attr == "split"
+                and isinstance(statement.value.value.func.value, ast.Name)
+                and statement.value.value.func.value.id == "raw"
+                for statement in handler.body
+            ):
+                raise RuntimeError("GET path normalization must be reviewed")
 
     def is_target(test: ast.expr) -> bool:
         return (
@@ -181,10 +187,15 @@ def _ops_get_branch() -> ast.If:
             and test.comparators[0].value == "/api/ops_today"
         )
 
-    matches = [node for node in ast.walk(handler) if isinstance(node, ast.If) and is_target(node.test)]
+    matches = [
+        (handler, node)
+        for handler in handlers
+        for node in ast.walk(handler)
+        if isinstance(node, ast.If) and is_target(node.test)
+    ]
     if len(matches) != 1:
         raise RuntimeError("expected exactly one GET /api/ops_today branch")
-    branch = matches[0]
+    handler, branch = matches[0]
     # Earlier independent top-level guards return; the final top-level If
     # owns the long GET dispatch chain containing this route.
     top_level = [node for node in handler.body if isinstance(node, ast.If)]
@@ -256,10 +267,20 @@ def test_nested_ops_route_cannot_masquerade_as_dispatch(
         tree = original_parse(path)
         if path != _PORTAL_SOURCE:
             return tree
-        handler = next(
+        handlers = [
             node for cls in tree.body if isinstance(cls, ast.ClassDef)
             and cls.name == "Handler" for node in cls.body
-            if isinstance(node, ast.FunctionDef) and node.name == "do_GET"
+            if isinstance(node, ast.FunctionDef) and node.name in ("do_GET", "_route_main")
+        ]
+        handler = next(
+            h for h in handlers
+            if any(
+                isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
+                and any(isinstance(value, ast.Constant)
+                        and value.value == "/api/ops_today"
+                        for value in node.test.comparators)
+                for node in ast.walk(h)
+            )
         )
         route = next(
             node for node in ast.walk(handler)

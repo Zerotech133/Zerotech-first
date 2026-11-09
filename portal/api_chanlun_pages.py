@@ -16,6 +16,7 @@ from api_common import (
     _sched_rc_html, MKT_LABEL, _pool_bear_news, run)
 
 from api_chanlun_sl_tp import _ChanlunSlTpMixin  # A5FROZEN：止损/止盈与自动线拆出
+from chanlun_viewer import JS as js, VIEWER as viewer  # noqa: F401 页面片段
 
 
 def _chanlun_pool_push(rec):
@@ -110,7 +111,7 @@ class Handler(_ChanlunSlTpMixin):  # Mixin 壳：经基座多继承并入
         tools = "".join(
             "<a class='tp' href='%s'>%s</a>" % (href, lb) for lb, href in [
                 ("🛟 当日信号池", "/bt-chanlun-pool"),
-                ("🌊 青萍之末工作台", "/bt-qpzm"),
+                ("🛒 买点实战台", "/bt-buy"),
                 ("🧪 基础策略库", "/bt"),
                 ("🚦 明日信号", "/bt-signals")])
         tools += (" <a class='tp' id='ck-png' "
@@ -365,194 +366,6 @@ class Handler(_ChanlunSlTpMixin):  # Mixin 壳：经基座多继承并入
                     % (tbe.get("n_symbols", "—"), tbe.get("n_signals", "—"),
                        (tbe.get("generated_at") or "—")[:16]))
 
-        viewer = (
-            "<div style='display:flex;gap:8px;flex-wrap:wrap;"
-            "margin-bottom:10px'>"
-            "<input id='ck-code' placeholder='600519 / AAPL / 00700 / "
-            "BTC/USDT' style='flex:1;min-width:200px;background:#0d1117;"
-            "border:1px solid #30363d;border-radius:8px;color:#e6edf3;"
-            "padding:8px 12px;font-size:14px'>"
-            "<select id='ck-period' style='background:#0d1117;border:1px "
-            "solid #30363d;border-radius:8px;color:#e6edf3;padding:8px;"
-            "font-size:14px'><option value='1d'>日线</option>"
-            "<option value='60m'>60分钟</option>"
-            "<option value='30m'>30分钟</option></select>"
-            "<button onclick='ckLoad()' style='background:#238636;"
-            "color:#fff;border:0;border-radius:8px;padding:8px 18px;"
-            "font-size:14px;cursor:pointer'>加载 K 线</button></div>"
-            "<div id='ck-meta' class='dim' style='font-size:13px;"
-            "min-height:18px'>输入代码加载真实 K 线 · 红▼=顶 · 绿▲=底 · "
-            "黄线=笔 · 蓝线=线段 · 紫框=中枢 · 圆标=1/2/3类买卖点 · "
-            "3类后 <span style='color:#f85149'>✓=P5回踩背驰</span>/"
-            "<span style='color:#8b949e'>✗=无</span>"
-            " · <span style='color:#58a6ff'>盘✓=P6-b同向腿</span>"
-            " · <span style='color:#bc8cff'>M✓=P6-a MACD背驰(1类)</span>"
-            " · <span style='color:#2dd4bf'>次✓=P7 60m共振(日线)</span>"
-            " · <span style='color:#f0883e'>量✓=P8-a 缩量配合</span>"
-            " · <span style='color:#79c0ff'>势↑/↓=P8-b 大盘顺风</span>"
-            " · <span style='color:#f778ba'>趋✓=P6-c 趋势背驰双中枢(1类)</span>"
-            "（均影子标注·不拦截）</div><div id='ck-chart'></div>"
-            "<div id='ck-bt' class='dim' style='font-size:13px;min-height:18px;"
-            "margin-top:8px'></div>"
-            "<div id='ck-sigs' style='margin-top:12px'></div>")
-        js = """<script>
-function ckLoad(){
- var c=document.getElementById('ck-code').value.trim();
- var p=document.getElementById('ck-period').value;
- var m=document.getElementById('ck-meta');
- var el=document.getElementById('ck-chart');
- if(!c){m.innerHTML="<span style='color:#d29922'>请先输入代码</span>";el.innerHTML='';return}
- m.textContent='加载中…';el.innerHTML='';
- fetch('/api/chanlun/structure?code='+encodeURIComponent(c)+'&period='+p)
- .then(function(r){return r.json()})
- .then(function(j){
-  if(!j.ok){m.innerHTML="<span style='color:#f85149'>"+j.error+"</span>";return}
-  var b=j.bars,last=b[b.length-1],fr=j.fractals||[],nt=0,nb=0,i;
-  for(i=0;i<fr.length;i++){if(fr[i].type=='顶'){nt++}else{nb++}}
-  var bis=j.bis||[],sgs=j.segments||[],pvs=j.pivots||[],sigs=j.signals||[];
-  m.innerHTML='来源 '+j.source+' · '+j.market+' '+j.code+' · '+b.length+' 根 · '
-   +b[0].dt+' → '+last.dt+' · 最新收盘 <b style="color:#e6edf3">'+last.c+"</b>"
-   +' · <span style="color:#3fb950">顶 '+nt+'</span>/<span style="color:#f85149">底 '+nb+'</span>（包含处理后 '+j.merged_n+' 根）'
-   +' · <span style="color:#e3b341">笔 '+bis.length+'</span> · <span style="color:#58a6ff">段 '+sgs.length+'</span> · <span style="color:#a371f7">枢 '+pvs.length+'</span>'
-   +' · <span style="color:#3fb950">信号 '+sigs.length+'</span>';
-  ckDraw(b,fr,j);
-  var pl=document.getElementById('ck-png');
-  if(pl)pl.href='/chanlun-png?c='+encodeURIComponent(j.code)+'&p='+j.period;
-  ckSigs(j);
-  fetch('/api/chanlun/backtest?code='+encodeURIComponent(c)+'&period='+p)
-  .then(function(r){return r.json()}).then(function(bt){
-   var el2=document.getElementById('ck-bt');
-   if(!bt.ok){el2.innerHTML="<span style='color:#f85149'>验证失败："+bt.error+"</span>";return}
-   var st=bt.stats||{},rows='',ty=bt.by_type||{},k;
-   for(k in ty){rows+='<span style="margin-right:12px">'+k+' n='+ty[k].n+' · 胜率'+ty[k].win+'% · 均值'+ty[k].avg+'%</span>'}
-   el2.innerHTML='<b style="color:#e6edf3">📈 信号验证</b>（理论价口径 · 纸面参考） · 策略 '
-    +(st.trades||0)+' 笔 · 胜率 '+(st.win_rate==null?'—':st.win_rate+'%')
-    +' · 累计 '+(st.total_return==null?'—':st.total_return+'%')
-    +' · 回撤 '+(st.max_dd||0)+'% · 买入持有 '+(st.buy_hold==null?'—':st.buy_hold+'%')
-    +(st.open_pos?' · <span style="color:#d29922">期末持仓未平</span>':'')
-    +(rows?'<br>20根窗口事件统计：'+rows:'');
-  }).catch(function(){});
- }).catch(function(){m.innerHTML="<span style='color:#f85149'>请求失败，请重试</span>"});
-}
-function ckDraw(b,fr,ex){
- var W=760,H=300,PL=8,PR=56,PT=10,PB=22,n=b.length;
- var el=document.getElementById('ck-chart');
- var hi=Math.max.apply(null,b.map(function(x){return x.h}));
- var lo=Math.min.apply(null,b.map(function(x){return x.l}));
- var rng=(hi-lo)||1;
- function X(i){return PL+(i+0.5)*(W-PL-PR)/n}
- function Y(v){return PT+(hi-v)/rng*(H-PT-PB)}
- var cw=Math.max(1.2,(W-PL-PR)/n*0.62),g='',k,i;
- for(k=0;k<=4;k++){var v=lo+rng*k/4,yy=Y(v);
-  g+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+yy+'" y2="'+yy+'" stroke="#21262d"/>'
-   +'<text x="'+(W-PR+6)+'" y="'+(yy+4)+'" fill="#8b949e" font-size="10">'
-   +(v>=100?v.toFixed(0):v.toFixed(2))+'</text>';}
- for(i=0;i<n;i++){var b2=b[i],up=b2.c>=b2.o,col=up?'#f85149':'#3fb950';
-  var x1=X(i),yo=Y(b2.o),yc=Y(b2.c);
-  g+='<line x1="'+x1+'" x2="'+x1+'" y1="'+Y(b2.h)+'" y2="'+Y(b2.l)+'" stroke="'+col+'"/>'
-   +'<rect x="'+(x1-cw/2)+'" y="'+Math.min(yo,yc)+'" width="'+cw+'" height="'
-   +Math.max(1,Math.abs(yc-yo))+'" fill="'+col+'"/>';}
- var idx=[0,Math.floor(n/2),n-1];
- for(k=0;k<3;k++){var i2=idx[k];
-  g+='<text x="'+X(i2)+'" y="'+(H-6)+'" fill="#8b949e" font-size="10" text-anchor="middle">'
-   +b[i2].dt.slice(5,10)+'</text>';}
- var map={},fr2=fr||[],ex2=ex||{},bis=ex2.bis||[],sgs=ex2.segments||[],pvs=ex2.pivots||[],sigs=ex2.signals||[];
- for(i=0;i<n;i++){map[b[i].dt]=i}
- for(i=0;i<pvs.length;i++){var pv=pvs[i],xi=map[pv.s_dt],xo=map[pv.e_dt];
-  if(xi===undefined||xo===undefined){continue}
-  g+='<rect x="'+(X(xi)-cw/2)+'" y="'+Y(pv.zg)+'" width="'+Math.max(1,X(xo)-X(xi))
-   +'" height="'+Math.max(1,Y(pv.zd)-Y(pv.zg))
-   +'" fill="rgba(163,113,247,0.10)" stroke="#a371f7" stroke-dasharray="4 3"/>';}
- for(i=0;i<bis.length;i++){var bi=bis[i],xi=map[bi.s_dt],xo=map[bi.e_dt];
-  if(xi===undefined||xo===undefined){continue}
-  g+='<line x1="'+X(xi)+'" y1="'+Y(bi.s_price)+'" x2="'+X(xo)+'" y2="'+Y(bi.e_price)
-   +'" stroke="#e3b341" stroke-width="1.2"/>';}
- for(i=0;i<sgs.length;i++){var sg=sgs[i],xi=map[sg.s_dt],xo=map[sg.e_dt];
-  if(xi===undefined||xo===undefined){continue}
-  g+='<line x1="'+X(xi)+'" y1="'+Y(sg.s_price)+'" x2="'+X(xo)+'" y2="'+Y(sg.e_price)
-   +'" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>';}
- for(i=0;i<fr2.length;i++){var f=fr2[i],i2=map[f.dt];
-  if(i2===undefined){continue}
-  var y2=f.type=='顶'?Y(f.price)-8:Y(f.price)+14;
-  g+='<text x="'+X(i2)+'" y="'+y2+'" font-size="11" text-anchor="middle" fill="'
-   +(f.type=='顶'?'#3fb950':'#f85149')+'">'+(f.type=='顶'?'▼顶':'▲底')+'</text>';}
- for(i=0;i<sigs.length;i++){var sg2=sigs[i],i2=map[sg2.dt];
-  if(i2===undefined){continue}
-  var buy=sg2.type.indexOf('买')>=0;
-  var mk=(sg2.bei===true)?'✓':(sg2.bei===false?'✗':'');
-  var mcol=(sg2.bei===true)?'#f85149':(sg2.bei===false?'#8b949e':'');
-  var mk2=(sg2.bei2===true)?'盘✓':(sg2.bei2===false?'盘✗':'');
-  var m2col=(sg2.bei2===true)?'#58a6ff':(sg2.bei2===false?'#8b949e':'');
-  var mk3=(sg2.mbei===true)?'M✓':(sg2.mbei===false?'M✗':'');
-  var m3col=(sg2.mbei===true)?'#bc8cff':(sg2.mbei===false?'#8b949e':'');
-  var mk4=(sg2.mt===true)?'次✓':'';
-  var mk5=(sg2.vv===true)?'量✓':'';
-  var mk7=(sg2.tbe===true)?'趋✓':(sg2.tbe===false?'趋✗':'');
-  var m7col=(sg2.tbe===true)?'#f778ba':'#8b949e';
-  var mk6='',m6col='#79c0ff';
-  if(sg2.reg){var tail=(sg2.type.indexOf('买')>=0)?'up':'down';
-   if(sg2.reg===tail){mk6=(tail==='up')?'势↑':'势↓';}}
-  g+='<circle cx="'+X(i2)+'" cy="'+(buy?Y(sg2.price)+18:Y(sg2.price)-10)
-   +'" r="2.5" fill="'+(buy?'#f85149':'#3fb950')+'"/>'
-   +'<text x="'+X(i2)+'" y="'+(buy?Y(sg2.price)+30:Y(sg2.price)-20)
-   +'" font-size="11" font-weight="bold" text-anchor="middle" fill="'
-   +(buy?'#f85149':'#3fb950')+'">'+sg2.type
-   +(mk?'<tspan fill="'+mcol+'" font-size="9">'+mk+'</tspan>':'')
-   +(mk2?'<tspan fill="'+m2col+'" font-size="8">'+mk2+'</tspan>':'')
-   +(mk3?'<tspan fill="'+m3col+'" font-size="8">'+mk3+'</tspan>':'')
-   +(mk4?'<tspan fill="#2dd4bf" font-size="8">'+mk4+'</tspan>':'')
-   +(mk5?'<tspan fill="#f0883e" font-size="8">'+mk5+'</tspan>':'')
-   +(mk6?'<tspan fill="'+m6col+'" font-size="8">'+mk6+'</tspan>':'')
-   +(mk7?'<tspan fill="'+m7col+'" font-size="8">'+mk7+'</tspan>':'')+'</text>';}
- el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">'+g+'</svg>';
-}
-function ckSigs(j){
- var el=document.getElementById('ck-sigs');
- var sigs=j.signals||[],b=j.bars||[];
- var lastdt=b.length?b[b.length-1].dt:'';
- if(j.period!=='1d'){
-  el.innerHTML="<div class='dim' style='font-size:12.5px'>⇪ 推池仅支持日线信号；当前 "+j.period+" 仅作结构观察。</div>";return}
- if(j.market!=='CN'&&j.market!=='US'&&j.market!=='HK'){
-  el.innerHTML="<div class='dim' style='font-size:12.5px'>⇪ 推池支持 CN/US/HK 日线（独立市场池链）；当前 "+j.market+" 仅作结构观察。</div>";return}
- if(!sigs.length){el.innerHTML="<div class='dim' style='font-size:12.5px'>本票当前无检出信号（结构已出，可切周期复核）。</div>";return}
- var rows='',i;
- for(i=0;i<sigs.length;i++){var s=sigs[i];
-  var buy=s.type.indexOf('买')>=0,old=(s.dt!==lastdt),bd='';
-  if(s.bei===true)bd+='<span style="color:#f85149">✓ </span>';
-  if(s.bei2===true)bd+='<span style="color:#58a6ff">盘✓ </span>';
-  if(s.mbei===true)bd+='<span style="color:#bc8cff">M✓ </span>';
-  if(s.tbe===true)bd+='<span style="color:#f778ba">趋✓ </span>';
-  if(s.vv===true)bd+='<span style="color:#f0883e">量✓ </span>';
-  if(s.mt===true)bd+='<span style="color:#2dd4bf">次✓ </span>';
-  if(s.reg){var tl=buy?'up':'down';
-   if(s.reg===tl)bd+='<span style="color:#79c0ff">'+(tl==='up'?'势↑':'势↓')+' </span>';}
-  if(s.conf!=null)bd+='<span class="dim">conf '+Math.round(s.conf*100)+'%</span>';
-  rows+='<tr><td><b style="color:'+(buy?'#3fb950':'#f85149')+'">'+s.type+'</b></td>'
-   +'<td>'+s.dt+'</td><td>'+(s.price==null?'—':s.price)+'</td>'
-   +'<td>'+(bd||'<span class="dim">—</span>')+'</td>'
-   +'<td>'+(old?"<span style='color:#e3b341' title='检出日非最新K线：paper 将以最新收盘入账'>⚠ 旧信号</span>":'<span style="color:#3fb950">最新</span>')+'</td>'
-   +'<td><button id="ckpb_'+i+'" onclick="ckPush('+i+')" style="background:#238636;color:#fff;border:0;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:12px">⇪ 推池</button></td></tr>';}
- el.innerHTML='<div style="font-size:13.5px;margin-bottom:4px"><b style="color:#e6edf3">🎯 检出信号清单</b>'
-  +'（影子徽章口径同图例）</div><table><tr><th>类型</th><th>信号日</th><th>信号价</th><th>影子徽章</th><th>时效</th><th>入池</th></tr>'+rows+'</table>'
-  +'<div class="dim" style="font-size:12px;margin-top:4px">推池=写入缠论信号池（source=manual · 与 15:35 扫描同款增强管线 · 三层幂等）；paper 由下一轮扫描按检出日收盘自动开仓跟踪。</div>';
- window._ckSig=sigs;window._ckCode=j.code;
-}
-function ckPush(i){
- var s=(window._ckSig||[])[i];if(!s)return;
- var btn=document.getElementById('ckpb_'+i);
- btn.disabled=true;btn.textContent='推池中…';
- fetch('/api/chanlun/pool/push',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({code:window._ckCode,type:s.type,dt:s.dt,market:j.market})})
- .then(function(r){return r.json()})
- .then(function(j){
-  if(j.ok){
-   var hit=(j.pushed||[]).some(function(x){return x.type===s.type&&x.dt===s.dt});
-   btn.textContent=hit?'已入池 ✓':'已在池';
-   btn.style.background='#30363d';
-  }else{btn.textContent='失败';btn.style.background='#b35900';btn.title=(j.error||'').slice(0,80);btn.disabled=false;}
- }).catch(function(){btn.textContent='重试';btn.disabled=false;});
-}
-</script>"""
         # ── 五段式对齐青萍之末（2026-10-05 改版）：标题+态势条 → 说明书 →
         #    环境闸门 → 信号清单 → 面板/查看器/工具；方法详表与⏳详述维持
         #    details 折叠作参考层 ──

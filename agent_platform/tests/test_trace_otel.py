@@ -40,9 +40,10 @@ def test_otel_export_payload(monkeypatch, tmp_path):
         captured["body"] = req.data
         return _Resp()
 
-    import urllib.request
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    # safe_urlopen 对回环地址走独立 opener，必须 patch trace 模块实际调用的符号，
+    # 而不是 urllib.request.urlopen；否则测试会绕过 fake 访问 127.0.0.1:4318。
     t = _load()
+    monkeypatch.setattr(t, "safe_urlopen", fake_urlopen)
     rep = t.record("b" * 32, "cap.test", kind="tool", status="ok",
                    attrs={"capability": "selftest"}, db=tmp_path / "t.sqlite")
     assert rep["otel"]["ok"] is True
@@ -60,8 +61,7 @@ def test_otel_error_fail_open(monkeypatch, tmp_path):
     def boom(req, timeout=0):
         raise OSError("phoenix down")
 
-    import urllib.request
-    monkeypatch.setattr(urllib.request, "urlopen", boom)
     t = _load()
+    monkeypatch.setattr(t, "safe_urlopen", boom)
     rep = t.record("c" * 32, "test", db=tmp_path / "t.sqlite")
     assert rep["ok"] is True and rep["otel"]["ok"] is False

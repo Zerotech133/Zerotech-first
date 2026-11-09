@@ -596,9 +596,14 @@ def _visual_warn_gate(branch, worktree=""):
               % ("组件视觉基线", str(exc)[:120]))
 
 
-def _git(*args, cwd=REPO):
-    r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace")
+def _git(*args, cwd=REPO, timeout=None):
+    try:
+        r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace",
+                           timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # 统一走 SystemExit：调用方都按"git 失败"处理，不额外引入异常类型
+        raise SystemExit("git %s 超时（%ss）" % (" ".join(args), timeout))
     if r.returncode != 0:
         raise SystemExit("git %s 失败: %s" % (" ".join(args),
                                              (r.stderr or r.stdout).strip()))
@@ -1118,10 +1123,15 @@ def _dev_gate_check(dept, owner_ok, acceptance, gate=None, owner=None,
 # 背景：创建速率 ~4 棵/小时 > 清理速率（10-31 已 60+ 棵）。三条闸：
 #   1) merge 成功即回收 worktree+分支（--keep-worktree 可跳过，脏树保留）
 #   2) prune 输出 age>TTL(72h) 标 [TTL-RED]（只标注，不自动删）
-#   3) devtask new 并发上限（默认 60，env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
+#   3) devtask new 并发上限（env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
 WT_TTL_HOURS_DEFAULT = 72.0
 WT_TTL_ENV = "DEVTOOL_WT_TTL_HOURS"
-MAX_WORKTREES_DEFAULT = 65
+# 2026-11-08 校准：65 → 80（K-ORG-20261108-OVWSPLIT）。
+# 依据：当日收口到 58 棵后，其余 49 棵都有未合入提交、是真正在跑的活，
+# 常态水位就是 55~60。原 cap 65（warn 线 52）比常态还低，等于每次 new 都告警；
+# 而 warn 一响就没人再看，闸门等于失效。抬到 80 后 warn=64 / block=80，
+# 既能容纳当前并发，也还能拦住 worktree 失控增长。
+MAX_WORKTREES_DEFAULT = 80
 MAX_WORKTREES_ENV = "DEVTOOL_MAX_WORKTREES"
 KEEP_WORKTREE_ENV = "DEVTOOL_KEEP_WORKTREE"
 
@@ -1193,7 +1203,7 @@ def _concurrency_verdict(count, cap):
 
 
 def _active_worktree_count(repo=None):
-    """当前在册任务 worktree 数（不含主树）；git 不可用时返回 0（不拦单）。"""
+    """当前在册任务 worktree 数（不含主树与空壳登记）；git 不可用返回 0（不拦单）。"""
     repo = repo or REPO
     try:
         wts = _prune_worktrees(repo)
@@ -1201,7 +1211,10 @@ def _active_worktree_count(repo=None):
         return 0
     except Exception:  # noqa: BLE001
         return 0
-    return len([w for w in wts if not _prune_same_path(w["path"], repo)])
+    # 空壳登记（`.git` 指针已失）不该挤占并发名额：它既跑不了活，也无法回收出磁盘，
+    # 只会让闸门长期虚高。见 _wt_pointer_ok 的判例说明。
+    return len([w for w in wts
+                if not _prune_same_path(w["path"], repo) and not w.get("dead")])
 
 
 def _enforce_worktree_cap():
@@ -1234,6 +1247,14 @@ def _recycle_worktree(tid, task):
         return False, "无 worktree/分支登记"
     if not os.path.isdir(wt):
         return False, "worktree 目录不存在（可能已回收）"
+    if not _wt_pointer_ok(wt):
+        # 空壳目录：`.git` 指针没了，此时 `git status` 会向上读到主仓状态，
+        # 把主树的未提交改动误当成这个 worktree 的脏（2026-11-08 踩过）。
+        try:
+            _git("worktree", "prune")
+        except SystemExit:
+            pass
+        return False, "worktree 登记已死（.git 缺失），已 prune 解注册；残留目录需人工清理"
     try:
         st = _git("status", "--porcelain", cwd=wt)
     except SystemExit as e:
@@ -1242,8 +1263,18 @@ def _recycle_worktree(tid, task):
     if dirty:
         return False, "worktree 脏（%d 项未提交），保留待 owner 处理" % len(dirty)
     try:
-        _git("worktree", "remove", wt)
+        _git("worktree", "remove", wt, timeout=300)
     except SystemExit as e:
+        # 删大目录超时/失败后，git 可能已经删掉 `.git` 指针却留下整棵树。
+        # 这种壳不能再当"活 worktree"留在台账里（会被计入并发、且下次 status 假脏）。
+        if not _wt_pointer_ok(wt):
+            try:
+                _git("worktree", "prune")
+            except SystemExit:
+                pass
+            freed = _prune_rmtree(wt)
+            return False, ("worktree 删到一半（指针已失），已解注册；"
+                           "残留目录%s（%s）" % ("已清" if freed else "未清", str(e)[:80]))
         return False, "git worktree remove 失败：%s" % str(e)[:120]
     try:
         _git("branch", "-d", br)
@@ -1544,7 +1575,7 @@ def _worktree_violations(tasks, wt_dir, registered, branches):
         br = str(t.get("branch") or "").strip() or ("task/" + tid)
         checks = {
             "dir": os.path.isdir(wt),
-            "registered": os.path.normcase(os.path.abspath(wt)) in registered,
+            "registered": (os.path.normcase(os.path.abspath(wt)) in registered) or (os.path.normcase(os.path.realpath(wt)) in registered),
             "branch": br in branches,
         }
         if all(checks.values()):
@@ -1602,6 +1633,7 @@ def _audit_worktrees(repo=None):
     try:
         for w in _prune_worktrees(repo):
             registered.add(os.path.normcase(os.path.abspath(w["path"])))
+            registered.add(os.path.normcase(os.path.realpath(w["path"])))
     except SystemExit:
         pass
     try:
@@ -2616,15 +2648,56 @@ PRUNE_PROTECTED = ("master", "main")
 _PRUNE_FLAGS = ("--apply", "--dry-run", "--merged", "--worktrees", "--all")
 
 
-def _prune_git(repo, *args, check=False):
-    """prune 专用 git 调用（独立于 _git：需支持 --repo 指向临时演练仓）。"""
-    r = subprocess.run(["git"] + list(args), cwd=repo, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace",
-                       env=GUARD_ENV)
+def _prune_git(repo, *args, check=False, timeout=None):
+    """prune 专用 git 调用（独立于 _git：需支持 --repo 指向临时演练仓）。
+
+    `timeout` 是必需的逃生口：`git worktree remove` 在 Windows 上删大目录可能
+    跑十几分钟，没有超时就会把整个 prune 钉死（2026-11-08 实测卡满 400s）。
+    超时不抛异常，返回 rc=124 的假 CompletedProcess，由调用方按失败处理并走
+    兜底路径 —— 抛异常会让"已删一半"的状态没人收尾。
+    """
+    args = list(args)
+    try:
+        r = subprocess.run(["git"] + args, cwd=repo, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace",
+                           env=GUARD_ENV, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        r = subprocess.CompletedProcess(
+            ["git"] + args, 124, stdout="",
+            stderr="timeout after %ss: git %s" % (timeout, " ".join(args)))
     if check and r.returncode != 0:
         raise SystemExit("git %s 失败: %s"
                          % (" ".join(args), (r.stderr or r.stdout).strip()))
     return r
+
+
+def _prune_remove_worktree(repo, path, timeout=600):
+    """回收一个 worktree，返回 (ok, note)。两段式，专治"删到一半"。
+
+    ① `git worktree remove`（**不带 --force**，脏树由 git 自己拒）；
+    ② 若超时/失败，但 `.git` 指针已经消失 —— 这是 Windows 删大目录的典型
+       中间态 —— 则 `git worktree prune` 解注册，再清残留目录。
+
+    对并发闸而言**解注册就已经收口**（闸数的是 `git worktree list`），
+    清目录只是把磁盘拿回来，所以②即使清不干净也算成功，note 里会写明。
+
+    timeout 默认 600s 是实测定的：2026-11-08 五个 worktree 逐个删，
+    耗时 186s / 225s / 228s / 251s —— 原先 180s 的口径**必然**误判成超时。
+    """
+    r = _prune_git(repo, "worktree", "remove", path, timeout=timeout)
+    if r.returncode == 0:
+        return True, "git worktree remove 完成"
+    err = (r.stderr or r.stdout or "").strip().replace("\n", " ")[:160]
+    if _wt_pointer_ok(path):
+        # 指针还在 → 是真的删不动（被占用/权限/树不干净），保持原样交人工
+        return False, "git worktree remove 失败：%s" % err
+    pr = _prune_git(repo, "worktree", "prune", timeout=60)
+    if pr.returncode != 0:
+        return False, ("指针已失但 prune 失败：%s"
+                       % (pr.stderr or pr.stdout).strip()[:120])
+    freed = _prune_rmtree(path)
+    return True, "指针已失 → 已解注册；残留目录清理%s（%s）" % (
+        "完成" if freed else "未完成，需人工", err)
 
 
 def _prune_load_tasks(tasks_path):
@@ -2646,8 +2719,57 @@ def _prune_same_path(a, b):
     return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
 
 
+def _wt_pointer_ok(path):
+    """worktree 目录里是否还带 `.git` 指针 —— 判断"活着"的唯一可信依据。
+
+    2026-11-08 判例（K-ORG-20261108-OVWSPLIT）：Windows 上 `git worktree remove`
+    先删 `.git` 指针、再删树，超时被杀会留下"指针没了、树还在"的空壳；这种壳
+    仍会出现在 `git worktree list` 里。
+
+    **不能用 `git -C <path> status` 判活**：指针缺失时 git 会沿父目录一路向上，
+    命中主仓的 `.git`，于是返回**主树的**状态——看起来像"这个 worktree 刚被人
+    改脏了"，实际它早已是空壳。同理也不能据此判"脏"来决定是否保留。
+    """
+    return os.path.exists(os.path.join(path, ".git"))
+
+
+def _wt_is_dead(item, repo):
+    """在册但已是空壳：目录还在，`.git` 指针已失（bare / 主树除外）。"""
+    if item.get("bare") or not item.get("exists"):
+        return False
+    if _prune_same_path(item["path"], repo):
+        return False
+    return not _wt_pointer_ok(item["path"])
+
+
+def _prune_rmtree(path):
+    """尽力删掉一个残留目录（清只读位后重试），返回是否已不存在。
+
+    只用于**已确认 `.git` 指针缺失**的空壳：库内内容早已不在版本控制视野里，
+    删它属于清盘，不涉及任何未提交的受控文件。
+    """
+    if not os.path.isdir(path):
+        return True
+
+    def _onexc(func, p, exc):
+        try:
+            os.chmod(p, 0o700)
+            func(p)
+        except OSError:
+            pass
+
+    try:
+        if sys.version_info >= (3, 12):
+            shutil.rmtree(path, onexc=_onexc)
+        else:  # pragma: no cover - 3.11 及以下
+            shutil.rmtree(path, onerror=lambda f, p, e: _onexc(f, p, e[1]))
+    except OSError:
+        pass
+    return not os.path.isdir(path)
+
+
 def _prune_worktrees(repo):
-    """git worktree list --porcelain → [{path, branch, detached, bare, exists}]。"""
+    """git worktree list --porcelain → [{path, branch, detached, bare, exists, dead}]。"""
     out = _prune_git(repo, "worktree", "list", "--porcelain", check=True).stdout
     items = []
     for line in out.splitlines():
@@ -2663,6 +2785,7 @@ def _prune_worktrees(repo):
             items[-1]["bare"] = True
     for it in items:
         it["exists"] = os.path.isdir(it["path"])
+        it["dead"] = _wt_is_dead(it, repo)
     return items
 
 
@@ -2728,7 +2851,11 @@ def _prune_plan(repo, do_branches=True, do_worktrees=True):
                 elif tv.get("status", "?") not in ("done", "aborted"):
                     reasons.append("任务状态=%s（非 done/aborted）"
                                    % tv.get("status", "?"))
-            if w is not None and w["exists"]:
+            if w is not None and w.get("dead"):
+                # 这里**绝不能**跑 git status：指针缺失时它会向上命中主仓 .git，
+                # 返回主树状态，看起来像"worktree 脏了"（2026-11-08 实际误判过）。
+                reasons.append("登记已死（.git 指针缺失，目录为空壳）")
+            elif w is not None and w["exists"]:
                 st = _prune_git(path, "status", "--porcelain")
                 if st.returncode != 0:
                     reasons.append("git status 失败（%s）"
@@ -2776,26 +2903,27 @@ def _prune_plan(repo, do_branches=True, do_worktrees=True):
                 plan["branches"].append({
                     "branch": name, "action": "delete-branch", "skip": False,
                     "reason": "已合并 master"})
-    # ③ 陈旧登记：worktree list 中路径已不存在
+    # ③ 陈旧登记：目录已不存在，或目录还在但 `.git` 指针已失（空壳）
     for w in wts:
-        if not _prune_same_path(w["path"], repo) and not os.path.isdir(w["path"]):
+        if _prune_same_path(w["path"], repo):
+            continue
+        if not os.path.isdir(w["path"]) or w.get("dead"):
             plan["stale"].append(w["path"])
     return plan
 
 
 def _prune_apply(repo, plan):
-    """执行计划：先回收 worktree（git worktree remove，无 --force），再删分支。"""
+    """执行计划：先回收 worktree（两段式，见 _prune_remove_worktree），再删分支。"""
     rc = 0
     for it in plan["worktrees"]:
         if it["skip"]:
             continue
-        r = _prune_git(repo, "worktree", "remove", it["path"])
-        if r.returncode == 0:
-            print("  [DONE] git worktree remove \"%s\"" % it["path"])
+        ok, note = _prune_remove_worktree(repo, it["path"])
+        if ok:
+            print("  [DONE] %s → %s" % (it["path"], note))
         else:
             rc = 1
-            print("  [FAIL] git worktree remove \"%s\" → %s"
-                  % (it["path"], (r.stderr or r.stdout).strip()[:160]))
+            print("  [FAIL] %s → %s" % (it["path"], note))
     for it in plan["branches"]:
         if it["skip"]:
             continue

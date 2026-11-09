@@ -1,0 +1,29 @@
+{
+  "schema": "zerobound/d1_p0_04_test_count_baseline/v1",
+  "generated_at": "2026-11-07T14:42:00+08:00",
+  "scope": "P0-04 D1 9 HTTP 接口契约/幂等/e2e/UI 测试（含 P0-04 gate 守卫与 war-room 契约测试）",
+  "test_files": [
+    "portal/tests/test_p0_04_contract_gate.py",
+    "portal/tests/test_ifs_auth_contract.py",
+    "portal/tests/test_ifs_idempotency.py",
+    "portal/tests/test_ifs_wire_chain.py",
+    "portal/tests/test_api_envelope_d1.py",
+    "portal/tests/test_api_war_room_envelope.py",
+    "portal/tests/test_api_d1_research.py",
+    "portal/tests/test_api_d1_decision.py",
+    "portal/tests/test_api_d1_meeting.py",
+    "portal/tests/test_api_d1_handoff.py",
+    "portal/tests/test_api_d1_training.py",
+    "portal/tests/test_d1_envelope_ui.py",
+    "portal/tests/test_d1_training_page.py",
+    "portal/tests/test_d1_levels_ui.py",
+    "portal/tests/test_d1_overview_page.py"
+  ],
+  "collected": 161,
+  "passed": 158,
+  "xfailed": 2,
+  "skipped": 1,
+  "failed": 0,
+  "command": "python -m pytest <15 files> -q -p no:cacheprovider -o addopts=",
+  "note": "skipped 是 P0-04 受控负控正常态（仅 D1_P0_04_BREAK_CONTRACT=1 时触发失败）。xfailed 两条分别对应：G2 写接口 403 仍为 portal_api legacy dict（未套 error/v1）；D1 写接口无 idempotency_key/idempotent_replay（同 decision_id 第二次提交 400 duplicate_decision，而非 IFS 200 原记录+warning）。两条都严格标记，不伪造通过。"
+}

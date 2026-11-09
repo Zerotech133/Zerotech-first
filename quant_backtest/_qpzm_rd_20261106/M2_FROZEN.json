@@ -1,0 +1,70 @@
+{
+ "schema": "qpzm_m2_frozen/v1.1",
+ "generated_at": "2026-11-09 15:45",
+ "status": "FROZEN M2.1 - 老田 2026-11-07 13:08 确认（drop_p1 入场过滤启用）；2026-11-09 签 b 指纹重冻（引擎/裁判对齐 t7_lock v3b，口径零变更，复跑 12m 0 差异实证）",
+ "form": {
+  "engine": "qpzm_backtest.py（逐笔锚，md5 d13225d0，v3b 重冻：load_wide 增读 low 列透传 _raw_low，不进任何引擎计算路径）",
+  "portfolio_sim": "portfolio_sim.py（组合层唯一裁判，md5 57de37c6）",
+  "rank": "score",
+  "weight_scheme": "inv_vol",
+  "lot_fill": "recycle",
+  "top_n": 30,
+  "hold": 5,
+  "gate": "env 闸门 v3_breadth40_med20（safe=false 一票否决，关闸期只出影子信号）",
+  "cost_roundtrip": 0.003,
+  "limit_mode": "exact",
+  "jev_mode": "missing",
+  "max_weight": 0.05,
+  "alloc": "cash",
+  "capital_ref": 10000000,
+  "drop_p1": true
+ },
+ "evidence": {
+  "A2_final": "_qpzm_rd_20261106/a2_final/a2_matrix.md（窗口末端 20261106，80 配置）: combo top30 收益 10/10 + 回撤 10/10；50bp 全矩阵不翻结论（12m +17.86% / 24m +31.66% / 36m +81.40%）",
+  "A3_impact": "_qpzm_rd_20261106/a3_impact/a3_impact_report.md: 保守档 4/5 通过，36m combo−equal +38.8pp 保持；参与率中位 <0.01%",
+  "NA_bucket": "_qpzm_rd_20261106/risk_budget/na_bucket_verdict.md: 回测数字无需修正",
+  "baseline": "t7_lock/baseline_lock.json v2b（引擎指纹 f6782e33，19 字段 rerun 0 差异）",
+  "M21_drop_p1": "paper/_dp_{3m,6m,12m,24m,36m}.json 五窗口 4/5+5/5 通过（12m +1.11pp/24m +3.21pp/36m −0.66pp 噪声级）；50bp 复核 12m +1.25pp/36m −1.42pp 不翻结论；与 2026-11-05 选股能力核查（周期1 hold5 −1.18% vs 周期3 +0.56%）方向一致"
+ },
+ "disclosures": [
+  "绝对收益受真实冲击成本拖累：非复利口径 36m equal +38.4%→保守 +25.9%、combo +78.8%→+64.7%（A3 报告为准）",
+  "引擎虚拟净值口径已废弃，一切收益/回撤以组合模拟器真净值为准",
+  "top30 资金利用率 39~49%（闸门关闸期现金闲置），满仓折算口径须并列披露",
+  "跌停无法卖出未建模（高估方向）；竞价必成假设（高估方向）",
+  "NA 桶（停牌复牌跳空笔）24m 占盈亏 38.1% 为窗口性现象，属策略特性非缺陷",
+  "L-11 披露（老田 2026-11-09 裁定暂缓·只补披露）：data/ashare 为前复权(qfq)价，手数/资金分配按该绝对价估算；qfq vs bfq 同窗口（36m/exact/c30/inv_vol+recycle）收益差 29.4pp（差异在 skip_lot 路径被复利放大，非涨跌停判定）。A6 模拟盘 3 个月到期时一并评估数据层迁移（bfq+adj_factor），届时须全量重算历史+基线重冻，不得顺手改。证据：deliverables/2026-11-08_十年期回测_v1.md §5"
+ ],
+ "next_gate": {
+  "A5_confirm": "老田 --yes 显式确认本文件后：cp 为 M2_FROZEN.json（去掉 DRAFT 标记），进入模拟盘 ≥3 个月（A6，只记录不下场）",
+  "rollback": "冻结前发现新问题 → 回 A 线重开；冻结后 → 变更须走 §5 六条判据全过 + 重新冻结"
+ },
+ "frozen_at": "2026-11-07 13:08",
+ "frozen_by": "laotian",
+ "version_note": "M2.1 = M2 + drop_p1。纯入场过滤：剔除 RPS50 分位<50 的信号票（过滤后不足10只当日不过滤）；不动排序/不动加权/不动出场。",
+ "refreeze_20261109": {
+  "what": "签 b 指纹重冻（处置 b，daily_run.py 门禁一 exit 3 的解除）：引擎 f6782e33→d13225d0、裁判 62da1da4→57de37c6，与 t7_lock/baseline_lock.json v3b/judge_note_v4 对齐。策略参数（top_n/hold/cost/lot_fill=recycle/limit_mode=exact/drop_p1）零变更。",
+  "evidence": "maintenance/_rerun_dp_12m.json：当前工作区对按 M2.1 冻结口径复跑 12m 窗口（20251106~20261106），37 项 metrics 逐字段与 paper/_dp_12m.json 相等（0 差异），243 点净值曲线 0 差异；verify_baseline.py 引擎/裁判指纹 OK。",
+  "disclosures": "① verify_baseline.py 唯一 FAIL 是锚点 news_collector/news_config.json（新闻配置变更）；JEV 维本就恒缺维（missing 归一），对 M2.1 数值零影响。② 裁判 62da1da4→57de37c6 含 M3 结构矩阵/DEBETA/RPS50 能力脚手架（对应已否决项的代码路径），冻结口径下不被任何决策路径消费，本次复跑 0 差异即实证。",
+  "approved_by": "laotian（2026-11-09 WorkBuddy 指令「执行回测引擎三处口径」）"
+ },
+ "rejected": [
+  {
+   "item": "debeta 排序（score 对 vol20+ret20 截面残差）",
+   "date": "2026-11-07",
+   "verdict": "❌ 1/5",
+   "evidence": "36m −109.8pp；与 rps/score_resid 失败同构——排序键不可动 score（三连实锤）"
+  },
+  {
+   "item": "全局止损 −5%",
+   "date": "2026-11-07",
+   "verdict": "❌ 2/5",
+   "evidence": "12m −9.15pp；止损释放现金被 recycle 再投放大磨损；回撤 5/5 更浅记为防守档可选"
+  },
+  {
+   "item": "个股结构价格计划 TP/SL",
+   "date": "2026-11-07",
+   "verdict": "❌ 1/5",
+   "evidence": "36m −99.4pp；高位入场下 TP 频触、剪碎 5 日波段引擎"
+  }
+ ]
+}

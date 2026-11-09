@@ -71,7 +71,7 @@ def test_suite_lists_unchanged():
         assert m, "缺 suite 定义 %r" % key
         return re.findall(r"'([^']+)'", m.group(1))
     assert suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key",
-                                  "tools_key", "datawarehouse"]
+                                  "tools_key", "datawarehouse", "analysis", "commercial"]
     assert suite_list("all") == ["portal", "kstock", "agent", "quant", "ide"]
 
 

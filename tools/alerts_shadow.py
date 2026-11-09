@@ -8,16 +8,26 @@
 
 契约（portal/index.html 消费实证）:
     GET /alerts/status -> {"ok":true,"running":bool,"rule_count":int,
-                           "trading_day":bool,...}  4s 超时，CORS 放行
+                           "trading_day":bool,
+                           "push_chain_ok":bool|null,   # S4 2026-11-08：推送链健康
+                           "push_chain":{...},...}  4s 超时，CORS 放行
     GET /alerts/ui     -> 极简状态页（门户 yaOpen 打开）
     GET /api/health    -> 8791 聚合器兼容 {"port":8001,"ok":true}
+
+push_chain_ok 口径（S4 告警链转正清单）:
+    复用 tools/alert_push_watchdog.py 的 diagnose()（同源判定，防两处漂移）：
+    读 news_collector/outbox/alert_push_last.json —— 超 24h 无成功推送、
+    或 ok=false 持续超 6h → push_chain_ok=false；文件缺失/损坏也算断链。
+    探针模块不可导入时 push_chain_ok=null（fail-visible，不崩服务、不假绿）。
+    本服务仍只读：只读 outbox，不发通知、不写任何文件。
 
 running 语义（不假绿）:
     running = 数据源 8091 /api/alerts 最近一次拉取成功且未超 90s。
     数据源不可达时 running=false 并带 degraded 说明，绝不伪装在线。
 
 启动: python tools/alerts_shadow.py [--port 8001]（日志落 logs/）。
-自启: 计划任务 AlertShadowBoot（开机触发）+ 交易时段重试，见 K-DASH-002。
+自启: 计划任务 AlertShadowBoot（2026-11-08 重建，老田批准）——每 30 分钟
+      拉起一次（端口占用幂等退出 0，无时限），挂了 30 分钟内自愈。
 """
 import argparse
 import datetime as dt
@@ -93,11 +103,42 @@ def _is_trading_day(today=None):
     return d.weekday() < 5
 
 
+def _push_chain():
+    """S4：推送链健康只读投影（复用 S2 探针同源判定，零通知零写盘）。
+
+    返回 {"ok": bool|None, "detail": {...}}；探针模块不可导入时 ok=None。
+    """
+    try:
+        import alert_push_watchdog as _wd  # 同目录 tools/，导入无副作用
+    except Exception as e:
+        return {"ok": None,
+                "detail": {"error": "探针模块不可导入: %s: %s"
+                           % (type(e).__name__, str(e)[:120])}}
+    try:
+        push_last = _wd.load_push_last()
+        broken, reason = _wd.diagnose(push_last, dt.datetime.now())
+        detail = {
+            "watchdog": "tools/alert_push_watchdog.py",
+            "outbox": "news_collector/outbox/alert_push_last.json",
+            "last_ts": (push_last or {}).get("ts"),
+            "last_ok": (push_last or {}).get("ok"),
+            "stale_h": _wd.STALE_H,
+            "fail_h": _wd.FAIL_H,
+            "broken_reason": reason or None,
+        }
+        return {"ok": (not broken), "detail": detail}
+    except Exception as e:
+        return {"ok": None,
+                "detail": {"error": "推送链判定异常: %s: %s"
+                           % (type(e).__name__, str(e)[:120])}}
+
+
 def status_payload():
     """组装 /alerts/status 主文档（只读，无副作用）。"""
     src = _fetch_source()
     fresh = src["ok"] or (src.get("alerts") is not None
                           and time.time() - src["ts"] < SOURCE_STALE_S)
+    pc = _push_chain()
     return {
         "ok": True,
         "service": "alerts_shadow",
@@ -106,6 +147,9 @@ def status_payload():
         "rule_count": len(RULE_NAMES),
         "rules": RULE_NAMES,
         "trading_day": _is_trading_day(),
+        # S4：推送链健康（true=链正常 / false=断链 / null=探针不可用，fail-visible）
+        "push_chain_ok": pc["ok"],
+        "push_chain": pc["detail"],
         "source": {
             "url": SOURCE_URL,
             "reachable": src["ok"],
@@ -130,8 +174,14 @@ h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px sol
 <script>
 fetch('/alerts/status',{cache:'no-store'}).then(r=>r.json()).then(d=>{
   const st=d.running?'<span class="ok">在线</span>':'<span class="bad">离线/降级</span>';
+  const pc=d.push_chain_ok===null||d.push_chain_ok===undefined
+    ?'<span class="bad">未知（探针不可用）</span>'
+    :(d.push_chain_ok?'<span class="ok">正常</span>':'<span class="bad">断链</span>');
+  const pcNote=d.push_chain&&d.push_chain.broken_reason?'<span class="bad">'+d.push_chain.broken_reason+'</span>'
+    :(d.push_chain&&d.push_chain.last_ts?'（最后成功 '+d.push_chain.last_ts+'）':'');
   let rows='<table><tr><th>项</th><th>值</th></tr>'
    +'<tr><td>running</td><td>'+st+'</td></tr>'
+   +'<tr><td>push_chain_ok（推送链健康，S4）</td><td>'+pc+' '+pcNote+'</td></tr>'
    +'<tr><td>rule_count</td><td>'+d.rule_count+'</td></tr>'
    +'<tr><td>规则</td><td class="mono">'+d.rules.join(' · ')+'</td></tr>'
    +'<tr><td>trading_day（仅排周末，节假日不识别）</td><td>'+(d.trading_day?'是':'否')+'</td></tr>'

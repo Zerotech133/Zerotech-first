@@ -355,5 +355,48 @@ class TestScreenApi(unittest.TestCase):
         self.assertIn("非法 limit", h.obj["error"])
 
 
+class _FakeParseModule:
+    """假 analysis.screen_parse（H2a 引擎未合并时测试用）。"""
+    calls = []
+
+    @staticmethod
+    def parse(text, industries=None):
+        _FakeParseModule.calls.append({"text": text, "industries": industries})
+        return {"ok": True,
+                "spec": {"universe": "WATCHLIST",
+                         "filters": [{"field": "ps", "op": "<=", "value": 0.3}],
+                         "rank_by": [], "limit": 20, "explain": True},
+                "notes": ["筛选：PS 历史分位 ≤ 30%"],
+                "unmatched": ["随便写"],
+                "source": "rule"}
+
+
+class _FakeScreenerModule:
+    """假 analysis.screener（H2a 引擎未合并时测试用）。"""
+    FIELDS = {"ps": {"kind": "number", "label": "PS(TTM)"},
+              "flag_st": {"kind": "bool", "label": "ST"}}
+    UNIVERSES = ("A_SHARE", "HS300", "WATCHLIST")
+    OPS = ("=", ">=", "<=")
+    valid = True
+    calls = []
+
+    @staticmethod
+    def validate(spec):
+        if not _FakeScreenerModule.valid:
+            return {"ok": False, "errors": ["filters 必须为非空数组"], "spec": spec}
+        return {"ok": True, "errors": [], "spec": spec}
+
+    @staticmethod
+    def run(spec):
+        _FakeScreenerModule.calls.append(spec)
+        return {"ok": True, "as_of": "2026-11-03", "universe": "WATCHLIST",
+                "universe_size": 12, "matched": 3, "returned": 1,
+                "candidates": [{"code": "600337.SH", "name": "美克家居", "industry": "轻工制造",
+                                "metrics": {}, "reasons": ["PS 分位 20%"], "risk_tags": []}],
+                "warnings": ["数据缺字段：quality_score"],
+                "disclaimer": "筛选结果仅供研究，不构成投资建议；历史数据不代表未来。",
+                "spec": spec}
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

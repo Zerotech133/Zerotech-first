@@ -1,0 +1,22 @@
+﻿D1 P0-07 route evidence (unauthenticated, 8734)
+GET /d1
+status=302 redirect=http://127.0.0.1:8734/login?next=/d1
+
+GET /d1/
+status=302 redirect=http://127.0.0.1:8734/d1
+
+container page:
+15598 /usr/share/nginx/html/d1/index.html
+
+container route excerpt:
+819:    location = /d1 {
+820-        auth_request /_auth_guard;
+821-        error_page 401 = @login_required;
+822-        default_type text/html;
+823-        charset utf-8;
+824-        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+825-        add_header X-Content-Type-Options "nosniff" always;
+826-        try_files /d1/index.html =404;
+827-    }
+828-    location = /d1/ {
+829-        return 302 /d1;

@@ -13,6 +13,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import pickle
 import sys
@@ -134,7 +135,7 @@ def _factor_ls_returns(rank: pd.DataFrame, panel: f.Panel, mask: pd.DataFrame,
         vals = valid.sort_values(ascending=False)
         longs = vals.index[:k]
         shorts = vals.index[-k:]
-        r = rets.iloc[i - 1].reindex(valid.index).fillna(0.0)
+        r = rets.iloc[i].reindex(valid.index).fillna(0.0)
         out.iloc[i] = float(0.5 * r.loc[longs].mean() - 0.5 * r.loc[shorts].mean())
     return out
 
@@ -197,7 +198,7 @@ def main() -> int:
         max_one_way_turnover=0.3, cost_bp=30,
     )
     p1 = pv.get_prior("p1")
-    p3 = pv.get_prior("p3", tilt_weight=TILT_WEIGHT)
+    pv.get_prior("p3", tilt_weight=TILT_WEIGHT)
 
     print("[attr] build P1 families", flush=True)
     comp1, diag1, fam1 = build_composite(
@@ -231,11 +232,20 @@ def main() -> int:
 
     results: dict[str, dict] = {}
     checkpoint = Path(r"C:\Temp\p3_attribution_checkpoint.pkl")
+    meta_fp = hashlib.sha256(json.dumps({
+        "shape": list(panel.shape), "first": str(panel.dates[0]), "last": str(panel.dates[-1]),
+        "codes": len(panel.codes), "tilt": TILT_WEIGHT, "cfg": cfg.to_dict(),
+    }, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
     reuse = "--reuse" in sys.argv and checkpoint.exists()
     if reuse:
         with checkpoint.open("rb") as fh:
-            results = pickle.load(fh)
-        print(f"[attr] reuse checkpoint={checkpoint} variants={list(results)}", flush=True)
+            payload = pickle.load(fh)
+        if isinstance(payload, dict) and payload.get("__meta__") == meta_fp:
+            results = payload.get("results", {})
+            print(f"[attr] reuse checkpoint={checkpoint} variants={list(results)}", flush=True)
+        else:
+            reuse = False
+            print("[attr] checkpoint fingerprint mismatch; recompute", flush=True)
     for name, (matrix, desc) in ([] if reuse else variants.items()):
         print(f"[attr] simulate {name}", flush=True)
         out = _simulate(panel, matrix, cfg, names, pit, capture=name in ("p1", "p3_21d"))
@@ -251,7 +261,8 @@ def main() -> int:
               f"sharpe={out['result']['metrics']['sharpe']} {time.time()-t0:.1f}s", flush=True)
 
     with checkpoint.open("wb") as fh:
-        pickle.dump(results, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump({"__meta__": meta_fp, "results": results}, fh,
+                    protocol=pickle.HIGHEST_PROTOCOL)
     print(f"[attr] checkpoint={checkpoint}", flush=True)
 
     print("[attr] reconcile P3/P1", flush=True)
@@ -293,7 +304,6 @@ def main() -> int:
     stock_active = pd.Series(dtype=float)
     industry_contrib: dict[str, float] = {}
     size_contrib: dict[str, float] = {"small": 0.0, "mid": 0.0, "large": 0.0}
-    industry_daily: dict[str, dict[str, float]] = {}
     for rec in rows:
         d = rec["date"]
         contrib = rec["contrib"]
@@ -343,7 +353,8 @@ def main() -> int:
         factor_rets[fname] = _factor_ls_returns(rank, panel, sel_mask)
     fr = pd.DataFrame(factor_rets)
     reg_families = _regression(active, fr[[f"fam_{x}" for x in FAMILIES] + ["mom_21d"]])
-    reg_all = _regression(active, fr)
+    # return_21d 与 mom_21d 截面秩完全相同（P3 归因已证 1.0），同时回归会奇异。
+    reg_all = _regression(active, fr.drop(columns=["return_21d"]))
 
     out = {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),

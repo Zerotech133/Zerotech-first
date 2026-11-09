@@ -7,7 +7,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "research"))
@@ -35,7 +34,7 @@ def _panel(n_days: int = 80, n_codes: int = 60, seed: int = 7) -> tuple[Panel, d
     amount = pd.DataFrame(2e6, index=dates, columns=codes)  # 千元，20 亿元
     turnover = pd.DataFrame(2.5, index=dates, columns=codes)  # 2.5%
     total_mv = pd.DataFrame(1e6, index=dates, columns=codes)
-    factor = pd.DataFrame(
+    pd.DataFrame(
         np.tile(np.arange(n_codes, dtype=float), (n_days, 1)), index=dates, columns=codes
     )
     fields = {"close": close, "adj_close": adj, "pct_chg": pct, "vol": vol,
@@ -49,6 +48,15 @@ def test_rebalance_indices():
     panel, _ = _panel(n_days=50)
     idx = rebalance_indices(panel, None, None, 20)
     assert idx == [0, 20, 40]
+
+
+def test_rebalance_indices_end_on_non_trading_day_does_not_spill_forward():
+    """end 落在两个交易日之间时，信号日只能 <= end，不能顺延到下一个交易日。"""
+    panel, _ = _panel(n_days=5)
+    dates = [str(d) for d in panel.dates]
+    idx = rebalance_indices(panel, None, f"{dates[2]} 12:00", every=1)
+    assert idx == [0, 1, 2]
+    assert rebalance_indices(panel, None, "2000-01-01", every=1) == []
 
 
 def test_investable_masks_excludes_st_limit_suspend_low_amount_low_turnover():
@@ -67,6 +75,20 @@ def test_investable_masks_excludes_st_limit_suspend_low_amount_low_turnover():
     assert bool(trade.iloc[1, 2]) is False
 
 
+def test_simulate_stops_at_end():
+    panel, names = _panel(n_days=80, n_codes=60)
+    cfg = PortfolioConfig(rebalance_days=20, quantile=0.2, max_one_way_turnover=0.10,
+                          cost_bp=30.0)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    end = panel.dates[50]
+    out = simulate(panel, factor, cfg, names=names, end=end)
+    assert out["nav"].index[-1] <= end
+    assert all(str(t["entry_date"]) <= str(end) for t in out["trades"])
+
+
+
 def test_simulate_respects_turnover_cap_and_costs():
     panel, names = _panel(n_days=80, n_codes=60)
     cfg = PortfolioConfig(rebalance_days=20, quantile=0.2, max_one_way_turnover=0.10,
@@ -76,7 +98,10 @@ def test_simulate_respects_turnover_cap_and_costs():
     )
     out = simulate(panel, factor, cfg, names=names)
     assert out["metrics"]["rebalances"] >= 2
-    assert all(t["actual_turnover"] <= 0.10 + 1e-12 for t in out["trades"])
+    # 首次建仓不受单边换手上限约束（否则只能建出 10% gross），后续调仓才受 cap。
+    assert out["trades"]
+    assert out["trades"][0]["actual_turnover"] > 0.10
+    assert all(t["actual_turnover"] <= 0.10 + 1e-12 for t in out["trades"][1:])
     assert out["metrics"]["total_cost"] > 0
     assert len(out["nav"]) > 0
     assert np.isfinite(out["nav"]).all()

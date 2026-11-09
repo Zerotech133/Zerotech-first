@@ -25,7 +25,7 @@ r"""W-07 · 独立验收套件（qa-tester 单写者落盘，GOV-W W-07 显式�
 
 【本轮唯一四条可达 AC 的追溯】
   AC-01 ← AC-N01（独立重算 16 项 + ADR-27 修复后 diff 契约）/ AC-N02 / W-05
-  AC-02 ← AC-N03（默认演练选 11-05）/ AC-N04（W-08 权威八字段 + 全量 sha256
+  AC-02 ← AC-N03（默认演练选最新真实档、不选 10-29 坏档）/ AC-N04（W-08 权威八字段 + 全量 sha256
           前后一致 + 改写字节数 0，G-09b 同口径复核）/ AC-N08（ADR-30 六类夹具）/
           AC-E02 / W-06；**T-11：不含任何 list_backups() 返回值断言，flag 不是
           运行态过滤闸门、不加 flag 后自动跳过**
@@ -52,7 +52,7 @@ r"""W-07 · 独立验收套件（qa-tester 单写者落盘，GOV-W W-07 显式�
 用例清单（编号 / 优先级 / 溯源）：
   AC-N01 P0 AC-01 独立重算 16 项 + ADR-27 diff 契约（自比 unchanged=492）
   AC-N02 P0 AC-01 连跑 3 次字节级一致
-  AC-N03 P0 AC-02 默认演练选 11-05 不选 10-29（T-11 无 =0 断言）
+  AC-N03 P0 AC-02 默认演练选最新含目标文件的日期、不选 10-29（T-11 无 =0 断言）
   AC-N04 P0 AC-02 W-08 权威八字段 + 全量 sha256 前后一致 + 改写字节数 0
   AC-N05 P0 AC-03 W-10 统一声明口径自洽
   AC-N06 P0 AC-04 设计件枚举三链 + pending
@@ -525,21 +525,34 @@ def test_AC_N02_repeatable_three_runs_bytes_identical_AC01():
     assert a == b == ids[0]
 
 
-def test_AC_N03_default_drill_selects_1105_not_1029_AC02(tmp_path):
+def test_AC_N03_default_drill_selects_latest_real_dump_not_1029_AC02(tmp_path):
     """用例编号 AC-N03｜优先级 P0｜前置：真实 backups/db 日期目录 + temp 镜像｜
-    步骤：①只读 os.listdir 取最大日期 ②只读取 2 字节魔数 ③复现
+    步骤：①只读 os.listdir 取日期目录 ②只读取 2 字节魔数 ③复现
     b4_restore_drill.list_backups「日期倒序、需含 quant_pg_alldb.sql.gz」语义
-    选 backups[0] ④should_select 对 2d2d 判 False｜
-    预期：最大日期 = 2026-11-05；11-05 魔数 1f8b、10-29 三档魔数 2d2d；
-    默认选中 11-05、10-29 未被选中｜溯源：PRD AC-02 / ADR-05 / T-11。
+    选 candidates[0] ④should_select 对 2d2d 判 False｜
+    预期：默认演练选中的是「最大且含 quant_pg_alldb.sql.gz」的日期目录，
+    且 ≥ 2026-11-05、不是 2026-10-29；选中档与 11-05 魔数 1f8b、10-29 三档
+    魔数 2d2d；镜像里 dump_latest.log 这类非日期文件不参与选档｜
+    溯源：PRD AC-02 / ADR-05 / T-11。
+    2026-11-08 重采基线（选项 A）：原判据硬编码 dates[0] == "2026-11-05"，
+    而 DbDumpDaily 每天 03:30 新建日期目录（11-07 / 11-08 已实证），
+    该断言与治理侧改动无关、随时间必红。改为「取最大且含目标文件的日期」，
+    与 list_backups 的真实选档语义同构，不削弱「不选 10-29 坏档」的硬要求。
     **T-11 硬约束：本用例不含任何 list_backups() 返回值断言（不写 =0），
     flag 不是运行态过滤闸门、不写「加 flag 后自动跳过」**。
     性能口径：只读 2 字节魔数，绝不整文件解压/读取 11GB 产物。"""
     dates = sorted([d for d in os.listdir(DB_ROOT)
                     if re.match(r"^\d{4}-\d{2}-\d{2}$", d)], reverse=True)
     assert dates, "backups/db 下应有日期目录"
-    assert dates[0] == "2026-11-05", "默认演练取 backups[0] 应为 11-05"
-    assert "2026-10-29" in dates and "2026-10-29" != dates[0]
+    cand = [d for d in dates
+            if os.path.isfile(os.path.join(DB_ROOT, d, "quant_pg_alldb.sql.gz"))]
+    assert cand, "backups/db 下应有含 quant_pg_alldb.sql.gz 的日期目录"
+    selected = cand[0]
+    assert selected >= "2026-11-05", "默认演练应选到 11-05 及其后的真实档：%s" % selected
+    assert selected != "2026-10-29", "默认演练取 backups[0] 不得是 10-29 坏档"
+    assert "2026-10-29" in dates
+    assert bfg.read_magic(os.path.join(DB_ROOT, selected,
+                                       "quant_pg_alldb.sql.gz")) == b"\x1f\x8b"
     assert bfg.read_magic(os.path.join(DAY_1105, "quant_pg_alldb.sql.gz")) == b"\x1f\x8b"
     for name in THREE_GZ:
         assert bfg.read_magic(os.path.join(DAY_1029, name)) == b"--"
@@ -894,6 +907,28 @@ def test_AC_E07_no_files_outside_whitelist():
         "tests/test_task_inventory.py",
         "tests/test_backup_format_gate.py",
         "tests/test_governance_acceptance.py",
+        # 2026-11-08 追加：AIDE 判定命中溯源回归用例（老田实测「种业大会→
+        # 宁德时代」幻觉判例）。属新建而非改动既有门禁用例，按同一口径登记，
+        # 未放宽其它约束（10-29 目录与 fixtures 断言原样）。
+        "tests/test_jev_hit_provenance.py",
+        # 2026-11-08 追加：研判卡时效口径回归（老田令「周一别再等 100 秒」）。
+        # 同样属新建用例，非改动既有门禁。
+        "tests/test_sediment_freshness.py",
+        # 2026-11-08 追加：新闻传播关系（原创/首发/转发）回归用例。
+        "tests/test_news_origin.py",
+        # 2026-11-08 追加：Step 5 板块联动图纯函数回归（涨停档位先定死、
+        # 午休扣除、ts_kind 三档、领涨-跟随-同波-无数据四档分流、
+        # first_move_after 带符号、跨板块边、消息质量分档）。
+        "tests/test_jev_graph.py",
+        # 2026-11-08 追加：xtcloud 接入回归（分钟三档台账、资金面背离、
+        # 披露不含盘中时刻、列序对齐、时间列别名、一字板首次异动）。
+        "tests/test_jev_fund_minute.py",
+        # 2026-11-08 追加：散户热度回归（两平台分报、热而无量/涨而无声
+        # 两个背离判据、帖子 board/market 两种 scope、社交面不进 Δmin）。
+        "tests/test_jev_social.py",
+        # 2026-11-08 追加：接力层回归（席位四类、「涨跌幅限制」不判跌、
+        # 按买入额定性、梯队断层、席位净额≠龙虎榜净额、涨停净卖=派发）。
+        "tests/test_jev_chain.py",
     }
     untracked = set()
     try:

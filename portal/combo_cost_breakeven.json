@@ -1,0 +1,556 @@
+{
+ "meta": {
+  "asof": "20261009",
+  "n_settled": 1265,
+  "n_pass": 829,
+  "n_days_pass": 75,
+  "base_buy": 0.00075,
+  "base_sell": 0.00125,
+  "stamp": 0.0005,
+  "transfer": 1e-05
+ },
+ "baseline": {
+  "batch_trail": {
+   "days": 75,
+   "avg": 0.629,
+   "med": -1.47,
+   "win": 34.7,
+   "std": 8.09
+  },
+  "batch_hold": {
+   "days": 75,
+   "avg": -1.201,
+   "med": -2.487,
+   "win": 38.7,
+   "std": 13.56
+  },
+  "pierce_trail": {
+   "n": 829,
+   "avg": -1.492,
+   "med": -3.673,
+   "win": 26.4
+  }
+ },
+ "scenarios": {
+  "S1 乐观": {
+   "buy": 0.00036,
+   "sell": 0.00086,
+   "roundtrip_bp": 12.2,
+   "detail_bp": {
+    "comm": 3.0,
+    "stamp": 5.0,
+    "transfer": 0.2,
+    "spread": 4.0,
+    "impact": 0.0
+   },
+   "who": "万1.5 佣金 + 高流动性大盘 + 单笔金额可忽略",
+   "batch_trail": {
+    "days": 75,
+    "avg": 0.707,
+    "med": -1.393,
+    "win": 34.7,
+    "std": 8.09
+   },
+   "batch_hold": {
+    "days": 75,
+    "avg": -1.124,
+    "med": -2.411,
+    "win": 38.7,
+    "std": 13.57
+   },
+   "pierce_trail": {
+    "n": 829,
+    "avg": -1.415,
+    "med": -3.598,
+    "win": 26.7
+   },
+   "delta_vs_base_pp": 0.078
+  },
+  "S2 中性": {
+   "buy": 0.00096,
+   "sell": 0.00146,
+   "roundtrip_bp": 24.2,
+   "detail_bp": {
+    "comm": 5.0,
+    "stamp": 5.0,
+    "transfer": 0.2,
+    "spread": 10.0,
+    "impact": 4.0
+   },
+   "who": "万2.5 佣金 + 中盘 + 单笔 <0.1% 日成交额",
+   "batch_trail": {
+    "days": 75,
+    "avg": 0.586,
+    "med": -1.512,
+    "win": 34.7,
+    "std": 8.08
+   },
+   "batch_hold": {
+    "days": 75,
+    "avg": -1.243,
+    "med": -2.528,
+    "win": 38.7,
+    "std": 13.56
+   },
+   "pierce_trail": {
+    "n": 829,
+    "avg": -1.534,
+    "med": -3.713,
+    "win": 26.3
+   },
+   "delta_vs_base_pp": -0.043
+  },
+  "S3 保守": {
+   "buy": 0.00226,
+   "sell": 0.00276,
+   "roundtrip_bp": 50.2,
+   "detail_bp": {
+    "comm": 5.0,
+    "stamp": 5.0,
+    "transfer": 0.2,
+    "spread": 20.0,
+    "impact": 20.0
+   },
+   "who": "万2.5 + 中小盘 + 单笔 0.3~1% 日成交额",
+   "batch_trail": {
+    "days": 75,
+    "avg": 0.325,
+    "med": -1.768,
+    "win": 33.3,
+    "std": 8.06
+   },
+   "batch_hold": {
+    "days": 75,
+    "avg": -1.499,
+    "med": -2.781,
+    "win": 37.3,
+    "std": 13.52
+   },
+   "pierce_trail": {
+    "n": 829,
+    "avg": -1.789,
+    "med": -3.964,
+    "win": 25.2
+   },
+   "delta_vs_base_pp": -0.304
+  },
+  "S4 悲观": {
+   "buy": 0.00531,
+   "sell": 0.00581,
+   "roundtrip_bp": 111.2,
+   "detail_bp": {
+    "comm": 6.0,
+    "stamp": 5.0,
+    "transfer": 0.2,
+    "spread": 40.0,
+    "impact": 60.0
+   },
+   "who": "万3 + 微盘/低流动性 + 单笔 >2% 日成交额",
+   "batch_trail": {
+    "days": 75,
+    "avg": -0.285,
+    "med": -2.365,
+    "win": 30.7,
+    "std": 8.01
+   },
+   "batch_hold": {
+    "days": 75,
+    "avg": -2.098,
+    "med": -3.373,
+    "win": 33.3,
+    "std": 13.44
+   },
+   "pierce_trail": {
+    "n": 829,
+    "avg": -2.387,
+    "med": -4.548,
+    "win": 22.8
+   },
+   "delta_vs_base_pp": -0.914
+  }
+ },
+ "sweep": [
+  {
+   "roundtrip_bp": 0,
+   "batch_avg": 0.83,
+   "batch_med": -1.273,
+   "batch_win": 34.7,
+   "pierce_avg": -1.295,
+   "pierce_win": 27.0
+  },
+  {
+   "roundtrip_bp": 10,
+   "batch_avg": 0.729,
+   "batch_med": -1.372,
+   "batch_win": 34.7,
+   "pierce_avg": -1.394,
+   "pierce_win": 26.7
+  },
+  {
+   "roundtrip_bp": 20,
+   "batch_avg": 0.629,
+   "batch_med": -1.47,
+   "batch_win": 34.7,
+   "pierce_avg": -1.492,
+   "pierce_win": 26.4
+  },
+  {
+   "roundtrip_bp": 30,
+   "batch_avg": 0.528,
+   "batch_med": -1.569,
+   "batch_win": 34.7,
+   "pierce_avg": -1.591,
+   "pierce_win": 25.8
+  },
+  {
+   "roundtrip_bp": 40,
+   "batch_avg": 0.427,
+   "batch_med": -1.667,
+   "batch_win": 34.7,
+   "pierce_avg": -1.689,
+   "pierce_win": 25.5
+  },
+  {
+   "roundtrip_bp": 50,
+   "batch_avg": 0.327,
+   "batch_med": -1.766,
+   "batch_win": 33.3,
+   "pierce_avg": -1.787,
+   "pierce_win": 25.2
+  },
+  {
+   "roundtrip_bp": 60,
+   "batch_avg": 0.227,
+   "batch_med": -1.864,
+   "batch_win": 33.3,
+   "pierce_avg": -1.886,
+   "pierce_win": 24.6
+  },
+  {
+   "roundtrip_bp": 80,
+   "batch_avg": 0.026,
+   "batch_med": -2.06,
+   "batch_win": 33.3,
+   "pierce_avg": -2.082,
+   "pierce_win": 23.8
+  },
+  {
+   "roundtrip_bp": 100,
+   "batch_avg": -0.173,
+   "batch_med": -2.256,
+   "batch_win": 32.0,
+   "pierce_avg": -2.277,
+   "pierce_win": 22.9
+  },
+  {
+   "roundtrip_bp": 120,
+   "batch_avg": -0.373,
+   "batch_med": -2.451,
+   "batch_win": 28.0,
+   "pierce_avg": -2.473,
+   "pierce_win": 22.1
+  },
+  {
+   "roundtrip_bp": 150,
+   "batch_avg": -0.671,
+   "batch_med": -2.743,
+   "batch_win": 28.0,
+   "pierce_avg": -2.765,
+   "pierce_win": 20.9
+  },
+  {
+   "roundtrip_bp": 200,
+   "batch_avg": -1.167,
+   "batch_med": -3.229,
+   "batch_win": 26.7,
+   "pierce_avg": -3.25,
+   "pierce_win": 19.4
+  }
+ ],
+ "breakeven": {
+  "gross_batch_avg_pct": 0.83,
+  "net_batch_avg_at_20bp_pct": 0.629,
+  "breakeven_roundtrip_bp": 82.6,
+  "breakeven_buy_bp": 38.8,
+  "breakeven_sell_bp": 43.8,
+  "headroom_vs_20bp_bp": 62.6
+ },
+ "concentration": {
+  "n_days": 75,
+  "cnt_min": 1,
+  "cnt_med": 4.0,
+  "cnt_max": 104,
+  "spearman_cnt_vs_ret": -0.166,
+  "day_avg_pct": 0.629,
+  "pierce_avg_pct": -1.492,
+  "spread_pp": 2.121,
+  "top5_avg_pct": 24.386,
+  "rest_avg_pct": -1.068,
+  "trimmed": {
+   "1": 0.118,
+   "3": -0.614,
+   "5": -1.068,
+   "10": -1.852
+  },
+  "top_days": [
+   {
+    "d": "20260422",
+    "n": 1,
+    "avg": 38.446
+   },
+   {
+    "d": "20260521",
+    "n": 1,
+    "avg": 30.625
+   },
+   {
+    "d": "20260428",
+    "n": 1,
+    "avg": 22.305
+   },
+   {
+    "d": "20260730",
+    "n": 3,
+    "avg": 19.095
+   },
+   {
+    "d": "20260629",
+    "n": 1,
+    "avg": 11.46
+   }
+  ]
+ },
+ "layers": [
+  {
+   "label": "全窗口",
+   "days": 75,
+   "pierce": 829,
+   "day_avg": 0.629,
+   "day_med": -1.47,
+   "day_win": 34.7,
+   "pierce_avg": -1.492,
+   "pierce_med": -3.673,
+   "pierce_win": 26.4
+  },
+  {
+   "label": "剔除最好5天",
+   "days": 70,
+   "pierce": 822,
+   "day_avg": -1.068,
+   "day_med": -1.884,
+   "day_win": 30.0,
+   "pierce_avg": -1.7,
+   "pierce_med": -3.743,
+   "pierce_win": 25.8
+  },
+  {
+   "label": "剔除2026-04",
+   "days": 72,
+   "pierce": 825,
+   "day_avg": -0.325,
+   "day_med": -1.728,
+   "day_win": 31.9,
+   "pierce_avg": -1.597,
+   "pierce_med": -3.737,
+   "pierce_win": 26.1
+  },
+  {
+   "label": "管线成熟期≥202608",
+   "days": 33,
+   "pierce": 712,
+   "day_avg": -0.984,
+   "day_med": -1.654,
+   "day_win": 27.3,
+   "pierce_avg": -1.835,
+   "pierce_med": -3.944,
+   "pierce_win": 23.6
+  },
+  {
+   "label": "日笔数1~2",
+   "days": 29,
+   "pierce": 42,
+   "day_avg": 2.714,
+   "day_med": -2.063,
+   "day_win": 44.8,
+   "pierce_avg": 1.631,
+   "pierce_med": 0.132,
+   "pierce_win": 50.0
+  },
+  {
+   "label": "日笔数3~9",
+   "days": 23,
+   "pierce": 118,
+   "day_avg": 0.039,
+   "day_med": -0.991,
+   "day_win": 34.8,
+   "pierce_avg": -0.263,
+   "pierce_med": -2.091,
+   "pierce_win": 37.3
+  },
+  {
+   "label": "日笔数10~30",
+   "days": 16,
+   "pierce": 311,
+   "day_avg": -0.398,
+   "day_med": -0.821,
+   "day_win": 31.2,
+   "pierce_avg": -0.074,
+   "pierce_med": -2.725,
+   "pierce_win": 33.1
+  },
+  {
+   "label": "日笔数≥31",
+   "days": 7,
+   "pierce": 358,
+   "day_avg": -3.728,
+   "day_med": -4.022,
+   "day_win": 0.0,
+   "pierce_avg": -3.496,
+   "pierce_med": -4.728,
+   "pierce_win": 14.2
+  }
+ ],
+ "pierce_null": {
+  "real": -1.492,
+  "null_p50": -1.421,
+  "null_p95": -1.166,
+  "p_value": 0.6776,
+  "n_pass": 829,
+  "n_pool": 1265,
+  "verdict": "不优于随机抽笔"
+ },
+ "p_insensitivity": {
+  "20": {
+   "real": 0.629,
+   "p95": 0.6,
+   "p_value": 0.0406,
+   "margin_pp": 0.0282
+  },
+  "60": {
+   "real": 0.227,
+   "p95": 0.199,
+   "p_value": 0.0406,
+   "margin_pp": 0.0281
+  },
+  "120": {
+   "real": -0.373,
+   "p95": -0.401,
+   "p_value": 0.0406,
+   "margin_pp": 0.028
+  }
+ },
+ "p_identical": true,
+ "exec_lag": {
+  "n": 829,
+  "n_skip": 0,
+  "gap_mean_bp": -10.09,
+  "gap_med_bp": -8.37,
+  "gap_p25_bp": -59.41,
+  "gap_p75_bp": 18.71,
+  "gap_win_pct": 33.8,
+  "t_stat": -2.15,
+  "batch_avg_after_lag": 0.663,
+  "batch_med_after_lag": -0.912,
+  "delta_vs_base_pp": 0.034
+ },
+ "account_layer": {
+  "基准20bp": {
+   "total": 2.26,
+   "cagr": 4.19,
+   "mdd": -3.42,
+   "sharpe": 0.73,
+   "vol": 5.97,
+   "util": 23.3,
+   "buy": 0.00075,
+   "sell": 0.00125,
+   "roundtrip_bp": 20.0
+  },
+  "S1 乐观": {
+   "total": 2.56,
+   "cagr": 4.75,
+   "mdd": -3.38,
+   "sharpe": 0.81,
+   "vol": 5.97,
+   "util": 23.3,
+   "buy": 0.00036,
+   "sell": 0.00086,
+   "roundtrip_bp": 12.2
+  },
+  "S2 中性": {
+   "total": 2.1,
+   "cagr": 3.88,
+   "mdd": -3.44,
+   "sharpe": 0.68,
+   "vol": 5.96,
+   "util": 23.2,
+   "buy": 0.00096,
+   "sell": 0.00146,
+   "roundtrip_bp": 24.2
+  },
+  "S3 保守": {
+   "total": 1.1,
+   "cagr": 2.03,
+   "mdd": -3.79,
+   "sharpe": 0.38,
+   "vol": 5.95,
+   "util": 23.2,
+   "buy": 0.00226,
+   "sell": 0.00276,
+   "roundtrip_bp": 50.2
+  },
+  "S4 悲观": {
+   "total": -1.19,
+   "cagr": -2.17,
+   "mdd": -5.71,
+   "sharpe": -0.33,
+   "vol": 5.92,
+   "util": 23.1,
+   "buy": 0.00531,
+   "sell": 0.00581,
+   "roundtrip_bp": 111.2
+  }
+ },
+ "account_subsample": {
+  "全窗口": {
+   "total": 2.26,
+   "cagr": 4.19,
+   "mdd": -3.42,
+   "sharpe": 0.73,
+   "vol": 5.97,
+   "util": 23.3,
+   "n_pierce": 829
+  },
+  "剔除最好5天": {
+   "total": -3.71,
+   "cagr": -6.71,
+   "mdd": -4.96,
+   "sharpe": -1.38,
+   "vol": 4.97,
+   "util": 21.1,
+   "n_pierce": 822
+  },
+  "剔除2026-04": {
+   "total": -1.23,
+   "cagr": -2.24,
+   "mdd": -3.42,
+   "sharpe": -0.39,
+   "vol": 5.45,
+   "util": 21.8,
+   "n_pierce": 825
+  },
+  "管线成熟期≥202608": {
+   "total": -1.64,
+   "cagr": -2.98,
+   "mdd": -3.42,
+   "sharpe": -0.83,
+   "vol": 3.58,
+   "util": 12.2,
+   "n_pierce": 712
+  }
+ },
+ "unmodeled": [
+  "涨跌停不可卖（止损日一字板顺延）",
+  "停牌跨期按前收盘成交",
+  "最低佣金 5 元对小单的抬高"
+ ]
+}

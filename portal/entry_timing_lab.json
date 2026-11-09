@@ -1,0 +1,84 @@
+{
+ "n": 829,
+ "hold": 20,
+ "wait": 20,
+ "rules": [
+  {
+   "label": "G 次日开盘买",
+   "n": 829,
+   "trigger_rate_pct": 100.0,
+   "mean_pct": -3.056,
+   "median_pct": -4.435,
+   "win_pct": 32.0,
+   "t": -5.86,
+   "sum_pct": -2533.8,
+   "sum_per_100": -305.6
+  },
+  {
+   "label": "A 次日收盘买",
+   "n": 829,
+   "trigger_rate_pct": 100.0,
+   "mean_pct": -3.384,
+   "median_pct": -4.576,
+   "win_pct": 31.0,
+   "t": -6.66,
+   "sum_pct": -2805.7,
+   "sum_per_100": -338.4
+  },
+  {
+   "label": "D 等回踩信号价",
+   "n": 786,
+   "trigger_rate_pct": 94.8,
+   "mean_pct": -3.429,
+   "median_pct": -4.547,
+   "win_pct": 32.1,
+   "t": -6.66,
+   "sum_pct": -2694.9,
+   "sum_per_100": -325.1
+  },
+  {
+   "label": "B 等突破T1",
+   "n": 347,
+   "trigger_rate_pct": 41.9,
+   "mean_pct": -4.808,
+   "median_pct": -5.948,
+   "win_pct": 29.7,
+   "t": -5.46,
+   "sum_pct": -1668.3,
+   "sum_per_100": -201.2
+  },
+  {
+   "label": "F 回踩获支撑",
+   "n": 323,
+   "trigger_rate_pct": 39.0,
+   "mean_pct": -3.835,
+   "median_pct": -4.407,
+   "win_pct": 26.0,
+   "t": -5.44,
+   "sum_pct": -1238.8,
+   "sum_per_100": -149.4
+  },
+  {
+   "label": "C 等触ZG",
+   "n": 681,
+   "trigger_rate_pct": 82.1,
+   "mean_pct": -8.775,
+   "median_pct": -8.642,
+   "win_pct": 19.5,
+   "t": -15.69,
+   "sum_pct": -5975.6,
+   "sum_per_100": -720.8
+  },
+  {
+   "label": "E 缩量回踩ZG",
+   "n": 573,
+   "trigger_rate_pct": 69.1,
+   "mean_pct": -10.756,
+   "median_pct": -9.903,
+   "win_pct": 15.2,
+   "t": -19.46,
+   "sum_pct": -6162.9,
+   "sum_per_100": -743.4
+  }
+ ]
+}

@@ -1,0 +1,33 @@
+....F                                                                    [100%]
+================================== FAILURES ===================================
+_________________ test_contract_break_negative_control_is_red _________________
+
+    @pytest.mark.skipif(os.environ.get(BREAK_ENV) != "1", reason=(
+        "受控负控：仅在 P0-04 反证演练时由 %s=1 触发" % BREAK_ENV))
+    def test_contract_break_negative_control_is_red():
+        """正常 skip；显式设置环境变量时故意破坏 envelope 契约，必须红。"""
+        envelope = {
+            "ok": True,
+            "schema_version": "ifs/v1",
+            "request_id": "req-" + "a" * 32,
+            "source": "d1",
+            "data": {},
+            "warnings": [],
+        }
+        # 模拟一次错误改动：把必要字段 schema_version 改名。
+        envelope["version"] = envelope.pop("schema_version")
+>       assert envelope.get("schema_version") == "ifs/v1", (
+            "P0-04 负控：schema_version 契约字段被破坏时本测试必须失败，"
+            "证明契约回归会被门禁拦住"
+        )
+E       AssertionError: P0-04 负控：schema_version 契约字段被破坏时本测试必须失败，证明契约回归会被门禁拦住
+E       assert None == 'ifs/v1'
+E        +  where None = <built-in method get of dict object at 0x000001EA7599D4C0>('schema_version')
+E        +    where <built-in method get of dict object at 0x000001EA7599D4C0> = {'ok': True, 'request_id': 'req-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'source': 'd1', 'data': {}, ...}.get
+
+portal\tests\test_p0_04_contract_gate.py:137: AssertionError
+=========================== short test summary info ===========================
+FAILED portal/tests/test_p0_04_contract_gate.py::test_contract_break_negative_control_is_red
+1 failed, 4 passed in 0.27s
+
+EXIT_CODE=1

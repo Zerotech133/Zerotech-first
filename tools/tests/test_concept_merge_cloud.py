@@ -2,7 +2,6 @@
 """concept_merge_cloud 测试：候选对/判定/合并多源/只读（mock 云端，不触网）。"""
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest

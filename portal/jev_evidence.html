@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 消息举证 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px}
+    .crumb .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none}
+    .crumb .c:hover{border-color:var(--accent);color:var(--link)}
+    .crumb .c.here{border-color:var(--accent);color:var(--text);background:var(--bg-raised);cursor:default}
+    .crumb .sep{color:var(--gray-5);font-size:11px}
+    .mini{font-size:12px;color:var(--gray-6)}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+    .kpi{padding:12px 14px}
+    .kpi .k-label{font-size:11.5px;color:var(--gray-5)}
+    .kpi b{display:block;font:700 20px var(--font-mono);font-variant-numeric:tabular-nums;margin-top:4px}
+    .verdict{border-left:3px solid var(--accent);padding:10px 14px;font-size:13px;line-height:1.9;margin:12px 0}
+    .tl{display:flex;align-items:flex-end;gap:3px;height:110px;padding:4px 0 0}
+    .tday{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+    .tbar{width:70%;max-width:26px;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;min-height:2px}
+    .tbar .seg-bull{background:var(--color-up)} .tbar .seg-bear{background:var(--color-dn)} .tbar .seg-neutral{background:var(--gray-5)}
+    .tlab{font-size:9px;color:var(--gray-5);font-family:var(--font-mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chips{display:flex;flex-wrap:wrap;gap:6px}
+    .chip-w{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--gray-6);text-decoration:none}
+    .chip-w b{font-variant-numeric:tabular-nums;color:var(--gray-5);font-weight:400}
+    .up{color:var(--color-up)} .dn{color:var(--color-dn)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:960px){.grid2{grid-template-columns:1fr}}
+    .search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+    .search input{background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;width:180px}
+
+    .ring{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border-weak)}
+    .ring:last-child{border-bottom:none}
+    .ring .rt{font-size:12px;color:var(--gray-6);white-space:nowrap}
+    .ring .rt b{color:var(--text);font-size:12.5px}
+    .ring .rb{font-size:12px;line-height:1.85;min-width:0;word-break:break-word}
+    .ring.na .rb{color:var(--gray-5)}
+    .evrow{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dashed var(--border-weak);font-size:12px;cursor:pointer}
+    .evrow:hover{background:var(--bg-raised)}
+    .evrow .t{color:var(--gray-5);font-family:var(--font-mono);font-size:11px;white-space:nowrap}
+    .evrow .ti{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .evrow .id{color:var(--gray-5);font-family:var(--font-mono);font-size:10px}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 消息举证</span>
+        <h1>一组消息，一条证据链</h1>
+        <p>输入任意关键词或股票代码，举证这组消息：<b>什么时间发 · 持续多久 · 多少条 · 哪些渠道在扩散 · 涉及哪些标的 · 当天股价反应 · 判读后验</b>——数据源 <code>/api/jev/evidence</code>，只读可引用。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_api.html">📡 能力目录</a>
+        <a class="ui-btn" href="/jev_platform.html">🛰 中台总览</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <div class="ui-card crumb">
+      <a class="c" href="/jev_platform.html">🛰 01 总览</a><span class="sep">→</span>
+      <a class="c" href="/bt-jev">⚖ 02 判断</a><span class="sep">→</span>
+      <a class="c" href="/jev_wordcloud.html">☁ 03 词云</a><span class="sep">→</span>
+      <a class="c" href="/static/jev_review.html">🧾 04 复核</a><span class="sep">→</span>
+      <a class="c" href="/jev_integration.html">🔗 05 对接台</a><span class="sep">→</span>
+      <a class="c" href="/jev_api.html">📡 06 能力目录</a><span class="sep">→</span>
+      <span class="c here">🧪 消息举证</span>
+      <span style="margin-left:auto;color:var(--gray-5);font-size:11px">举证级溯源：消息流 → 标的 → 股价 → 后验</span>
+    </div>
+
+    <div class="ui-card search">
+      <span class="mini">举证对象</span>
+      <input id="q" placeholder="关键词（如 回购 / 涨停）或 6 位代码">
+      <select id="days" style="background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px">
+        <option value="3">3 天</option><option value="7">7 天</option>
+        <option value="14" selected>14 天</option><option value="30">30 天</option><option value="90">90 天</option>
+      </select>
+      <button class="ui-btn ui-btn--sm ui-btn--primary" id="go">开始举证</button>
+      <span id="meta" class="mini" style="margin-left:auto">输入关键词或代码</span>
+    </div>
+    <div id="err" class="ui-error" hidden></div>
+
+    <div id="body" hidden>
+      <div class="ui-card" style="margin-bottom:12px" id="ai-card">
+        <h3 style="margin:0 0 6px;font-size:13.5px">🤖 AI 解读结论 <span class="mini" id="ai-meta" style="margin-left:8px"></span></h3>
+        <div id="ai-body"><button class="ui-btn ui-btn--primary ui-btn--sm" id="ai-go">生成 AI 解读</button> <span class="mini">按主题研判：云端模型约 15 秒；云端不可用时降本地（100 秒以上）或规则结论（engine 标来源）</span></div>
+      </div>
+      <div class="ui-card verdict" id="verdict"></div>
+
+      <div class="kpis">
+        <div class="ui-card kpi"><div class="k-label">消息总量</div><b id="k-total">—</b><div class="mini" id="k-span"></div></div>
+        <div class="ui-card kpi"><div class="k-label">持续时间</div><b id="k-dur">—</b><div class="mini" id="k-first"></div></div>
+        <div class="ui-card kpi"><div class="k-label">方向基调（已判）</div><b id="k-bias">—</b><div class="mini" id="k-bias-d"></div></div>
+        <div class="ui-card kpi"><div class="k-label">主扩散渠道</div><b id="k-src" style="font-size:15px">—</b><div class="mini" id="k-src-n"></div></div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 8px;font-size:13.5px">消息时间线（量 × 方向构成）</h3>
+            <div class="tl" id="tl"></div>
+            <div class="legend mini" style="margin-top:6px"><span><i style="background:var(--color-up);display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px"></i>利多</span><span><i style="background:var(--gray-5);display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px"></i>中性</span><span><i style="background:var(--color-dn);display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px"></i>利空</span></div>
+          </div>
+          <div class="ui-card">
+            <h3 style="margin:0 0 8px;font-size:13.5px">渠道分布（谁在发）</h3>
+            <table class="ui-table"><thead><tr><th>渠道</th><th>条数</th><th>占比</th></tr></thead><tbody id="src-body"></tbody></table>
+          </div>
+        </div>
+        <div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 8px;font-size:13.5px">涉及标的（点代码下钻三面依据）</h3>
+            <div class="chips" id="targets"></div>
+          </div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 8px;font-size:13.5px">消息日 × 股价反应（主标的）</h3>
+            <table class="ui-table"><thead><tr><th>交易日</th><th>消息量</th><th>当日涨跌</th></tr></thead><tbody id="imp-body"></tbody></table>
+          </div>
+          <div class="ui-card">
+            <h3 style="margin:0 0 8px;font-size:13.5px">判读后验战绩</h3>
+            <div id="post" class="mini">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="ui-card" id="ev-card" style="margin-top:12px">
+        <h3 style="margin:0 0 4px;font-size:13.5px">可追溯证据样本 <span class="mini" id="ev-n"></span></h3>
+        <p class="mini" style="margin:0 0 8px">点任一条 → 四级溯源：<b>①原文</b>（新闻库本体）→ <b>②判定</b>（谁判的、为什么）→ <b>③后验</b>（之后价格怎么走）→ <b>④归组</b>（同期同类里的位置）。缺环如实标注，不编造。</p>
+        <div id="ev-list"><p class="mini">—</p></div>
+      </div>
+
+    </div>
+
+    <div class="ui-card" id="trace-card" hidden style="margin-top:12px">
+      <h3 style="margin:0 0 8px;font-size:13.5px">🔗 四级溯源 <span class="mini" id="tr-meta"></span></h3>
+      <div id="tr-body"></div>
+    </div>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 只读举证 · /api/jev/evidence（jev_evidence.v1）· 结论自动生成可引用</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    var $=function(id){return document.getElementById(id)};
+    function fmtVerdict(v){
+      var s=esc(v||"—");
+      return s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+    }
+    function load(q, days){
+      $("err").hidden=true;$("meta").textContent="举证中… "+q;
+      fetch("/api/jev/evidence?q="+encodeURIComponent(q)+"&days="+days).then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(d){
+        if(d.schema!=="jev_evidence.v1")throw new Error("schema 不符");
+        render(d);$("meta").textContent="「"+q+"」· 生成于 "+d.generated_at;
+        location.hash=encodeURIComponent(q);
+        setupAI("/api/jev/interpret?kind=evidence&q="+encodeURIComponent(q)+"&days="+days);
+      }).catch(function(e){
+        $("err").hidden=false;$("err").innerHTML="举证失败："+esc(e.message)+"——若 401：<a href='/login?next=/jev_evidence.html' style='color:var(--link)'>→ 去登录（回跳本页）</a>";
+      });
+    }
+    function render(d){
+      var f=d.flow||{};
+      $("verdict").innerHTML="<b>举证结论</b>（自动生成，可直接引用）：<br>"+fmtVerdict(d.verdict);
+      $("k-total").textContent=f.total!=null?f.total:"—";
+      $("k-span").textContent=(f.first||"?")+" → "+(f.last||"?");
+      $("k-dur").textContent=f.duration_h!=null?(f.duration_h+" h"):"—";
+      $("k-first").textContent=f.duration_h!=null?("≈ "+(f.duration_h/24).toFixed(1)+" 天"):"";
+      var b=f.bias||{}, net=(b.bull||0)-(b.bear||0), tot=b.judged||0;
+      $("k-bias").textContent=tot?((net>0?"+":"")+net):"—";
+      $("k-bias").className=net>0?"up":(net<0?"dn":"");
+      $("k-bias-d").textContent=tot?("多"+b.bull+" / 空"+b.bear+" / 中"+b.neutral+"（已判 "+tot+"）"):"无已判";
+      var s0=(f.sources||[])[0]||{};
+      $("k-src").textContent=s0.source_cn||s0.source||"—";
+      $("k-src").title=s0.source_desc||s0.source||"";
+      $("k-src-n").textContent=s0.n!=null?(s0.n+" 条 · 共 "+(f.sources||[]).length+" 个渠道"):"";
+
+      var tl=d.timeline||[];
+      if(tl.length){
+        var mx=1; tl.forEach(function(t){mx=Math.max(mx,t.n)});
+        $("tl").innerHTML=tl.map(function(t){
+          var h=Math.max(4,t.n/mx*88);
+          var segs='<div class="seg-bull" style="height:'+(t.bull/t.n*h)+'px"></div>'
+            +'<div class="seg-neutral" style="height:'+(t.neutral/t.n*h)+'px"></div>'
+            +'<div class="seg-bear" style="height:'+(t.bear/t.n*h)+'px"></div>';
+          return '<div class="tday" title="'+esc(t.t)+'：'+t.n+' 条（多'+t.bull+' 中'+t.neutral+' 空'+t.bear+'）">'
+            +'<div class="tbar" style="height:'+h+'px">'+segs+'</div>'
+            +'<span class="tlab">'+esc(String(t.t).slice(5))+'</span></div>';
+        }).join("");
+      } else {$("tl").innerHTML='<p class="mini">无时间线</p>'}
+
+      var srcs=f.sources||[], tot2=f.total||1;
+      $("src-body").innerHTML=srcs.map(function(s){
+        return "<tr><td>"+esc(s.source_cn||s.source)
+          +(s.source_cn&&s.source!==s.source_cn?' <span class="mini" style="font-family:var(--font-mono);font-size:10px">'+esc(s.source)+'</span>':"")
+          +"</td><td class='num'>"+s.n
+          +"</td><td class='num'>"+(s.n/tot2*100).toFixed(1)+"%</td></tr>";
+      }).join("")||'<tr><td colspan="3" class="mini">—</td></tr>';
+
+      var tgs=d.targets||[];
+      $("targets").innerHTML=tgs.length?tgs.map(function(t){
+        return '<a class="chip-w" href="/jev_target.html#'+t.code+'" title="下钻三面依据">'+t.code+'<b>'+t.n+'</b></a>';
+      }).join(""):'<span class="mini">（该消息组无带标的判定）</span>';
+
+      var imp=d.impact||[];
+      $("imp-body").innerHTML=imp.length?imp.map(function(x){
+        var pc=x.pct_chg;
+        return "<tr><td class='nowrap'>"+esc(String(x.date).replace(/(\d{4})(\d{2})(\d{2})/,"$1-$2-$3"))
+          +"</td><td class='num'>"+x.news_n+"</td><td class='num "+(pc>0?"up":(pc<0?"dn":""))+"'>"
+          +(pc>0?"+":"")+pc+"%</td></tr>";
+      }).join(""):'<tr><td colspan="3" class="mini">（无重叠交易日或行情不可用）</td></tr>';
+
+      var p=d.posterior||{};
+      $("post").textContent=p.available?("主标的 "+p.code+"：累计判定 "+p.judged_total
+        +" 条，"+p.verified+" 条已按 T+1 验证"+(p.hit_rate!=null?("，命中率 "
+        +(p.hit_rate*100).toFixed(0)+"%"):"")+"。"):"后验库暂不可用。";
+
+      var smp=d.samples||[];
+      $("ev-n").textContent=smp.length?("（最近 "+smp.length+" 条，可点开）"):"";
+      $("ev-list").innerHTML=smp.length?smp.map(function(s){
+        var b=s.bias||"";
+        return '<div class="evrow" data-nid="'+esc(s.id||"")+'" title="点开四级溯源">'
+          +'<span class="t">'+esc(String(s.ts||"").slice(5,16))+'</span>'
+          +'<span class="bias-chip '+esc(b)+'">'+(BIAS_CN[b]||"—")+'</span>'
+          +'<span class="ti">'+esc(s.title||"")+'</span>'
+          +'<span class="id">'+esc(s.id||"")+'</span></div>';
+      }).join(""):'<p class="mini">该消息组无可溯源样本</p>';
+      Array.prototype.forEach.call($("ev-list").querySelectorAll(".evrow"),function(el){
+        el.addEventListener("click",function(){openTrace(el.getAttribute("data-nid"),f.main_code||"")});
+      });
+
+      $("body").hidden=false;
+    }
+
+    var BIAS_CN={bull:"利多",bear:"利空",neutral:"中性"};
+    var LAST_TRACE=null;
+    function openTrace(nid,code){
+      var card=$("trace-card");
+      card.hidden=false;
+      $("tr-meta").textContent="加载中… "+nid;
+      $("tr-body").innerHTML='<div class="ui-skeleton" style="width:70%"></div>';
+      fetch("/api/jev/evidence/item?id="+encodeURIComponent(nid)+(code?"&code="+encodeURIComponent(code):""))
+        .then(function(r){return r.json().then(function(j){return {s:r.status,d:j}})})
+        .then(function(x){
+          var t=x.d;
+          if(!t.ok||t.schema!=="jev_evidence_item.v1"){
+            $("tr-body").innerHTML='<p class="mini">溯源失败（HTTP '+x.s+'）：'+esc(t.message||"未知")+'</p>';
+            $("tr-meta").textContent=nid;return;
+          }
+          LAST_TRACE=t;
+          $("tr-meta").innerHTML=esc(t.id)+' · 完整度 <b style="color:'+(t.complete===t.complete_total?"var(--color-up)":"var(--color-warn)")+'">'+esc(t.complete_txt)+'</b>';
+          var h="";
+          t.rings.forEach(function(r){
+            h+='<div class="ring'+(r.ok?"":" na")+'"><div class="rt">'+esc(r.ring)+'<br>'
+              +(r.ok?'<span style="color:var(--color-up);font-size:11px">可查</span>'
+                   :'<span style="color:var(--gray-5);font-size:11px">缺环</span>')+'</div><div class="rb">';
+            var dd=r.data||{};
+            if(r.ring.indexOf("原文")>=0){
+              h+='<b>'+esc(dd.title||"（无标题）")+'</b><br>';
+              h+='<span class="mini">'+esc(dd.ts||"")+' · '+esc(dd.source_cn||dd.source||"")
+                +'<span style="font-family:var(--font-mono);font-size:10px"> '+esc(dd.source||"")+'</span>'
+                +' · id '+esc(dd.id||"")+'</span>';
+              if(dd.content)h+='<div class="mini" style="margin-top:4px;max-height:110px;overflow:auto;line-height:1.75">'+esc(dd.content)+'</div>';
+            }else if(r.ring.indexOf("判定")>=0){
+              if(!dd.bias){h+='<span class="mini">'+esc(r.reason||"未判定")+'</span>'}
+              else{
+                h+='<span class="bias-chip '+esc(dd.bias)+'">'+esc(dd.bias_cn||"")+'</span> '
+                  +'置信 <b>'+esc(dd.conf!=null?Number(dd.conf).toFixed(2):"—")+'</b> · '
+                  +esc(dd.event_cn||dd.event_type||"—")+' · 影响'+esc(dd.impact_cn||"—")
+                  +' · 周期'+esc(dd.horizon||"—")+'<br>';
+                var pr=dd.prob||{};
+                if(Object.keys(pr).length)h+='<span class="mini">概率 多'+Number(pr.bull||0).toFixed(2)+' / 中'+Number(pr.neutral||0).toFixed(2)+' / 空'+Number(pr.bear||0).toFixed(2)+'</span><br>';
+                if(dd.reason)h+='<span class="mini">判定理由：'+esc(dd.reason)+'</span><br>';
+                h+='<span class="mini">判定者 '+(dd.judge_model?esc(dd.judge_model):"—")+'（'+esc(dd.judge_src||"—")+'）'
+                  +(dd.judge_ms?' · '+dd.judge_ms+'ms':'')+(dd.judged_at?' · '+esc(dd.judged_at):'')+'</span>';
+              }
+            }else if(r.ring.indexOf("后验")>=0){
+              if(!dd.rows||!dd.rows.length){h+='<span class="mini">'+esc(r.reason||"无后验")+'</span>'}
+              else{
+                h+='<span class="mini">口径：'+esc(dd.caliber||"—")+(dd.code?' · 标的 '+esc(dd.code):'')+'</span><br>';
+                dd.rows.forEach(function(x){
+                  var v=x.ret;
+                  h+='<span class="num '+(v>0?"up":(v<0?"dn":""))+'" style="font-family:var(--font-mono)">'+esc(x.trade_day)+' '
+                    +(v>0?"+":"")+v+'%</span>';
+                  if(x.excess!=null)h+=' <span class="mini">超额 '+(x.excess>0?"+":"")+x.excess+'%</span>';
+                  if(x.hit!=null)h+=' <span class="mini">'+(x.hit?"✓证实":"✕证伪")+'</span>';
+                  h+='<br>';
+                });
+              }
+            }else{
+              if(dd.ok){
+                h+='<span class="mini">'+esc(dd.day||"")+' · '+esc(dd.scope||"")+' 当日已判 '+dd.total_judged+' 条，同向 '+dd.same_bias+' 条</span>';
+              }else h+='<span class="mini">'+esc(r.reason||"—")+'</span>';
+            }
+            h+='</div></div>';
+          });
+          h+='<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">'
+            +'<button class="ui-btn ui-btn--sm" id="tr-copy">复制引用</button>'
+            +'<a class="ui-btn ui-btn--sm" href="'+esc(t.api)+'" target="_blank" rel="noopener">看原始 JSON</a>'
+            +'<span class="mini" id="tr-copy-ok"></span></div>'
+            +'<div class="mini" style="margin-top:8px;line-height:1.8">引用串：<span id="tr-cite">'+esc(t.citation)+'</span></div>';
+          $("tr-body").innerHTML=h;
+          $("tr-copy").addEventListener("click",function(){
+            var txt=LAST_TRACE?LAST_TRACE.citation:"";
+            if(navigator.clipboard&&navigator.clipboard.writeText){
+              navigator.clipboard.writeText(txt).then(function(){$("tr-copy-ok").textContent="已复制"})
+                .catch(function(){$("tr-copy-ok").textContent="复制失败，请手动选择"});
+            }else{$("tr-copy-ok").textContent="请手动选择引用串"};
+          });
+          card.scrollIntoView({behavior:"smooth",block:"nearest"});
+        }).catch(function(e){
+          $("tr-body").innerHTML='<p class="mini">溯源请求失败：'+esc(e.message)+'</p>';
+        });
+    }
+    $("go").addEventListener("click",function(){var v=$("q").value.trim();if(v)load(v,$("days").value)});
+    $("q").addEventListener("keydown",function(e){if(e.key==="Enter")$("go").click()});
+    (function(){
+      var h=location.hash.length>1?decodeURIComponent(location.hash.slice(1)):"";
+      if(h.indexOf("id=")===0){
+        var parts=h.split("&"),nid=parts[0].slice(3),code="";
+        parts.slice(1).forEach(function(p){if(p.indexOf("code=")===0)code=p.slice(5)});
+        $("meta").textContent="溯源模式：直接展开 "+nid+"（输关键词可回到举证视图）";
+        openTrace(nid,code);
+        return;
+      }
+      if(h){$("q").value=h;load(h,14)}
+    })();
+
+    function setupAI(query){
+      var btn=document.getElementById("ai-go");
+      if(!btn)return;
+      btn.addEventListener("click",function(){
+        document.getElementById("ai-body").innerHTML='<span class="mini">🤖 正在研判…（云端约 15 秒；云端不可用时会慢很多）</span>';
+        fetch(query).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(function(d){
+          var eng=d.engine_label?(d.engine_label+(d.model?" · "+d.model:"")):(d.engine==="model"?(d.model||"AI 模型"):"规则引擎");
+          document.getElementById("ai-meta").textContent=eng+" · "+(d.generated_at||"").slice(11)+(d.engine==="rule"&&d.degrade_note?" · "+d.degrade_note:"");
+          document.getElementById("ai-body").innerHTML='<div class="verdict" style="margin:0">'+fmtVerdict(d.conclusion).replace(/\n/g,"<br>")+'</div>';
+        }).catch(function(e){
+          document.getElementById("ai-body").innerHTML='<span class="mini">解读失败：'+esc(e.message)+'</span>';
+        });
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """S3-05 lineage DB 构建测试（隔离输出，不覆盖 research/lineage.db）。"""
-import json
 import sqlite3
 import sys
 from pathlib import Path
@@ -26,7 +25,7 @@ def test_build_lineage_db(tmp_path):
 
 def test_db_schema_and_edges(tmp_path):
     db = tmp_path / "lineage.db"
-    bl.build(db, tmp_path / "l.json")
+    summary = bl.build(db, tmp_path / "l.json")
     con = sqlite3.connect(db)
     try:
         nodes = con.execute("select count(*) from nodes").fetchone()[0]
@@ -38,7 +37,15 @@ def test_db_schema_and_edges(tmp_path):
         assert "derived_strategy" in ek and "data_flow" in ek
         assert con.execute("select count(*) from nodes where id='H53'").fetchone()[0] == 1
         assert con.execute("select count(*) from edges where src='H53'").fetchone()[0] >= 1
-        assert con.execute("select count(*) from nodes where kind='strategy'").fetchone()[0] == 11
+        # 2026-11-08 K-ORG-20261108-OVWSPLIT：原断言钉死 ``== 11``，但 strategy
+        # 节点数随**策略源增长**（此刻 12，其中 11 个带源假设），源数据一变就假红，
+        # 与 schema/edge 无关。改成自洽等式：库内 strategy 节点数必须同时等于
+        # 「解析出的策略数」与「by_kind 统计数」——照样能抓漏插/重插，且不随源漂移。
+        strat_nodes = con.execute(
+            "select count(*) from nodes where kind='strategy'").fetchone()[0]
+        assert strat_nodes == summary["strategies"]["strategies"]
+        assert strat_nodes == summary["by_kind"]["strategy"]
+        assert strat_nodes >= 11, "策略源塌了（应 >=8 条战法基线）"
         meta = dict(con.execute("select key,value from meta").fetchall())
         assert int(meta["node_count"]) == nodes
     finally:

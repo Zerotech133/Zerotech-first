@@ -19,7 +19,6 @@ import json
 import os
 import sys
 import time
-from collections import defaultdict
 
 import neo4j
 import pandas as pd
