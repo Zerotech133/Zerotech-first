@@ -191,7 +191,11 @@ def main():
     # 故 Σ(pnl×slot) 就是零成本下的组合收益（已用 cost0 回测实测验证：-6.28% vs -6.35%）
     pnl_slot = sum(r["pnl_pct"] / 100.0 for r in rows) * cfg["slot_pct"]
     gross_zero = None
-    _z = os.path.join(BASE, "data", "bt2", "bt2_cost0.json")
+    # 零成本对照必须按作业取：早期写死 bt2_cost0.json（=bt10m1y 的零成本跑），
+    # 换一个作业来跑就会把别人的零成本收益拿来当自己的，分解直接失真。
+    _z = os.path.join(BASE, "data", "bt2", "bt2_%s_c0.json" % job)
+    if not os.path.exists(_z) and job == "bt10m1y":
+        _z = os.path.join(BASE, "data", "bt2", "bt2_cost0.json")  # 旧作业名兼容
     if os.path.exists(_z):
         gross_zero = json.load(open(_z, encoding="utf-8"))["summary"]["total_return_pct"]
     gross = gross_zero if gross_zero is not None else pnl_slot * 100
@@ -295,8 +299,9 @@ def main():
     print("换手 %.2f 倍本金：往返成本 %.2f%%（%s 元）"
           % (cb["turnover_x"], cb["cost_total_pct"],
              f"{cb['cost_total_amount']:,.0f}"))
-    print("分解：零成本选股 %+.2f%%（实测） 成本拖累 %+.2fpp  = 净值 %+.2f%%"
-          % (cb["gross_pct"], cb["cost_impact_pp"], out["total_return_pct"]))
+    print("分解：零成本选股 %+.2f%%（%s） 成本拖累 %+.2fpp  = 净值 %+.2f%%"
+          % (cb["gross_pct"], "实测" if gross_zero is not None else "Σpnl 近似",
+             cb["cost_impact_pp"], out["total_return_pct"]))
     print("按月：")
     for m in monthly:
         print("   %s  %+7.2f%%  基准 %+6.2f%%  超额 %+6.2f%%  仓%5.1f%%  盈亏 %s"

@@ -167,6 +167,15 @@ def main():
 
     h = []
     h.append('<h1>1000 万 · 一年回测</h1>')
+    h.append(
+        '<div class="panel fixbox"><b>这份报告的结论已被下一轮推翻，看结论请先看'
+        ' <a href="bt10m_sweep.html">降换手实验</a>。</b><br>'
+        '本文的「零成本仍亏 6.28%%，问题在信号本身」是在一个<b>量纲 bug</b> 下测出来的：'
+        '三买失效线用复权归一化序列（≈1.9）去比真实价格的中枢上沿（≈158），'
+        '恒成立 → 768 笔里 765 笔买入当日即判失效、持仓恰好 1 天、换手 60 倍。'
+        '口径修好、换手压到 6.88 倍后，同一年是 +11.45%%、零成本 +13.79%%。'
+        '下面的数字作为「旧口径的失败样本」保留，不再代表这套策略的能力。</div>'
+    )
     h.append('<p class="lead">本金 <b>%s 元</b>，区间 <b>%s → %s</b>（%d 个交易日），'
              '策略「%s」。交易口径：信号确认后 T+1 开盘买入、T+1 开盘卖出，'
              '单边成本 0.15%%（买卖各扣一次，往返 0.3%%）、涨停开盘不追、历史 ST 剔除。'
@@ -369,10 +378,11 @@ def main():
                 tr["worst"]["pnl_pct"]))
     h.append("</ol></div>")
 
-    h.append('<p class="mu sm" style="margin-top:14px">数据源：%s · '
+    h.append('<p class="mu sm" style="margin-top:14px">生成于 %s · 数据源：%s · '
              '明细见 <code>bt10m_%s_daily.csv</code>（逐日资产）与 '
              '<code>bt10m_%s_trades.csv</code>（逐笔盈亏）。</p>'
-             % (os.path.basename(p), job, job))
+             % (__import__("datetime").datetime.now().strftime("%Y-%m-%d"),
+                os.path.basename(p), job, job))
 
     css = """
 .kpi{margin:12px 0}
@@ -401,6 +411,10 @@ tr.tot td{border-top:1px solid var(--bd);font-weight:600;background:#141c26}
 code{background:var(--pn2);padding:1px 5px;border-radius:4px;font-size:11px}
 h2{font-size:15px;margin:0 0 4px}
 h3{font-size:12.5px;color:var(--mu);margin:10px 0 4px;font-weight:500}
+.fixbox{border-color:#5c3a1c;background:#1c150d;font-size:12px;line-height:1.85;
+ color:#d6c9b6;margin:10px 0 12px}
+.fixbox b{color:#e8c07a}
+.fixbox a{color:var(--ac)}
 """
     html = U.page("1000万 · 一年回测", "".join(h), css)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:

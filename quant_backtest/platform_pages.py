@@ -127,6 +127,12 @@ CATALOG = [
     dict(src="chanlun_tbe_report.html", out="chanlun_tbe_report.html",
          domain="backtest", title="背驰分层影子报表", sub="趋势背驰 vs 盘整背驰",
          asof=("meta",)),
+    dict(src="bt10m_sweep.html", out="bt10m_sweep.html", domain="backtest",
+         title="降换手实验 · 卖出规则", sub="25 组变体：失效线 / 持有期 / 追高门槛 → 换手 6.9 倍、成本 2.1%",
+         asof=("meta",), primary=True),
+    dict(src="bt10m.html", out="bt10m.html", domain="backtest",
+         title="1000 万 · 一年回测（旧口径）", sub="结论已被降换手实验推翻，留作失败样本",
+         asof=("meta",)),
 
     # —— 模拟 ——
     dict(src="sim_accounts.html", out="sim_accounts.html", domain="paper",
