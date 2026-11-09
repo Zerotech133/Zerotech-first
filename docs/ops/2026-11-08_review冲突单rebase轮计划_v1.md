@@ -53,3 +53,16 @@
 | K-KG-BRIEF-STYLE-20261105 | ac4be6c38 | 6 passed（view/card）；mixin 190/741 零 diff | rc=0 OK | rc=0 `c68b0ac5` | 完成，未合 |
 
 轮次结论：三支冲突全部按“master 基线 + 本单新增/修复”语义解决；不合入、不 force；待 16:30/21:40 窗按队列评估。
+
+
+## 4.2 R2 执行结果（2026-11-09 17:15–17:35）
+
+| 分支 | 新 tip | 定向测试 | PIN/dry-run | merge-tree | 结果 |
+|---|---|---|---|---|---|
+| WO-IFS-STD-20261103 | `518e495f2` | —（无独有提交） | — | — | rebase 时 `68967879b` 被判定“已应用”跳过，ahead=0，分支与 master 等价；可走清理，不再作为冲突单 |
+| WO-HERMES-CONTRACT-20261103 | `19b977ea0` | 34 passed | rc=0 OK | rc=0 `0bec3dc4` | 完成，未合；冲突=master 基线 + 保留 Q2 白名单语义；另修 `test_w3_wiring` 对齐 master 新增 dev-legion 卡（卡存在不算错，不作覆盖要求） |
+| UI-UNIFY-BATCH-20261103 | `d11755ce9` | 57 passed / 1 skipped；mixin 191/747 零 diff | rc=0 OK | rc=0 `f9542d17` | 完成，未合；viewport 冲突取 master（已上游化）；round7 测试取 master 语义版（不再锁 sha）；manifest/route 用工具重生成（145 页 / 324 条） |
+
+- 三支均未合入、未 force；worktree 干净；R2 期间无并发 pytest/gate 争抢（仅 agent_platform 测试进程，未共用产物）。
+- 处置：WO-IFS 由 owner 走“已合入/清理”流程；HERMES/UI-BATCH 进入 11-10 窗口候选（UI-BATCH 体量大，建议单独一窗或排在 P1 之后）。
+- 下一步：R3（11-10 08:30）处理 GATEHEALTH、F2（基线与 nav/route 再生成）；UI-BATCH 若 R2 未合则顺延 R3。
