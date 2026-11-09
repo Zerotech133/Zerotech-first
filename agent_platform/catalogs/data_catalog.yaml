@@ -374,7 +374,7 @@ resources:
     what: 淘股吧帖子（按标的 jsonl 归档；主帖+跟帖，作者/时间/标题/摘要/赞/浏览/评论；游资情绪信号来源，按源路由走词典法打分）
     layer: 采集层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 队列回填制（2026-11-09 全队列 465 只回填在跑）；日更挂计划任务待扩
     access: 只读 GET SSR 页面；采集器 news_collector/taoguba_collector.py（tgb.cn SSR 直通免渲染）
     backup: 无（可重采）
@@ -389,7 +389,7 @@ resources:
     what: 深交所互动易问答（问题+回答全文 getQuestionDetail 实采；行级 code 护栏防异公司污染；官方问答情绪信号来源，走 FinBERT 模型通道）
     layer: 采集层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 队列回填制（2026-11-09 全队列 --days 180 回填）；日更挂计划任务待扩
     access: 只读公开接口；采集器 news_collector/irm_collector.py（queryKeyboardInfo→secid + searchResult + getQuestionDetail）
     backup: 无（可重采）
@@ -404,7 +404,7 @@ resources:
     what: 上证e互动问答（userfeeds.do GET 块级解析，问题+已回复内容；uid 映射 allcompany.do 2321 家；沪市官方问答信号来源）
     layer: 采集层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 队列回填制（2026-11-09 全队列沪市补齐）；日更挂计划任务待扩
     access: 只读 GET；采集器 news_collector/sse_collector.py（两段式 uid 映射+拉问答）
     backup: 无（可重采；uid_map.json 可重建）
@@ -419,7 +419,7 @@ resources:
     what: 东财千股千评（全市场日快照 qianping_{交易日}.jsonl 约 5202 家 + latest.json 队列投影含全市场横截面分位；机构参与度/综合得分/排名/关注指数/距主力成本；聪明钱维度，R2/R3 协变量）
     layer: 采集层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 每日 08:00（SentimentSnapshot 计划任务第三步；交易日以服务端为准，盘前拿 T-1 合法）
     access: 只读；采集器 news_collector/qianping_collector.py（akshare stock_comment_em 一次拉齐）
     backup: 无（可重拉）
@@ -434,7 +434,7 @@ resources:
     what: 雪球按票定向时间线（个股页实时帖流，status_id 去重；补雪球 LLM 标注只覆盖热门票的缺口）
     layer: 采集层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 队列回填制（2026-11-09 全队列 465 只首采在跑）；日更挂计划任务待扩
     access: 活登录 profile + 页内 fetch（xq_kol 合规判例：WAF 自愈停轮+2-4s 抖动限速+只读 GET）；采集器 news_collector/xq_stock_timeline.py
     backup: 无（可重采）
@@ -449,7 +449,7 @@ resources:
     what: 六源情绪分布卡（机读契约：按标的×源聚合 n/多空中/polarity；生成器 sentiment_card.py；portal /api/daily/data sent 节消费，reports/ 出人读报告）
     layer: 衍生层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 每日 08:00（SentimentSnapshot 计划任务）+ 手动复跑即覆盖
     access: 只读契约文件；上游=股吧/淘股吧/互动易/e互动/雪球/新闻流六源
     backup: 无（生成器幂等可重建）
@@ -464,7 +464,7 @@ resources:
     what: 市场级情绪指数（0-100 五档状态机+广度+分源极性加权；源权重 股吧0.40/淘股吧0.20/雪球0.20/互动易0.10/e互动0.10 缺源自动归一；portal market 节消费；RiskGuard R1 双序列校准数据源）
     layer: 衍生层
     owner: DATA1
-    steward: DATA1（张松）
+    steward: OSINT1（马良；采集与日常照料，资产权属 DATA1）
     freshness: 每日 08:00（SentimentSnapshot 计划任务）；序列自 2026-11-09 起积累
     access: 只读契约文件；生成器 news_collector/market_sentiment.py（纯函数+8 测试）
     backup: 无（幂等可重建；history 同日重跑覆盖同日行）
