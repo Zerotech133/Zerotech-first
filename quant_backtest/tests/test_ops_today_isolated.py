@@ -25,9 +25,9 @@ _OPS_SOURCE = _REPO_ROOT / "quant_backtest" / "ops_signal_today.py"
 _PORTAL_SOURCE = _REPO_ROOT / "portal" / "portal_api.py"
 _POOL_FILE = "poc_adapter_chanlun_offline.json"
 # Pin the exact extracted function: changes require a manual safety review before execution.
-# Re-anchored 2026-10-19: anchor was computed against a pre-c90d2546 compute;
-# current HEAD compute reviewed (no forbidden nodes, calls within whitelist) and re-pinned.
-_COMPUTE_AST_SHA256 = "15c24bc3322d2241b8bb14f37a707b2b6a219d36257cc409544f5632429bc5e5"
+# Re-anchored 2026-11-09: compute 增加 cache_error 且移除 logging；已复核无 import/scope 变更，
+# 调用仍在白名单内，按当前 Python 3.12 AST 重新锚定。
+_COMPUTE_AST_SHA256 = "9ed83061931ca5becba7ac0c2d7a5a32fe1c0b87ea8919aba561adb53b0cd0fb"
 _ALLOWED_CALLS = frozenset({
     "(chan_analyze(bars) or {}).get", "_latest_pool_file", "_load_books",
     "_portfolio_context", "books.items", "c.get", "c.get('pool', {}).get",
