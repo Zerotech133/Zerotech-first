@@ -1083,14 +1083,16 @@ class StateStore:
                 key TEXT PRIMARY KEY, value TEXT, updated_at TEXT);
             """)
         self.con.commit()
-        # 增量列：pushes.receiver（推送分级审计；老库自动 ALTER，不重建表）
+        # 增量列：pushes.receiver（推送分级审计）/ message_id / evidence（送达对账）
+        # 老库自动 ALTER，不重建表；任一列失败只记日志不阻断启动。
         cols = [r[1] for r in self.con.execute("PRAGMA table_info(pushes)")]
-        if "receiver" not in cols:
-            try:
-                self.con.execute("ALTER TABLE pushes ADD COLUMN receiver TEXT")
-                self.con.commit()
-            except sqlite3.Error as exc:
-                log("状态：pushes.receiver 迁移失败（%s）" % str(exc)[:100])
+        for name in ("receiver", "message_id", "evidence"):
+            if name not in cols:
+                try:
+                    self.con.execute("ALTER TABLE pushes ADD COLUMN %s TEXT" % name)
+                except sqlite3.Error as exc:
+                    log("状态：pushes.%s 迁移失败（%s）" % (name, str(exc)[:100]))
+        self.con.commit()
     def seen(self, fingerprint: str) -> bool:
         return self.con.execute("SELECT 1 FROM alerts WHERE fingerprint = ? LIMIT 1",
                                 (fingerprint,)).fetchone() is not None
@@ -1165,24 +1167,28 @@ class StateStore:
             [(key, json.dumps(value, ensure_ascii=False), stamp) for key, value in pairs])
         self.con.commit()
     def record_push(self, sig: Signal, kind: str, sent: bool = False,
-                    receiver: Optional[str] = None) -> None:
+                    receiver: Optional[str] = None,
+                    message_id: Optional[str] = None,
+                    evidence: Optional[str] = None) -> None:
         self.con.execute(
-            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent, receiver) "
-            "VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent, "
+            "receiver, message_id, evidence) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (sig.ts, sig.code, sig.rule, sig.fingerprint, kind,
              json.dumps(to_push_payload([sig]), ensure_ascii=False), int(bool(sent)),
-             receiver or ""))
+             receiver or "", message_id or "", evidence or ""))
         self.con.commit()
     def record_raw_push(self, ts: str, code: str, rule: str, fingerprint: str,
                         kind: str, payload: Dict[str, Any], sent: bool = False,
-                        receiver: Optional[str] = None) -> None:
+                        receiver: Optional[str] = None,
+                        message_id: Optional[str] = None,
+                        evidence: Optional[str] = None) -> None:
         """摘要类推送（开盘首扫/午间/收盘）落 pushes 流水；不走 Signal 构造。"""
         self.con.execute(
-            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent, receiver) "
-            "VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent, "
+            "receiver, message_id, evidence) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (ts, code, rule, fingerprint, kind,
              json.dumps(payload, ensure_ascii=False), int(bool(sent)),
-             receiver or ""))
+             receiver or "", message_id or "", evidence or ""))
         self.con.commit()
     def close(self) -> None:
         try:
@@ -1930,7 +1936,9 @@ def push_via_hub(payloads: List[Dict[str, Any]],
                 ok = bool(resp.get("ok"))
                 results[i] = {"ok": ok, "code": p.get("code"), "rule": p.get("rule"),
                               "receiver": name,
-                              "why": resp.get("why") or resp.get("error") or ""}
+                              "why": resp.get("why") or resp.get("error") or "",
+                              "message_id": resp.get("message_id") or "",
+                              "evidence": resp.get("evidence") or ""}
             except Exception as exc:  # noqa: BLE001 - 推送失败必须 fail-safe，不中断整轮
                 results[i] = {"ok": False, "code": p.get("code"), "rule": p.get("rule"),
                               "receiver": name, "error": str(exc)[:200]}
@@ -2029,10 +2037,13 @@ def maybe_open_scan(store: "StateStore",
     payload = build_open_scan_payload(quotes, pool, sectors, trigger_count, conf, cur)
     sender = push_fn or push_via_hub
     results = sender([payload], cfg=conf)
-    ok = bool(results and results[0].get("ok"))
+    first = (results or [{}])[0]
+    ok = bool(first.get("ok"))
     kind = (conf.get("push") or {}).get("kind", "watch:realtime")
     store.record_raw_push(payload["ts"], "POOL", "open_scan", payload["fingerprint"],
-                          kind, payload, sent=ok, receiver=payload.get("receiver"))
+                          kind, payload, sent=ok, receiver=payload.get("receiver"),
+                          message_id=first.get("message_id"),
+                          evidence=first.get("evidence"))
     if ok:
         store.set_kv(done_key, payload["ts"])
         log("开盘首扫：已推送（池 %d 只，行情 %d 条，触发 %d 条）" % (
@@ -2109,11 +2120,14 @@ def maybe_closing_summary(store: "StateStore",
     payload = build_closing_summary_payload(store, conf, cur)
     sender = push_fn or push_via_hub
     results = sender([payload], cfg=conf)
-    ok = bool(results and results[0].get("ok"))
+    first = (results or [{}])[0]
+    ok = bool(first.get("ok"))
     kind = (conf.get("push") or {}).get("kind", "watch:realtime")
     store.record_raw_push(payload["ts"], "POOL", "close_summary",
                           payload["fingerprint"], kind, payload, sent=ok,
-                          receiver=payload.get("receiver"))
+                          receiver=payload.get("receiver"),
+                          message_id=first.get("message_id"),
+                          evidence=first.get("evidence"))
     if ok:
         store.set_kv(done_key, payload["ts"])
         log("收盘小结：已推送（触发 %d 条，推送成功 %d / 失败 %d）" % (
@@ -2217,11 +2231,14 @@ def maybe_midday_summary(store: "StateStore",
     payload = build_midday_payload(quotes, pool, sectors, conf, cur, store=store)
     sender = push_fn or push_via_hub
     results = sender([payload], cfg=conf)
-    ok = bool(results and results[0].get("ok"))
+    first = (results or [{}])[0]
+    ok = bool(first.get("ok"))
     kind = (conf.get("push") or {}).get("kind", "watch:realtime")
     store.record_raw_push(payload["ts"], "POOL", "midday_summary",
                           payload["fingerprint"], kind, payload, sent=ok,
-                          receiver=payload.get("receiver"))
+                          receiver=payload.get("receiver"),
+                          message_id=first.get("message_id"),
+                          evidence=first.get("evidence"))
     if ok:
         store.set_kv(done_key, payload["ts"])
         log("午间简报：已推送（触发 %d 条，池 %d 只）" % (
@@ -2336,7 +2353,10 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
         for idx, sig in enumerate(accepted):
             ok = bool(push_results[idx].get("ok")) if (send and idx < len(push_results)) else False
             rcpt = payload[idx].get("receiver") if idx < len(payload) else None
-            store.record_push(sig, kind, sent=ok, receiver=rcpt)
+            res = push_results[idx] if (send and idx < len(push_results)) else {}
+            store.record_push(sig, kind, sent=ok, receiver=rcpt,
+                              message_id=res.get("message_id"),
+                              evidence=res.get("evidence"))
             if send and not ok:
                 # 推送失败撤销触发，下一 tick 重试（避免 hub 短暂故障造成漏报）
                 store.forget_alert(sig.fingerprint)
