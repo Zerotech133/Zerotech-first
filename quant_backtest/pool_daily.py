@@ -163,6 +163,8 @@ def main():
                   ["sector_member_snapshot.py"], True))
     steps.append(("个股页", ["pool_report_h5.py"], False))
     steps.append(("板块页", ["sector_platform_h5.py"], False))
+    # PC 工作台要在打包之前生成：h5_pack 的清单里已经有 pc.html，缺了会直接非 0 退出
+    steps.append(("PC 工作台", ["pool_pc.py"], False))
     # 两个页面是双向相对跳转的，发布目录必须「成套」——少一个就是 404。
     # 这一步只做本地拷贝和引用闭环自检，不碰线上；线上仍要手动发布一次。
     steps.append(("发布目录打包（h5_pack）", ["h5_pack.py"], False))

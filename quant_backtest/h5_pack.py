@@ -40,12 +40,14 @@ DEST = os.path.join(HERE, "h5_daily")
 
 STOCK_SRC = os.path.join(REPORTS, "pool_report_h5.html")
 SECTOR_SRC = os.path.join(REPORTS, "sector_platform.html")
+PC_SRC = os.path.join(REPORTS, "pool_pc.html")
 
 # (源文件, 发布目录里的名字)
 PLAN = [
     (STOCK_SRC, "index.html"),
     (STOCK_SRC, "pool_report_h5.html"),
     (SECTOR_SRC, "sector_platform.html"),
+    (PC_SRC, "pc.html"),
 ]
 
 # 页面内部引用的本地 html 文件名：形如 'sector_platform.html?sector=...'
@@ -77,7 +79,7 @@ def main():
     a = ap.parse_args()
 
     # 1) 源文件
-    for src in (STOCK_SRC, SECTOR_SRC):
+    for src in (STOCK_SRC, SECTOR_SRC, PC_SRC):
         if not os.path.exists(src):
             log("[fail] 缺源文件 %s —— 先跑对应的页面脚本" % src)
             return 1
@@ -93,7 +95,7 @@ def main():
 
     # 2) 引用闭环：页面里点了的，发布目录里必须有
     bad = []
-    for src in (STOCK_SRC, SECTOR_SRC):
+    for src in (STOCK_SRC, SECTOR_SRC, PC_SRC):
         for ref in local_refs(src):
             if ref not in names:
                 bad.append((os.path.basename(src), ref))
@@ -133,7 +135,7 @@ def main():
         log("   %-22s %7.1f KB  %s"
             % (n, os.path.getsize(p) / 1024.0,
                datetime.fromtimestamp(os.path.getmtime(p)).strftime("%m-%d %H:%M")))
-    log("合计 %.1f MB（整套发布，三个文件一起上）" % (total / 1048576.0))
+    log("合计 %.1f MB（整套发布，四个文件一起上）" % (total / 1048576.0))
     return 0
 
 
