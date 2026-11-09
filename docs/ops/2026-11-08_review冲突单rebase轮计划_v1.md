@@ -7,9 +7,9 @@
 
 | 任务分支 | tip | ahead | behind | merge-tree | 冲突文件 |
 |---|---|---|---|---|---|
-| task/WO-GUANYU-DATASEED-20261106 | 9e55cf638 | 1 | 173 | rc=1（1） | tools/datawarehouse/dataset_registry.py |
-| task/K-AUDIT-20261108-FULL-AUDIT | 443369b40 | 1 | 102 | rc=1（1） | deliverables/2026-11-08_全链路技术治理清单_待执行.md |
-| task/K-KG-BRIEF-STYLE-20261105 | fe9eead59 | 2 | 642 | rc=1（1） | quant_backtest/kg_brief.py |
+| task/WO-GUANYU-DATASEED-20261106 | abe301673 | 1 | 0 | rc=0 | 已解决（REPO 解析：env > common.REPO > _repo_root） |
+| task/K-AUDIT-20261108-FULL-AUDIT | 5b9f7297f | 1 | 0 | rc=0 | 已解决（清单状态/1-2 项合并 master 事实+分支证据链接） |
+| task/K-KG-BRIEF-STYLE-20261105 | ac4be6c38 | 2 | 0 | rc=0 | 已解决（meta 同时保留 last_secs 与 view） |
 | task/WO-IFS-STD-20261103 | 68967879b | 1 | 1211 | rc=1（4） | docs/standards/...SLO_MATRIX.md、接口对接规范_IFS_v1.md、INTERFACE_REGISTRY_v1.yaml、tools/tests/test_interface_registry_contract.py |
 | task/WO-HERMES-CONTRACT-20261103 | 326f8bb37 | 6 | 858 | rc=1（1） | tools/tests/test_hermes_audit.py |
 | task/UI-UNIFY-BATCH-20261103 | 14f5d4b00 | 32 | 214 | rc=1（1） | portal/tests/test_round7_closeout.py |
@@ -43,3 +43,13 @@
 - 分支 behind 较大（IFS 1211、HERMES 858、KG 642、UI 214），冲突可能含语义变更；以“能安全重放”为准，不强行合。
 - 多会话并发：若分支被他人同时 rebase，以 `git reflog` 最新且 clean 的 tip 为准，不覆盖。
 - 时间窗：rebase 不占合并窗，但 16:30–17:00 / 21:40–22:10 期间不启动重 rebase，避免与门/合并争抢。
+
+## 4.1 R1 执行结果（2026-11-09 08:30–08:55）
+
+| 分支 | 新 tip | 定向测试 | PIN/dry-run | merge-tree | 结果 |
+|---|---|---|---|---|---|
+| WO-GUANYU-DATASEED-20261106 | abe301673 | 37 passed（anchor 4 + seed + dataset_query） | rc=0 OK | rc=0 `7d5bf7b1` | 完成，未合 |
+| K-AUDIT-20261108-FULL-AUDIT | 5b9f7297f | 文档单，无需代码测试 | rc=0 OK | rc=0 `5905c199` | 完成，未合 |
+| K-KG-BRIEF-STYLE-20261105 | ac4be6c38 | 6 passed（view/card）；mixin 190/741 零 diff | rc=0 OK | rc=0 `c68b0ac5` | 完成，未合 |
+
+轮次结论：三支冲突全部按“master 基线 + 本单新增/修复”语义解决；不合入、不 force；待 16:30/21:40 窗按队列评估。
