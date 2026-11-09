@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """盘中实时盯盘引擎（W1 采集器 + W2 规则引擎 + W3 飞书推送适配）
 
-设计来源：`C:\\项目\\deliverables\\2026-11-05_盘中实时盯盘与飞书推送_设计方案_v1.md`
+设计来源：`deliverables/2026-11-05_盘中实时盯盘与飞书推送_设计方案_v1.md`
 （三路信号：量价 / 新闻 / 板块；去重·冷却·限流；SQLite 状态跨进程保持）。
 
 **研究提示，不构成投资建议**：本模块只读行情与新闻，只做异动提示，不下单、
@@ -44,8 +44,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 CST = timezone(timedelta(hours=8))
 PKG = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(PKG)  # worktree 根
-MAIN_ROOT = os.environ.get("ANALYSIS_MAIN_ROOT", r"C:\项目\老田的AI助手")
-WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")
+MAIN_ROOT = os.environ.get("ANALYSIS_MAIN_ROOT") or ROOT
+WORK = os.environ.get("ANALYSIS_WORK") or os.path.join(os.path.dirname(ROOT), "analysis_work")
 DATA_ROOT = os.environ.get("KG_DATA_ROOT", os.path.join(MAIN_ROOT, "quant_backtest", "data"))
 #: 交易日历（tushare trade_cal：cal_date/is_open），用于节假日判断
 TRADE_CAL_PATH = os.path.join(DATA_ROOT, "tushare_curated", "trade_cal.parquet")
