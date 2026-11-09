@@ -2,7 +2,7 @@
 #
 # 用法（仓库任意目录）:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\test_gate.ps1 -Suite fast
-# -Suite: fast(portal+k_stock+ide+agent_key+quant_key+tools_key+datawarehouse) | portal | kstock | ide |
+# -Suite: fast(portal+k_stock+ide+agent_key+quant_key+tools_key+datawarehouse+analysis+commercial) | portal | kstock | ide |
 #         agent_key | quant_key | tools_key | datawarehouse | agent | quant | tools | all
 # 退出码: 0=无新增失败(允许既存失败) | 1=有新增失败/收集错误 | 2=脚本错误
 # 产物:  C:\Temp\test_gate_<suite>_<ts>.log
@@ -24,7 +24,7 @@
 #   只进 fast 不进 all（all 保持夜间全量口径，避免时长失控）。冻结守卫同批同步。
 param(
     [ValidateSet('fast', 'portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key',
-                 'datawarehouse', 'agent', 'quant', 'tools', 'all')]
+                 'datawarehouse', 'analysis', 'commercial', 'agent', 'quant', 'tools', 'all')]
     [string]$Suite = 'fast',
     [int]$PytestTimeout = 120
 )
@@ -121,7 +121,9 @@ switch ($Suite) {
     # 2026-10-30 P1：LDE HTTP 契约进 fast 门（单独文件，不拖入整个 agent 套件）
     # 2026-10-31 W5 P1-6 / K-ORG-20261031-GATEB2：B1+B2 关键集三套件进 fast（88 文件）
     # 2026-11-02 S2-08：datawarehouse 目录套件（158 项）进 fast；只进 fast 不进 all。
-    'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse') }
+    # 2026-11-08 GATEHEALTH2：analysis/commercial 纳入 fast（此前从不进门）。
+    'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse',
+                            'analysis', 'commercial') }
     'portal'  { $suites = @('portal') }
     'kstock'  { $suites = @('kstock') }
     'ide'     { $suites = @('ide') }
@@ -129,6 +131,8 @@ switch ($Suite) {
     'quant_key' { $suites = @('quant_key') }
     'tools_key' { $suites = @('tools_key') }
     'datawarehouse' { $suites = @('datawarehouse') }
+    'analysis' { $suites = @('analysis') }
+    'commercial' { $suites = @('commercial') }
     'agent'   { $suites = @('agent') }
     'quant'   { $suites = @('quant') }
     'tools'   { $suites = @('tools') }
@@ -157,6 +161,10 @@ $paths = @{
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
     # 2026-11-02 S2-08：数据仓工具测试（158 项，目录套件；独立 pytest 防 sys.path 冲突）
+    # 2026-11-08 GATEHEALTH2：两套目录此前从不进 fast（覆盖率审计：analysis 177 用例、
+    # commercial 41 用例零门禁），现与其它目录套件同款独立 pytest。
+    'analysis' = 'analysis/tests'
+    'commercial' = 'commercial/tests'
     'datawarehouse' = 'tools/datawarehouse/tests'
     'ide'    = @(
         # W5 P1-7（WO-LEGION-W5-GATE-20261031，2026-10-31）：IDE 关键缺口补入——

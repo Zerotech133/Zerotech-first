@@ -52,9 +52,11 @@ SUITE_DIRS = (
     "agent_platform/tests",
     "quant_backtest/tests",
     "tools/tests",
+    "analysis/tests",
+    "commercial/tests",
 )
 FAST_SUITES = ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key",
-               "datawarehouse"]
+               "datawarehouse", "analysis", "commercial"]
 # IDE 关键集：W5 审计结论是“ide 相关测试仅 test_legion_ide_audit.py 未入门”，
 # 本单补齐后冻结；集合只增不减（新增 IDE 测试可以直接进 ide 套件，不影响本断言）。
 IDE_KEY_FILES = {
@@ -132,7 +134,8 @@ def _gated_files(gate: str) -> set:
     """fast gate 实际覆盖的测试文件全集：目录套件全量 + 文件列表套件。"""
     lists = _file_lists(gate)
     gated = set()
-    for d in ("portal/tests", "k_stock/tests", "tools/datawarehouse/tests"):
+    for d in ("portal/tests", "k_stock/tests", "tools/datawarehouse/tests",
+              "analysis/tests", "commercial/tests"):
         gated.update(p.relative_to(REPO).as_posix() for p in (REPO / d).rglob("test_*.py"))
     for key in ("ide", "agent_key", "quant_key", "tools_key"):
         gated.update(lists.get(key, []))

@@ -2056,6 +2056,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
                 " 或 C:\\Temp\\portal_api_token）"), 403)
             return
+        return self._route_main(path, qs)
+
+    def _route_main(self, path, qs):
         if path == "/":
             # 根路径引导：8091 是 API+页面后端，首页在 nginx 8080——
             # 直接访问 8091/ 曾得 404 白页误判「网络不通」，302 到真首页

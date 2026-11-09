@@ -61,7 +61,8 @@ def test_fast_suites_and_b1_b2_not_regressed():
     m = re.search(r"'fast'\s*\{\s*\$suites\s*=\s*@\(([^)]*)\)", GATE)
     assert m, "test_gate.ps1 缺 fast 定义"
     assert re.findall(r"'([a-z_]+)'", m.group(1)) == [
-        "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse"]
+        "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse",
+        "analysis", "commercial"]
     # 2026-11-08 同步：quant_key 23→27（xq 接缝修复 +4）、tools_key 20→22
     # （worktree mech +1、行尾守卫 +1）
     for name, count in (("agent_key", 52), ("quant_key", 27), ("tools_key", 22)):
