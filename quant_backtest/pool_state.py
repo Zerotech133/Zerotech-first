@@ -79,12 +79,22 @@ look-ahead 口径（截断重放 44% 信号消失，与权威口径一致率 5.4
   python pool_state.py --scan --stage 三买待   # 只看某态
   python pool_state.py --scan --save          # 落 reports/pool_state_<asof>.json
   python pool_state.py --intraday             # 盘中：读池 + 实时价，看结构演化
+  python pool_state.py --live                 # 全市场叠实时价：谁在离开中枢
+  python pool_state.py --judge --save         # 盘中一条命令出两个产物（推荐）
+
+--live 与 --judge 的分工：前者只答「相对中枢跑到哪了」，把「越过上沿」和
+「三买刚成立」混在一格，操作含义相反；后者在同一份数据上再叠可操作性判据，
+分成 A 突破 / B 三买 / C 持有 / D 衰竭 / E 贴沿五层，并顺手落 pool_live。
+两者共用一次全市场扫描（_snapshot）——原来各扫一遍，等于把 4,000 个 parquet
+读两次。
 
 盘中只比对中枢沿，不重算笔——笔的修正需要收盘价确认，盘中算出来的是假结构。
 """
 
 import argparse
+import contextlib
 import glob
+import io
 import json
 import os
 import sys
@@ -791,50 +801,75 @@ def intraday(top=None):
     return 0
 
 
-def live(min_amt=0.5, top=40, save=False):
-    """全市场实时叠加：结构取最近数据日的日线，价格取当下。
+def _px_of(idx, code):
+    q = idx.get(code)
+    if not q:
+        return None, None
+    p = q.get("price")
+    if not p:
+        return None, None
+    return float(p), q.get("pct")
 
-    与 --intraday 的分工：
-      --intraday  读池文件，只看已落盘的 top-N（中枢档 1,005 只只留 50 只，
-                  等于对 95% 的市场失明），适合盯已持仓那几十只；
-      --live      复用 scan 的 buckets（全量行，未裁剪），给每只叠实时价，
-                  覆盖全部可判标的，回答「今天全市场谁在离开中枢」。
 
-    不做的事：不重算笔。盘中价格未收盘，用它造 K 线会造出假笔、假中枢，
-    进而造出假买卖点。这里只把「现价 vs 11-06 结构的中枢沿」摆出来。
+def _mins_of(live_at):
+    """已交易分钟数——把「当日累计成交额」折算成量比要用它。
+
+    首版（tmp/judge_pool.py）写的是 (hh-9)*60+mm-30：14:00 会算成 270 分钟，
+    分母虚大 2 倍多，量比被压掉一半，午后的突破全被判成「无量」。这里按
+    真实交易分钟算：上午 ≤120，午休记 120，下午接着累加，上限 240。
+    """
+    hm = (live_at or "")[11:16]
+    if len(hm) < 5:
+        return 0
+    try:
+        hh, mm = int(hm[:2]), int(hm[3:5])
+    except ValueError:
+        return 0
+    t = hh * 60 + mm
+    if t < 570:                        # 09:30 之前
+        return 1
+    if t <= 690:                       # 上午 09:30~11:30
+        return max(t - 570, 1)
+    if t < 780:                        # 午休
+        return 120
+    return min(120 + (t - 780), 240)   # 下午 13:00~15:00
+
+
+def _snapshot(min_amt=0.5, top=40, verbose=False, quiet=False):
+    """一次全市场扫描 + 一次取价，供 --live / --judge 共用。
+
+    --live 和 --judge 原来各自 scan 一遍全市场（每遍约 50s），盘中两件事都要
+    看的时候等于把 4,000 个 parquet 读两遍、把 4,000 只票的价格取两遍。
+    这里只扫一次，两件事吃同一份数据。
+
+    quiet=True 时只留 scan 的三行摘要——--judge 自己有 A~E 五张表，再把九态
+    大表打在前面就是噪声（盘中每 15 分钟一条推送，前面挂 180 行谁都不看）。
     """
     t0 = time.time()
-    out, buckets, meta = scan(min_amt, None, top, verbose=False)
+    if quiet:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            _out, buckets, meta = scan(min_amt, None, top, verbose=False)
+        for ln in buf.getvalue().splitlines():
+            if ln.startswith(("[chan_pool] 扫描", "[chan_pool] 剔除",
+                              "[chan_pool] 数据基准")):
+                print(ln)
+    else:
+        _out, buckets, meta = scan(min_amt, None, top, verbose=verbose)
     rows = [r for st in STAGES for r in buckets.get(st, [])]
     if not rows:
-        print("[live] 无可判标的")
-        return 1
-
-    codes = [r["code"] for r in rows]
+        return None
     try:
-        qs = _fetch_quotes(codes)
-    except Exception as e:
-        print(f"[live] 取价失败: {e}")
-        return 2
+        qs = _fetch_quotes([r["code"] for r in rows])
+    except Exception as e:                    # noqa: BLE001 —— 网络失败要显式报错
+        raise RuntimeError(f"取价失败: {e}") from e
     idx = {_from_sina(q.get("code", "")): q for q in qs}
     ts_seen = [q.get("ts") for q in qs if q.get("ts")]
     live_at = max(ts_seen) if ts_seen else ""
-    struct_asof = meta.get("data_asof") or ""
 
-    def _px(r):
-        q = idx.get(r["code"])
-        if not q:
-            return None, None
-        p = q.get("price")
-        if not p:
-            return None, None
-        return float(p), q.get("pct")
-
-    hit = 0
-    up = dn = flat = 0
-    n_lim = 0
+    hit = up = dn = flat = n_lim = 0
     for r in rows:
-        px, pct = _px(r)
+        px, pct = _px_of(idx, r["code"])
         if px is None:
             continue
         hit += 1
@@ -848,18 +883,26 @@ def live(min_amt=0.5, top=40, save=False):
         if pct >= 9.8:
             n_lim += 1
 
-    print(f"[live] 结构基准 {struct_asof} · 实时 {live_at}")
-    print(f"[live] 可判 {len(rows)} / 取到报价 {hit} "
-          f"({hit / max(len(rows), 1) * 100:.0f}%) · 扫描 {time.time() - t0:.0f}s")
-    print(f"[live] 实时涨跌：上涨 {up} / 下跌 {dn} / 平 {flat} · 涨停(≥9.8%) {n_lim}")
+    return {
+        "rows": rows, "buckets": buckets, "meta": meta, "idx": idx,
+        "live_at": live_at, "struct_asof": meta.get("data_asof") or "",
+        "mins": _mins_of(live_at), "elapsed": time.time() - t0,
+        "hit": hit, "up": up, "down": dn, "flat": flat, "limit_up": n_lim,
+    }
 
-    # ── 结构演化：现价对 11-06 的中枢沿 ─────────────────────
+
+def _build_evo(rows, idx):
+    """结构演化：现价对结构日（最近收盘日）的中枢沿。
+
+    与 --judge 的分工：这里只回答「相对那个中枢跑到哪了」，不带任何可操作性
+    判据；--judge 才在上面加「宽度/笔数/量比/涨跌停」这层筛子。
+    """
     evo = {"上离枢": [], "下离枢": [], "三买待确认": [], "三买待破位": [],
            "三买守稳": [], "三买失守": [], "买点失守": []}
     for r in rows:
         if r.get("piv_over"):
             continue          # 级别已升级，ZG/ZD 不是操作边界
-        px, pct = _px(r)
+        px, pct = _px_of(idx, r["code"])
         if px is None:
             continue
         st = r["stage"]
@@ -888,6 +931,70 @@ def live(min_amt=0.5, top=40, save=False):
             sp = r.get("sig_price") or 0
             if sp and px < sp:
                 evo["买点失守"].append(item)
+    return evo
+
+
+def _save_live(evo, snap, top):
+    """落盘 pool_live_*.json（全量，不按 top 裁）。"""
+    os.makedirs(REPORTS, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M")
+    # 落盘前排序：突破档按越沿幅度降序（谁离得最远最先看），守位档按
+    # 距守位升序（谁最贴止损线最先看）。终端只印前 top 个，JSON 是全量。
+    for k, v in evo.items():
+        if k in ("上离枢", "下离枢"):
+            v.sort(key=lambda r: -abs(r.get("ldzg") or 0))
+        else:
+            v.sort(key=lambda r: (r.get("ldzg") if r.get("ldzg") is not None else 9))
+    p = os.path.join(REPORTS, f"pool_live_{stamp}.json")
+    payload = {
+        "struct_asof": snap["struct_asof"],
+        "live_at": snap["live_at"],
+        "run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "judged": len(snap["rows"]), "quoted": snap["hit"],
+        "up": snap["up"], "down": snap["down"], "flat": snap["flat"],
+        "limit_up": snap["limit_up"],
+        "counts": {k: len(v) for k, v in evo.items()},
+        # 存全量，不按 top 裁。原来的 `v[:top]` 让「三买守稳」69 只只落
+        # 30 条，页面「下钻看完整证据」时后 39 只查不到——计数与明细对不上。
+        "groups": evo,
+        "print_top": top,     # 终端只印前 N 个，JSON 是全量
+    }
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
+    print(f"\n[saved] {p}")
+    return p
+
+
+def live(min_amt=0.5, top=40, save=False):
+    """全市场实时叠加：结构取最近数据日的日线，价格取当下。
+
+    与 --intraday 的分工：
+      --intraday  读池文件，只看已落盘的 top-N（中枢档 1,005 只只留 50 只，
+                  等于对 95% 的市场失明），适合盯已持仓那几十只；
+      --live      复用 scan 的 buckets（全量行，未裁剪），给每只叠实时价，
+                  覆盖全部可判标的，回答「今天全市场谁在离开中枢」。
+
+    不做的事：不重算笔。盘中价格未收盘，用它造 K 线会造出假笔、假中枢，
+    进而造出假买卖点。这里只把「现价 vs 结构日的中枢沿」摆出来。
+    """
+    try:
+        snap = _snapshot(min_amt, top)
+    except RuntimeError as e:
+        print(f"[live] {e}")
+        return 2
+    if snap is None:
+        print("[live] 无可判标的")
+        return 1
+
+    rows, idx = snap["rows"], snap["idx"]
+    print(f"[live] 结构基准 {snap['struct_asof']} · 实时 {snap['live_at']}")
+    print(f"[live] 可判 {len(rows)} / 取到报价 {snap['hit']} "
+          f"({snap['hit'] / max(len(rows), 1) * 100:.0f}%) · "
+          f"扫描 {snap['elapsed']:.0f}s")
+    print(f"[live] 实时涨跌：上涨 {snap['up']} / 下跌 {snap['down']} / "
+          f"平 {snap['flat']} · 涨停(≥9.8%) {snap['limit_up']}")
+
+    evo = _build_evo(rows, idx)
 
     def _show(title, lst, hint, key=None, guard=False):
         if not lst:
@@ -928,32 +1035,265 @@ def live(min_amt=0.5, top=40, save=False):
         print(f"\n[live] 另有一买/二买极值失守 {len(evo['买点失守'])} 只")
 
     if save:
+        _save_live(evo, snap, top)
+    return 0
+
+
+# ── 判据：把「结构位置」重新分成可操作的五层 ─────────────────────
+# 为什么另起一层：--live 只回答「相对中枢跑到哪了」，它把「今日越过上沿」与
+# 「刚刚成立的三买」混在一个格子里——前者是等回踩，后者是可介入，操作含义
+# 相反。这一层不新增任何指标，只把结构位置 + 量能 + 可操作性分开说：
+#
+#   A 今日突破   越过末中枢 ZG，但已走远——等回踩，不是现在买
+#   B 新鲜三买   信号 ≤25 日 + 仍守在守位之上 + 距守位 ≤8%——可介入区
+#   C 持有区     守住守位但已回末中枢上沿之下——只跟踪不加仓
+#   D 衰竭       新鲜背驰（12 日内）——减仓预警，不是买点
+#   E 贴沿未过   距上沿 1.5% 以内、还没过——「临近爆发」的本义，埋伏不是买
+#
+# 判据边界是 2026-11-09 盘中现定的，没有回测背书。124 个截面回放的结论是
+# 三买 ② 列 −172bp(t=−3.70)、三买待 −284bp(t=−3.67)，所以这一层的用途是
+# 「知道自己在什么位置、什么时候该走」，不是「买入信号」。
+J_W_MIN, J_W_MAX = 0.03, 0.30      # 中枢宽度：<3% 退化，>30% 级别已升级
+J_BI_MIN, J_BI_MAX = 3, 7          # 8~9 笔属延伸晚期，突破多为最后一冲
+J_BRK_MIN, J_BRK_MAX = 0.003, 0.025  # 突破幅度：贴沿不算，走太远不追
+J_VOL_MORNING = 1.8                # 早盘量能折算系数（前 30 分钟约占全天 1/1.8）
+J_VOL_MIN = 1.0                    # 校准后量比 ≥1.0 才算有量
+J_AGE_MAX = 25                     # 三买信号有效期
+J_AGE_WAIT = 45                    # 三买待可放宽到 45 日，再老就是长磨不是新结构
+J_NEAR = 0.08                      # 距守位 ≤8% 算「守位还在手边」
+J_FAR = 0.15                       # >15% 已走远，连跟踪都不必
+J_TOUCH = 0.015                    # 距上沿 1.5% 以内视为「门口」
+J_MV_MIN, J_MV_MAX = 20.0, 2000.0  # 微盘流动性差，超大盘无弹性
+J_SELL_SIGS = ("1卖", "2卖", "3卖")
+# 游资过滤：近 20 日出现 ≥2 次单日 |涨跌|≥9.5%，说明这是资金博弈盘，不是
+# 中枢震荡。实测依据：三峡新材/高争民爆 的一字板拼出「中枢」，ZG/ZD 毫无
+# 结构含义；大连圣亚 10-19 跌停后在枢内反弹也被算成「贴沿爆发」。
+J_LIMIT_N = 9.5
+J_LIMIT_MAX = 1
+
+
+def _ampl(code):
+    """近 20 日涨跌停次数 + 近 5 日最高价。只对候选调用，几十次读盘可接受。"""
+    num, _, mkt = code.partition(".")
+    p = os.path.join(ASHARE, f"{num}_{mkt}.parquet")
+    if not os.path.exists(p):
+        return None, None
+    try:
+        df = pd.read_parquet(p).sort_values("trade_date")
+        t = df.tail(20)
+        n_lim = int((t["pct_chg"].abs() >= J_LIMIT_N).sum())
+        hi5 = float(df.tail(5)["high"].max())
+        return n_lim, hi5
+    except Exception:                  # noqa: BLE001 —— 单只坏文件不该中断整轮
+        return None, None
+
+
+def _judge_layers(rows, idx, mins):
+    """把 scan 的行 + 实时价切成 A/B/C/D/E 五层，并记下每个否决理由。"""
+    A, B, C, D, E, drop = [], [], [], [], [], []
+    for r in rows:
+        px, pct = _px_of(idx, r["code"])
+        if px is None:
+            continue
+        zg, zd = r.get("zg"), r.get("zd")
+        if not zg or not zd:
+            continue
+        w = zg / zd - 1
+        q = idx.get(r["code"]) or {}
+        amt = q.get("amount") or 0
+        volr = None
+        if r.get("amt20_yi") and amt and mins:
+            volr = amt / 1e8 / (r["amt20_yi"] * mins / 240.0) / J_VOL_MORNING
+        sig = r.get("sig_type") or ""
+        st = r["stage"]
+        g3 = r.get("sig_zg") or zg
+
+        it = dict(r)
+        it.update(lpx=px, lpct=(pct or 0.0), w=w, volr=volr, mins=mins,
+                  brk=px / zg - 1, dguard=px / g3 - 1,
+                  lpos=_lpos(px, zd, zg))
+
+        base_ok = ((not r.get("piv_over")) and (not r.get("piv_wide"))
+                   and J_W_MIN <= w <= J_W_MAX
+                   and J_BI_MIN <= (r.get("piv_n_bi") or 0) <= J_BI_MAX
+                   and J_MV_MIN <= (r.get("mv_yi") or 0) <= J_MV_MAX
+                   and (r.get("trend_dir") or 0) >= 0)
+
+        # ── A：今日越过末中枢上沿（原「中枢」档）──────────────
+        if st == "中枢" and px > zg * (1 + J_BRK_MIN):
+            if not base_ok:
+                drop.append((it, "A 结构不合格"))
+            elif sig in J_SELL_SIGS:
+                drop.append((it, f"A 信号方向={sig}（下跌侧）"))
+            elif it["brk"] > J_BRK_MAX:
+                drop.append((it, f"A 已越沿 {it['brk']:.1%}（走远）"))
+            elif volr is None or volr < J_VOL_MIN:
+                drop.append((it, f"A 量比 {volr or 0:.2f}（突破无量）"))
+            else:
+                A.append(it)
+
+        # ── E：贴着上沿，还没过（「临近爆发」的本义）──────────
+        elif st == "中枢" and px >= zg * (1 - J_TOUCH):
+            if not base_ok:
+                drop.append((it, "E 结构不合格"))
+            elif sig in J_SELL_SIGS:
+                drop.append((it, f"E 信号方向={sig}（下跌侧）"))
+            elif volr is None or volr < J_VOL_MIN:
+                drop.append((it, f"E 量比 {volr or 0:.2f}（门口无量）"))
+            else:
+                E.append(it)
+
+        # ── B/C：三买（已成立）──────────────────────────
+        elif st == "三买":
+            if px <= g3:
+                drop.append((it, "B 守位已破"))
+            elif not base_ok:
+                drop.append((it, "B 结构不合格"))
+            elif (r.get("sig_age") or 999) > J_AGE_MAX:
+                drop.append((it, f"B 信号 {r.get('sig_age')} 日（过期）"))
+            elif it["dguard"] > J_FAR:
+                drop.append((it, f"B 距守位 {it['dguard']:.0%}（已走远）"))
+            elif px < zg:
+                C.append(it)          # 守位在，但已回末中枢上沿之下
+            elif it["dguard"] > J_NEAR:
+                C.append(it)          # 守住了、还没走远，但离守位 8%+
+            else:
+                B.append(it)
+
+        # ── 三买待：上沿外等回踩 ────────────────────────
+        elif st == "三买待":
+            if px < zg:
+                drop.append((it, "待 已回落枢内"))
+            elif not base_ok:
+                drop.append((it, "待 结构不合格"))
+            elif sig in J_SELL_SIGS:
+                drop.append((it, f"待 信号方向={sig}（下跌侧）"))
+            elif (r.get("sig_age") or 999) > J_AGE_WAIT:
+                drop.append((it, f"待 信号 {r.get('sig_age')} 日（长磨非新结构）"))
+            elif it["brk"] > J_NEAR:
+                drop.append((it, f"待 距上沿 {it['brk']:.0%}（已走远）"))
+            else:
+                it["guard"] = zg
+                B.append(it)
+
+        # ── D：衰竭（新鲜背驰）──────────────────────────
+        elif st == "背驰":
+            if (r.get("sig_age") or 999) <= 15 and not r.get("piv_over") \
+                    and (r.get("mv_yi") or 0) >= J_MV_MIN:
+                it["dguard"] = None
+                D.append(it)
+
+    def _scrub(lst):
+        keep = []
+        for it in lst:
+            n_lim, hi5 = _ampl(it["code"])
+            it["n_lim"] = n_lim
+            it["pullback"] = (it["lpx"] / hi5 - 1) if hi5 else None
+            if n_lim is not None and n_lim > J_LIMIT_MAX:
+                drop.append((it, f"近20日{n_lim}次涨跌停（游资盘）"))
+                continue
+            keep.append(it)
+        return keep
+
+    return (_scrub(A), _scrub(B), C, D, _scrub(E), drop)
+
+
+def judge(min_amt=0.5, top=30, save=False):
+    """盘中可操作分层（A/B/C/D/E）+ 结构演化，一次扫描两产物。
+
+    与 --live 的关系：--live 只给「谁在离开中枢」；--judge 在同一份数据上
+    再叠一层可操作性判据，并同时把 pool_live_*.json 落盘。所以盘中一条命令
+    就够：`--judge --save`。
+    """
+    try:
+        snap = _snapshot(min_amt, top, quiet=True)
+    except RuntimeError as e:
+        print(f"[judge] {e}")
+        return 2
+    if snap is None:
+        print("[judge] 无可判标的")
+        return 1
+
+    rows, idx, mins = snap["rows"], snap["idx"], snap["mins"]
+    A, B, C, D, E, drop = _judge_layers(rows, idx, mins)
+
+    print(f"[judge] 结构基准 {snap['struct_asof']} · 实时 {snap['live_at']} · "
+          f"已交易 {mins} 分钟")
+    print(f"[judge] 可判 {len(rows)} / 取价 {snap['hit']} · 扫描 {snap['elapsed']:.0f}s · "
+          f"上涨 {snap['up']} / 下跌 {snap['down']} / 涨停 {snap['limit_up']}")
+
+    def _head(t, n, note=""):
+        print("\n" + "─" * 118)
+        print(f"{t}   共 {n} 只" + (f"   {note}" if note else ""))
+        print("─" * 118)
+        print(f"{'代码':<11}{'名称':<9}{'现价':>8}{'涨幅':>8}{'ZD':>8}{'ZG':>8}"
+              f"{'越沿/距守位':>12}{'量比':>6}{'市值':>8}{'笔':>3}{'信号':>5}{'龄':>4}   备注")
+
+    def _row(it, dguard=True):
+        g = it.get("guard") or it["zg"]
+        dg = (it["lpx"] / g - 1) if dguard else 0
+        note = it.get("bei") or ""
+        if it.get("bi_live"):
+            note = (note + " 末笔未走完").strip()
+        if it.get("n_lim"):
+            note = (note + f" 含{it['n_lim']}次涨跌停").strip()
+        if it.get("pullback") is not None and it["pullback"] < -0.05:
+            note = (note + f" 距5日高{it['pullback']:.0%}").strip()
+        print(f"{it['code']:<11}{it['name'][:6]:<7}{it['lpx']:>8.2f}{it['lpct']:>7.2f}%"
+              f"{it['zd']:>8.2f}{it['zg']:>8.2f}{dg:>11.1%}"
+              f"{(it['volr'] or 0):>6.2f}{it['mv_yi']:>8.1f}{it['piv_n_bi']:>3}"
+              f"{it.get('sig_type') or '-':>5}{(it.get('sig_age') or 0):>4}   {note}")
+
+    _head("A · 今日突破末中枢上沿（等回踩不破，不追）", len(A),
+          f"越沿 {J_BRK_MIN:.1%}~{J_BRK_MAX:.1%} · 量比>{J_VOL_MIN}")
+    for it in sorted(A, key=lambda x: -(x["volr"] or 0)):
+        _row(it)
+
+    _head("B · 新鲜三买（守位在手边 ≤8%，末中枢上沿之上）", len(B), "可介入区，止损=守位")
+    for it in sorted(B, key=lambda x: x["dguard"]):
+        _row(it)
+
+    _head("E · 贴着上沿未过（临近爆发位，埋伏不是买）", len(E),
+          f"距上沿 0~{J_TOUCH:.1%} · 量比>{J_VOL_MIN}")
+    for it in sorted(E, key=lambda x: -(x["volr"] or 0)):
+        _row(it)
+
+    _head("C · 守位未破但已回末中枢上沿之下（持有跟踪，不加仓）", len(C), "再破守位即出")
+    for it in sorted(C, key=lambda x: x["dguard"])[:15]:
+        _row(it)
+
+    _head("D · 新鲜背驰（12 日内，衰竭侧，只作减仓预警）", len(D))
+    for it in sorted(D, key=lambda x: -(x.get("score") or 0))[:12]:
+        _row(it, dguard=False)
+
+    print("\n" + "─" * 118)
+    print(f"被否 {len(drop)} 只。理由分布：")
+    cnt = {}
+    for _, why in drop:
+        k = why.split("（")[0].split(" 距")[0]
+        cnt[k] = cnt.get(k, 0) + 1
+    for k, n in sorted(cnt.items(), key=lambda x: -x[1]):
+        print(f"  {n:>4}  {k}")
+
+    if save:
         os.makedirs(REPORTS, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d_%H%M")
-        # 落盘前排序：突破档按越沿幅度降序（谁离得最远最先看），守位档按
-        # 距守位升序（谁最贴止损线最先看）。终端只印前 top 个，JSON 是全量。
-        for k, v in evo.items():
-            if k in ("上离枢", "下离枢"):
-                v.sort(key=lambda r: -abs(r.get("ldzg") or 0))
-            else:
-                v.sort(key=lambda r: (r.get("ldzg") if r.get("ldzg") is not None else 9))
-        p = os.path.join(REPORTS, f"pool_live_{stamp}.json")
-        payload = {
-            "struct_asof": struct_asof,
-            "live_at": live_at,
-            "run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "judged": len(rows), "quoted": hit,
-            "up": up, "down": dn, "flat": flat, "limit_up": n_lim,
-            "counts": {k: len(v) for k, v in evo.items()},
-            # 存全量，不按 top 裁。原来的 `v[:top]` 让「三买守稳」69 只只落
-            # 30 条，页面「下钻看完整证据」时后 39 只查不到——计数与明细对不上。
-            "groups": evo,
-            "print_top": top,     # 终端只印前 N 个，JSON 是全量
-        }
+        p = os.path.join(REPORTS, f"pool_judge_{stamp}.json")
         with open(p, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=1)
+            json.dump({"live_at": snap["live_at"], "struct_asof": snap["struct_asof"],
+                       "run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                       "mins": mins, "judged": len(rows), "quoted": snap["hit"],
+                       "up": snap["up"], "down": snap["down"],
+                       "limit_up": snap["limit_up"],
+                       "counts": {"A": len(A), "B": len(B), "C": len(C),
+                                  "D": len(D), "E": len(E), "drop": len(drop)},
+                       "print_top": top,
+                       "A": A, "B": B, "C": C, "D": D, "E": E,
+                       "drop": [{"code": i["code"], "name": i["name"], "why": w}
+                                for i, w in drop]}, f, ensure_ascii=False, indent=1)
         print(f"\n[saved] {p}")
-
+        # 同一次扫描顺手把结构演化也落盘，省掉再跑一遍 --live
+        _save_live(_build_evo(rows, idx), snap, top)
     return 0
 
 
@@ -966,6 +1306,9 @@ def main():
     ap.add_argument("--scan", action="store_true", help="全市场扫描")
     ap.add_argument("--live", action="store_true",
                     help="全市场实时叠加：日线结构 + 当下价，看谁在离开中枢")
+    ap.add_argument("--judge", action="store_true",
+                    help="盘中可操作分层（A突破/B三买/C持有/D衰竭/E贴沿）+ 结构演化，"
+                         "一次扫描出两个产物")
     ap.add_argument("--intraday", action="store_true", help="盘中巡检：读池 + 实时价，比中枢沿")
     ap.add_argument("--min-amt", type=float, default=0.5, help="20 日均成交额下限（亿元）")
     ap.add_argument("--stage", default=None, help="只看某态：" + "/".join(STAGES))
@@ -979,6 +1322,9 @@ def main():
 
     if args.live:
         return live(args.min_amt, args.top, args.save)
+
+    if args.judge:
+        return judge(args.min_amt, args.top, args.save)
 
     if not args.scan:
         ap.print_help()
