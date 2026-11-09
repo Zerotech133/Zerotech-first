@@ -208,9 +208,11 @@ def _row(r, stage):
         f'</tr>')
 
 
-def _panel(stage, rows, total):
+def _panel(stage, rows, total, limit=120):
     name, desc, color, bg = STAGE_META[stage]
-    if not rows:
+    shown = rows[:limit]     # 落盘的 buckets 是全量（中枢 1,005 / 三卖 1,564），
+    #                          看板是速览页，全渲染会把 HTML 撑到 3MB 且表格卡死
+    if not shown:
         body = '<div class="empty">该档今日为空</div>'
     else:
         head = ('<tr><th>代码</th><th>名称</th><th style="text-align:right">现价</th>'
@@ -219,10 +221,10 @@ def _panel(stage, rows, total):
                 '<th style="text-align:right">距ZG</th><th style="text-align:right">枢笔</th>'
                 '<th style="text-align:center">末笔</th><th>最近信号</th><th>备注</th></tr>')
         body = f"<table><thead>{head}</thead><tbody>" + \
-               "".join(_row(r, stage) for r in rows) + "</tbody></table>"
+               "".join(_row(r, stage) for r in shown) + "</tbody></table>"
     return (f'<div class="panel"><h2><span class="dot" style="background:{color}"></span>'
             f'{name} <span style="font-weight:normal;color:#6b7686;font-size:12px">'
-            f'{desc}</span><span class="hint">共 {total} 只，列前 {len(rows)}</span></h2>'
+            f'{desc}</span><span class="hint">共 {total} 只，列前 {len(shown)}</span></h2>'
             f'{body}</div>')
 
 

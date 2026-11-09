@@ -690,6 +690,23 @@ def _from_sina(c):
     return str(c).upper()
 
 
+def _lpos(px, zd, zg, tol=0.003):
+    """实时价相对中枢的位置。
+
+    结构日的 `pos` 是按当日收盘算的，盘中拿它显示位置会与分档矛盾：
+    南矿集团实时 19.05 已越过 ZG 18.27，JSON 里 `pos` 仍写「枢内」，
+    页面读它就和「上离枢」标签打架。所以另算一份 `lpos`，两者并存——
+    `pos` 回答「11-06 收在哪里」，`lpos` 回答「现在在哪里」。
+    """
+    if not zd or not zg:
+        return "无枢"
+    if px > zg * (1 + tol):
+        return "上沿外"
+    if px < zd * (1 - tol):
+        return "下沿外"
+    return "枢内"
+
+
 def intraday(top=None):
     """盘中巡检：读最近一份池文件，只比对中枢沿，不重算笔。
 
@@ -712,8 +729,11 @@ def intraday(top=None):
         j = json.load(f)
 
     rows = []
+    # buckets 现在落的是全量（中枢 1,005 / 三买 82），巡检只盯每档前 N 只，
+    # 否则一次要取 1,182 只价、打印 1,182 行——那是全市场扫描，不是巡检。
+    INTRA_TOP = 50
     for st in ("三买待", "中枢", "三买", "二买", "一买"):
-        for r in j["buckets"].get(st, []):
+        for r in j["buckets"].get(st, [])[:INTRA_TOP]:
             rows.append((st, r))
     if not rows:
         print("[intraday] 池为空")
@@ -849,6 +869,7 @@ def live(min_amt=0.5, top=40, save=False):
         item["lpx"] = px
         item["lpct"] = pct if pct is not None else 0.0
         item["ldzg"] = (px / zg - 1) if zg else None
+        item["lpos"] = _lpos(px, zd, zg)
 
         if st == "中枢" and zg and px > zg * 1.003:
             evo["上离枢"].append(item)
@@ -876,10 +897,10 @@ def live(min_amt=0.5, top=40, save=False):
               + (f"，列前 {min(top, len(lst))} =====" if len(lst) > top else " ====="))
         if guard:
             print(f"{_pad('代码', 11)}{_pad('名称', 11)}{'现价':>8}{'涨幅':>8}"
-                  f"{'守位':>7}{'距守位':>9}{'市值亿':>8}{'枢笔':>5}  {hint}")
+                  f"{'守位':>7}{'距守位':>9}{'市值亿':>8}{'枢笔':>5}{'位':>5}  {hint}")
         else:
             print(f"{_pad('代码', 11)}{_pad('名称', 11)}{'现价':>8}{'涨幅':>8}"
-                  f"{'ZD':>7}{'ZG':>7}{'距ZG':>8}{'市值亿':>8}{'枢笔':>5}  {hint}")
+                  f"{'ZD':>7}{'ZG':>7}{'距ZG':>8}{'市值亿':>8}{'枢笔':>5}{'位':>5}  {hint}")
         srt = sorted(lst, key=key or (lambda r: -(r.get("ldzg") or -9)))
         for r in srt[:top]:
             mid = (f"{(r['guard'] or 0):>7.2f}{(r['ldzg'] or 0) * 100:>8.1f}%"
@@ -888,7 +909,8 @@ def live(min_amt=0.5, top=40, save=False):
                    f"{(r['ldzg'] or 0) * 100:>7.1f}%")
             print(f"{_pad(r['code'], 11)}{_pad(r.get('name', ''), 11)}"
                   f"{r['lpx']:>8.2f}{r['lpct']:>7.2f}%{mid}"
-                  f"{(r['mv_yi'] or 0):>8.1f}{r['piv_n_bi']:>5}")
+                  f"{(r['mv_yi'] or 0):>8.1f}{r['piv_n_bi']:>5}"
+                  f"{(r.get('lpos') or '-'):>5}")
 
     _show("中枢 → 上离枢（今日真突破，收盘才算确认）", evo["上离枢"],
           "突破幅度", key=lambda r: -(r["ldzg"] or -9))
@@ -908,6 +930,13 @@ def live(min_amt=0.5, top=40, save=False):
     if save:
         os.makedirs(REPORTS, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d_%H%M")
+        # 落盘前排序：突破档按越沿幅度降序（谁离得最远最先看），守位档按
+        # 距守位升序（谁最贴止损线最先看）。终端只印前 top 个，JSON 是全量。
+        for k, v in evo.items():
+            if k in ("上离枢", "下离枢"):
+                v.sort(key=lambda r: -abs(r.get("ldzg") or 0))
+            else:
+                v.sort(key=lambda r: (r.get("ldzg") if r.get("ldzg") is not None else 9))
         p = os.path.join(REPORTS, f"pool_live_{stamp}.json")
         payload = {
             "struct_asof": struct_asof,
@@ -916,7 +945,10 @@ def live(min_amt=0.5, top=40, save=False):
             "judged": len(rows), "quoted": hit,
             "up": up, "down": dn, "flat": flat, "limit_up": n_lim,
             "counts": {k: len(v) for k, v in evo.items()},
-            "groups": {k: v[:top] for k, v in evo.items()},
+            # 存全量，不按 top 裁。原来的 `v[:top]` 让「三买守稳」69 只只落
+            # 30 条，页面「下钻看完整证据」时后 39 只查不到——计数与明细对不上。
+            "groups": evo,
+            "print_top": top,     # 终端只印前 N 个，JSON 是全量
         }
         with open(p, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=1)
@@ -957,11 +989,16 @@ def main():
         os.makedirs(REPORTS, exist_ok=True)
         asof = meta.get("data_asof") or datetime.now().strftime("%Y%m%d")
         p = os.path.join(REPORTS, f"pool_state_{asof}.json")
+        # 存全量 buckets，不存裁剪后的 out。原来存 out（每档前 top 个），
+        # 导致「中枢」1,005 只只落 50 条，页面点「看全部」时明细只有 50，
+        # 与卡片上的 1,005 对不上。out 只用于终端打印。
         with open(p, "w", encoding="utf-8") as f:
             json.dump({"meta": meta, "data_asof": asof,
                        "run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                       "buckets": out}, f, ensure_ascii=False, indent=1)
-        print(f"\n[saved] {p}  (结构基准 {asof})")
+                       "print_top": args.top,
+                       "buckets": buckets}, f, ensure_ascii=False, indent=1)
+        print(f"\n[saved] {p}  (结构基准 {asof} / 全量 "
+              f"{sum(len(v) for v in buckets.values())} 条 / 终端只印前 {args.top})")
     return 0
 
 

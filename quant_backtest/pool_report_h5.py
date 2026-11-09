@@ -94,6 +94,50 @@ def _ev(label, actual, rule, ok):
     return {"l": label, "a": actual, "r": rule, "p": bool(ok)}
 
 
+def _fetch_px(codes):
+    """补取实时价。
+
+    pool_live_*.json 的 groups 只装「异动档」（上离枢 / 三买守稳 之类，
+    几十只），而本页要展示 335 只——大半不在其中。不补的话，副标题挂着
+    「实时 10:20」，列表里那些行其实是 11-06 的收盘价，位置标签也跟着错。
+
+    分批 200 只：`hq.sinajs.cn/list=` 是 GET，一次塞几百只超长会被截断，
+    而且少掉的 key 不报错，只静默丢票。
+    """
+    root = os.path.dirname(HERE)
+    p = os.path.join(root, "news_collector")
+    if p not in sys.path:
+        sys.path.insert(0, p)
+    from quote_snapshot import fetch_quotes
+
+    out, seen = {}, set()
+    uniq = [c for c in dict.fromkeys(codes)]
+    for i in range(0, len(uniq), 200):
+        try:
+            got = fetch_quotes(uniq[i:i + 200])
+        except Exception as e:
+            print(f"[h5] 取价批 {i // 200 + 1} 失败: {str(e)[:60]}")
+            continue
+        for q in got:
+            c = str(q.get("code") or "")
+            c = c[2:].upper() + "." + c[:2].upper() if c[:2] in ("sh", "sz", "bj") else c.upper()
+            if q.get("price") and c not in seen:
+                seen.add(c)
+                out[c] = (float(q["price"]), q.get("pct"))
+    return out
+
+
+def _lpos(px, zd, zg, tol=0.003):
+    """实时价相对中枢的位置（与 pool_state._lpos 同口径）。"""
+    if not zd or not zg:
+        return "无枢"
+    if px > zg * (1 + tol):
+        return "上沿外"
+    if px < zd * (1 - tol):
+        return "下沿外"
+    return "枢内"
+
+
 def build_evidence(r):
     """按状态生成判据清单：每条给「实测 / 规矩 / 是否成立」。"""
     st = r.get("stage")
@@ -108,9 +152,12 @@ def build_evidence(r):
         ev.append(_ev("中枢区间", f"{zd:.2f} ~ {zg:.2f}（宽 {width*100:.1f}%）",
                       "三笔重叠定 ZD/ZG", True))
         ev.append(_ev("现价位置",
-                      f"{close:.2f}，距 ZG {_p(r.get('dist_zg'), 1, True)}",
+                      f"{close:.2f}，距 ZG {_p(r.get('dist_zg'), 1, True)}"
+                      + (f"（结构日收盘在{r['pos']}）"
+                         if r.get("lpos") and r.get("pos")
+                         and r["lpos"] != r["pos"] else ""),
                       "在上沿外 / 枢内 / 下沿外",
-                      r.get("pos") == "上沿外"))
+                      (r.get("lpos") or r.get("pos")) == "上沿外"))
         ev.append(_ev("中枢延伸", f"{pn} 笔",
                       "≤9 笔本级别有效，超则升级",
                       pn <= 9))
@@ -400,7 +447,9 @@ function goList(st){{
   document.getElementById('l-title').textContent = st;
   document.getElementById('l-desc').textContent = D.desc[st]||'';
   var arr = D[st]||[];
-  document.getElementById('l-count').textContent = '共 '+(D.counts[st]||arr.length)+' 只';
+  var tot = D.counts[st]||arr.length, sn = (D.shown&&D.shown[st])||arr.length;
+  document.getElementById('l-count').textContent =
+    '共 '+tot+' 只' + (sn<tot ? '（本页列前 '+sn+' 只，全量见 pool_state_*.json）' : '');
   document.getElementById('rows-list').innerHTML = arr.length
     ? arr.map(rowHtml).join('')
     : '<div class="nodata">该档今日为空</div>';
@@ -418,7 +467,7 @@ function goDetail(code){{
     + '<div><span class="tag" style="background:'+(D.color[r.stage]||'#eef1f5')+'18;color:'
     + (D.color[r.stage]||'#5a6b82')+'">'+r.stage+'</span>'
     + '<span class="tag" style="background:#f2f4f7;color:#6b7686">'
-    + (r.pos||'')+'</span>'
+    + (r.lpos||r.pos||'')+(r.lpos&&r.pos&&r.lpos!==r.pos?'·结构日'+r.pos:'')+'</span>'
     + (r.lpx?'<span class="tag" style="background:#fdeaea;color:#b23b3b">实时价</span>':'')
     + (r.piv_over?'<span class="tag" style="background:#fdeaea;color:#b23b3b">枢已升级</span>':'')
     + '</div></div>';
@@ -450,6 +499,9 @@ def main():
     ap.add_argument("--in", dest="src", default=None)
     ap.add_argument("--live", dest="live", default="auto",
                     help="叠加实时价：auto=用今天的 pool_live_*.json（有则用）；off=不叠")
+    ap.add_argument("--per-stage", dest="per_stage", type=int, default=80,
+                    help="每档最多嵌多少只明细（全量在 pool_state_*.json 里，"
+                         "手机上嵌全量会让页面到 3MB 打不开）")
     ap.add_argument("--out", dest="out", default=os.path.join(REPORTS, "pool_report_h5.html"))
     args = ap.parse_args()
 
@@ -495,10 +547,24 @@ def main():
 
     # 分档数据 + 详情（含 SVG 与证据）
     data = {}
+    shown = {}
     order = [st for st in CARD_STAGES if (counts.get(st) or len(j["buckets"].get(st, [])))]
+
+    # 页面展示的每一只都要有当下价。pool_live 只覆盖异动档，剩下的在这里补——
+    # 否则「实时 10:20」这个标题对大部分行是假的，位置标签也跟着错。
+    if args.live != "off":
+        need = [r["code"] for st in order + ["中枢"]
+                for r in j["buckets"].get(st, [])[:args.per_stage]]
+        miss = [c for c in dict.fromkeys(need) if c not in lmap]
+        if miss:
+            got = _fetch_px(miss)
+            lmap.update(got)
+            print(f"[h5] 补取实时价 {len(got)}/{len(miss)} 只")
+
     for st in order + ["中枢"]:
         rows = []
-        for r in j["buckets"].get(st, []):
+        pool_rows = j["buckets"].get(st, [])
+        for r in pool_rows[:args.per_stage]:
             rr = dict(r)
             rr["stage"] = r.get("stage") or st
             rr["struct_asof"] = asof
@@ -511,11 +577,15 @@ def main():
                 rr["pct"] = (pct or 0) / 100.0
                 if rr.get("zg"):
                     rr["dist_zg"] = px / rr["zg"] - 1
+                # 位置也按实时价重算：只换 close 不换 pos，详情页会出现
+                # 「现价 19.05 / 距 ZG +4.3% / 位置：枢内」这种自相矛盾的标签
+                rr["lpos"] = _lpos(px, rr.get("zd"), rr.get("zg"))
             k = load_kline(r["code"]) if st != "中枢" else None
             rr["svg"] = _svg(rr, k)
             rr["ev"] = build_evidence(rr)
             rows.append(rr)
         data[st] = rows
+        shown[st] = len(rows)
 
     # 卡片
     cards = "".join(
@@ -542,6 +612,7 @@ def main():
     data_js = json.dumps({
         **{st: data.get(st, []) for st in order + ["中枢"]},
         "counts": counts,
+        "shown": shown,
         "desc": STAGE_DESC,
         "color": STAGE_COLOR,
     }, ensure_ascii=False, separators=(",", ":"))
