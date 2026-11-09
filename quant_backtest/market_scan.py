@@ -187,6 +187,13 @@ def scan_stock(args):
     b = pd.read_parquet(fp).sort_values("trade_date").reset_index(drop=True)
     if len(b) < WARMUP // 2:
         return []
+    # 2026-11-10 数据刷新后 210/5816 只只剩 OHLC+pre_close（无 pct_chg），
+    # 扫描器原样取列直接 KeyError 崩。与 backtest_engine_v2._load_px 同一推导式兜底，
+    # 保证扫描侧与引擎侧复权因子同源（否则同一只票两边 kfac 不同）。
+    if "pct_chg" not in b.columns:
+        if "close" not in b.columns or "pre_close" not in b.columns:
+            return []
+        b["pct_chg"] = (b["close"] / b["pre_close"] - 1.0) * 100.0
     r = b["pct_chg"] / 100.0
     r.iloc[0] = 0.0
     kfac = (1.0 + r).cumprod() / b["close"]
