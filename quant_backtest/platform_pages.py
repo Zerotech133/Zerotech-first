@@ -47,7 +47,8 @@ TODAY = date.today()
 # ---------------------------------------------------------------- 能力域
 
 DOMAINS = [
-    ("structure", "结构", "缠论九态：笔 / 段 / 中枢 / 背驰 → 三买、二买、一买、背驰",
+    ("structure", "缠论分析", "九态判定：笔 / 段 / 中枢 / 背驰 → 三买、二买、一买；"
+                             "另有全市场画像与单票解剖",
      "每天 18:30 全量重算"),
     ("sector", "板块", "465 个板块的同一套结构，与个股口径同源才能交叉验证",
      "每天 18:30"),
@@ -55,8 +56,8 @@ DOMAINS = [
      "盘前 08:20 · 选股中心每日"),
     ("backtest", "回测", "策略纵切、多市场回测、参数寻优、背驰分层",
      "按需 / 每周"),
-    ("paper", "模拟", "纸面账本、统一虚拟账户、每日进出流水",
-     "每天 16:00"),
+    ("paper", "模拟", "纸面账本、四账户虚拟资金、每日进出流水",
+     "手动跑 portfolio.py（当前无调度）"),
     ("data", "数据", "同步健康、列对账、盘后复盘",
      "每天 06:10 / 收盘后"),
     ("archive", "归档", "一次性复盘与历史报告，不再更新",
@@ -73,13 +74,16 @@ DOMAINS = [
 # out 是发布目录里的文件名；None 表示沿用源文件名。
 
 CATALOG = [
-    # —— 结构 ——
+    # —— 缠论分析 ——
+    dict(src="chanlun_tool.html", out="chanlun_tool.html", domain="structure",
+         title="缠论分析工具", sub="全市场结构画像 + 单票判定链解剖（3961 只，可搜）",
+         asof=("json", "pool_state"), primary=True),
     dict(src="pool_report_h5.html", out="pool_report_h5.html", domain="structure",
          title="结构日报 · 手机版", sub="五层判定 + 九态名单 + 逐票证据卡",
-         asof=("json", "pool_state"), primary=True),
+         asof=("json", "pool_state")),
     dict(src="pool_pc.html", out="pc.html", domain="structure",
          title="结构工作台 · PC", sub="三栏：选票 / 自绘 K 线与中枢 / 判据逐条",
-         asof=("json", "pool_state"), primary=True),
+         asof=("json", "pool_state")),
     dict(src="pool_state.html", out="pool_state.html", domain="structure",
          title="结构池全景", sub="含中枢档 1005 只，全量九态明细",
          asof=("json", "pool_state")),
@@ -125,9 +129,11 @@ CATALOG = [
          asof=("meta",)),
 
     # —— 模拟 ——
+    dict(src="sim_accounts.html", out="sim_accounts.html", domain="paper",
+         title="模拟交易 · 四本账对账", sub="四账户净值 / 持仓 / 平仓 / 跳过，含体检",
+         asof=("jsonfile", "sim_accounts.json"), primary=True),
     dict(src="positions.html", out="positions.html", domain="paper",
-         title="纸面持仓跟踪", sub="待买 / 持仓 / 已平 + 逐日浮盈轨迹", asof=("meta",),
-         primary=True),
+         title="纸面持仓跟踪", sub="待买 / 持仓 / 已平 + 逐日浮盈轨迹", asof=("meta",)),
 
     # —— 数据 ——
     dict(src="afterhours.html", out="afterhours.html", domain="data",
@@ -163,21 +169,11 @@ def _load_json_asof(prefix):
     if not files:
         return None
     try:
-        d = json.load(open(files[-1], encoding="utf-8"))
+        with open(files[-1], encoding="utf-8") as f:
+            d = json.load(f)
     except Exception:
         return None
-    for key in ("asof", "data_asof", "date", "trade_date"):
-        v = d.get(key)
-        if not v:
-            continue
-        v = str(v)
-        m = re.match(r"^(\d{4})(\d{2})(\d{2})$", v)
-        if m:
-            return "%s-%s-%s" % m.groups()
-        m = re.match(r"^(\d{4})-(\d{2})-(\d{2})", v)
-        if m:
-            return "-".join(m.groups())
-    return None
+    return _asof_of_obj(d)
 
 
 META_RE = re.compile(r"(?:生成于|更新于|账本更新于|数据日|基准)\s*[:：]?\s*"
@@ -191,10 +187,37 @@ def _meta_asof(txt):
     return None
 
 
+def _asof_of_obj(d):
+    """从 json 对象里按优先级取数据日。字段名各源不一致，必须都试。"""
+    for key in ("asof", "data_asof", "date", "trade_date", "last_nav_date"):
+        v = d.get(key)
+        if not v:
+            continue
+        v = str(v)
+        m = re.match(r"^(\d{4})(\d{2})(\d{2})$", v)
+        if m:
+            return "%s-%s-%s" % m.groups()
+        m = re.match(r"^(\d{4})-(\d{2})-(\d{2})", v)
+        if m:
+            return "-".join(m.groups())
+    return None
+
+
 def resolve_asof(item, path):
     kind = item.get("asof") or ("mtime",)
     if kind[0] == "json":
         v = _load_json_asof(kind[1])
+        if v:
+            return v, "数据"
+    # ("jsonfile", "xxx.json")：读一个固定名字的 json（页面自己写的侧车文件），
+    # 用于「数据日不在 pool_state 里」的页（如模拟盘账本的最后一根净值点）。
+    if kind[0] == "jsonfile":
+        p = os.path.join(REPORTS, kind[1])
+        try:
+            with open(p, encoding="utf-8") as f:
+                v = _asof_of_obj(json.load(f))
+        except (OSError, ValueError):
+            v = None
         if v:
             return v, "数据"
     try:
@@ -501,8 +524,9 @@ def build_home(rows=None):
     h.append('<div class="note"><b>读这页要知道的三件事</b><br>'
              '① 结构类页面（结构日报 / 工作台 / 板块平台）的基准是<b>最近一个收盘日</b>，'
              '盘中会叠实时价，页内已把两个时点分开写。<br>'
-             '② 选股、回测、模拟各条线的更新节奏不同（盘前 08:20 · 16:00 · 按需），'
-             '卡片上的日期是那页数据自己的，不是本页生成时间。<br>'
+             '② 选股、回测、模拟各条线的更新节奏不同（盘前 08:20 · 按需 · 手动），'
+             '卡片上的日期是那页数据自己的，不是本页生成时间。'
+             '<b>模拟域当前没有计划任务在跑</b>，账本停在卡片写的那个日期。<br>'
              '③ 灰色虚线文字是原本能下钻到门户服务（127.0.0.1:8091）的入口，'
              '静态托管下不提供，保留文字只为让你知道有这条路。</div>')
 
