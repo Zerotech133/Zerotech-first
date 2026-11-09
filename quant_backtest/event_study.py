@@ -1,0 +1,424 @@
+# -*- coding: utf-8 -*-
+"""P3 事件研究引擎（WP-PIT-v1 范围 B）.
+
+接口（方法论 P3 承诺）:
+  study(event_key, window=(-20,20), benchmark='market_ew')
+    -> 超额收益曲线 + t 值 + PIT 证明
+
+T0 语义（防 look-ahead 的核心）:
+  T0 = 事件日 + lag_days 个交易日（可见首日, cells.yaml: publish→1）;
+  基点 = T0 前一交易日收盘;
+  窗口 = 该标的自身行情日序列的相对偏移（停牌自动滑过）;
+  超额 = 个股 ret(h) − 基准 ret(h)（同窗口对齐）。
+
+基准:
+  market_ew  全市场等权日收益（ts_daily 聚合, v0 主基准——申万指数日线缺失）
+  sw_l1      预留: 801xxx 指数行情入库后启用（sw_l1_member 映射已在仓）
+
+首批事件: 龙虎榜上榜 / 大宗折价<-9% / 目标价上修>5% / 停牌。
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+from dataclasses import dataclass, field
+from typing import Callable, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+
+from warehouse_reader import WarehouseReader  # noqa: E402
+from pit_visibility import resolve_lag_days, visibility_proof  # noqa: E402
+
+
+# ---------------------------------------------------------------- #
+# 事件定义
+# ---------------------------------------------------------------- #
+
+@dataclass
+class EventDef:
+    key: str
+    name: str
+    table: str
+    date_col: str                      # 事件日列
+    kind: str = "publish"              # event_date_kind(cells.yaml)
+    lag_days: Optional[int] = None     # None → 按 kind 默认
+    select: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None
+    desc: str = ""
+    cols: Optional[List[str]] = None   # 指定后按最小列集读表(省内存/提速)
+
+
+def _ev_lhb(df: pd.DataFrame) -> pd.DataFrame:
+    return df  # 上榜即事件
+
+
+_DL_CACHE: Dict[str, pd.DataFrame] = {}
+
+
+def _get_daily_close() -> pd.DataFrame:
+    """ts_daily 收盘价模块级缓存(大宗折价 join 用, 避免变体重复读 427 万行)."""
+    if "dl" not in _DL_CACHE:
+        _DL_CACHE["dl"] = WarehouseReader().read(
+            "ts_daily", columns=["ts_code", "trade_date", "close"])
+    return _DL_CACHE["dl"]
+
+
+def _ev_block_discount(df: pd.DataFrame, threshold: float = -0.09):
+    """大宗折价: price / 当日收盘 - 1 < threshold. 收盘价 join ts_daily."""
+    dl = _get_daily_close()
+    m = df.merge(dl.rename(columns={"trade_date": "trade_date_px"}),
+                 left_on=["ts_code", "trade_date"],
+                 right_on=["ts_code", "trade_date_px"], how="left")
+    with np.errstate(all="ignore"):
+        disc = m["price"] / m["close"] - 1
+    out = m[disc < threshold].copy()
+    out["discount"] = disc[disc < threshold]
+    return out
+
+
+def _ev_tp_upgrade(df: pd.DataFrame, threshold: float = 0.05):
+    """目标价上修: 同标的 tp 相对上一条有效研报 tp 提升 > threshold."""
+    d = df.sort_values(["ts_code", "report_date"]).copy()
+    d["tp"] = pd.to_numeric(d["tp"], errors="coerce")
+    prev = d.groupby("ts_code")["tp"].shift(1)
+    d["tp_prev"] = prev
+    m = (d["tp"].notna() & d["tp_prev"].notna() & (d["tp_prev"] > 0))
+    out = d[m & (d["tp"] / d["tp_prev"] - 1 > threshold)].copy()
+    out["tp_change"] = out["tp"] / out["tp_prev"] - 1
+    return out
+
+
+# ---- 外资投行名单(保守: ASCII 外资行名 + 明确中文别名) ----
+_FOREIGN_PAT = ("UBS", "HSBC", "Morgan", "Macquarie", "CREDIT SUISSE",
+                "CITI", "JPMorgan", "NOMURA", "BERNSTEIN", "DBS",
+                "Bank of America", "Jefferies", "KGI", "Deutsche",
+                "UOBKayHian", "chinaknowledge", "Goldman", "Daiwa",
+                "高盛", "摩根", "瑞银", "野村", "汇丰", "里昂", "美林",
+                "大和", "麦格理", "星展", "渣打", "瑞信")
+
+
+def _is_foreign_org(s: pd.Series) -> pd.Series:
+    """外资投行判定(大小写不敏感)."""
+    up = s.fillna("").astype(str).str.strip().str.upper()
+    mask = pd.Series(False, index=s.index)
+    for pat in _FOREIGN_PAT:
+        mask |= up.str.contains(pat.upper(), regex=False)
+    return mask
+
+
+def _ev_tp_upgrade_org(df: pd.DataFrame, threshold: float = 0.05,
+                       org_filter: Optional[pd.Series] = None):
+    """目标价上修·同机构自身口径: 机构 X 对标的 S 的 tp 相对该机构上一条 tp 上修.
+
+    与基础版 tp_upgrade5(跨机构上一条)的区别: 修复第17轮"研报修正率 97.3%
+    假信号"问题——相邻两条不同机构比较会把 A 机构 60 / B 机构 50 误判为
+    "上修"。变体版 prev 按分组计算, 阈值语义才成立。
+    """
+    d = df.sort_values(["ts_code", "org_name", "report_date"]).copy()
+    d["tp"] = pd.to_numeric(d["tp"], errors="coerce")
+    if org_filter is not None:
+        d = d[org_filter.reindex(d.index).fillna(False)]
+    prev = d.groupby(["ts_code", "org_name"])["tp"].shift(1)
+    d["tp_prev"] = prev
+    m = (d["tp"].notna() & d["tp_prev"].notna() & (d["tp_prev"] > 0))
+    out = d[m & (d["tp"] / d["tp_prev"] - 1 > threshold)].copy()
+    out["tp_change"] = out["tp"] / out["tp_prev"] - 1
+    return out
+
+
+def _ev_block_discount_sell(df: pd.DataFrame, threshold: float = -0.09,
+                            inst_only: bool = True):
+    """大宗折价 + 卖方类型拆分: 机构专用 / 营业部(非机构专用).
+
+    第16轮发现: 卖方"机构专用"折价≈0%, 营业部间大宗折价≈-5.07%——
+    同一折价阈值下两类卖方的信息含量完全不同, 须拆开检验。
+    """
+    dl = _get_daily_close()
+    m = df.merge(dl.rename(columns={"trade_date": "trade_date_px"}),
+                 left_on=["ts_code", "trade_date"],
+                 right_on=["ts_code", "trade_date_px"], how="left")
+    with np.errstate(all="ignore"):
+        disc = m["price"] / m["close"] - 1
+    seller = m["seller"].fillna("").astype(str).str.strip()
+    is_inst = seller.str.contains("机构专用", regex=False)
+    keep = is_inst if inst_only else ~is_inst & (seller != "")
+    sel = keep & (disc < threshold)
+    out = m[sel].copy()
+    out["discount"] = disc[sel]
+    return out
+
+
+def _ev_suspend(df: pd.DataFrame) -> pd.DataFrame:
+    return df  # 停牌起始即事件
+
+
+def _ev_tp_upgrade_top20(df: pd.DataFrame, threshold: float = 0.05):
+    """目标价上修·覆盖量 Top20 头部券商(按 report_rc 全表覆盖笔数动态取)."""
+    org = df["org_name"].fillna("").astype(str).str.strip()
+    top20 = set(org.value_counts().head(20).index)
+    return _ev_tp_upgrade_org(df, threshold, org.isin(top20))
+
+
+BUILTIN_EVENTS: Dict[str, EventDef] = {
+    "lhb_uplist": EventDef("lhb_uplist", "龙虎榜上榜", "ts_top_list",
+                           "trade_date", "publish", 1, _ev_lhb,
+                           "进入龙虎榜个股明细(top_list)"),
+    "block_discount9": EventDef("block_discount9", "大宗折价<-9%", "ts_block_trade",
+                                "trade_date", "publish", 1,
+                                lambda df: _ev_block_discount(df, -0.09),
+                                "大宗成交价较当日收盘折价超9%"),
+    "tp_upgrade5": EventDef("tp_upgrade5", "目标价上修>5%", "report_rc",
+                            "report_date", "publish", 1,
+                            lambda df: _ev_tp_upgrade(df, 0.05),
+                            "研报目标价较上一条有效目标价上修超5%(跨机构口径)"),
+    "suspend_start": EventDef("suspend_start", "停牌起始", "ts_suspend_d",
+                              "trade_date", "publish", 1, _ev_suspend,
+                              "个股停牌起始日"),
+    # ---- 变体(第二十二轮扩展): 拆维度看信息含量 ----
+    "tp_up_org": EventDef("tp_up_org", "目标价上修>5%·同机构口径", "report_rc",
+                          "report_date", "publish", 1,
+                          lambda df: _ev_tp_upgrade_org(df, 0.05),
+                          "机构自身 tp 较自身上一条 tp 上修(修复跨机构假修正)",
+                          cols=["ts_code", "report_date", "org_name", "tp"]),
+    "tp_up_org_foreign": EventDef("tp_up_org_foreign", "外资投行上修>5%",
+                                  "report_rc", "report_date", "publish", 1,
+                                  lambda df: _ev_tp_upgrade_org(
+                                      df, 0.05, _is_foreign_org(df["org_name"])),
+                                  "外资投行(UBS/MS/HSBC等)同机构口径上修",
+                                  cols=["ts_code", "report_date", "org_name", "tp"]),
+    "tp_up_org_top20": EventDef("tp_up_org_top20", "头部券商Top20上修>5%",
+                                "report_rc", "report_date", "publish", 1,
+                                _ev_tp_upgrade_top20,
+                                "覆盖量Top20券商同机构口径上修",
+                                cols=["ts_code", "report_date", "org_name", "tp"]),
+    "block_discount9_sellinst": EventDef(
+        "block_discount9_sellinst", "大宗折价<-9%·卖方机构专用", "ts_block_trade",
+        "trade_date", "publish", 1,
+        lambda df: _ev_block_discount_sell(df, -0.09, inst_only=True),
+        "卖方为机构专用(机构出清)的深折价大宗",
+        cols=["ts_code", "trade_date", "price", "seller"]),
+    "block_discount9_sellbranch": EventDef(
+        "block_discount9_sellbranch", "大宗折价<-9%·卖方营业部", "ts_block_trade",
+        "trade_date", "publish", 1,
+        lambda df: _ev_block_discount_sell(df, -0.09, inst_only=False),
+        "卖方为营业部(非机构专用)的深折价大宗",
+        cols=["ts_code", "trade_date", "price", "seller"]),
+}
+
+
+# ---------------------------------------------------------------- #
+# 引擎
+# ---------------------------------------------------------------- #
+
+class EventStudy:
+    def __init__(self, benchmark: str = "market_ew"):
+        self.reader = WarehouseReader()
+        self.benchmark = benchmark
+        self._stock_days: Optional[pd.DataFrame] = None   # ts_code → 交易日序列
+        self._stock_px: Optional[Dict[str, pd.Series]] = None
+        self._bench_ret: Optional[pd.Series] = None       # date → 市场等权日收益
+        self._table_cache: Dict[Tuple[str, Optional[tuple]], pd.DataFrame] = {}
+
+    def _read_event_table(self, table: str,
+                          cols: Optional[List[str]]) -> pd.DataFrame:
+        """按 (table, cols) 缓存读表: 多变体共用同一事件表不重复 IO."""
+        key = (table, tuple(cols) if cols else None)
+        if key not in self._table_cache:
+            self._table_cache[key] = self.reader.read(table, columns=cols)
+        return self._table_cache[key]
+
+    # ---- 行情底座 ----
+    def _load_px(self):
+        if self._stock_px is not None:
+            return
+        dl = self.reader.read("ts_daily", columns=["ts_code", "trade_date", "close"])
+        dl = dl.dropna().drop_duplicates(["ts_code", "trade_date"], keep="last")
+        dl = dl.sort_values(["ts_code", "trade_date"])
+        self._stock_days = dl.groupby("ts_code")["trade_date"].agg(list).to_dict()
+        self._stock_px = {k: g.set_index("trade_date")["close"]
+                          for k, g in dl.groupby("ts_code")}
+        # 全市场等权日收益
+        dl = dl.sort_values(["ts_code", "trade_date"])
+        dl["ret"] = dl.groupby("ts_code")["close"].pct_change()
+        self._bench_ret = dl.groupby("trade_date")["ret"].mean()
+        print(f"  行情底座: {len(self._stock_px)} 标的 / "
+              f"{self._bench_ret.index.min()}~{self._bench_ret.index.max()}")
+
+    @staticmethod
+    def _window_rets(px: pd.Series, days: List[str], t0: str,
+                     window: Tuple[int, int]) -> Dict[int, float]:
+        """以 T0 前一交易日收盘为基点的逐窗收益. days=T0 所在标的行情日列表."""
+        if t0 not in days:
+            return {}
+        i0 = days.index(t0)
+        if i0 == 0:
+            return {}
+        base_px = px.get(days[i0 - 1])
+        if base_px is None or not base_px or np.isnan(base_px):
+            return {}
+        out = {}
+        for h in range(window[0], window[1] + 1):
+            j = i0 + h
+            if 0 <= j < len(days) and h != 0:
+                p = px.get(days[j])
+                if p and not np.isnan(p):
+                    out[h] = p / base_px - 1
+        return out
+
+    def _bench_rets(self, days: List[str], t0: str,
+                    window: Tuple[int, int]) -> Dict[int, float]:
+        """基准同口径(基点=市场 T0-1 收盘):
+        正窗 h>=0: 市场(T0+h 收盘)/市场(T0-1 收盘)-1 = T0..T0+h 日收益累计
+                  (教训: 必须含 T0 当日, 自测手工对照曾抓出漏算首日 bug);
+        负窗 h<0: 市场(T0+h)/市场(T0-1)-1 = (T0+h+1)..(T0-1) 日收益累计."""
+        br = self._bench_ret
+        if t0 not in days:
+            return {}
+        i0 = days.index(t0)
+        if i0 == 0:
+            return {}
+        out: Dict[int, float] = {}
+        acc = 0.0
+        for h in range(0, window[1] + 1):
+            j = i0 + h
+            if j >= len(days):
+                break
+            r = br.get(days[j])
+            if r is not None and not np.isnan(r):
+                acc += np.log1p(r)
+            out[h] = float(np.expm1(acc))
+        # 负窗: range(window[0], 0, -1) 为空（负 start/负 step 的 stop 语义），
+        # 改用正步长生成负列表，避免负窗缺失。详见 event_study_selftest.py 契约项。
+        for h in [-k for k in range(1, -window[0] + 1)]:
+            j = i0 + h
+            if j < 0:
+                break
+            acc2 = 0.0
+            for k in range(i0 + h + 1, i0):
+                r = br.get(days[k])
+                if r is not None and not np.isnan(r):
+                    acc2 += np.log1p(r)
+            out[h] = float(np.expm1(acc2))
+        return out
+
+    # ---- 主入口 ----
+    def study(self, event_key: str, window: Tuple[int, int] = (-20, 20),
+              event_def: Optional[EventDef] = None,
+              max_events: int = 20000) -> Dict:
+        ev = event_def or BUILTIN_EVENTS.get(event_key)
+        if ev is None:
+            raise ValueError(f"未知事件: {event_key}")
+        self._load_px()
+        lag = resolve_lag_days(ev.kind, ev.lag_days)
+
+        df = self._read_event_table(ev.table, ev.cols)
+        n_total = len(df)
+        sel = ev.select(df) if ev.select else df
+        cols_keep = [c for c in (ev.date_col, "ts_code") if c in sel.columns]
+        sel = sel[cols_keep + [c for c in ("discount", "tp_change", "reason",
+                                           "suspend_type") if c in sel.columns]]
+        # PIT: 事件日压缩为 d8 字符串
+        sel = sel.dropna(subset=[ev.date_col]).copy()
+        sel["_d"] = sel[ev.date_col].astype(str).str[:10].str.replace("-", "")
+        sel = sel[sel["_d"].str.fullmatch(r"\d{8}")]
+        if len(sel) > max_events:
+            sel = sel.sample(max_events, random_state=42)
+
+        # h=0 是基点日(无收益语义), 不进曲线
+        hs = [h for h in range(window[0], window[1] + 1) if h != 0]
+        rows = []
+        skipped = {"no_t0": 0, "no_px_base": 0}
+        for _, e in sel.iterrows():
+            code = str(e["ts_code"])
+            days = self._stock_days.get(code)
+            px = self._stock_px.get(code)
+            if not days or px is None:
+                skipped["no_px_base"] += 1
+                continue
+            t0 = pit_t0(days, str(e["_d"]), lag)
+            if t0 is None:
+                skipped["no_t0"] += 1
+                continue
+            sr = self._window_rets(px, days, t0, window)
+            if not sr:
+                skipped["no_px_base"] += 1
+                continue
+            br = self._bench_rets(days, t0, window)
+            for h in hs:
+                if h in sr and h in br and not np.isnan(br.get(h, np.nan)):
+                    rows.append({"h": h, "excess": sr[h] - br[h],
+                                 "raw": sr[h]})
+        if not rows:
+            return {"event": ev.key, "error": "no_settled_events"}
+
+        r = pd.DataFrame(rows)
+        g = r.groupby("h")["excess"]
+        curve = pd.DataFrame({
+            "n": g.count(),
+            "mean_excess": g.mean(),
+            "win_rate": g.apply(lambda s: (s > 0).mean()),
+            "t_stat": g.apply(lambda s: _tstat(s)),
+        }).reindex(hs)
+        curve.index.name = "h"
+
+        raw_g = r.groupby("h")["raw"]
+        raw_curve = pd.DataFrame({"n": raw_g.count(),
+                                  "mean_raw": raw_g.mean()}).reindex(hs)
+
+        return {
+            "event": ev.key, "name": ev.name, "desc": ev.desc,
+            "table": ev.table, "benchmark": self.benchmark,
+            "window": list(window), "lag_days": lag,
+            "pit": visibility_proof(n_total, len(sel), 0, kind=ev.kind,
+                                    lag_days=lag),
+            "skipped": skipped,
+            "curve": curve.round(6).to_dict(orient="index"),
+            "raw_curve": raw_curve.round(6).to_dict(orient="index"),
+        }
+
+
+def pit_t0(days: List[str], event_d: str, lag: int) -> Optional[str]:
+    """可见首日 T0 = 事件日后第 lag 个交易日(标的自身行情日历)."""
+    later = [d for d in days if d > event_d]
+    if len(later) < lag:
+        return None
+    return later[lag - 1] if lag >= 1 else None
+
+
+def _tstat(s: pd.Series) -> float:
+    s = s.dropna()
+    if len(s) < 2:
+        return float("nan")
+    se = s.std(ddof=1) / np.sqrt(len(s))
+    return float(s.mean() / se) if se else float("nan")
+
+
+def run_all(window: Tuple[int, int] = (-20, 20)) -> Dict:
+    """四事件全跑, 结果落 reports/p3_event_study_results.json."""
+    es = EventStudy()
+    out = {}
+    for key in BUILTIN_EVENTS:
+        print(f"[{key}] …")
+        try:
+            out[key] = es.study(key, window=window)
+        except Exception as e:  # noqa: BLE001
+            out[key] = {"event": key, "error": f"{type(e).__name__}: {e}"}
+        c = out[key].get("curve") or {}
+        h5 = c.get(5) or {}
+        print(f"  事件数={out[key].get('pit', {}).get('n_visible')} "
+              f"T+5 mean_excess={h5.get('mean_excess')} t={h5.get('t_stat')} "
+              f"err={out[key].get('error', '-')}")
+    path = os.path.join(_HERE, "reports", "p3_event_study_results.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=1, default=str)
+    print(f"saved -> {path}")
+    return out
+
+
+if __name__ == "__main__":
+    run_all()

@@ -37,7 +37,6 @@ import importlib.util
 import json
 import sys
 import tempfile
-from datetime import date
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]

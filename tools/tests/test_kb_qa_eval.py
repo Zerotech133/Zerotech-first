@@ -15,7 +15,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "kb_corpus"))
@@ -77,7 +76,6 @@ def test_citation_existence_and_page():
 # ------------------------------------------------------------------ 2. 支撑度分级
 def test_support_grading():
     units, id_map = _units(), _id_map()
-    ref = "M9 级覆铜板提升 AI 服务器 PCB 价值量 224Gbps 超高速传输"
     assert ke.grade_support(0.9) == "支持"
     assert ke.grade_support(0.3) == "弱支持"
     assert ke.grade_support(0.05) == "无支持"

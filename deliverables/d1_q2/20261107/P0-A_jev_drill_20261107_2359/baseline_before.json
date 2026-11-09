@@ -1,0 +1,129 @@
+{
+  "schema": "p0_a_jev_drill_preflight/v1",
+  "checked_at": "2026-11-08T00:00:24+08:00",
+  "approval": "C:\\项目\\老田的AI助手\\deliverables\\d1_q2\\20261107\\P0-A_jev_drill_20261107_2359\\approval.md",
+  "git_head": "56aab038eec90a1222cc58920e8f5743e396ccb7",
+  "host_conf": "C:\\项目\\老田的AI助手\\portal\\nginx.conf",
+  "host_sha256_before": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "backup": "C:\\项目\\老田的AI助手\\deliverables\\d1_q2\\20261107\\P0-A_jev_drill_20261107_2359\\nginx.conf.before",
+  "backup_sha256": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "container_sha256_before": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "temp_conf": "C:\\Temp\\p0_jev_nginx_drill.conf",
+  "temp_sha256": "d934643ac4e086d432a21cc5ad83cc0279e6398967408b23bc301c4e0e89ac98",
+  "nginx_test_before": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "route_matrix_before": {
+    "jev_root": {
+      "url": "http://127.0.0.1:8734/api/jev/",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_capabilities": {
+      "url": "http://127.0.0.1:8734/api/jev/capabilities",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_evidence": {
+      "url": "http://127.0.0.1:8734/api/jev/evidence",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_evidence_item": {
+      "url": "http://127.0.0.1:8734/api/jev/evidence/item",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_interpret": {
+      "url": "http://127.0.0.1:8734/api/jev/interpret",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_intraday": {
+      "url": "http://127.0.0.1:8734/api/jev/intraday/",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_platform": {
+      "url": "http://127.0.0.1:8734/api/jev/platform",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_review_get": {
+      "url": "http://127.0.0.1:8734/api/jev/review/",
+      "method": "HEAD",
+      "status": 401,
+      "error": ""
+    },
+    "jev_story": {
+      "url": "http://127.0.0.1:8734/api/jev/story/",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_target": {
+      "url": "http://127.0.0.1:8734/api/jev/target/",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_trace": {
+      "url": "http://127.0.0.1:8734/api/jev/trace",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_wordcloud": {
+      "url": "http://127.0.0.1:8734/api/jev/wordcloud",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    },
+    "jev_review_post": {
+      "url": "http://127.0.0.1:8734/api/jev/review/",
+      "method": "HEAD",
+      "status": 401,
+      "error": ""
+    }
+  },
+  "other_before": {
+    "health_8734": {
+      "url": "http://127.0.0.1:8734/api/health",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    "d1_decisions_8734": {
+      "url": "http://127.0.0.1:8734/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    "jev_direct_8091": {
+      "url": "http://127.0.0.1:8091/api/jev/capabilities",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    "jev_stack_not_targeted": {
+      "url": "http://127.0.0.1:8734/api/jev-stack",
+      "method": "HEAD",
+      "status": 501,
+      "error": ""
+    }
+  },
+  "data_hashes_before": {
+    "d1_decisions": "32b57ebef63524b6baac11b976cb99e0c4c938d3636a76c313a08c80a404762c",
+    "d1_handoffs": "f036704e7716779caeb8c740ec1fe854ef53838d50128ad29b59d20a819fb2a6",
+    "paper_state": "ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb"
+  }
+}

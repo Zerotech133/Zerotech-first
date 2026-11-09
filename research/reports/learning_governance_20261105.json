@@ -1,0 +1,52 @@
+{
+ "generated_at": "2026-11-05T02:00:01+08:00",
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "status": "archived",
+   "manifest": false,
+   "units_draft": 0
+  },
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "manifest": true,
+   "files": 1,
+   "units_draft": 288
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "status": "distilling",
+   "manifest": true,
+   "files": 8,
+   "units_draft": 1018
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "manifest": true,
+   "files": 3,
+   "units_draft": 1293
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "status": "distilling",
+   "manifest": true,
+   "files": 1,
+   "units_draft": 114
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "status": "distilling",
+   "manifest": true,
+   "files": 3,
+   "units_draft": 3
+  }
+ ],
+ "issues": [],
+ "summary": {
+  "projects": 6,
+  "issues": 0,
+  "high": 0
+ }
+}

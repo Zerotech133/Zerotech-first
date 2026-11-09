@@ -19,18 +19,90 @@
     "q2_aa49124184"
    ],
    "alerts": []
+  },
+  {
+   "date": "2026-11-03",
+   "n": 2,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.5,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.4166,
+   "avg_elapsed_seconds": 8.83,
+   "avg_completeness_score": 5.0,
+   "guard_pass_count": 2,
+   "sample_ids": [
+    "q2_3d1abf0240",
+    "q2_1e95f989df"
+   ],
+   "alerts": []
+  },
+  {
+   "date": "2026-11-04",
+   "n": 2,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.0,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.0,
+   "avg_elapsed_seconds": 5.845,
+   "avg_completeness_score": 4.0,
+   "guard_pass_count": 2,
+   "sample_ids": [
+    "q2_bcbfd79337",
+    "q2_a593448ce5"
+   ],
+   "alerts": []
+  },
+  {
+   "date": "2026-11-05",
+   "n": 2,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.0,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.4166,
+   "avg_elapsed_seconds": 13.125,
+   "avg_completeness_score": 5.0,
+   "guard_pass_count": 2,
+   "sample_ids": [
+    "q2_6076398cc7",
+    "q2_f93ae02b9d"
+   ],
+   "alerts": []
+  },
+  {
+   "date": "2026-11-06",
+   "n": 2,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.5,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.2,
+   "avg_elapsed_seconds": 21.9,
+   "avg_completeness_score": 5.0,
+   "guard_pass_count": 2,
+   "sample_ids": [
+    "q2_ef78939178",
+    "q2_87eff8d7a3"
+   ],
+   "alerts": []
   }
  ],
  "rolling_7d": {
-  "n_days": 1,
+  "n_days": 5,
   "answerable_rate": 1.0,
   "guard_pass_rate": 1.0,
   "fallback_rate": 0.0,
-  "avg_citations": 2.5,
-  "avg_elapsed_seconds": 12.06,
+  "avg_citations": 2.3,
+  "avg_elapsed_seconds": 12.352,
   "window": 7,
   "date_from": "2026-11-02",
-  "date_to": "2026-11-02"
+  "date_to": "2026-11-06"
  },
- "updated_at": "2026-11-02T02:49:47+08:00"
+ "updated_at": "2026-11-06T23:49:02+08:00"
 }

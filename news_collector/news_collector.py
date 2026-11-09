@@ -24,6 +24,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from news_time import parse_full_time, parse_news_time
+import news_origin   # 原创/首发/转发判定（入库即判，见 news_origin.py）
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
@@ -574,6 +575,12 @@ def insert_items(db, items, source):
         )
         if c.rowcount > 0:
             fresh.append(dict(normalized, source=source))
+            # 入库即判原创/首发/转发：等离线回填会留一段空窗，期间聚合层
+            # 读到 origin_kind=NULL，"转发算不算独立信号"就判不了。
+            # 判定失败（老库无字段等）静默跳过，绝不能因此丢一条新闻。
+            news_origin.judge_and_write(
+                db, normalized["id"], source, normalized["ts"],
+                normalized["title"], normalized.get("content") or "")
     db.commit()
     return fresh
 
@@ -738,6 +745,27 @@ def main():
         except Exception as e:
             source_status[name] = {"ok": False, "err": str(e)[:120]}
             log("source %s FAIL %s" % (name, str(e)[:120]))
+
+    # FEEDBACK-L1（2026-11-08）：采集结果 → obs_bridge 落观测（绝不反噬采集）
+    try:
+        import obs_bridge
+
+        for _name, _st in source_status.items():
+            obs_bridge.record(
+                "news_" + _name,
+                ok=bool(_st.get("ok")),
+                got=int(_st.get("got") or 0),
+                err=str(_st.get("err") or ""),
+            )
+        # R4 映射：子源明细（news_sina…）之外，聚合一条注册表在册 id=news 的观测
+        # （SLA 按注册源 id 计新鲜度——无此聚合则桥观测永远不进 SLA）
+        obs_bridge.record(
+            "news",
+            ok=any(bool(_st.get("ok")) for _st in source_status.values()),
+            got=sum(int(_st.get("got") or 0) for _st in source_status.values()),
+        )
+    except Exception as _e:  # 桥整体故障也不阻塞
+        print("[obs_bridge] WARN import/loop fail: %s" % str(_e)[:120])
 
     # 关注词/自选股命中（仅本次新入库的）
     hits = []

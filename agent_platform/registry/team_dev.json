@@ -1,821 +1,836 @@
 {
- "_note": "研发部长期员工注册表（K-ORG-015 实例化 / K-ORG-017 v2 扩编 / K-ORG-018 +ARCH1 架构师）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1~DEV5+ARCH1 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。K-ORG-017：策略线 DEV3→DEV4 串行（写策略→回测复核），DEV5 前端独立并行。",
- "team": "devcore",
- "dept": "dev",
- "description": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
- "agents": [
-  {
-   "agent_id": "DEV1",
-   "role_profile": "code_engineer",
-   "analysis_type": "code_engineering",
-   "node_key": "dev1_code",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "glm/glm-5.3",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "dept/invest/decision",
-     "agent/DEV1/*"
-    ],
-    "write": [
-     "agent/DEV1/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E3",
-   "grade_note": "30年档：后端主力，devtask 工具链作者位",
-   "charter_detail": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
-   "attributes": {
-    "experience": "30 年后端与研发效能经验：主导过金融交易系统与高并发平台建设，近十年专注研发工具链——任务单驱动的 worktree 并行工作流、自动化质检门与工单生命周期治理（本组织 devtask 工具链作者位）。",
-    "specialties": [
-     "Python 后端工程化",
-     "研发工具链与工作流设计",
-     "code review 与疑难攻关",
-     "worktree 并行开发治理"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
+  "_note": "研发部长期员工注册表（K-ORG-015 实例化 / K-ORG-017 v2 扩编 / K-ORG-018 +ARCH1 架构师）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1~DEV5+ARCH1 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。K-ORG-017：策略线 DEV3→DEV4 串行（写策略→回测复核），DEV5 前端独立并行。",
+  "team": "devcore",
+  "dept": "dev",
+  "description": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
+  "agents": [
     {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV1",
+      "role_profile": "code_engineer",
+      "analysis_type": "code_engineering",
+      "node_key": "dev1_code",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "glm/glm-5.3",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "dept/invest/decision",
+          "agent/DEV1/*"
+        ],
+        "write": [
+          "agent/DEV1/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E3",
+      "grade_note": "30年档：后端主力，devtask 工具链作者位",
+      "charter_detail": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
+      "attributes": {
+        "experience": "30 年后端与研发效能经验：主导过金融交易系统与高并发平台建设，近十年专注研发工具链——任务单驱动的 worktree 并行工作流、自动化质检门与工单生命周期治理（本组织 devtask 工具链作者位）。",
+        "specialties": [
+          "Python 后端工程化",
+          "研发工具链与工作流设计",
+          "code review 与疑难攻关",
+          "worktree 并行开发治理"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G1",
+      "org_role": "G1组长",
+      "report_to": "ARCH1"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G1",
-   "org_role": "G1组长",
-   "report_to": "ARCH1"
-  },
-  {
-   "agent_id": "DEV2",
-   "role_profile": "model_trainer",
-   "analysis_type": "model_training",
-   "node_key": "dev2_train",
-   "parent_node_keys": [
-    "dev1_code"
-   ],
-   "level": 2,
-   "is_parallel": false,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.6:35b-a3b",
-   "tools": [
-    "ollama",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/DEV2/*"
-    ],
-    "write": [
-     "agent/DEV2/*",
-     "dept/dev/observation",
-     "domain/model_registry"
-    ]
-   },
-   "grade": "E2",
-   "grade_note": "20年档：训练/评估独立交付",
-   "charter_detail": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
-   "attributes": {
-    "experience": "20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。",
-    "specialties": [
-     "模型训练与调参",
-     "评估体系与基准管理",
-     "模型版本化登记",
-     "特征工程"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
-   "skills": [
-    {
-     "id": "ollama",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV2",
+      "role_profile": "model_trainer",
+      "analysis_type": "model_training",
+      "node_key": "dev2_train",
+      "parent_node_keys": [
+        "dev1_code"
+      ],
+      "level": 2,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "glm/glm-5.3",
+      "tools": [
+        "ollama",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/DEV2/*"
+        ],
+        "write": [
+          "agent/DEV2/*",
+          "dept/dev/observation",
+          "domain/model_registry"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：训练/评估独立交付",
+      "charter_detail": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
+      "attributes": {
+        "experience": "20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。",
+        "specialties": [
+          "模型训练与调参",
+          "评估体系与基准管理",
+          "模型版本化登记",
+          "特征工程"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+      "skills": [
+        {
+          "id": "ollama",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G1",
+      "org_role": "G1组员",
+      "report_to": "DEV1",
+      "llm_fallback": [
+        "deepseek/deepseek-v4-pro",
+        "ollama/qwen3.5:9b"
+      ],
+      "binding_source": "registry/model_policy.yaml"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G1",
-   "org_role": "G1组员",
-   "report_to": "DEV1"
-  },
-  {
-   "agent_id": "DEV3",
-   "role_profile": "strategy_engineer",
-   "analysis_type": "strategy_research",
-   "node_key": "dev3_strategy",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "dept/invest/decision",
-     "agent/DEV3/*"
-    ],
-    "write": [
-     "agent/DEV3/*",
-     "dept/dev/observation",
-     "domain/strategy_registry"
-    ]
-   },
-   "grade": "E2",
-   "grade_note": "20年档：策略研发独立交付",
-   "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
-   "attributes": {
-    "experience": "20 年量化策略研发经验：策略从想法到上线的完整纪律链——注册制新增、回测判据前置自检、影子账挂载验证；深知跳过影子期直上模拟仓的代价（缠论联立/快枪手判例亲历者）。",
-    "specialties": [
-     "量化策略设计与实现",
-     "回测判据前置自检",
-     "影子账验证流程",
-     "策略注册制管理"
-    ],
-    "knowledge": [
-     "缠论技术分析知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV3",
+      "role_profile": "strategy_engineer",
+      "analysis_type": "strategy_research",
+      "node_key": "dev3_strategy",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "deepseek/deepseek-v4-pro",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "dept/invest/decision",
+          "agent/DEV3/*"
+        ],
+        "write": [
+          "agent/DEV3/*",
+          "dept/dev/observation",
+          "domain/strategy_registry"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：策略研发独立交付",
+      "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
+      "attributes": {
+        "experience": "20 年量化策略研发经验：策略从想法到上线的完整纪律链——注册制新增、回测判据前置自检、影子账挂载验证；深知跳过影子期直上模拟仓的代价（缠论联立/快枪手判例亲历者）。",
+        "specialties": [
+          "量化策略设计与实现",
+          "回测判据前置自检",
+          "影子账验证流程",
+          "策略注册制管理"
+        ],
+        "knowledge": [
+          "缠论技术分析知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G2",
+      "org_role": "G2组员",
+      "report_to": "DEV5",
+      "llm_fallback": [
+        "glm/glm-5.3",
+        "ollama/qwen3.5:9b"
+      ],
+      "binding_source": "registry/model_policy.yaml"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G2",
-   "org_role": "G2组员",
-   "report_to": "DEV5"
-  },
-  {
-   "agent_id": "DEV4",
-   "role_profile": "backtest_engineer",
-   "analysis_type": "backtest_review",
-   "node_key": "dev4_backtest",
-   "parent_node_keys": [
-    "dev3_strategy"
-   ],
-   "level": 2,
-   "is_parallel": false,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "dept/invest/decision",
-     "agent/DEV4/*"
-    ],
-    "write": [
-     "agent/DEV4/*",
-     "dept/dev/observation",
-     "domain/backtest_registry"
-    ]
-   },
-   "grade": "E2",
-   "grade_note": "20年档：回测复核独立表态",
-   "charter_detail": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
-   "attributes": {
-    "experience": "20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。",
-    "specialties": [
-     "回测执行与结果分析",
-     "Go/No-Go 独立复核",
-     "回测登记与可追溯",
-     "判据冻结纪律执法"
-    ],
-    "knowledge": [
-     "金融专业知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV4",
+      "role_profile": "backtest_engineer",
+      "analysis_type": "backtest_review",
+      "node_key": "dev4_backtest",
+      "parent_node_keys": [
+        "dev3_strategy"
+      ],
+      "level": 2,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "deepseek/deepseek-flash",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "dept/invest/decision",
+          "agent/DEV4/*"
+        ],
+        "write": [
+          "agent/DEV4/*",
+          "dept/dev/observation",
+          "domain/backtest_registry"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：回测复核独立表态",
+      "charter_detail": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
+      "attributes": {
+        "experience": "20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。",
+        "specialties": [
+          "回测执行与结果分析",
+          "Go/No-Go 独立复核",
+          "回测登记与可追溯",
+          "判据冻结纪律执法"
+        ],
+        "knowledge": [
+          "金融专业知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G2",
+      "org_role": "G2组员",
+      "report_to": "DEV5",
+      "llm_fallback": [
+        "glm/glm-5.3",
+        "ollama/qwen3.5:9b"
+      ],
+      "binding_source": "registry/model_policy.yaml"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G2",
-   "org_role": "G2组员",
-   "report_to": "DEV5"
-  },
-  {
-   "agent_id": "DEV5",
-   "role_profile": "frontend_engineer",
-   "analysis_type": "frontend_engineering",
-   "node_key": "dev5_frontend",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "glm/glm-5.3",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/DEV5/*"
-    ],
-    "write": [
-     "agent/DEV5/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E3",
-   "grade_note": "30年档：tokens 设计语言作者位",
-   "charter_detail": "门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页",
-   "attributes": {
-    "experience": "30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。",
-    "specialties": [
-     "设计系统与 tokens 治理",
-     "门户/大屏版面架构",
-     "前端质量三关（语法/死引用/实测）",
-     "Demo 先行流程"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV5",
+      "role_profile": "frontend_engineer",
+      "analysis_type": "frontend_engineering",
+      "node_key": "dev5_frontend",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "glm/glm-5.3",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/DEV5/*"
+        ],
+        "write": [
+          "agent/DEV5/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E3",
+      "grade_note": "30年档：tokens 设计语言作者位",
+      "charter_detail": "门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页",
+      "attributes": {
+        "experience": "30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。",
+        "specialties": [
+          "设计系统与 tokens 治理",
+          "门户/大屏版面架构",
+          "前端质量三关（语法/死引用/实测）",
+          "Demo 先行流程"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G2",
+      "org_role": "G2组长",
+      "report_to": "ARCH1"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G2",
-   "org_role": "G2组长",
-   "report_to": "ARCH1"
-  },
-  {
-   "agent_id": "ARCH1",
-   "role_profile": "solution_architect",
-   "analysis_type": "architecture_review",
-   "node_key": "dev_arch",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "glm/glm-5.3",
-   "tools": [
-    "devtask",
-    "events",
-    "codebase_intel",
-    "sandbox_verify",
-    "eval_harness",
-    "trace_log"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "dept/data/*",
-     "dept/product/*",
-     "agent/ARCH1/*"
-    ],
-    "write": [
-     "agent/ARCH1/*",
-     "dept/dev/observation",
-     "docs/adr"
-    ]
-   },
-   "grade": "E3",
-   "grade_note": "30年档：架构定夺/疑难攻关/方案终审",
-   "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
-   "attributes": {
-    "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
-    "specialties": [
-     "架构评审与技术选型",
-     "跨部门方案终审",
-     "ADR 决策记录治理",
-     "疑难技术攻关"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      ".worktrees/**",
-      "docs/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "ARCH1",
+      "role_profile": "solution_architect",
+      "analysis_type": "architecture_review",
+      "node_key": "dev_arch",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "glm/glm-5.3",
+      "tools": [
+        "devtask",
+        "events",
+        "codebase_intel",
+        "sandbox_verify",
+        "eval_harness",
+        "trace_log"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "dept/data/*",
+          "dept/product/*",
+          "agent/ARCH1/*"
+        ],
+        "write": [
+          "agent/ARCH1/*",
+          "dept/dev/observation",
+          "docs/adr"
+        ]
+      },
+      "grade": "E3",
+      "grade_note": "30年档：架构定夺/疑难攻关/方案终审",
+      "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
+      "attributes": {
+        "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
+        "specialties": [
+          "架构评审与技术选型",
+          "跨部门方案终审",
+          "ADR 决策记录治理",
+          "疑难技术攻关"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            ".worktrees/**",
+            "docs/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "tools_note": "2026-10-27 A0 L1 批：ARCH1 四工具授权 codebase_intel/sandbox_verify/eval_harness/trace_log（实现 tools/<name>.py）",
+      "group": "",
+      "org_role": "研发部主官/架构师",
+      "report_to": "A0"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "tools_note": "2026-10-27 A0 L1 批：ARCH1 四工具授权 codebase_intel/sandbox_verify/eval_harness/trace_log（实现 tools/<name>.py）",
-   "group": "",
-   "org_role": "研发部主官/架构师",
-   "report_to": "A0"
-  },
-  {
-   "agent_id": "OPS1",
-   "role_profile": "devops_engineer",
-   "analysis_type": "devops_operations",
-   "node_key": "dev_ops",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "glm/glm-5.3",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/OPS1/*"
-    ],
-    "write": [
-     "agent/OPS1/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E3",
-   "grade_note": "30年档：生产配方执法位",
-   "charter_detail": "DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手",
-   "attributes": {
-    "experience": "30 年生产运维经验：容器集群、计划任务、端口监护、备份三件套与磁盘巡检的全套生产配方执法；铁律=生产操作先验明进程身份再动手（误杀线上服务判例亲历）。",
-    "specialties": [
-     "Docker 容器集群运维",
-     "计划任务与看门狗配置",
-     "备份恢复与灾备",
-     "生产进程身份辨认"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "config/**",
-      "ops/**",
-      "tools/**"
-     ],
-     "execute": [
-      "git",
-      "python",
-      "pytest"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "OPS1",
+      "role_profile": "devops_engineer",
+      "analysis_type": "devops_operations",
+      "node_key": "dev_ops",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "glm/glm-5.3",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/OPS1/*"
+        ],
+        "write": [
+          "agent/OPS1/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E3",
+      "grade_note": "30年档：生产配方执法位",
+      "charter_detail": "DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手",
+      "attributes": {
+        "experience": "30 年生产运维经验：容器集群、计划任务、端口监护、备份三件套与磁盘巡检的全套生产配方执法；铁律=生产操作先验明进程身份再动手（误杀线上服务判例亲历）。",
+        "specialties": [
+          "Docker 容器集群运维",
+          "计划任务与看门狗配置",
+          "备份恢复与灾备",
+          "生产进程身份辨认"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "config/**",
+            "ops/**",
+            "tools/**"
+          ],
+          "execute": [
+            "git",
+            "python",
+            "pytest"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G1",
+      "org_role": "G1组员",
+      "report_to": "DEV1"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G1",
-   "org_role": "G1组员",
-   "report_to": "DEV1"
-  },
-  {
-   "agent_id": "DOC1",
-   "role_profile": "tech_writer",
-   "analysis_type": "documentation",
-   "node_key": "dev_doc",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/DOC1/*"
-    ],
-    "write": [
-     "agent/DOC1/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E2",
-   "grade_note": "20年档：判例沉淀/谱系维护",
-   "charter_detail": "技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜",
-   "attributes": {
-    "experience": "20 年技术文档经验：docs/plans 计划谱系与 INDEX 索引总账维护、判例沉淀入册（撞号/行尾/回滚死引用等）、宪法文档保鲜；让组织每次踩坑都变成可检索资产。",
-    "specialties": [
-     "计划谱系与索引治理",
-     "判例沉淀与知识入册",
-     "宪法/README 文档保鲜",
-     "技术写作规范"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "docs/**",
-      "knowledge_docs/**"
-     ],
-     "execute": [
-      "git"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DOC1",
+      "role_profile": "tech_writer",
+      "analysis_type": "documentation",
+      "node_key": "dev_doc",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/DOC1/*"
+        ],
+        "write": [
+          "agent/DOC1/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：判例沉淀/谱系维护",
+      "charter_detail": "技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜",
+      "attributes": {
+        "experience": "20 年技术文档经验：docs/plans 计划谱系与 INDEX 索引总账维护、判例沉淀入册（撞号/行尾/回滚死引用等）、宪法文档保鲜；让组织每次踩坑都变成可检索资产。",
+        "specialties": [
+          "计划谱系与索引治理",
+          "判例沉淀与知识入册",
+          "宪法/README 文档保鲜",
+          "技术写作规范"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "docs/**",
+            "knowledge_docs/**"
+          ],
+          "execute": [
+            "git"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G2",
+      "org_role": "G2组员",
+      "report_to": "DEV5"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G2",
-   "org_role": "G2组员",
-   "report_to": "DEV5"
-  },
-  {
-   "agent_id": "DEV6",
-   "role_profile": "code_engineer",
-   "analysis_type": "code_engineering",
-   "node_key": "dev6_backend",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/DEV6/*"
-    ],
-    "write": [
-     "agent/DEV6/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E2",
-   "grade_note": "20年档：后端独立交付主力",
-   "charter_detail": "E2·20年档·后端：常规功能/接口/脚本独立交付；疑难上报 DEV1",
-   "attributes": {
-    "experience": "20 年后端独立交付经验：API 服务、数据接口与运维脚本全栈交付，习惯小步提交、灰度验证，疑难问题升级 DEV1 主线。",
-    "specialties": [
-     "REST API 与服务端功能交付",
-     "数据处理与运维脚本",
-     "接口联调与灰度验证"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV6",
+      "role_profile": "code_engineer",
+      "analysis_type": "code_engineering",
+      "node_key": "dev6_backend",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/DEV6/*"
+        ],
+        "write": [
+          "agent/DEV6/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：后端独立交付主力",
+      "charter_detail": "E2·20年档·后端：常规功能/接口/脚本独立交付；疑难上报 DEV1",
+      "attributes": {
+        "experience": "20 年后端独立交付经验：API 服务、数据接口与运维脚本全栈交付，习惯小步提交、灰度验证，疑难问题升级 DEV1 主线。",
+        "specialties": [
+          "REST API 与服务端功能交付",
+          "数据处理与运维脚本",
+          "接口联调与灰度验证"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G1",
+      "org_role": "G1组员",
+      "report_to": "DEV1"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G1",
-   "org_role": "G1组员",
-   "report_to": "DEV1"
-  },
-  {
-   "agent_id": "DEV7",
-   "role_profile": "code_engineer",
-   "analysis_type": "code_engineering",
-   "node_key": "dev7_backend",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/DEV7/*"
-    ],
-    "write": [
-     "agent/DEV7/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E1",
-   "grade_note": "10年档：标准执行位",
-   "charter_detail": "E1·10年档·后端：标准执行/批量修改/格式化任务；产出交 E2+ 复核",
-   "attributes": {
-    "experience": "10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。",
-    "specialties": [
-     "批量代码修改与重构",
-     "代码格式化与静态检查修复",
-     "回归验证与证据采集"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV7",
+      "role_profile": "code_engineer",
+      "analysis_type": "code_engineering",
+      "node_key": "dev7_backend",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/DEV7/*"
+        ],
+        "write": [
+          "agent/DEV7/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E1",
+      "grade_note": "10年档：标准执行位",
+      "charter_detail": "E1·10年档·后端：标准执行/批量修改/格式化任务；产出交 E2+ 复核",
+      "attributes": {
+        "experience": "10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。",
+        "specialties": [
+          "批量代码修改与重构",
+          "代码格式化与静态检查修复",
+          "回归验证与证据采集"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G1",
+      "org_role": "G1组员",
+      "report_to": "DEV1"
     },
     {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "DEV8",
+      "role_profile": "frontend_engineer",
+      "analysis_type": "frontend_engineering",
+      "node_key": "dev8_frontend",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/dev/*",
+          "agent/DEV8/*"
+        ],
+        "write": [
+          "agent/DEV8/*",
+          "dept/dev/observation"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：前端页面交付主力",
+      "charter_detail": "E2·20年档·前端：常规页面/图表交付；tokens 纪律同 DEV5，疑难上报 DEV5",
+      "attributes": {
+        "experience": "20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。",
+        "specialties": [
+          "页面与图表组件交付",
+          "tokens 纪律执行",
+          "暗色主题与响应式适配"
+        ],
+        "knowledge": [
+          "AI工程实践知识库.md"
+        ],
+        "tools_allowed": {
+          "read": [
+            "*"
+          ],
+          "write": [
+            "tools/**",
+            "portal/**",
+            "agent_platform/**",
+            ".worktrees/**"
+          ],
+          "execute": [
+            "git",
+            "pytest",
+            "python"
+          ],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "devtask",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "group": "G2",
+      "org_role": "G2组员",
+      "report_to": "DEV5"
     }
-   ],
-   "group": "G1",
-   "org_role": "G1组员",
-   "report_to": "DEV1"
-  },
-  {
-   "agent_id": "DEV8",
-   "role_profile": "frontend_engineer",
-   "analysis_type": "frontend_engineering",
-   "node_key": "dev8_frontend",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "devtask",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/dev/*",
-     "agent/DEV8/*"
-    ],
-    "write": [
-     "agent/DEV8/*",
-     "dept/dev/observation"
-    ]
-   },
-   "grade": "E2",
-   "grade_note": "20年档：前端页面交付主力",
-   "charter_detail": "E2·20年档·前端：常规页面/图表交付；tokens 纪律同 DEV5，疑难上报 DEV5",
-   "attributes": {
-    "experience": "20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。",
-    "specialties": [
-     "页面与图表组件交付",
-     "tokens 纪律执行",
-     "暗色主题与响应式适配"
-    ],
-    "knowledge": [
-     "AI工程实践知识库.md"
-    ],
-    "tools_allowed": {
-     "read": [
-      "*"
-     ],
-     "write": [
-      "tools/**",
-      "portal/**",
-      "agent_platform/**",
-      ".worktrees/**"
-     ],
-     "execute": [
-      "git",
-      "pytest",
-      "python"
-     ],
-     "danger": "deny"
-    }
-   },
-   "skills": [
-    {
-     "id": "devtask",
-     "kind": "tool",
-     "enabled": true
-    },
-    {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
-    }
-   ],
-   "group": "G2",
-   "org_role": "G2组员",
-   "report_to": "DEV5"
-  }
- ]
+  ]
 }

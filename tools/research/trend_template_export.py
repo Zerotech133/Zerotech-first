@@ -19,7 +19,7 @@ REPORTS = REPO / "research" / "reports"
 OUT = REPO / "portal" / "static" / "trend_template_latest.json"
 
 sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
-from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402,F401
 
 COND_SPEC = [
     {"id": "C1", "rule": "P > S150 且 P > S200", "note": "等号不通过"},

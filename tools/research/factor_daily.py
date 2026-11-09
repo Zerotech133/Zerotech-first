@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import json
 import sys
@@ -34,7 +35,7 @@ LEDGER = REPO / "research" / "ledger"
 STATIC = REPO / "portal" / "static"
 
 sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
-from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402,F401
 # 已过四关/已证伪的已知因子（用于衰减监控）
 KNOWN = {
     "vol_20": {"verdict": "四关 PASS（LS）", "dir": "低波", "expect_ic": -0.09},
@@ -104,8 +105,14 @@ def export_payload(payload: dict, static_dir: Path | str | None = None) -> dict:
     return backup_then_atomic_write(target, payload)
 
 
-def main() -> int:
-    dts = window_dates(3)
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="因子每日挖掘/衰减监控")
+    ap.add_argument("--months", type=int, default=12, help="回看月数（完整月，默认 12）")
+    args = ap.parse_args(argv)
+    if args.months < 2:
+        ap.error("--months 至少为 2")
+    years = max(3, (args.months + 11) // 12 + 1)
+    dts = window_dates(years)
     adj, amt = load(dts)
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names = sb["name"]
@@ -113,7 +120,13 @@ def main() -> int:
         return listed_days(sb, dt_)
     s = pd.Series(adj.index.tolist())
     mends = [g.iloc[-1] for _, g in s.groupby(s.str[:6])]
-    months = mends[-(12 + 1):]  # 12 个前向收益月
+    # 最新月若尚未走完，不能把 5 日收益混进 12 个完整月；先剔除，再向前取所需端点。
+    if len(mends) >= 2 and len(adj.loc[mends[-2]:mends[-1]]) < 15:
+        mends = mends[:-1]
+    months = mends[-(args.months + 1):]  # N 个完整月 → N+1 个月末端点
+    if len(months) < args.months + 1:
+        print(json.dumps({"error": f"完整月不足：需要 {args.months + 1} 个端点，实际 {len(months)}"}, ensure_ascii=False))
+        return 2
 
     per_factor = {}
     for k, f in enumerate(months[:-1]):
@@ -127,7 +140,7 @@ def main() -> int:
         if len(cc) < 300:
             continue
         amt20 = amt.loc[:dt].iloc[-20:].mean().reindex(cc)
-        ret1 = hist.pct_change().iloc[-1].reindex(cc)
+        hist.pct_change().iloc[-1].reindex(cc)
         # 口径与 mining/四关一致（不带方向翻转，expect_ic 符号才可比）：
         # vol_20=20日波动(期望负IC)；mom_20/mom_120=历史收益(期望负IC=反转)；rev_5=-5日收益(期望正IC)
         factors = {

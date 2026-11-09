@@ -235,8 +235,14 @@ def pipeline(kb: Path, write: bool = False) -> dict:
         concept_dir.mkdir(parents=True, exist_ok=True)
         words = {}
         for c in cleaned:
-            for w in re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", Path(c["out"]).read_text(encoding="utf-8")):
-                words[w] = words.get(w, 0) + 1
+            # 元数据行不计入词频（与 draft_units 的 task-137 口径一致）：
+            # "文件:/时长:/字数:/共N条/faster-whisper" 会贡献 文件/mp/时长/字数 等伪高频词，
+            # 污染 concepts_draft 的 top_terms。逐行过滤，正文词频不受影响。
+            for ln in Path(c["out"]).read_text(encoding="utf-8").splitlines():
+                if _is_meta_claim(ln):
+                    continue
+                for w in re.findall(r"[A-Za-z\u4e00-\u9fff]{2,}", ln):
+                    words[w] = words.get(w, 0) + 1
         top = sorted(words.items(), key=lambda x: -x[1])[:30]
         (concept_dir / f"{pid}_concepts_draft.json").write_text(json.dumps(
             {"project_id": pid, "generated_at": rep["generated_at"],

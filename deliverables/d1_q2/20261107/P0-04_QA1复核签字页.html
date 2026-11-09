@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P0-04 · QA1 复核（第二轮 PASS）</title>
+<style>
+  :root{--bg:#0b1020;--panel:#11192d;--line:rgba(148,163,184,.18);--text:#e8eefc;--muted:#95a3bd;--faint:#6b7a96;--green:#55d6a8;--gold:#d8b56a;--amber:#f0c46a;--red:#ff8e8e;--blue:#83b7ff}
+  *{box-sizing:border-box}body{margin:0;color:var(--text);font:14px/1.65 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:radial-gradient(900px 500px at 12% -8%,rgba(79,114,190,.20),transparent 60%),linear-gradient(180deg,#090e1b,#0b1020 55%,#080c17)}
+  .page{max-width:1000px;margin:0 auto;padding:34px 24px 60px}.hero,.panel{border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(20,31,56,.96),rgba(10,17,33,.96));box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .hero{padding:28px 30px}.eyebrow{color:var(--gold);font-size:11px;letter-spacing:.18em;font-weight:700;text-transform:uppercase}h1{margin:10px 0 8px;font-size:clamp(26px,4vw,36px);line-height:1.18}h1 span{display:block;color:var(--green);font-size:.45em;letter-spacing:.05em;margin-top:8px}.lede{color:var(--muted);max-width:800px;margin:0}
+  .pill-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}.pill{display:inline-flex;gap:8px;align-items:center;padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}.pill.green{border-color:rgba(85,214,168,.35);color:var(--green);background:rgba(85,214,168,.07)}.pill.amber{border-color:rgba(240,196,106,.32);color:var(--amber);background:rgba(240,196,106,.06)}.pill.blue{border-color:rgba(131,183,255,.3);color:var(--blue);background:rgba(131,183,255,.06)}.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .panel{padding:20px 22px;margin-top:16px}.panel h2{margin:0 0 12px;font-size:12px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+  .status{display:flex;gap:14px;align-items:center;padding:16px 18px;border-radius:13px;border:1px solid rgba(85,214,168,.3);background:rgba(85,214,168,.07);margin-bottom:14px}.status .mark{font-size:22px;color:var(--green)}.status strong{font-size:20px;color:var(--green)}.status small{display:block;color:var(--muted);margin-top:2px}
+  .kv{display:grid;grid-template-columns:124px 1fr;gap:9px 14px;font-size:13px}.kv dt{color:var(--faint)}.kv dd{margin:0;word-break:break-word}code{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#cfe0ff}
+  table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--faint);font-size:11px;letter-spacing:.07em;text-transform:uppercase}tr:last-child td{border-bottom:none}.ok{color:var(--green);font-weight:700}.warn{color:var(--amber);font-weight:700}.bad{color:var(--red);font-weight:700}
+  .note{border-left:3px solid var(--amber);background:rgba(240,196,106,.08);padding:12px 15px;border-radius:0 10px 10px 0;color:#d8dff0;font-size:12.5px;margin-top:14px}.note.green{border-left-color:var(--green);background:rgba(85,214,168,.07)}
+  .sig{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}@media(max-width:760px){.sig{grid-template-columns:1fr}}
+  .sig-card{border:1px solid var(--line);border-radius:13px;background:rgba(11,18,33,.72);padding:16px 17px}.role{color:var(--gold);font-size:10px;letter-spacing:.14em;font-weight:700;text-transform:uppercase}.name{font-size:17px;margin:7px 0 3px}.meta{color:var(--muted);font-size:12px;line-height:1.6}.stamp{margin-top:11px;padding:9px 12px;border:1px dashed rgba(85,214,168,.4);border-radius:9px;color:var(--green);font-size:12px;background:rgba(85,214,168,.06)}.stamp.pending{border-color:rgba(240,196,106,.35);color:var(--amber);background:rgba(240,196,106,.05)}
+  .files{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:0;padding:0;list-style:none;font-size:12.5px}@media(max-width:700px){.files{grid-template-columns:1fr}}.files a{color:var(--blue);text-decoration:none;border-bottom:1px dotted rgba(131,183,255,.4);word-break:break-all}.hash{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--faint);word-break:break-all}footer{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--faint);font-size:11.5px;margin-top:24px}
+  @media print{body{background:#fff;color:#111}.hero,.panel,.sig-card{background:#fff;border-color:#ddd;box-shadow:none}.lede,.meta{color:#555}}
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    <div class="eyebrow">零界 · 质量工程部 · QA1 复核</div>
+    <h1>P0-04 契约测试入闸与负控<span>QA1 第二轮复核 · PASS（AI 复核位）</span></h1>
+    <p class="lede">D1 9 个 HTTP 接口的契约/幂等/e2e/UI 测试已随 <code>portal/tests</code> 进入 fast gate；受控负控证明契约被破坏时门禁会红。本页记录第二轮修正后的 QA1 复核结论、第一轮 FAIL 的关闭情况与证据锚点。</p>
+    <div class="pill-row">
+      <span class="pill green"><span class="dot"></span>QA1 复核：PASS（第二轮）</span>
+      <span class="pill green"><span class="dot"></span>fast gate rc=0</span>
+      <span class="pill green"><span class="dot"></span>负控 rc=1</span>
+      <span class="pill amber"><span class="dot"></span>G2 / replay 严格 xfail</span>
+      <span class="pill blue"><span class="dot"></span>paper-only · 不接实盘</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>当前结论</h2>
+    <div class="status">
+      <div class="mark">✓</div>
+      <div><strong>PASS（第二轮，AI QA1 复核位）</strong><small>第一轮 BLOCKER 已撤回；N1–N4 已修正并逐项复核。本页不是独立外部/真人 QA1 签字，不替代老田本人最终确认。</small></div>
+    </div>
+    <dl class="kv">
+      <dt>任务</dt><dd>P0-04 · D1 9 接口契约测试入 fast gate + 故意破坏必红反证</dd>
+      <dt>复核时间</dt><dd>2026-11-07 15:37 +08:00（Asia/Shanghai）</dd>
+      <dt>第一轮</dt><dd><span class="bad">FAIL</span> 2026-11-07 14:35–14:36；B1 提前代签 + N1–N4；本轮已撤回并关闭</dd>
+      <dt>测试计数</dt><dd>15 文件：161 collected / 158 passed / 2 xfailed / 1 skipped / 0 failed</dd>
+      <dt>fast gate</dt><dd><span class="ok">GATE PASS</span> / <code>FAST_GATE_EXIT_CODE=0</code>；2026-11-07 14:49:58→14:55:46</dd>
+      <dt>负控</dt><dd><code>D1_P0_04_BREAK_CONTRACT=1</code> → 1 failed / 4 passed / <code>EXIT_CODE=1</code></dd>
+      <dt>state check</dt><dd><code>ok=true</code>；23 checks / 0 errors / 2 warnings（health_window、health_probe 为既有 Q2 未测状态）</dd>
+      <dt>Q2 状态</dt><dd>仍 Q1/draft · validated=false · q2_complete=false；本单不改变 Q2 结论</dd>
+    </dl>
+    <div class="note green"><b>签署边界：</b>QA1 栏为 AI 复核位记录（于禁），不是独立外部 QA1 或真人签字；老田栏仍待本人确认。本页不产生交易、不写生产账本、不构成生产发布授权。</div>
+  </section>
+
+  <section class="panel">
+    <h2>第一轮 findings 关闭</h2>
+    <table>
+      <thead><tr><th style="width:9%">编号</th><th style="width:16%">第一轮</th><th>第二轮关闭证据</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td class="bad">BLOCKER</td><td>已把 manifest <code>qa1_review</code> 回 pending；HTML 先替换为“第一轮 FAIL、待重签”；本页在复核完成后才记录 PASS，三处时间一致。</td></tr>
+        <tr><td>N1</td><td class="warn">非阻断</td><td>baseline note、md §6、manifest gaps 已分列：G2 403 error/v1；D1 idempotent_replay（同 decision_id 二次提交 400 duplicate_decision）。</td></tr>
+        <tr><td>N2</td><td class="warn">非阻断</td><td><code>test_api_war_room_envelope.py</code>（16 passed）已加入 guard 的 14 个契约文件与 baseline 15 文件；<code>test_d1_envelope_ui.py</code> 的负向断言不再冒充契约覆盖。</td></tr>
+        <tr><td>N3</td><td class="warn">非阻断</td><td><code>test_ifs_wire_chain.py</code> 先在 tmp 账本真实创建 decision，再走 handoff→watch_plan→confirmation→paper receipt，断言 decision_id 一致。</td></tr>
+        <tr><td>N4</td><td class="warn">非阻断</td><td>md §8 八项哈希已重算；state check 校验 gate/负控日志、evidence md、HTML、baseline 计数；reports/nginx 备份与 xueqiu 只读测试库的 fixture provenance 已写入 md §3。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>复核证据</h2>
+    <ul class="files">
+      <li><a href="P0-04_QA1复核记录.md">QA1 复核记录（第二轮）</a></li>
+      <li><a href="P0-04_契约测试入闸与负控.md">P0-04 说明与哈希</a></li>
+      <li><a href="P0-04_fast_gate.txt">fast gate 日志（rc=0）</a></li>
+      <li><a href="P0-04_negative_control.txt">负控日志（rc=1）</a></li>
+      <li><a href="P0-04_test_count_baseline.json">测试计数基线（15 文件）</a></li>
+      <li><a href="P0-04_state_check.json">state check JSON</a></li>
+    </ul>
+    <div class="note"><b>独立复跑：</b>clean worktree <code>.worktrees/P0-04-GATE-20261107</code>：`158 passed, 1 skipped, 2 xfailed`；guard 正常 `4 passed, 1 skipped`；负控 `1 failed, 4 passed` rc=1。未修改 <code>tools/test_gate.ps1</code> 清单。</div>
+  </section>
+
+  <section class="panel">
+    <h2>签署记录</h2>
+    <div class="sig">
+      <div class="sig-card">
+        <div class="role">QA1 · 质量与安全保障部（AI 复核位）</div>
+        <div class="name">于禁 · QA1</div>
+        <div class="meta">第二轮只读复核：2026-11-07 15:37 +08:00<br>结论：<span class="ok">PASS（技术证据）</span><br>边界：AI 角色记录，非独立外部/真人签字</div>
+        <div class="stamp">第二轮 PASS · AI QA1 复核位<br><span class="hash">第一轮 FAIL 已关闭 · 见 P0-04_QA1复核记录.md</span></div>
+      </div>
+      <div class="sig-card">
+        <div class="role">老田 · 本人最终确认</div>
+        <div class="name">老田</div>
+        <div class="meta">AI QA1 复核已完成，等待本人最终确认<br>状态：<span class="warn">待签</span></div>
+        <div class="stamp pending">老田最终确认待签 · 不替代人工审批</div>
+      </div>
+    </div>
+  </section>
+
+  <footer><div>零界 · D1 鲁肃军团 · P0-04 QA1 复核页（第二轮）</div><div>只读流程记录 · 不产生交易 · 不写生产账本</div></footer>
+</div>
+</body>
+</html>

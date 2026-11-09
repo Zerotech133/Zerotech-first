@@ -16,7 +16,8 @@
 
 回测口径（与 qpzm_backtest 完全一致）：
   T 日收盘信号 → T+1 开盘买入 → T+1 起第 N 根 bar 收盘卖出；N∈{5,10,20}
-  成本 0.15% 往返；出场日停牌（无 bar）的交易剔除并计数
+  成本 0.30% 往返（实盘口径，config.trade.by_market.CN 推导：单边 15bp×2）；
+  出场日停牌（无 bar）的交易剔除并计数
   基准 = 同一信号日全体可交易股票（≥55 根自身 bar 且进出场价齐全）
          等权同窗口；超额 = 批次均值 − 基准均值
   持有期未满（T+N 超出数据尾）→ exit 取最新收盘 =「至今收益」，
@@ -55,7 +56,22 @@ REPORT_PATH = os.path.join(REPORTS, "rps_batch_backtest.json")
 SNAP_PATH = os.path.join(REPORTS, "rps_latest.json")
 
 HOLDS = (5, 10, 20)
-COST = 0.0015
+# T11（20261105）成本口径对齐实盘：批次回测是实盘池口径，往返成本必须与
+# 实盘一致（CN = 2×(cost_bps 12 + slippage_bps 3)bp = 30bp）。原 0.0015
+# 是旧锚点，会把批次收益与逐日曲线整体高估 15bp。
+# 复用 qpzm_backtest.default_cost_roundtrip（T8 已实现，勿重复实现）。
+# 顶层 import 实测无输出副作用（stdout 空，约 1.7s 主要是 numpy/pandas，
+# 本模块已依赖）；万一 import 失败，退回同一实盘口径常量，保证
+# archive-live 等不依赖回测引擎的路径仍可跑。
+try:
+    from qpzm_backtest import default_cost_roundtrip as _default_cost_roundtrip
+
+    COST = _default_cost_roundtrip("CN")
+    COST_SOURCE = "config:CN(往返,default_cost_roundtrip)"
+except Exception as _cost_ex:  # 引擎/配置缺失时不让归档路径陪葬
+    COST = 0.0030
+    COST_SOURCE = "fallback:0.0030(import_failed)"
+    print("BATCH cost: 推导失败，回退 0.0030（%s）" % _cost_ex, flush=True)
 MIN_BARS_ELIG = 55  # 与 qpzm_backtest.MIN_BARS_ELIG 一致
 _SUF = {"sz": ".SZ", "sh": ".SH", "bj": ".BJ"}
 
@@ -474,6 +490,7 @@ def run_batch_backtest(
     holds=HOLDS,
     cost=COST,
     data_dir=DATA_DIR,
+    cost_source=None,
 ):
     """逐批次算 holds 各档收益/胜率/超额 → rps_batch_backtest.json。"""
     batches = _read_batches(batches_path)
@@ -576,14 +593,20 @@ def run_batch_backtest(
             "n_batches": len(out),
             "holds": list(holds),
             "cost_roundtrip": cost,
+            "cost_source": cost_source
+            or ("cli(显式)" if cost != COST else COST_SOURCE),
             "min_bars_eligible": MIN_BARS_ELIG,
-            "design": "T 日收盘批次 → T+1 开盘买入 → 持有 N 日收盘卖出；"
-            "成本 0.15% 往返；基准=同日全体可交易等权；"
-            "持有期未满取最新收盘=至今收益(partial)；"
-            "仅 CN 买入+观察，环境闸门回避不计；"
-            "K254：后复权口径(pre_close 链)、T+1 一字板剔除"
-            "(n_unfillable)、出场停牌按最后可得价结算"
-            "(n_suspend_exit)，基准对称同口径",
+            "design": (
+                "T 日收盘批次 → T+1 开盘买入 → 持有 N 日收盘卖出；"
+                "成本 %.2f%% 往返（默认 CN 实盘 30bp，--cost 可覆盖）；"
+                "基准=同日全体可交易等权；"
+                "持有期未满取最新收盘=至今收益(partial)；"
+                "仅 CN 买入+观察，环境闸门回避不计；"
+                "K254：后复权口径(pre_close 链)、T+1 一字板剔除"
+                "(n_unfillable)、出场停牌按最后可得价结算"
+                "(n_suspend_exit)，基准对称同口径"
+            )
+            % (cost * 100.0),
             "daily_curve": "K251 逐日盯市：T+1 开盘进场起每天给出 当日/累计/"
             "超额；等权、停牌日 close 前值填充、成本按日常数扣"
             "（cum 含 −cost，差分即纯日收益）；深度=max(holds)；"
@@ -679,6 +702,7 @@ def main(argv=None):
             holds=holds,
             data_dir=args.data_dir,
             out_path=args.out,
+            cost=args.cost,
         )
     return 0
 

@@ -110,3 +110,11 @@ servers:
     capabilities: [atoms_extract, atoms_get, atoms_query, graph_query, graph_neighbors,
                    search_hybrid, intel_classify, intel_assess, intel_compare, intel_signals,
                    products_generate, requirements_coverage]
+  - id: stock-analysis
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/stock_analysis_mcp.py"]
+    owner: H1
+    status: active
+    capabilities: [sa_health, sa_overview, sa_watchlist, sa_data_status, sa_report,
+                   sa_events, sa_analyze, sa_batch, sa_job_status, sa_screen]

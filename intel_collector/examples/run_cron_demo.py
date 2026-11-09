@@ -2,6 +2,9 @@
 """统一 cron 实体演示（原型态，不触网、不污染真实注册表）
 
 - 读真实 sources.json 元数据 → 构建【内存】注册表；
+  【FEEDBACK-L0 注记 2026-11-07】本演示是 CronRunner 唯一实例化（演示态）；
+  生产采集器不写 store/observations.db，analyzer 无生产数据面——
+  真实数据干跑见 examples/feedback_dry.py；观测回写属 L1（依赖 ⑤ 唯一真源裁定）。
 - 用 DemoDispatcher 注入采集（xueqiu 前两次合成失败以演示失败可见/退避）；
 - 每个 tick 末跑 analyzer（compute_sla + scan_store_pii）→ FeedbackEngine 落反馈；
 - 虚拟时钟每 tick 推进 35 分钟，跑 6 个 tick，展示 CronRunner 单一实体驱动采集闭环。

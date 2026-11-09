@@ -39,7 +39,7 @@ def main() -> int:
     dts = pre + [d for d in ds if d >= "20190101"]
     P = load(dts)
     dates = P["a_close"].index.tolist()
-    start_i = dates.index(next(d for d in dates if d >= "20190101"))
+    dates.index(next(d for d in dates if d >= "20190101"))
     csum = P["a_close"].cumsum()
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names = sb["name"]

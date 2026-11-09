@@ -38,6 +38,21 @@ logging.basicConfig(
 )
 log = logging.getLogger("quant_watch")
 
+# ── 回环禁代理 ────────────────────────────────────────
+# 8097 hub 是 127.0.0.1：urllib 不豁免回环，只要 HTTP_PROXY 存在，打本机的请求也会被
+# 送去代理。代理一严格，hub_call 全部失败 → 盯盘触发静默失效，日志里只看到
+# "hub_call GET ... fail"，看不出是代理的锅。safe_urlopen 对回环走空 ProxyHandler。
+# 上行已把 ROOT/portal 插入 sys.path，portal 树有一份同步副本。
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # pragma: no cover - portal 目录缺失时兜底，但会丢失回环豁免
+    import urllib.request as _ur
+
+    log.warning("safe_urlopen 不可用，回退原生 urlopen：回环请求可能被代理接管")
+
+    def safe_urlopen(url, *args, **kwargs):
+        return _ur.urlopen(url, *args, **kwargs)
+
 
 # ── 配置 ──────────────────────────────────────────────
 HUB_URL = os.environ.get("QUANT_HUB_URL", "http://127.0.0.1:8097")
@@ -68,7 +83,7 @@ def _hub_call(path: str, method: str = "GET",
     try:
         data = json.dumps(body).encode("utf-8") if body else None
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with safe_urlopen(req, timeout=10) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         log.warning("hub_call %s %s fail: %s", method, path, e)

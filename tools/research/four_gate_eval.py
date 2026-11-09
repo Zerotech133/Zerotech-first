@@ -125,7 +125,7 @@ def main() -> int:
             "mom_120": -(px / hist.iloc[-121] - 1).reindex(cc),
             "rev_5": -(px / hist.iloc[-6] - 1).reindex(cc),
         }
-        market_fwd = fwd.reindex(cc).mean()
+        fwd.reindex(cc).mean()
         # regime：全市场 60 日收益（adj 矩阵时间序列，等权）
         mkt60 = float((hist.iloc[-1] / hist.iloc[-61] - 1).mean()) if len(hist) > 61 else 0.0
         for c in CANDIDATES:

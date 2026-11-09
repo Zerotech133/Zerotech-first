@@ -1,0 +1,190 @@
+{
+  "generated_at": "2026-11-05T20:35:25+08:00",
+  "n_factors": 271,
+  "n_families": 7,
+  "n_sources": 1,
+  "median_abs_ic": 0.021826,
+  "families": {
+    "Tushare-Alpha101": 101,
+    "Tushare-动量": 20,
+    "Tushare-反转": 3,
+    "Tushare-流动性": 35,
+    "Tushare-规模": 3,
+    "Tushare-财务": 84,
+    "Tushare-风险": 25
+  },
+  "sources": {
+    "tushare.factor_list": 271
+  },
+  "decay_counts": {
+    "decay": 33,
+    "insufficient": 6,
+    "stable": 139,
+    "flip": 57,
+    "soft_decay": 36
+  },
+  "top10_abs_ic": [
+    {
+      "name": "return_std_21d",
+      "family": "Tushare-风险",
+      "ic": 0.100144,
+      "t": 13.113,
+      "decay": "stable"
+    },
+    {
+      "name": "return_std_42d",
+      "family": "Tushare-风险",
+      "ic": 0.098918,
+      "t": 12.073,
+      "decay": "stable"
+    },
+    {
+      "name": "avg_turnover_5d",
+      "family": "Tushare-流动性",
+      "ic": 0.095089,
+      "t": 12.522,
+      "decay": "stable"
+    },
+    {
+      "name": "return_std_63d",
+      "family": "Tushare-风险",
+      "ic": 0.094464,
+      "t": 11.326,
+      "decay": "stable"
+    },
+    {
+      "name": "avg_turnover_10d",
+      "family": "Tushare-流动性",
+      "ic": 0.092094,
+      "t": 11.973,
+      "decay": "stable"
+    },
+    {
+      "name": "std_turnover_21d",
+      "family": "Tushare-流动性",
+      "ic": 0.090989,
+      "t": 12.75,
+      "decay": "stable"
+    },
+    {
+      "name": "alpha101_40",
+      "family": "Tushare-Alpha101",
+      "ic": 0.089672,
+      "t": 18.2,
+      "decay": "stable"
+    },
+    {
+      "name": "bias_turn_21d_504d",
+      "family": "Tushare-流动性",
+      "ic": 0.087785,
+      "t": 21.291,
+      "decay": "soft_decay"
+    },
+    {
+      "name": "avg_turnover_20d",
+      "family": "Tushare-流动性",
+      "ic": 0.087171,
+      "t": 11.146,
+      "decay": "stable"
+    },
+    {
+      "name": "turnover_ma_20d",
+      "family": "Tushare-流动性",
+      "ic": 0.087171,
+      "t": 11.146,
+      "decay": "stable"
+    }
+  ],
+  "decay_list": [
+    {
+      "name": "beta_1320d_000001",
+      "family": "Tushare-风险",
+      "ic": 0.031434,
+      "decay": "flip"
+    },
+    {
+      "name": "alpha101_77",
+      "family": "Tushare-Alpha101",
+      "ic": 0.025065,
+      "decay": "flip"
+    },
+    {
+      "name": "alpha101_14",
+      "family": "Tushare-Alpha101",
+      "ic": 0.024967,
+      "decay": "flip"
+    },
+    {
+      "name": "yoy_revenue",
+      "family": "Tushare-财务",
+      "ic": 0.024197,
+      "decay": "decay"
+    },
+    {
+      "name": "yoy_total_asset",
+      "family": "Tushare-财务",
+      "ic": 0.021895,
+      "decay": "decay"
+    },
+    {
+      "name": "alpha101_31",
+      "family": "Tushare-Alpha101",
+      "ic": 0.020501,
+      "decay": "flip"
+    },
+    {
+      "name": "rsrs",
+      "family": "Tushare-动量",
+      "ic": -0.020099,
+      "decay": "decay"
+    },
+    {
+      "name": "yoy_net_asset",
+      "family": "Tushare-财务",
+      "ic": 0.018997,
+      "decay": "decay"
+    },
+    {
+      "name": "alpha101_82",
+      "family": "Tushare-Alpha101",
+      "ic": 0.018088,
+      "decay": "flip"
+    },
+    {
+      "name": "alpha101_72",
+      "family": "Tushare-Alpha101",
+      "ic": 0.017813,
+      "decay": "flip"
+    },
+    {
+      "name": "delta_asset_turnover",
+      "family": "Tushare-财务",
+      "ic": 0.016353,
+      "decay": "decay"
+    },
+    {
+      "name": "alpha101_74",
+      "family": "Tushare-Alpha101",
+      "ic": 0.015944,
+      "decay": "flip"
+    },
+    {
+      "name": "yoy_net_profit",
+      "family": "Tushare-财务",
+      "ic": 0.015869,
+      "decay": "decay"
+    },
+    {
+      "name": "yoy_ocf",
+      "family": "Tushare-财务",
+      "ic": 0.015415,
+      "decay": "decay"
+    },
+    {
+      "name": "alpha101_57",
+      "family": "Tushare-Alpha101",
+      "ic": 0.015288,
+      "decay": "decay"
+    }
+  ]
+}

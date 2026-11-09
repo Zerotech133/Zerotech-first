@@ -110,7 +110,12 @@ if (-not $m3PauseActive -and "$out" -match 'OK d') {
         # 异步拉起（同 clip_watch 模式）：M3 补积压可达数十分钟，同步等待会阻塞
         # 本 tick 的后续环节并吞掉 12:06-12:46 全部调度窗（12-08 实测 46 分钟）
         # 2026-10-20 错峰闸门（T-Q10, 老田拍板）：避开雪球分类 08/09/10 整点班窗
-        $env:K266_PEAK_SHIFT = '1'
+        # 2026-11-06 交互让位闸门3（K266-PROBE-YIELD，老田批准启用）：JEV judge/人类
+        # 交互延迟超 6s 时 M3 让位交还锁（睡 60s 重探；累计让位 900s 本轮收工，
+        # k266_services 5 分钟一轮自愈接续）。当日 11-06 实证：M3 16k ctx 长批独占
+        # Ollama 单槽队列 → JEV judge 60s 超时 → 146 积压（R3 根因）。
+        $env:K266_PEAK_SHIFT   = '1'
+        $env:K266_PROBE_YIELD  = '1'
         Start-Process -FilePath 'C://Program Files\Python311\python.exe' -ArgumentList '-X','utf8',"$root\quant_backtest\k266_m3_structure.py" `
             -WorkingDirectory "$root\quant_backtest" -WindowStyle Hidden `
             -RedirectStandardOutput 'C:\Temp\k266_m3.log' -RedirectStandardError 'C:\Temp\k266_m3_err.log'

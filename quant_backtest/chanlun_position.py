@@ -222,7 +222,7 @@ def _print(c):
     t = sc.get("triggers") or {}
     print("─" * 62)
     print(
-        "关键价位：3卖清仓 %s · 趋势终结 %s%s"
+        "关键价位：3卖结构位 %s · 趋势终结 %s%s"
         % (
             ("%.2f" % t["sub_3s_zd"]) if t.get("sub_3s_zd") else "—",
             ("%.2f" % t["daily_hl_prev"]) if t.get("daily_hl_prev") else "—",

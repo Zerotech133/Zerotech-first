@@ -1,15 +1,13 @@
 {
- "generated_at": "2026-11-02T04:01:08+08:00",
+ "generated_at": "2026-11-02T07:00:48+08:00",
  "date": "20261102",
  "checks": {
   "catalog_snapshot": {
-   "rc": 1,
-   "status": "warn",
-   "ok": false,
-   "issues": [
-    "抽样中 1 张表文件数与登记差异 >1（drift_warn）"
-   ],
-   "issue_count": 1
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "issues": [],
+   "issue_count": 0
   },
   "metadata_consistency": {
    "rc": 0,
@@ -49,7 +47,7 @@
  },
  "registry": {
   "physical_count": 256,
-  "display_count": 92,
+  "display_count": 174,
   "qualification": {
    "unknown": 223,
    "evidence_partial": 25,
@@ -60,8 +58,8 @@
  },
  "summary": {
   "checks_total": 5,
-  "checks_ok": 3,
-  "checks_warn": 2,
+  "checks_ok": 4,
+  "checks_warn": 1,
   "checks_error": 0,
   "hard_ok": true
  }

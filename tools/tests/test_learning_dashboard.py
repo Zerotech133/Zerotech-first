@@ -14,10 +14,12 @@ import importlib.util
 import json
 import os
 import sys
-import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 BUILDER = REPO / "tools" / "kb_corpus" / "learning_dashboard_build.py"
 DASHBOARD = REPO / "portal" / "static" / "learning_projects_dashboard.json"
 PAGE = REPO / "portal" / "learning_projects.html"
@@ -39,7 +41,7 @@ B = _load()
 
 def http_ok(path: str, timeout: float = 10.0) -> tuple[int, str]:
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8734" + path, timeout=timeout) as r:
+        with safe_urlopen("http://127.0.0.1:8734" + path, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8", errors="replace")
     except Exception as exc:  # noqa: BLE001
         return 0, f"{type(exc).__name__}: {exc}"
@@ -271,8 +273,7 @@ def test_dashboard_lifecycle_and_registry_gate_sync():
         else:
             assert proj["lifecycle"]["gate"]["checked_at"]
     # HTTP：看板 JSON 已带 lifecycle
-    import urllib.request
-    with urllib.request.urlopen("http://127.0.0.1:8734/static/learning_projects_dashboard.json", timeout=10) as r:
+    with safe_urlopen("http://127.0.0.1:8734/static/learning_projects_dashboard.json", timeout=10) as r:
         served = _json.loads(r.read().decode("utf-8"))
     assert served["schema_version"] == "learning_projects_dashboard.v2"
     assert served["lifecycle"]["projects"] >= 2
@@ -314,11 +315,10 @@ def test_page_factor_lab_block_and_http():
     for old in ("项目列表", "流水线（4 任务）", "质量门", "学习能力矩阵", "待办"):
         assert old in html, old
     # HTTP 200：页面 + 因子 JSON
-    import urllib.request
-    with urllib.request.urlopen("http://127.0.0.1:8734/learning_projects.html", timeout=10) as r:
+    with safe_urlopen("http://127.0.0.1:8734/learning_projects.html", timeout=10) as r:
         body = r.read().decode("utf-8", errors="replace")
         assert r.status == 200 and "学习因子实验室（W2）" in body
-    with urllib.request.urlopen("http://127.0.0.1:8734/static/learning_factors.json", timeout=10) as r:
+    with safe_urlopen("http://127.0.0.1:8734/static/learning_factors.json", timeout=10) as r:
         served = json.loads(r.read().decode("utf-8"))
         assert r.status == 200 and len(served["factors"]) == 8
 

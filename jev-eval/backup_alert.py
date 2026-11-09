@@ -139,21 +139,54 @@ def build_backup_card(fields, with_buttons=True):
     }
 
 
+def _cred_candidates():
+    """候选凭据路径（2026-11-05 与 news_collector/send_feishu.py 同修）。
+
+    无 profile 环境（S4U 计划任务）里 USERPROFILE/HOMEDRIVE/HOMEPATH 可能全缺，
+    os.path.expanduser("~") 原样返回 '~'，旧版拼出 "~/.lark-cli/config.json"
+    必然打不开 → 备份告警静默失效。
+    """
+    cands = []
+    envp = os.environ.get("LARK_CLI_CONFIG")
+    if envp:
+        cands.append(envp)
+    home = os.path.expanduser("~")
+    if home and home not in ("~", ""):
+        cands.append(os.path.join(home, ".lark-cli", "config.json"))
+    user = os.environ.get("USERNAME")
+    if user:
+        cands.append(os.path.join("C:\\Users", user, ".lark-cli", "config.json"))
+    try:
+        import glob
+
+        cands.extend(sorted(glob.glob(os.path.join("C:\\Users", "*", ".lark-cli", "config.json"))))
+    except Exception:  # noqa: BLE001
+        pass
+    seen, out = set(), []
+    for c in cands:
+        if c and c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
+
+
 def load_app_creds():
-    """Read app credentials from ~/.lark-cli/config.json (OPS-1001d followup:
+    """Read app credentials from the lark config.json (OPS-1001d followup:
     lark-cli 1.0.5 uses externally injected creds; scheduled tasks have none.
     OpenAPI direct calls with these static creds are unattended-safe)."""
-    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
-    try:
-        with open(cfg, encoding="utf-8") as f:
-            apps = json.load(f).get("apps") or []
-        if apps:
-            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
-            # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
-            if aid and isinstance(sec, str):
-                return aid, sec
-    except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/backup_alert.py", exc)
+    for cfg in _cred_candidates():
+        try:
+            with open(cfg, encoding="utf-8") as f:
+                apps = json.load(f).get("apps") or []
+            if apps:
+                aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
+                # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
+                if aid and isinstance(sec, str):
+                    return aid, sec
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s (%s)", "jev-eval/backup_alert.py", exc, cfg
+            )
     return None, None
 
 
@@ -168,6 +201,39 @@ def send_openapi(msg_type, content, user_id, receive_id_type="open_id"):
 
     ok, _why = send_msg(content, msg_type, user_id, receive_id_type)
     return ok
+
+
+def _target_app_guard(user_id):
+    """Reject a target that is unregistered or belongs to another app domain.
+
+    2026-11-06 事故：JEV 环境里的旧 LARK_ALERT_OPEN_ID 指向 zb.ops.notify
+    app 的 open_id，而实际发送凭证是 news app，导致 99992361 cross app，
+    死信重投 8 次。这里在发送前按 push_targets 的 app 域做强校验；无法
+    确认时一律拒绝，避免再次落死信。
+
+    Returns (ok: bool, why: str).
+    """
+    target = str(user_id or "").strip()
+    if not target:
+        return False, "empty target"
+    expected_app = ""
+    for t in push_targets.targets():
+        if str(t.get("id") or "").strip() == target:
+            expected_app = str(t.get("app") or "").strip()
+            break
+    if not expected_app:
+        return False, "target not registered in push_targets"
+    try:
+        from feishu_client import load_app_creds
+
+        app_id, _ = load_app_creds()
+    except Exception as exc:  # noqa: BLE001
+        return False, "credential load failed: %s" % type(exc).__name__
+    if not app_id:
+        return False, "no static app credentials"
+    if app_id != expected_app:
+        return False, "target app %s != sender app %s" % (expected_app, app_id)
+    return True, expected_app
 
 
 def load_webhook():
@@ -226,6 +292,27 @@ def main():
         text = "(empty alert)"
     fields = parse_fields(text)
     user_id = os.environ.get("LARK_ALERT_OPEN_ID", DEFAULT_USER_ID)
+    guard_ok, guard_why = _target_app_guard(user_id)
+    if not guard_ok:
+        print("ALERT_TARGET_APP_MISMATCH " + guard_why)
+        # 配置类拒绝也要报警，但绝不能发回原目标（避免再触发 cross app）。
+        # 安全回退到 push_targets 的“个人”目标；失败只记录，不再重试。
+        if DEFAULT_USER_ID and DEFAULT_USER_ID != user_id:
+            try:
+                send_openapi(
+                    "text",
+                    json.dumps(
+                        {
+                            "text": "⚠ JEV 告警未发送：收件人配置异常（%s）。"
+                            "已拒绝跨 app 发送；请修 LARK_ALERT_OPEN_ID。" % guard_why
+                        },
+                        ensure_ascii=False,
+                    ),
+                    DEFAULT_USER_ID,
+                )
+            except Exception as exc:  # noqa: BLE001
+                print("ALERT_TARGET_APP_NOTIFY_ERROR " + str(exc)[:150])
+        sys.exit(2)
     if fields.get("type") == "ai_workstation_backup_failed":
         msg_type = "interactive"
     else:

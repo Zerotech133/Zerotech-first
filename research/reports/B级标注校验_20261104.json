@@ -1,0 +1,25 @@
+{
+  "file": "C:\\项目\\老田的AI助手\\research\\annotations\\B级标注候选_v1.csv",
+  "rows": 200,
+  "columns_ok": true,
+  "missing_columns": [],
+  "invalid_labels": [],
+  "labeled_rows": 0,
+  "by_strategy": {
+    "LX03": {
+      "rows": 100,
+      "labels": {
+        "unsure": 100
+      }
+    },
+    "LX05": {
+      "rows": 100,
+      "labels": {
+        "unsure": 100
+      }
+    }
+  },
+  "double_annotation_pairs": 0,
+  "double_annotation_agreement": null,
+  "status": "incomplete"
+}

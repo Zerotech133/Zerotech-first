@@ -1,0 +1,86 @@
+{
+ "schema_version": 1,
+ "date": "20261103",
+ "generated_at": "2026-11-06T23:48:19+08:00",
+ "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
+ "mode": "apply",
+ "dry_run": false,
+ "project": "视频号学习_北斗股术1688",
+ "source": {
+  "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_北斗股术1688_units_draft.jsonl",
+  "sha256": "93a8d153b3537bbf33806e2d7ac8e13dc75646b54c6fb6b6e5b8f4f95e54d2db",
+  "bytes": 505884
+ },
+ "policy": {
+  "key": "normalize_claim_first_14_cjk",
+  "skip_boilerplate": true,
+  "merge": "保留首条 + merged_count/merged_unit_ids/evidence_list",
+  "write": "--apply 才写；写前备份 research/reports/backups/"
+ },
+ "stats": {
+  "input": 114,
+  "output": 108,
+  "dup_groups": 3,
+  "duplicate_rows": 6,
+  "merged": 6,
+  "boilerplate": 0,
+  "by_group_size": {
+   "3": 1,
+   "4": 1,
+   "2": 1
+  },
+  "output_sha256": "e0a35f4a0f001a8f8120aa0d31129c8aef78916e7c7af0fc01fc949dedcce3a8"
+ },
+ "duplicates": [
+  {
+   "key": "复盘文章这里就不发了明确的买",
+   "size": 3,
+   "kept_unit_id": "learn_视频号学习_北斗股术1688_0002",
+   "merged_unit_ids": [
+    "learn_视频号学习_北斗股术1688_0002",
+    "learn_视频号学习_北斗股术1688_0003",
+    "learn_视频号学习_北斗股术1688_0004"
+   ],
+   "evidence_count": 3
+  },
+  {
+   "key": "今天跟大家说禅中说禅教你炒股",
+   "size": 4,
+   "kept_unit_id": "learn_视频号学习_北斗股术1688_0045",
+   "merged_unit_ids": [
+    "learn_视频号学习_北斗股术1688_0045",
+    "learn_视频号学习_北斗股术1688_0054",
+    "learn_视频号学习_北斗股术1688_0055",
+    "learn_视频号学习_北斗股术1688_0056"
+   ],
+   "evidence_count": 4
+  },
+  {
+   "key": "年交易系统梳理第一篇如何在市",
+   "size": 2,
+   "kept_unit_id": "learn_视频号学习_北斗股术1688_0063",
+   "merged_unit_ids": [
+    "learn_视频号学习_北斗股术1688_0063",
+    "learn_视频号学习_北斗股术1688_0064"
+   ],
+   "evidence_count": 2
+  }
+ ],
+ "kept_sample": [
+  "learn_视频号学习_北斗股术1688_0001",
+  "learn_视频号学习_北斗股术1688_0005",
+  "learn_视频号学习_北斗股术1688_0006",
+  "learn_视频号学习_北斗股术1688_0007",
+  "learn_视频号学习_北斗股术1688_0008",
+  "learn_视频号学习_北斗股术1688_0009",
+  "learn_视频号学习_北斗股术1688_0010",
+  "learn_视频号学习_北斗股术1688_0011",
+  "learn_视频号学习_北斗股术1688_0012",
+  "learn_视频号学习_北斗股术1688_0013"
+ ],
+ "notes": [],
+ "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_北斗股术1688_units_draft.jsonl.20261106_234819.v1bak",
+ "applied": true,
+ "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。",
+ "idempotent_noop": false
+}

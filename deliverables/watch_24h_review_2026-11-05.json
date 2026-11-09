@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-11-05T15:20:00+08:00",
+  "log": "C:\\项目\\老田的AI助手\\agent_platform\\data\\watch_engine\\observe_24h.jsonl",
+  "records": 294,
+  "bad_lines": 0,
+  "first_at": "2026-11-04T15:16:31+08:00",
+  "last_at": "2026-11-05T15:19:50+08:00",
+  "span_hours": 24.06,
+  "expected_records_24h": 144,
+  "problems_records": 3,
+  "active_problems": [],
+  "historical_problem_records": 3,
+  "problem_counts": {
+    "WatchAdmin_task_not_running": 1,
+    "WatchEngineLoop_task_not_running": 1,
+    "WatchEngineLoop_process_not_running": 2
+  },
+  "alert_sent_records": 1,
+  "gaps_over_15m": 0,
+  "max_gap_minutes": 0,
+  "gaps": [],
+  "verdict": "healthy",
+  "closed_at": "2026-11-05T15:20:00+08:00",
+  "marker": "C:\\项目\\老田的AI助手\\agent_platform\\data\\watch_engine\\observe_24h.closed",
+  "report_json": "C:\\项目\\老田的AI助手\\deliverables\\watch_24h_review_2026-11-05.json",
+  "report_md": "C:\\项目\\老田的AI助手\\deliverables\\2026-11-05_watch_24h复盘_v1.md"
+}

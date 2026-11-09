@@ -244,6 +244,8 @@ def test_evaluate_core_schema_and_empty():
     assert empty_payload["factors"] == {}
     assert empty_payload["verdict"]["is_effective_factor"] is False
     json.dumps(empty_payload, ensure_ascii=False)
+    md = irs.render_markdown(empty_payload)
+    assert "面板为空" in md and "Traceback" not in md
 
 
 def test_industry_and_cap_stratification_outputs():

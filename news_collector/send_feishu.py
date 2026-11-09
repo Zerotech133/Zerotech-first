@@ -69,21 +69,62 @@ def find_lark_cli():
     return None
 
 
+def _cred_candidates():
+    """按可靠度列出 lark 静态凭据的候选路径。
+
+    2026-11-05 修（S4U 告警静默链）：无 profile 的环境（S4U 计划任务、
+    run-as-service）里 USERPROFILE/HOMEDRIVE/HOMEPATH 可能全缺，此时
+    os.path.expanduser("~") 会**原样返回 '~'**，旧版直接拼出
+    "~/.lark-cli/config.json" 去打开 → 必然失败 → 返回 (None, None) →
+    转向 lark-cli 回退（同样依赖 profile）→ 任务失败后告警彻底没人知道。
+    实测：清空三个变量后 expanduser 返回 '~'，旧版本 (None, None)。
+
+    候选顺序：环境变量显式指定 > 正常家目录 > C:\\Users\\<USERNAME> >
+    扫 C:\\Users\\*\\.lark-cli（本机只有少数账户，开销可忽略）。
+    """
+    cands = []
+    envp = os.environ.get("LARK_CLI_CONFIG")
+    if envp:
+        cands.append(envp)
+    home = os.path.expanduser("~")
+    if home and home not in ("~", ""):
+        cands.append(os.path.join(home, ".lark-cli", "config.json"))
+    user = os.environ.get("USERNAME")
+    if user:
+        cands.append(os.path.join("C:\\Users", user, ".lark-cli", "config.json"))
+    try:
+        import glob
+
+        cands.extend(sorted(glob.glob(os.path.join("C:\\Users", "*", ".lark-cli", "config.json"))))
+    except Exception:  # noqa: BLE001
+        pass
+    seen, out = set(), []
+    for c in cands:
+        if c and c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
+
+
 def _load_app_creds():
-    """读 ~/.lark-cli/config.json 静态凭证（backup_alert.load_app_creds 同款）。
+    """读 lark 静态凭据 config.json（backup_alert.load_app_creds 同款）。
 
     20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
-    → (None, None)，通道 1 干净失败走 lark-cli 回退（feishu_client 同款）。"""
-    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
-    try:
-        with open(cfg, encoding="utf-8") as f:
-            apps = json.load(f).get("apps") or []
-        if apps:
-            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
-            if aid and isinstance(sec, str):
-                return aid, sec
-    except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/send_feishu.py", exc)
+    → (None, None)，通道 1 干净失败走 lark-cli 回退（feishu_client 同款）。
+    2026-11-05：家目录解析不再只认 ~（原因见 _cred_candidates）。
+    """
+    for cfg in _cred_candidates():
+        try:
+            with open(cfg, encoding="utf-8") as f:
+                apps = json.load(f).get("apps") or []
+            if apps:
+                aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
+                if aid and isinstance(sec, str):
+                    return aid, sec
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s (%s)", "news_collector/send_feishu.py", exc, cfg
+            )
     return None, None
 
 

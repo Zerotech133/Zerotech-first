@@ -40,8 +40,61 @@ import logging
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-VERSION = "1.0"
+VERSION = "1.0"            # 注册表内容版本（类型清单语义）
 REGISTRY_TS = "2026-10-09"
+
+# ── 受治理 TBox 元信息（C1，2026-11-06）──────────────────────
+# 把"本体注册表"升级为"受治理 TBox"：每个节点/边类型声明 归属(steward)
+# + 状态机 + 版本 + RFC。治理字段由 _apply_governance() 在加载时按域兜底
+# 补全（显式声明优先），registry_json() 暴露、validate()/gate() 审计。
+# 版本号遵循语义化（MAJOR.MINOR.PATCH）。
+TBOX_VERSION = "2.1.0"          # 2.0 治理面；2.1 引入双时态面（C4，2026-11-06）
+TBOX_TS = "2026-11-06"          # 治理元信息登记日
+GOV_DEFAULT_RFC = "RFC-KG-000"  # 初始注册批次（后续结构/语义变更须升 RFC 号）
+
+# 业务域 → 治理归属（steward 席位/团队）。对应 C5：情报域归 KGMAP1 席位。
+DOMAIN_STEWARD = {
+    "市场数据": "KGMARKET1",
+    "公司人物": "KGMARKET1",
+    "资金行为": "KGCAPITAL1",
+    "市场事件": "KGEVENT1",
+    "情报推理": "KGMAP1",        # 情报线转正域（C5 steward）
+    "情报本体": "KGMAP1",        # 人工情报录入（K201）
+    "实验域":   "KGSHADOW1",     # EXP_ 影子推理（zerobound-kg 团队）
+}
+
+# 边类型分类 -> 治理归属（边的 domain 是"边分类"，与节点业务域不同轴）
+EDGE_STEWARD = {
+    "结构": "KGMARKET1",
+    "资金": "KGCAPITAL1",
+    "事件": "KGEVENT1",
+    "时间": "KGEVENT1",
+    "相似": "KGMARKET1",
+    "分类": "KGMARKET1",
+    "情报": "KGMAP1",
+    "推理": "KGMAP1",
+    "情报本体": "KGMAP1",
+    "实验域": "KGSHADOW1",
+    "文档线": "KGMAP1",
+}
+# 类型状态机：active=生产可用 / experimental=实验候选 / deprecated=已弃用
+STATUS_VALUES = ("active", "experimental", "deprecated")
+
+GOVERNANCE = {
+    "policy": "每个节点/边类型须声明 owner(归属席位)+status+version+rfc；"
+              "active/deprecated 缺 owner/rfc 判治理缺口；deprecated 须 replaced_by。",
+    "versioning": "语义化版本；破坏性 schema 变更须 MAJOR+；新增类型 MINOR+。",
+    "rfc": "每次结构/语义变更登记 RFC-KG-###；初始注册批次 RFC-KG-000。",
+    "steward_duty": "steward 对所属类型的语义、保鲜、漂移负责，接收 gate 告警。",
+    # C5（2026-11-06）：消除名实脱节——TBox 结构本身（增删类型/改域归属/
+    # 状态机/版本/RFC 登记）由 KGMAP1 席位任 steward：TBox 级变更须提
+    # RFC-KG-### 并由 KGMAP1 审批归档；gate 的 TBox 级告警（治理缺口/
+    # 双时态索引缺失）直达 KGMAP1，域级告警按 DOMAIN_STEWARD/EDGE_STEWARD 分发。
+    "tbox_steward": "KGMAP1",
+}
+
+# TBox 结构 steward 席位（与 GOVERNANCE["tbox_steward"] 同源单点）
+TBOX_STEWARD = "KGMAP1"
 
 TRUST_SCALE = {
     "A": "完全可靠（人工审核/官方日历）",
@@ -872,6 +925,156 @@ PROP_META = {
     },
 }
 
+# ── 受治理 TBox：加载时治理字段补全（C1）─────────────────────
+def _default_status(key):
+    """实验域 EXP_ 前缀 → experimental，其余 active。"""
+    return "experimental" if str(key).startswith("EXP_") else "active"
+
+
+def _apply_governance():
+    """为每个节点/边类型补全治理字段（owner/status/version/rfc/replaced_by）。
+
+    规则：条目若已显式声明治理字段则不覆盖，否则按域 steward 兜底。
+    不修改 NODE_TYPES/EDGE_TYPES 字面量，保证向后兼容所有消费方。
+    """
+    for key, m in NODE_TYPES.items():
+        m.setdefault("owner", DOMAIN_STEWARD.get(m.get("domain", ""), "KGADMIN1"))
+        m.setdefault("status", _default_status(key))
+        m.setdefault("version", TBOX_VERSION)
+        m.setdefault("rfc", GOV_DEFAULT_RFC)
+        m.setdefault("replaced_by", None)
+    for key, m in EDGE_TYPES.items():
+        m.setdefault("owner", EDGE_STEWARD.get(m.get("domain", ""), "KGADMIN1"))
+        m.setdefault("status", _default_status(key))
+        m.setdefault("version", TBOX_VERSION)
+        m.setdefault("rfc", GOV_DEFAULT_RFC)
+        m.setdefault("replaced_by", None)
+
+
+def _governance_gap():
+    """治理缺口：未显式细化 steward（落到 KGADMIN1 兜底）/ 非法状态 /
+    缺 replaced_by 的条目。供 snapshot/validate/gate 复用。"""
+    missing_owner, missing_rfc, bad_status, missing_replaced = [], [], [], []
+    for key, m in NODE_TYPES.items():
+        if not m.get("owner") or str(m["owner"]).startswith("KGADMIN1"):
+            missing_owner.append(key)
+        if not m.get("rfc"):
+            missing_rfc.append(key)
+        if m.get("status") not in STATUS_VALUES:
+            bad_status.append(key)
+        if m.get("status") == "deprecated" and not m.get("replaced_by"):
+            missing_replaced.append(key)
+    for key, m in EDGE_TYPES.items():
+        if not m.get("owner") or str(m["owner"]).startswith("KGADMIN1"):
+            missing_owner.append(key)
+        if not m.get("rfc"):
+            missing_rfc.append(key)
+        if m.get("status") not in STATUS_VALUES:
+            bad_status.append(key)
+        if m.get("status") == "deprecated" and not m.get("replaced_by"):
+            missing_replaced.append(key)
+    return {
+        "missing_owner": sorted(set(missing_owner)),
+        "missing_rfc": sorted(set(missing_rfc)),
+        "bad_status": sorted(set(bad_status)),
+        "missing_replaced_by": sorted(set(missing_replaced)),
+        "count": len(set(missing_owner)) + len(set(missing_rfc))
+        + len(set(bad_status)) + len(set(missing_replaced)),
+    }
+
+
+_apply_governance()
+
+
+# ── C4 双时态面（2026-11-06）─────────────────────────────────
+# 目标：漂移可追责到"哪次写入"（事务时间 tx_created）+ 事实随时间演化
+# 可回溯（有效时间窗 valid_from/valid_to，开区间无界=缺省空）。
+# 写入约定（对所有建图脚本生效）：
+#   - 一切节点/边写入须带 tx_created（datetime）；未带 = 迁移前存量，回填基准。
+#   - 时变边（BITEMPORAL_EDGE_DOMAINS 覆盖的类型）另带 valid_from/valid_to。
+TX_FIELD = "tx_created"     # 事务时间字段（追责维度）
+VALID_FROM = "valid_from"   # 有效时间起点
+VALID_TO = "valid_to"       # 有效时间终点（None/缺省 = 至今有效）
+
+# 需要有效时间窗的边域：资金流/事件状态/时间序列随时间变化，须可回溯；
+# 结构类（BELONGS_TO 等名义稳定）只记 tx_created，不加窗。
+BITEMPORAL_EDGE_DOMAINS = ("资金", "事件", "时间")
+
+
+def bitemporal_edge_types():
+    """需要 (valid_from, valid_to) 复合索引的边类型清单（按边域筛）。"""
+    return [
+        r for r, m in EDGE_TYPES.items()
+        if m.get("domain") in BITEMPORAL_EDGE_DOMAINS
+    ]
+
+
+def bitemporal_ddl():
+    """生成双时态索引 DDL（Neo4j 4.4+/5.x 语法，属性带变量前缀——5.x 必需；
+    幂等 IF NOT EXISTS）。
+
+    - 全部节点标签：tx_created 单列索引（写入追责主查询）。
+    - 时变边类型：(valid_from, valid_to) 复合索引（时点回溯主查询）
+      + tx_created 单列索引（写入追责）。
+    索引命名：tx_<label 小写> / vf_<rel 小写> / txr_<rel 小写>。
+    """
+    stmts = []
+    for lbl in NODE_TYPES:
+        stmts.append(
+            "CREATE INDEX tx_%s IF NOT EXISTS FOR (n:`%s`) ON (n.`%s`);"
+            % (lbl.lower(), lbl, TX_FIELD)
+        )
+    for rel in bitemporal_edge_types():
+        stmts.append(
+            "CREATE INDEX vf_%s IF NOT EXISTS FOR ()-[r:`%s`]-()"
+            " ON (r.`%s`, r.`%s`);"
+            % (rel.lower(), rel, VALID_FROM, VALID_TO)
+        )
+        stmts.append(
+            "CREATE INDEX txr_%s IF NOT EXISTS FOR ()-[r:`%s`]-() ON (r.`%s`);"
+            % (rel.lower(), rel, TX_FIELD)
+        )
+    return stmts
+
+
+def bitemporal_backfill_cypher():
+    """存量回填 Cypher（幂等，只补缺失字段，不覆盖已有值）。
+
+    - 节点：tx_created 缺失 -> 回填 migration 基准（date()，日粒度足够追责）。
+    - 时变边：valid_from 缺失 -> 用自身 date_field（若该类型声明了），
+      否则 date()；valid_to 缺省不写（= 至今有效，开区间语义）。
+    返回 [(描述, cypher), ...]；执行方逐条 run，失败不中断（逐条留痕）。
+    """
+    stmts = []
+    for lbl, m in NODE_TYPES.items():
+        stmts.append((
+            "node %s: backfill tx_created" % lbl,
+            "MATCH (n:`%s`) WHERE n.%s IS NULL SET n.%s = date();"
+            % (lbl, TX_FIELD, TX_FIELD),
+        ))
+    for rel in bitemporal_edge_types():
+        df = (EDGE_TYPES.get(rel) or {}).get("date_field")
+        fill = ("coalesce(r.`%s`, date())" % df) if df else "date()"
+        stmts.append((
+            "rel %s: backfill valid_from%s" % (rel, " (from %s)" % df if df else ""),
+            "MATCH ()-[r:`%s`]->() WHERE r.%s IS NULL SET r.%s = %s;"
+            % (rel, VALID_FROM, VALID_FROM, fill),
+        ))
+    return stmts
+
+
+def _expected_indexes():
+    """bitemporal_ddl() 期望的索引集合，规格化为
+    (entityType, labelsOrTypes 元组, properties 元组)，与 SHOW INDEXES
+    输出同构，供 gate() 比对图内实况。"""
+    exp = set()
+    for lbl in NODE_TYPES:
+        exp.add(("NODE", (lbl,), (TX_FIELD,)))
+    for rel in bitemporal_edge_types():
+        exp.add(("RELATIONSHIP", (rel,), (VALID_FROM, VALID_TO)))
+        exp.add(("RELATIONSHIP", (rel,), (TX_FIELD,)))
+    return exp
+
 
 # ── 基础访问面 ────────────────────────────────────────────────
 def labels():
@@ -910,15 +1113,49 @@ def registry_json():
     nodes = {}
     for lbl, m in NODE_TYPES.items():
         g = trust_grade(m["source"]) or m["trust"]
-        nodes[lbl] = {**m, "trust": g, "props": PROP_META.get(lbl, {})}
+        nodes[lbl] = {
+            **m,
+            "trust": g,
+            "props": PROP_META.get(lbl, {}),
+            "governance": {
+                "owner": m.get("owner"),
+                "status": m.get("status"),
+                "version": m.get("version"),
+                "rfc": m.get("rfc"),
+                "replaced_by": m.get("replaced_by"),
+            },
+        }
     edges = {}
     for r, m in EDGE_TYPES.items():
         g = trust_grade(m["source"]) or m["trust"]
-        edges[r] = {**m, "trust": g}
+        edges[r] = {
+            **m,
+            "trust": g,
+            "governance": {
+                "owner": m.get("owner"),
+                "status": m.get("status"),
+                "version": m.get("version"),
+                "rfc": m.get("rfc"),
+                "replaced_by": m.get("replaced_by"),
+            },
+        }
     return {
         "version": VERSION,
+        "tbox_version": TBOX_VERSION,
+        "tbox_ts": TBOX_TS,
+        "governance_policy": GOVERNANCE,
+        "domain_steward": DOMAIN_STEWARD,
+        "tbox_steward": TBOX_STEWARD,
         "registry_ts": REGISTRY_TS,
         "trust_scale": TRUST_SCALE,
+        "bitemporal": {
+            "tx_field": TX_FIELD,
+            "valid_from": VALID_FROM,
+            "valid_to": VALID_TO,
+            "edge_domains": list(BITEMPORAL_EDGE_DOMAINS),
+            "edge_types": bitemporal_edge_types(),
+            "ddl_statement_count": len(bitemporal_ddl()),
+        },
         "counts": {"node_types": len(nodes), "edge_types": len(edges)},
         "node_types": nodes,
         "edge_types": edges,
@@ -970,6 +1207,17 @@ def snapshot(cli=None):
                         m["date_field"],
                     )
                     fresh["rel:" + r] = s.run(q).data()[0].get("mx")
+            # C4：图内索引实况（gate R6 比对双时态期望集）。
+            # 旧版 Neo4j 无 SHOW INDEXES 某些字段时降级为空表（不致快照失败）。
+            try:
+                out["indexes"] = s.run(
+                    "SHOW INDEXES YIELD name, type, entityType, "
+                    "labelsOrTypes, properties, state "
+                    "WHERE type <> 'LOOKUP' "
+                    "RETURN entityType, labelsOrTypes, properties, state, name"
+                ).data()
+            except Exception:
+                out["indexes"] = []
     except Exception as ex:
         out["error"] = "Neo4j 不可达：%s" % str(ex)[:80]
         return out
@@ -990,6 +1238,7 @@ def snapshot(cli=None):
         "unregistered_rels": sorted(set(e_cnt) - set(EDGE_TYPES)),
         "registered_absent_labels": sorted(l for l in NODE_TYPES if l not in n_cnt),
         "registered_absent_rels": sorted(r for r in EDGE_TYPES if r not in e_cnt),
+        "governance_gap": _governance_gap(),
     }
     out["ok"] = True
     return out
@@ -1011,6 +1260,20 @@ def validate(cli=None, snap=None):
         issues.append(("INFO", "ontology", "node", "注册标签图内为空 %s" % lbl))
     for r in d["registered_absent_rels"]:
         issues.append(("INFO", "ontology", "edge", "注册边型图内为空 %s" % r))
+    # ── 治理一致性（C1，WARN-only：观测/提示，阻断在 gate）──
+    gg = d.get("governance_gap", _governance_gap())
+    for k in gg["bad_status"]:
+        issues.append(("WARN", "ontology", "gov", "类型 %s 状态非法（须 %s）"
+                       % (k, "/".join(STATUS_VALUES))))
+    for k in gg["missing_replaced_by"]:
+        issues.append(("WARN", "ontology", "gov", "deprecated 类型 %s 缺 replaced_by" % k))
+    for k in gg["missing_owner"]:
+        issues.append(("INFO", "ontology", "gov",
+                       "类型 %s 未细化 steward（落 KGADMIN1 兜底）" % k))
+    if gg["count"]:
+        issues.append(("INFO", "ontology", "gov",
+                       "治理缺口合计 %d（bad_status=%d, missing_replaced=%d）"
+                       % (gg["count"], len(gg["bad_status"]), len(gg["missing_replaced_by"]))))
     return issues
 
 
@@ -1047,6 +1310,156 @@ def export(cli=None):
         )
     )
     return issues
+
+
+# ── CI 门禁裁决（C2）────────────────────────────────────────
+# 门禁阈值：FAIL=危害图谱健康的硬信号（阻断 CI）；WARN=治理成熟度/已知挂账（提示）。
+# 设计：fail 阈值偏宽松（避免 D5 等已知挂账长期让 CI 全红致团队麻木），
+# 但漂移失控（>fail 阈值）仍坚决阻断。
+GATE_THRESHOLDS = {
+    "unregistered_labels_warn": 10,    # 图内未注册标签 > 10 -> WARN
+    "unregistered_labels_fail": 40,    # > 40 -> FAIL（语义漂移失控）
+    "unregistered_rels_warn": 10,
+    "unregistered_rels_fail": 40,
+    "freshness_market_warn_days": 7,   # market_max_list_date 陈旧 > 7 天 -> WARN
+    "freshness_market_fail_days": 30,  # > 30 天 -> FAIL（如 D5 停库副作用）
+    "governance_bad_status_fail": 0,   # 非法状态 > 0 -> FAIL（schema 错误）
+    "governance_missing_replaced_warn": 0,
+    # C4 双时态索引：缺 1 条起 WARN（上线跟踪）；缺超 fail 值才 FAIL。
+    # 默认 fail=999（关闭阻断）——首次部署全缺不该红；存量索引被误删时
+    # 由运维把此值调小（如 5）启用阻断。
+    "bitemporal_index_warn_missing": 1,
+    "bitemporal_index_fail_missing": 999,
+}
+
+
+def _days_stale(date_val):
+    """市场层保鲜日期（yyyymmdd 或 yyyy-mm-dd）-> 距今天数；无法解析->None。"""
+    import datetime as _dt
+    ss = str(date_val).strip()
+    for fmt in ("%Y%m%d", "%Y-%m-%d"):
+        try:
+            dd = _dt.datetime.strptime(ss, fmt).date()
+            return (_dt.date.today() - dd).days
+        except ValueError:
+            continue
+    return None
+
+
+def gate(snap=None, cli=None):
+    """CI 门禁裁决（C2）：治理元数据 + 图实况 -> 结构化规则裁决。
+
+    返回 dict：
+      passed    bool  全 FAIL 规则通过=True
+      exit_code int   0=PASS / 1=FAIL（CI 约定）
+      rules     list  每条 {id, level(PASS/WARN/FAIL), passed, actual,
+                          threshold, msg}
+    依赖 snapshot() 的图实况；Neo4j 不可达按 FAIL 处理（门禁不得静默通过）。
+    """
+    snap = snap or snapshot(cli)
+    rules = []
+    if not snap.get("ok"):
+        rules.append({"id": "graph_reachable", "level": "FAIL", "passed": False,
+                      "actual": str(snap.get("error", ""))[:80],
+                      "threshold": "Neo4j 可达",
+                      "msg": "Neo4j 不可达，门禁无法裁决（按 FAIL 处理）"})
+        return {"rules": rules, "passed": False, "exit_code": 1,
+                "checked_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "tbox_version": TBOX_VERSION,
+                "tbox_steward": TBOX_STEWARD}
+    d = snap["drift"]
+    gg = d.get("governance_gap", _governance_gap())
+    T = GATE_THRESHOLDS
+
+    # R1 未注册标签
+    n = len(d["unregistered_labels"])
+    lvl = "FAIL" if n > T["unregistered_labels_fail"] else (
+        "WARN" if n > T["unregistered_labels_warn"] else "PASS")
+    rules.append({"id": "drift_labels", "level": lvl, "passed": lvl != "FAIL",
+                  "actual": n,
+                  "threshold": "WARN>%d / FAIL>%d" % (
+                      T["unregistered_labels_warn"], T["unregistered_labels_fail"]),
+                  "msg": "图内未注册标签（K264 旁路写入嫌疑）"})
+
+    # R2 未注册关系
+    n = len(d["unregistered_rels"])
+    lvl = "FAIL" if n > T["unregistered_rels_fail"] else (
+        "WARN" if n > T["unregistered_rels_warn"] else "PASS")
+    rules.append({"id": "drift_rels", "level": lvl, "passed": lvl != "FAIL",
+                  "actual": n,
+                  "threshold": "WARN>%d / FAIL>%d" % (
+                      T["unregistered_rels_warn"], T["unregistered_rels_fail"]),
+                  "msg": "图内未注册关系（K264 旁路写入嫌疑）"})
+
+    # R3 保鲜探针（市场层停滞，D5 挂账副作用）
+    md = (snap.get("freshness") or {}).get("market_max_list_date")
+    days = _days_stale(md) if md else None
+    if days is None:
+        lvl, actual = ("WARN" if md is None else "PASS"), "无数据"
+    elif days > T["freshness_market_fail_days"]:
+        lvl, actual = "FAIL", "%d 天" % days
+    elif days > T["freshness_market_warn_days"]:
+        lvl, actual = "WARN", "%d 天" % days
+    else:
+        lvl, actual = "PASS", "%d 天" % days
+    rules.append({"id": "freshness_market", "level": lvl, "passed": lvl != "FAIL",
+                  "actual": actual,
+                  "threshold": "WARN>%d天 / FAIL>%d天" % (
+                      T["freshness_market_warn_days"], T["freshness_market_fail_days"]),
+                  "msg": "市场层保鲜 market_max_list_date 陈旧度"})
+
+    # R4 治理非法状态
+    n = len(gg["bad_status"])
+    lvl = "FAIL" if n > T["governance_bad_status_fail"] else "PASS"
+    rules.append({"id": "gov_status", "level": lvl, "passed": lvl != "FAIL",
+                  "actual": n, "threshold": "FAIL>0",
+                  "msg": "非法的类型状态机值"})
+
+    # R5 治理 deprecated 缺 replaced_by（WARN，不阻断）
+    n = len(gg["missing_replaced_by"])
+    lvl = "WARN" if n > 0 else "PASS"
+    rules.append({"id": "gov_replaced", "level": lvl, "passed": True,
+                  "actual": n, "threshold": "WARN>0",
+                  "msg": "deprecated 类型缺 replaced_by"})
+
+    # R6 双时态索引覆盖（C4）：期望集 vs SHOW INDEXES 实况。
+    # 索引信息不可得（旧版本降级空表）按 SKIP 记 WARN=PASS 语义，不阻断。
+    expected = _expected_indexes()
+    live = set()
+    for ix in snap.get("indexes") or []:
+        lot = tuple(ix.get("labelsOrTypes") or ())
+        props = tuple(ix.get("properties") or ())
+        if lot and props:
+            live.add((str(ix.get("entityType") or "").upper(), lot, props))
+    if not live and not snap.get("indexes"):
+        rules.append({"id": "bitemporal_index", "level": "PASS", "passed": True,
+                      "actual": "SHOW INDEXES 不可得",
+                      "threshold": "期望 %d 条" % len(expected),
+                      "msg": "索引实况不可得（旧版本降级），跳过比对"})
+    else:
+        missing = sorted(
+            "%s:%s(%s)" % (e, "|".join(lot), ",".join(p))
+            for e, lot, p in expected - live
+        )
+        n = len(missing)
+        lvl = ("FAIL" if n > T["bitemporal_index_fail_missing"]
+               else "WARN" if n >= T["bitemporal_index_warn_missing"]
+               else "PASS")
+        rules.append({"id": "bitemporal_index", "level": lvl,
+                      "passed": lvl != "FAIL",
+                      "actual": "缺 %d/%d" % (n, len(expected)),
+                      "threshold": "WARN>=%d / FAIL>%d" % (
+                          T["bitemporal_index_warn_missing"],
+                          T["bitemporal_index_fail_missing"]),
+                      "msg": "双时态索引缺失（迁移未跑或被误删）: "
+                             + "; ".join(missing[:5])
+                             + (" ..." if n > 5 else "")})
+
+    passed = all(r["passed"] for r in rules)
+    return {"rules": rules, "passed": passed, "exit_code": 0 if passed else 1,
+            "checked_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "tbox_version": TBOX_VERSION,
+            "tbox_steward": TBOX_STEWARD}
 
 
 if __name__ == "__main__":
@@ -1090,6 +1503,24 @@ if __name__ == "__main__":
                         for g in "ABCD"
                     )
                 )
+
+                # ---- 治理面（C1）----
+                gg = _governance_gap()
+                print(
+                    "治理（C1）：TBox v%s | 域 steward=%d | 治理缺口=%d"
+                    % (TBOX_VERSION, len(DOMAIN_STEWARD), gg["count"])
+                )
+                if gg["bad_status"]:
+                    print("  [!] 非法状态：%s" % ", ".join(gg["bad_status"]))
+                if gg["missing_replaced_by"]:
+                    print("  [!] deprecated 缺 replaced_by：%s"
+                          % ", ".join(gg["missing_replaced_by"]))
+                stew = {}
+                for m in list(r["node_types"].values()) + list(r["edge_types"].values()):
+                    o = m.get("governance", {}).get("owner", "?")
+                    stew[o] = stew.get(o, 0) + 1
+                print("  steward 覆盖：%s"
+                      % ", ".join("%sx%d" % (k, v) for k, v in sorted(stew.items())))
         except Exception as ex:
             # warn-only：每日链本体快照步任何异常不得阻断后续 brief
             print("[SKIP] ontology %s" % str(ex)[:120])

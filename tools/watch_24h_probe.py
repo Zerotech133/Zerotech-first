@@ -59,12 +59,36 @@ def _task_running(name):
         return False
 
 
-def _loop_process_running():
-    """Check the runner loop by process command line, not task state.
+def _psutil_loop_running():
+    """Return True/False when psutil can inspect the runner process.
 
-    schtasks status can transiently read Ready while the task is being restarted;
-    24h probe must not emit a false production alert on that transient.
+    PowerShell/WMI subprocess liveness checks intermittently time out under
+    load (observed 2026-11-05 12:43/12:48 false P0 while PID 11916 was alive).
+    psutil reads the process table natively, so it is preferred.
     """
+    try:
+        import psutil  # local import: probe still works without psutil
+    except Exception:
+        return None
+    try:
+        me = psutil.Process()
+        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+            try:
+                if proc.pid == me.pid:
+                    continue
+                name = (proc.info.get("name") or "").lower()
+                cmd = " ".join(proc.info.get("cmdline") or [])
+                if "powershell" in name and "watch_engine_loop.ps1" in cmd:
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+        return False
+    except Exception:
+        return None
+
+
+def _powershell_loop_running():
+    """Legacy fallback: inspect Win32_Process command lines via PowerShell."""
     try:
         cmd = (
             "Get-CimInstance Win32_Process -Filter \"Name='powershell.exe'\" | "
@@ -79,6 +103,23 @@ def _loop_process_running():
         return int(out or "0") > 0
     except Exception:
         return False
+
+
+def _loop_process_running():
+    """Check the runner loop by process command line, not task state.
+
+    schtasks status can transiently read Ready while the task is being restarted.
+    The 24h probe must not emit a false production alert on that transient.  If
+    psutil reports no process, fall back to the scheduled-task state: a task
+    that is Running with a wrapper restarting is alive for alerting purposes.
+    """
+    state = _psutil_loop_running()
+    if state is True:
+        return True
+    if state is None:
+        # psutil unavailable: preserve the original process-command check only.
+        return _powershell_loop_running()
+    return _task_running("WatchEngineLoop")
 
 
 def _engine():

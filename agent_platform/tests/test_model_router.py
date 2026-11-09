@@ -29,6 +29,8 @@ def test_route_defaults_and_prefer():
 def test_invoke_fallback_and_usage_log(tmp_path, monkeypatch):
     log = tmp_path / "usage.jsonl"
     monkeypatch.setattr(MR, "USAGE_LOG", log)
+    # 隔离 trace DB：避免测试 span 污染生产 traces.sqlite
+    monkeypatch.setattr(MR, "LLM_TRACE_DB", str(tmp_path / "traces.sqlite"))
     calls = []
 
     def fake_call(model, messages, max_tokens=256):
@@ -47,6 +49,7 @@ def test_invoke_fallback_and_usage_log(tmp_path, monkeypatch):
 
 def test_invoke_all_fail(tmp_path, monkeypatch):
     monkeypatch.setattr(MR, "USAGE_LOG", tmp_path / "u.jsonl")
+    monkeypatch.setattr(MR, "LLM_TRACE_DB", str(tmp_path / "traces.sqlite"))
 
     def boom(*a, **k):
         raise RuntimeError("down")
@@ -58,6 +61,7 @@ def test_invoke_all_fail(tmp_path, monkeypatch):
 
 def test_empty_reply_treated_as_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(MR, "USAGE_LOG", tmp_path / "u.jsonl")
+    monkeypatch.setattr(MR, "LLM_TRACE_DB", str(tmp_path / "traces.sqlite"))
 
     def empty(model, messages, max_tokens=256):
         return ""

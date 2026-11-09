@@ -14,6 +14,22 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+# 回环禁代理：本机服务（Ollama 11434 等）的请求不走系统代理（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 ROOT = Path(__file__).resolve().parents[1]
 OUTDIR = ROOT / "work" / "p0" / "ab"
 OLLAMA = "http://127.0.0.1:11434/api/chat"
@@ -46,7 +62,7 @@ def _call(prompt: str, num_predict: int, model: str, timeout: float) -> dict:
                                  headers={"Content-Type": "application/json"}, method="POST")
     t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8", "replace"))
         elapsed = round((time.time() - t0) * 1000, 1)
         text = ((data.get("message") or {}).get("content") or "")

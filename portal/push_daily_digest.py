@@ -104,8 +104,12 @@ def send(card, critical=False):
         import feishu_client as _fc
     except Exception as e:  # noqa: BLE001
         return False, "feishu_client 不可用: %s" % str(e)[:80]
+    # 2026-11-06 事故：build_card() 返回 dict；旧实现把 dict 直接作为
+    # send_msg_tracked(content=...) 传入，8097/hub 到 OpenAPI 后 code=9499
+    # Invalid parameter type in json: content。发送层统一序列化为字符串。
+    payload = card if isinstance(card, str) else json.dumps(card, ensure_ascii=False)
     ok, why, mid = _fc.send_msg_tracked(
-        card,
+        payload,
         "interactive",
         receive_id=union,
         receive_id_type="union_id",

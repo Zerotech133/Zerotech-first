@@ -1,0 +1,252 @@
+{
+  "date": "2026-11-04",
+  "scope": "holdout 206; base qwen3.5:9b vs production KB v2 RAG top4; same questions/references",
+  "base": {
+    "n": 206,
+    "ok": 206,
+    "errors": 0,
+    "mean_char_f1": 0.1886,
+    "mean_bigram_f1": 0.0738,
+    "mean_number_hit": 0.1936,
+    "mean_latency_sec": 31.874951
+  },
+  "rag": {
+    "n": 206,
+    "ok": 206,
+    "errors": 0,
+    "mean_char_f1": 0.2257,
+    "mean_bigram_f1": 0.1104,
+    "mean_number_hit": 0.224,
+    "mean_latency_sec": 29.455583,
+    "retrieval": {
+      "index": "C:\\项目\\知识库\\50_RAG\\rag_index_corpus_v2_20261104.json",
+      "records": 6826,
+      "top_k": 4,
+      "embed_model": "bge-m3",
+      "source": "production KB corpus candidate v2"
+    }
+  },
+  "paired": [
+    {
+      "metric": "char_f1",
+      "n": 206,
+      "base_mean": 0.188571,
+      "rag_mean": 0.225699,
+      "delta": 0.037127,
+      "ci95": [
+        0.022732,
+        0.05242
+      ],
+      "wins": 135,
+      "losses": 71,
+      "ties": 0,
+      "win_rate": 0.6553
+    },
+    {
+      "metric": "bigram_f1",
+      "n": 206,
+      "base_mean": 0.073797,
+      "rag_mean": 0.110364,
+      "delta": 0.036567,
+      "ci95": [
+        0.022258,
+        0.052217
+      ],
+      "wins": 117,
+      "losses": 89,
+      "ties": 0,
+      "win_rate": 0.568
+    },
+    {
+      "metric": "number_hit",
+      "n": 206,
+      "base_mean": 0.193582,
+      "rag_mean": 0.22404,
+      "delta": 0.030459,
+      "ci95": [
+        -0.009198,
+        0.07424
+      ],
+      "wins": 26,
+      "losses": 23,
+      "ties": 157,
+      "win_rate": 0.1262
+    }
+  ],
+  "missing_in_rag": [],
+  "extra_in_rag": [],
+  "largest_char_drops": [
+    {
+      "id": "holdout-077",
+      "char_delta": -0.2293,
+      "base_char_f1": 0.3924,
+      "rag_char_f1": 0.1631
+    },
+    {
+      "id": "holdout-124",
+      "char_delta": -0.2068,
+      "base_char_f1": 0.2991,
+      "rag_char_f1": 0.0923
+    },
+    {
+      "id": "holdout-146",
+      "char_delta": -0.1859,
+      "base_char_f1": 0.4545,
+      "rag_char_f1": 0.2686
+    },
+    {
+      "id": "holdout-074",
+      "char_delta": -0.1529,
+      "base_char_f1": 0.2178,
+      "rag_char_f1": 0.0649
+    },
+    {
+      "id": "holdout-156",
+      "char_delta": -0.1342,
+      "base_char_f1": 0.5795,
+      "rag_char_f1": 0.4453
+    },
+    {
+      "id": "holdout-184",
+      "char_delta": -0.134,
+      "base_char_f1": 0.3505,
+      "rag_char_f1": 0.2165
+    },
+    {
+      "id": "holdout-190",
+      "char_delta": -0.1251,
+      "base_char_f1": 0.3339,
+      "rag_char_f1": 0.2088
+    },
+    {
+      "id": "holdout-168",
+      "char_delta": -0.1221,
+      "base_char_f1": 0.3618,
+      "rag_char_f1": 0.2397
+    },
+    {
+      "id": "holdout-015",
+      "char_delta": -0.1198,
+      "base_char_f1": 0.3662,
+      "rag_char_f1": 0.2464
+    },
+    {
+      "id": "holdout-020",
+      "char_delta": -0.114,
+      "base_char_f1": 0.2901,
+      "rag_char_f1": 0.1761
+    }
+  ],
+  "largest_char_gains": [
+    {
+      "id": "holdout-114",
+      "char_delta": 0.4565,
+      "base_char_f1": 0.2179,
+      "rag_char_f1": 0.6744
+    },
+    {
+      "id": "holdout-123",
+      "char_delta": 0.3988,
+      "base_char_f1": 0.0948,
+      "rag_char_f1": 0.4936
+    },
+    {
+      "id": "holdout-061",
+      "char_delta": 0.3935,
+      "base_char_f1": 0.0966,
+      "rag_char_f1": 0.4901
+    },
+    {
+      "id": "holdout-119",
+      "char_delta": 0.3842,
+      "base_char_f1": 0.1783,
+      "rag_char_f1": 0.5625
+    },
+    {
+      "id": "holdout-096",
+      "char_delta": 0.3449,
+      "base_char_f1": 0.2767,
+      "rag_char_f1": 0.6216
+    },
+    {
+      "id": "holdout-054",
+      "char_delta": 0.3423,
+      "base_char_f1": 0.1401,
+      "rag_char_f1": 0.4824
+    },
+    {
+      "id": "holdout-003",
+      "char_delta": 0.3152,
+      "base_char_f1": 0.2458,
+      "rag_char_f1": 0.561
+    },
+    {
+      "id": "holdout-001",
+      "char_delta": 0.3149,
+      "base_char_f1": 0.2309,
+      "rag_char_f1": 0.5458
+    },
+    {
+      "id": "holdout-045",
+      "char_delta": 0.294,
+      "base_char_f1": 0.1996,
+      "rag_char_f1": 0.4936
+    },
+    {
+      "id": "holdout-029",
+      "char_delta": 0.2824,
+      "base_char_f1": 0.1751,
+      "rag_char_f1": 0.4575
+    }
+  ],
+  "manual_review": {
+    "n": 40,
+    "auto_filled": true,
+    "human_columns_blank": true,
+    "note": "人工列未回填；不得把自动 char_f1 当成正确性结论。"
+  },
+  "boundary": [
+    "no canonical switch",
+    "no production",
+    "no SFT training",
+    "manual review must be completed by a human before any promotion"
+  ],
+  "correction_20261105": {
+    "excluded_ids": [
+      "holdout-027"
+    ],
+    "reason": "REFERENCE_MISMATCH_NO_VALID_GROUND_TRUTH",
+    "note": "本文件是 027 修复前的历史 206 评测，包含 027；不得当作“027 已排除”的准确率。",
+    "fixed_eval_copy": "research/sft/v4_gated_20261104/holdout_eval_027_reference_fixed_v1.jsonl",
+    "note_for_future": "Formal 206 metrics must exclude holdout-027 or use the fixed eval copy; this historical report is unchanged.",
+    "sensitivity_excluding_027": {
+      "n": 205,
+      "file": "research/reports/SFT_206_base_vs_RAG_excl027_sensitivity_v1.json",
+      "char_f1": {
+        "base": 0.1889,
+        "rag": 0.2261,
+        "delta": 0.0372
+      },
+      "bigram_f1": {
+        "base": 0.0741,
+        "rag": 0.1109,
+        "delta": 0.0368
+      },
+      "number_hit": {
+        "base": 0.1933,
+        "rag": 0.2239,
+        "delta": 0.0306
+      },
+      "paired_char_wlt": {
+        "wins": 134,
+        "losses": 71,
+        "ties": 0
+      },
+      "paired_char_ci95": [
+        0.0223,
+        0.0527
+      ],
+      "note": "Sensitivity only; original n=206 historical report unchanged and still includes 027."
+    }
+  }
+}

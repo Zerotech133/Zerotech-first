@@ -46,7 +46,15 @@ class TestOutGuard(unittest.TestCase):
     def test_temp_out_allowed(self):
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "sub", "pick_verdicts_shard1.json")
-            self.assertEqual(os.path.normcase(safe.check_out_path(p)), os.path.normcase(p))
+            # 2026-11-08 CI 修正：check_out_path 内部走 os.path.realpath（Windows 上
+            # 会把 8.3 短名展开成长名，例如 C:\Users\RUNNER~1 → ...\runneradmin）。
+            # 原断言直接拿 realpath 结果比原始字符串，在本机（无短名）通过、在
+            # GitHub runner（TEMP 含 RUNNER~1）必红——这是断言假设的可移植性问题，
+            # 不是许可逻辑缺陷：契约是"临时目录放行"，不是"字符串逐字节相同"。
+            self.assertEqual(
+                os.path.normcase(safe.check_out_path(p)),
+                os.path.normcase(os.path.realpath(p)),
+            )
 
     def test_prod_allowed_with_flag(self):
         got = safe.check_out_path(safe.PROD_OUT, allow_prod=True)

@@ -448,8 +448,11 @@ def evaluate_core(panel: fl.Panel, industry: pd.Series, cap: np.ndarray | None =
     payload = {"meta": meta, "factors": {}, "fdr": {}, "verdict": {}}
     if window is None or panel.shape[0] == 0:
         meta["effective"] = {"start": None, "end": None, "signal_days": 0}
-        payload["verdict"] = {"is_effective_factor": False, "near_tradable": False,
-                              "reasons": ["面板为空或区间内无法计算满持有期标签"]}
+        payload["verdict"] = {
+            "is_effective_factor": False, "near_tradable": False,
+            "reasons": ["面板为空或区间内无法计算满持有期标签"],
+            "primary_factor": PRIMARY_FACTOR, "direction_sign": 1,
+        }
         return payload
 
     elig = panel.eligible_mask().to_numpy(dtype=bool)
@@ -610,7 +613,7 @@ def decide_verdict(factors: dict, primary: str = PRIMARY_FACTOR, cost_key_bp: in
                        f"分层单调性 {dir_mono}、验证窗月度 t={dir_oos_t}、BH-FDR q={q_oos}≤0.10、"
                        f"多空月度 t={dir_ls_t}≥2、bootstrap p={dir_boot_p}≤0.05、长腿超额 {long_leg_excess:+.2f}%")
     else:
-        reasons.append(f"不构成可交易（方向 {sign:+d}）：30bp 成本后多空年化 {net30:+.2f}% 但"
+        reasons.append(f"不构成可交易（方向 {sign:+d}）：30bp 成本后多空年化 {fl._num(net30, 2)}% 但"
                        f"多空月度非重叠 t={dir_ls_t}（<2）、长腿超额 {fl._num(long_leg_excess, 2)}%"
                        f"（<0.5%，纯多头无 alpha；A 股融券受限 → 空头端收益难落地）、"
                        f"分层单调性 {dir_mono}、验证窗月度 t={dir_oos_t}、BH-FDR q={q_oos}；"
@@ -652,6 +655,17 @@ def render_markdown(payload: dict) -> str:
     meta = payload.get("meta", {})
     eff = meta.get("effective", {})
     verdict = payload.get("verdict", {})
+    if not payload.get("factors"):
+        return "\n".join([
+            "# 行业相对强度因子（RS）横截面严格检验",
+            "",
+            f"- 生成：{meta.get('generated_at')}；版本 v{meta.get('version')}",
+            f"- 区间：请求 {meta.get('start')}~{meta.get('end')}；"
+            f"有效信号窗 {eff.get('start')}~{eff.get('end')}（{eff.get('signal_days')} 日）",
+            "- **结论：面板为空或区间不足以计算满持有期标签，未生成因子结果。**",
+            *[f"- {r}" for r in verdict.get("reasons", [])],
+            "",
+        ])
     L = [
         "# 行业相对强度因子（RS）横截面严格检验",
         "",
@@ -729,10 +743,12 @@ def render_markdown(payload: dict) -> str:
         q_val = q_values[idx] if idx < len(q_values) else None
         L.append(f"| {row['factor']} | {row['period']} | {_fmt(row.get('t'), 2)} | "
                  f"{_fmtp(row.get('p'))} | {_fmtp(q_val)} |")
+    dsign = verdict.get("direction_sign")
+    dsign_txt = f"{int(dsign):+d}" if isinstance(dsign, (int, float)) else "—"
     L += ["", "## 七、结论（是否有效因子 / 是否接近可交易）", "",
           f"- **是否有效因子：{'是' if verdict.get('is_effective_factor') else '否'}**",
           f"- **是否接近可交易：{'是' if verdict.get('near_tradable') else '否'}**",
-          f"- 主因子 {verdict.get('primary_factor')}（方向 {verdict.get('direction_sign'):+d}）："
+          f"- 主因子 {verdict.get('primary_factor') or PRIMARY_FACTOR}（方向 {dsign_txt}）："
           f"原始 IC {_fmt(verdict.get('ic_mean_raw'))}，方向调整后 IC {_fmt(verdict.get('ic_mean_directed'))}"
           f"（月度 t={_fmt(verdict.get('ic_t_monthly_directed'), 2)}）；"
           f"方向调整后毛多空年化 {_fmt(verdict.get('gross_ann_pct'), 2)}%，"
@@ -742,23 +758,31 @@ def render_markdown(payload: dict) -> str:
           f"（验证窗月度 t={_fmt(verdict.get('oos_ic_t_monthly_directed'), 2)}）"]
     for r in verdict.get("reasons", []):
         L.append(f"- {r}")
+    raw_ic = verdict.get("ic_mean_raw")
+    dir_ic = verdict.get("ic_mean_directed")
+    raw_sign_txt = "为负" if (raw_ic is not None and raw_ic < 0) else "为正"
+    dir_sign_txt = "反转" if (raw_ic is not None and raw_ic < 0) else "续强"
+    n_ind = meta.get("industry_count")
+    share_pos = verdict.get("industry_share_positive")
+    long_ex = verdict.get("long_leg_excess_pct")
+    long_tail = (long_ex is not None and long_ex < 0.5)
     L += ["", "### 如何解读（供决策用）", "",
-          f"- **正向「行业相对强度续强」无效**：RS 全样本 IC={_fmt(verdict.get('ic_mean_raw'))}"
-          f"（显著为负、与续强方向相反）→ 20 日尺度上行业相对强度表现为**反转**而非动量；",
-          f"- **反向（反转）信息有效**：方向调整后 IC={_fmt(verdict.get('ic_mean_directed'))}"
-          f"（月度 t={_fmt(verdict.get('ic_t_monthly_directed'), 2)}），观察窗/验证窗同向"
+          f"- **正向「行业相对强度{'续强' if raw_sign_txt == '为正' else '反转'}」结论**：RS 全样本 IC={_fmt(raw_ic)}"
+          f"（{raw_sign_txt}）→ 20 日尺度上行业相对强度表现为**{dir_sign_txt}**；",
+          f"- **方向调整后信息**：IC={_fmt(dir_ic)}"
+          f"（月度 t={_fmt(verdict.get('ic_t_monthly_directed'), 2)}），观察窗/验证窗"
           f"（{_fmt(verdict.get('wf_2023_2024_ic'))} / {_fmt(verdict.get('wf_2025_2026_ic'))}），"
           f"安慰剂双侧 p={_fmtp(verdict.get('placebo_p'))}，主因子验证窗 BH-FDR q={_fmtp(verdict.get('fdr_q_oos'))}；"
-          f"87 个行业 IC 中位数 {_fmt(verdict.get('industry_median_ic'))}"
-          f"（正比例 {_fmt(verdict.get('industry_share_positive'))}）→ 全行业方向一致；",
-          f"- **但尚不可交易**：多空收益几乎全部来自 D10 空头端（20 日 CAR 极差），"
-          f"方向调整后多空年化 {_fmt(verdict.get('gross_ann_pct'), 2)}% 但月度非重叠 "
-          f"t={_fmt(verdict.get('long_short_t_monthly_directed'), 2)}（<2）；纯多头长腿相对全分层均值仅 "
-          f"{_fmt(verdict.get('long_leg_excess_pct'), 2)}%（<0.5%），A 股融券受限无法落地空头端；"
-          f"IC 集中于小市值（小盘 {_fmt(verdict.get('cap_ic_small'))} vs 大盘 "
-          f"{_fmt(verdict.get('cap_ic_large'))}），换手/冲击成本会进一步侵蚀收益；",
-          "- 与 task-88 呼应：RS 事件叠加层无效的根因是板块 beta；横截面上 RS 的信息真实存在，"
-          "但方向是**反转**、且收益集中在不可做空的空头端 → 结论为「有效信息因子，但不接近可交易」。"]
+          f"{n_ind} 个行业 IC 中位数 {_fmt(verdict.get('industry_median_ic'))}"
+          f"（正比例 {_fmt(share_pos)}）；",
+          f"- **是否可交易**：方向调整后毛多空年化 {_fmt(verdict.get('gross_ann_pct'), 2)}%、"
+          f"30bp 后 {_fmt(verdict.get('net_ann_30bp_pct'), 2)}%，月度非重叠 "
+          f"t={_fmt(verdict.get('long_short_t_monthly_directed'), 2)}；长腿相对全分层均值 "
+          f"{_fmt(long_ex, 2)}%；"
+          + ("收益主要集中在不可做空的空头端 → 纯多头不可交易。" if long_tail else
+             "长腿有一定正超额，需继续验证可交易性。"),
+          f"- 与 task-88 呼应：RS 事件叠加层无效的根因是板块 beta；横截面上 RS 的信息存在，"
+          f"当前方向为**{dir_sign_txt}**，结论以本页 verdict 与稳健性表为准。"]
     L += ["", "## 八、口径与局限披露", "",
           "- PIT：因子只用 T 日及以前数据；标签 T+1 收盘入场、T+21 收盘卖出（无前视）；",
           "- 行业分类为 stock_basic 静态行业（tushare 现行分类应用于历史），未做 PIT 行业变迁校正；"

@@ -1,0 +1,97 @@
+# SFT v4 LoRA 训练配置（等 GPU/云端执行）
+# 本文件只定义配置；本机无 GPU、无 trl/datasets，不执行训练。
+
+run_name: sft_v4_zeroquant_lora_20261104
+task: supervised_fine_tuning
+format: chatml
+
+model:
+  # 真实模型 ID；GPU/云端需先下载权重。
+  # 本机只有 Ollama GGUF（qwen3.5:9b），不能直接用于 transformers+peft 训练。
+  base_model: "Qwen/Qwen3.5-9B"
+  model_revision: "main"
+  model_family: qwen
+  trust_remote_code: true
+  torch_dtype: bfloat16
+  load_in_4bit: true
+
+data:
+  train_file: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/train_chatml.jsonl"
+  val_file: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/val_chatml.jsonl"
+  holdout_file: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/holdout_chatml.jsonl"
+  text_field: messages
+  chat_template: chatml
+  system_prompt: "你是零界量化知识助手。优先依据知识库/给定资料回答；事实性内容尽量给出处；资料不足时明确说明；不构成投资建议。"
+  max_seq_len: 4096
+  packing: false
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  bias: none
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  output_dir: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/lora_out"
+  num_train_epochs: 3
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  logging_steps: 10
+  save_steps: 200
+  eval_steps: 200
+  save_total_limit: 3
+  bf16: true
+  gradient_checkpointing: true
+  optim: paged_adamw_8bit
+  report_to: none
+  seed: 42
+
+evaluation:
+  file: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/holdout_chatml.jsonl"
+  metrics:
+    - exact_match
+    - char_f1
+    - contains_reference
+  no_training_set_eval: true
+
+env:
+  required_packages:
+    - torch>=2.4
+    - transformers>=4.45
+    - peft>=0.13
+    - accelerate>=1.0
+    - datasets>=3.0
+    - trl>=0.12
+  hardware: "CUDA GPU >= 24GB recommended for 7B/8B QLoRA; 9B needs >=24GB"
+  local_machine:
+    gpu: false
+    note: "本机有 Ollama qwen3.5:9b（GGUF/Q4_K_M，可推理），但 PyTorch CUDA=False；GGUF 不是 HF 训练权重；trl/datasets 安装未完成。"
+  local_ollama:
+    model: qwen3.5:9b
+    format: gguf_q4_k_m
+    role: inference_only_not_trainable_by_peft
+  venv: "C:/项目/sft_env（system-site-packages；trl/datasets 未装齐）"
+
+provenance:
+  source_sha256: "f34c7fc0058a3e748a702928d115ea21c12600a34cf0b849dd32770e5a6df559"
+  clean_sha256: "cbdfcb905d66e672209a57e16c46635ddc85920b8304043f4409def37c281949"
+  split_manifest: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/split_manifest.json"
+  token_stats_proxy: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/token_stats.json"
+  token_stats_qwen: "C:/项目/老田的AI助手/research/sft/v4_clean_20261104/token_stats_qwen.json"
+
+guards:
+  no_auto_deploy: true
+  no_shadow_without_review: true
+  no_trade: true

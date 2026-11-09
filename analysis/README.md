@@ -384,3 +384,21 @@ W3 另覆盖卡片红涨绿跌/纯 URL 按钮、receiver 解析、hub 鉴权与�
   引擎子进程成孤儿继续跑到 13:27；旧守护只看任务状态，误判后空转重启 3 次耗尽配额；
   13:28 笔记本睡眠至 16:39，收盘前 1.5h 无盯盘（当日 17 条告警、19 条推送，无 15:15 小结）。
   当日 alerts/pushes/state 全部按日期分键，不影响次日。
+
+### 推送分级与午间简报（2026-11-09）
+
+- `push.routes={customer,ops}`：客户面（个股异动/个性化简报）→ 客户单聊 open_id（默认 `个人`）；运营面（首扫/收盘/午间公共摘要）→ 群 chat_id（默认 `量化群`）。旧键 `push.receiver`、`alert`、`brief` 保持兼容。
+- 接收人严格匹配且校验类型（customer→open_id / ops→chat_id），不回落其他接收人；缺失 fail-closed。
+- 新增 11:30 午间简报（`midday_summary`，11:30–14:00 一次，KV `midday_done:<date>`），发运营群。
+- `pushes` 表新增 `receiver` 列（启动自动迁移）。
+- 配置：`midday_brief_enabled`、`midday_time`、`push.routes`；live 配置合并后再开启。
+### H2 选股引擎（2026-11-03）
+
+- `analysis/screener.py`：ScreeningDSL v1（字段/算子白名单、PIT、可解释）；`validate()` → `run()`；
+  - 股票池：WATCHLIST / HS300 / A_SHARE / industry:<名称>；
+  - 字段：ps/ps_pct_hist/pe_ttm/dv_ratio/total_mv_yi、revenue_yoy/net_profit_yoy/roe/debt_ratio、
+    ret_20/ret_60/amount_20_yi/turnover_rate、quality_score、industry_l1/l2、flag_st/event_types；
+  - 输出候选含 `reasons`（命中理由）/`risk_tags`/`disclaimer`（研究参考，不构成建议）。
+- `analysis/screen_parse.py`：自然语言→DSL 规则解析（确定性优先；未识别片段记录，交 Hermes 澄清/LLM 兜底）。
+- 测试：`analysis/tests/test_screener.py`（6）+ `test_screen_parse.py`（11），离线可跑。
+- 网关端点（/screen/parse、/screen/run）与 MCP `sa_screen` 待 H1 合并后接入。

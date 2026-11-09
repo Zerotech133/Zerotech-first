@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from datetime import datetime, time as dtime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]

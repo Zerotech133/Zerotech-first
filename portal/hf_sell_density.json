@@ -1,0 +1,79 @@
+{
+ "generated_at": "2026-11-08 21:10:49",
+ "src": "quant_backtest/data/chanlun_pool_ext_daily_full.jsonl",
+ "degrade": false,
+ "caliber": {
+  "buy": "只 1买",
+  "clock": "detect_date（确认日）起算；不用 dt 结构日——那是事后信息",
+  "end": "同标的后第一个卖点 detect_date（1卖/2卖/3卖 任取）",
+  "unit": "交易日（000985.CSI trade_date 日历）",
+  "censor": "观察窗内未等到卖点 → 右删失，单列，不填 0",
+  "within_N": "N 个交易日内等到卖点的样本占比（分母含删失）"
+ },
+ "meta": {
+  "n_line": 67674,
+  "n_keep": 43288,
+  "miss_detect": 0,
+  "n_calendar": 792,
+  "n_codes": 5503,
+  "n_out_of_cal": 0
+ },
+ "dist_any_sell": {
+  "n_total": 12024,
+  "n_with": 9769,
+  "n_censored": 2255,
+  "pct_with": 81.25,
+  "mean": 140.27,
+  "p10": 28.0,
+  "p25": 55.0,
+  "median": 104.0,
+  "p75": 191.0,
+  "p90": 317.0,
+  "within_5": 0.69,
+  "within_10": 1.67,
+  "within_20": 4.61,
+  "within_30": 9.02,
+  "within_60": 23.4
+ },
+ "dist_1sell": {
+  "n_total": 12024,
+  "n_with": 5910,
+  "n_censored": 6114,
+  "pct_with": 49.15,
+  "mean": 168.06,
+  "p10": 31.0,
+  "p25": 64.0,
+  "median": 126.0,
+  "p75": 250.0,
+  "p90": 370.0,
+  "within_5": 0.64,
+  "within_10": 1.39,
+  "within_20": 2.5,
+  "within_30": 4.64,
+  "within_60": 11.48
+ },
+ "by_year": [
+  {
+   "year": "2024",
+   "n": 4847,
+   "with": 4704,
+   "pct_with": 97.05,
+   "median": 126.0
+  },
+  {
+   "year": "2025",
+   "n": 3148,
+   "with": 2795,
+   "pct_with": 88.79,
+   "median": 129.0
+  },
+  {
+   "year": "2026",
+   "n": 4029,
+   "with": 2270,
+   "pct_with": 56.34,
+   "median": 63.0
+  }
+ ],
+ "note": "hold20 是不是硬砍，看 dist_any_sell.within_20 与 median"
+}

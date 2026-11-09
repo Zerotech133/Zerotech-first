@@ -121,6 +121,38 @@ def _log(msg):
         logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/p_g_robot.py", exc)
 
 
+# 2026-11-06: QA bot heartbeat is real readiness, not a static file.
+# The console reads logs/feishu_heartbeat_zb.quant.qa.txt and must stay
+# stale until `lark-cli event consume` is actually ready.
+_HEARTBEAT_FILE = os.environ.get(
+    "PG_ROBOT_HEARTBEAT",
+    r"C:\aios\portal\logs\feishu_heartbeat_zb.quant.qa.txt",
+)
+_CONSUME_READY = threading.Event()
+
+
+def _heartbeat(tag=""):
+    try:
+        parent = os.path.dirname(_HEARTBEAT_FILE)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%S") + (" " + tag if tag else "")
+        tmp = _HEARTBEAT_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(stamp + "\n")
+        os.replace(tmp, _HEARTBEAT_FILE)
+    except Exception as exc:
+        _log("heartbeat write failed: %s" % exc)
+
+
+def _heartbeat_loop():
+    while True:
+        time.sleep(60)
+        if _CONSUME_READY.is_set():
+            _heartbeat("patrol")
+
+
+
 def find_lark_cli():
     # K-STOCK-396 exe 解耦：仓库 bin/ 固定副本优先（插件目录升级/清除
     # 即断链，2026-10-13 巡检判例），插件目录扫描降为回退。
@@ -401,6 +433,7 @@ def main():
 
     # 2. 起 TAT 刷新线程
     threading.Thread(target=_refresh_tat_loop, daemon=True).start()
+    threading.Thread(target=_heartbeat_loop, daemon=True).start()
 
     # 3. 查数线程池
     pool = ThreadPoolExecutor(max_workers=1)  # 单 worker 防 Ollama OOM
@@ -418,6 +451,7 @@ def main():
             ready = _wait_ready(p, timeout=20)
             if not ready:
                 _log("consume not ready, restart in %ds" % CONSUME_RESTART_S)
+                _CONSUME_READY.clear()
                 try:
                     p.terminate()
                     p.wait(timeout=5)
@@ -426,6 +460,8 @@ def main():
                 time.sleep(CONSUME_RESTART_S)
                 continue
             _log("consume ready, reading events...")
+            _CONSUME_READY.set()
+            _heartbeat("consume_ready")
             # selftest: ready 后 3 秒自己发 @bot 消息（和 pg_ab_v2.py 完全一样的方式）
             if a.selftest:
                 def _selftest():
@@ -449,6 +485,7 @@ def main():
                 line = p.stdout.readline()
                 if not line:
                     # 子进程退出（崩溃/被杀）
+                    _CONSUME_READY.clear()
                     _log("consume stdout EOF, exit_code=%s" % p.poll())
                     break
                 line = line.strip()
@@ -497,9 +534,11 @@ def main():
             _log("consume crashed, restart in %ds" % CONSUME_RESTART_S)
             time.sleep(CONSUME_RESTART_S)
         except KeyboardInterrupt:
+            _CONSUME_READY.clear()
             _log("interrupted, shutting down...")
             break
         except Exception as e:
+            _CONSUME_READY.clear()
             _log("loop err: %s" % e)
             time.sleep(CONSUME_RESTART_S)
 

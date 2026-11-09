@@ -1,0 +1,515 @@
+{
+  "panel": {
+    "dates": 305,
+    "codes": 5,
+    "start": "20241106",
+    "end": "20260203"
+  },
+  "financial_rows": 353,
+  "factors": [
+    {
+      "name": "asset_growth_qoq",
+      "type": "Growth",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "eaa",
+      "type": "Growth",
+      "valid": 0,
+      "last": null
+    },
+    {
+      "name": "eap",
+      "type": "Growth",
+      "valid": 0,
+      "last": null
+    },
+    {
+      "name": "gross_margin_qoq",
+      "type": "Growth",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "np_ttm_qoq",
+      "type": "Growth",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "pa",
+      "type": "Growth",
+      "valid": 0,
+      "last": null
+    },
+    {
+      "name": "peg_252d",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "sa",
+      "type": "Growth",
+      "valid": 0,
+      "last": null
+    },
+    {
+      "name": "yoy_net_asset",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "yoy_net_profit",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "yoy_ocf",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "yoy_revenue",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "yoy_roa",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "yoy_roe",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "yoy_total_asset",
+      "type": "Growth",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "ar_ap_to_revenue",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "asset_turnover",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "cash_profit_ratio",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "cash_ratio",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "cfcr",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "current_ratio",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "de",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "debt_asset_ratio",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "delta_asset_turnover",
+      "type": "Quality",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "delta_cash_ratio",
+      "type": "Quality",
+      "valid": 106,
+      "last": 0.75
+    },
+    {
+      "name": "delta_current_ratio",
+      "type": "Quality",
+      "valid": 106,
+      "last": 0.75
+    },
+    {
+      "name": "delta_de",
+      "type": "Quality",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "delta_gpm",
+      "type": "Quality",
+      "valid": 106,
+      "last": 0.75
+    },
+    {
+      "name": "delta_inventory_turnover",
+      "type": "Quality",
+      "valid": 106,
+      "last": 0.75
+    },
+    {
+      "name": "delta_npm",
+      "type": "Quality",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "delta_opm",
+      "type": "Quality",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "delta_quick_ratio",
+      "type": "Quality",
+      "valid": 106,
+      "last": 0.75
+    },
+    {
+      "name": "delta_roa",
+      "type": "Quality",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "delta_roe",
+      "type": "Quality",
+      "valid": 265,
+      "last": 0.6
+    },
+    {
+      "name": "eps_q",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "eps_ttm",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "eps_y",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "equity_turnover",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "expenses_to_equity_yoy",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "financial_leverage",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "fixed_asset_turnover",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "gpm_q",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "gpm_qoq",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "gpm_ttm",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "gpm_y",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "icr",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "income_tax_yoy",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "inventory_turnover",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "lra_yoy",
+      "type": "Quality",
+      "valid": 305,
+      "last": 1.0
+    },
+    {
+      "name": "market_value_leverage",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "np_to_deferred_tax_yoy",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "np_to_fixed_assets_yoy",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "np_to_inventory_yoy",
+      "type": "Quality",
+      "valid": 915,
+      "last": 0.6666666666666666
+    },
+    {
+      "name": "np_to_salary_yoy",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "np_to_total_expenses_yoy",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "npm_q",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "npm_q_qoq",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "npm_tsh",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "npm_ttm",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "npm_ttm_qoq",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "npm_y",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "opm_ttm",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "opm_y",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "opt_tpro",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "quality_composite",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "quick_ratio",
+      "type": "Quality",
+      "valid": 610,
+      "last": 0.75
+    },
+    {
+      "name": "receivable_turnover",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "roa_q",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "roa_ttm",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "roa_y",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "roe_ttm",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "roe_ttm_lag63d",
+      "type": "Quality",
+      "valid": 1210,
+      "last": 0.6
+    },
+    {
+      "name": "roe_y",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "tax_surcharge_yoy",
+      "type": "Quality",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "book_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "earnings_cut_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "earnings_to_price",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "ebitda_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "etp5",
+      "type": "Value",
+      "valid": 270,
+      "last": 0.6000000000000001
+    },
+    {
+      "name": "fcf_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "ncf_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "ocf_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    },
+    {
+      "name": "pegh5",
+      "type": "Value",
+      "valid": 0,
+      "last": null
+    },
+    {
+      "name": "sales_to_market",
+      "type": "Value",
+      "valid": 1525,
+      "last": 0.6
+    }
+  ]
+}

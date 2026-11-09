@@ -1,0 +1,41 @@
+{
+ "schema_version": 1,
+ "date": "20261103",
+ "generated_at": "2026-11-06T23:48:19+08:00",
+ "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
+ "mode": "apply",
+ "dry_run": false,
+ "project": "公开投教_布林线",
+ "source": {
+  "path": "C:\\项目\\知识库\\30_知识单元\\公开投教_布林线_units_draft.jsonl",
+  "sha256": "a4d1b6283e29e84b143a30d97e31e7f15a1f8fea6328165c87d5c4a7a8b4f16b",
+  "bytes": 1841
+ },
+ "policy": {
+  "key": "normalize_claim_first_14_cjk",
+  "skip_boilerplate": true,
+  "merge": "保留首条 + merged_count/merged_unit_ids/evidence_list",
+  "write": "--apply 才写；写前备份 research/reports/backups/"
+ },
+ "stats": {
+  "input": 3,
+  "output": 3,
+  "dup_groups": 0,
+  "duplicate_rows": 0,
+  "merged": 0,
+  "boilerplate": 0,
+  "by_group_size": {},
+  "output_sha256": "a4d1b6283e29e84b143a30d97e31e7f15a1f8fea6328165c87d5c4a7a8b4f16b"
+ },
+ "duplicates": [],
+ "kept_sample": [
+  "learn_公开投教_布林线_0001",
+  "learn_公开投教_布林线_0002",
+  "learn_公开投教_布林线_0003"
+ ],
+ "notes": [],
+ "backup": null,
+ "applied": false,
+ "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。",
+ "idempotent_noop": true
+}

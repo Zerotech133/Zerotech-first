@@ -1,0 +1,305 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-05T18:20:31+08:00",
+ "date": "2026-11-05",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.0,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.4166,
+  "avg_elapsed_seconds": 13.125,
+  "avg_completeness_score": 5.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-05】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 4,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.25,
+  "avg_elapsed_seconds": 9.965,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-05"
+ },
+ "history_entries": 4,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 4,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.25,
+   "avg_elapsed_seconds": 9.965,
+   "window": 7,
+   "date_from": "2026-11-02",
+   "date_to": "2026-11-05"
+  },
+  "updated_at": "2026-11-05T18:20:31+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_6076398cc7",
+   "category": "竞争格局",
+   "theme": "金融/资本市场",
+   "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 19.61,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "e9548ab7c8d3",
+     "49d741ab6006"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.3333,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】监管新规允许持有港股通股票的保险机构投资港股通 ETF，且不占用 QDII 额度（[e9548ab7c8d3] p.1）。\n【事实】大型国有保险公司新增保费的 30% 用于投资 A 股，体现中长期资金入市导向（[49d741ab6006] p.1）。\n【推断】\n【推断】保险资金可通过港股通 ETF 参与跨境权益投资，同时利用国内长期资金配置优势形成差异化策略（依据：[e9548ab7c8d3] p.1、[49d741ab6006] p.1）。",
+   "answer_length": 234,
+   "citations": [
+    {
+     "unit_id": "e9548ab7c8d3",
+     "book": "rp_AP202610071830185864",
+     "chapter": "2026 年10 月07 日",
+     "page": 1,
+     "text": "监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度。 9 月 29 日，多家保险机构收到金融监管总局办公厅下发的《关于明确保险资金投资港股通 ETF 监管口径的函》，当中明确，按照监管规定可投资港股通股票的保险机构可以投资港股通 ETF，并参照港股通股票监管规则执行。"
+    },
+    {
+     "unit_id": "49d741ab6006",
+     "book": "rp_AP202610031830124601",
+     "chapter": "金融图强：中国资本市场改革的成效与展望",
+     "page": 1,
+     "text": "通过创设货币工具、引入类“平准基金”及量化指标引导中长期资金入市，有效稳定了市场预期并修复投资者信心。 2024 年 9 月创设股票回购增持再贷款和证券、基金、保险公司互换便利。中央汇金公司增持 ETF 发挥类“平准基金”作用。公募基金持有 A 股市值三年每年至少增长 10%，大型国有保险公司新增保费的 30% 用于投资 A 股。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.3333,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_f93ae02b9d",
+   "category": "驱动因素",
+   "theme": "量化/技术分析",
+   "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+   "http_status": 200,
+   "elapsed_seconds": 6.64,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "538860c3cb35",
+     "28f88a6c87e9"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】伏击涨停的灵魂在于追求投资乐趣而非单纯赚钱（[538860c3cb35] p.11）。\n【事实】伏击涨停是一种比传统‘追击涨停’更具前瞻性的投资战法，强调提前介入和守候涨停（[28f88a6c87e9] p.11）。\n【推断】\n【推断】该策略的景气度受投资者心理偏好从“单纯赚钱”向“追求乐趣”转变的影响（依据：[538860c3cb35] p.11）。\n【推断】其景气度还取决于市场风格是否支持“提前介入、守候涨停”的前瞻性战术（依据：[28f88a6c87e9] p.11）。",
+   "answer_length": 251,
+   "citations": [
+    {
+     "unit_id": "538860c3cb35",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "text": "伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’。 “伏击涨停”不是为了“赚钱”，而是为了找“乐趣”，是在人人提心吊胆的股票市场找到一片属于你的“乐土”。这就是伏击涨停的“灵魂”。"
+    },
+    {
+     "unit_id": "28f88a6c87e9",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "text": "伏击涨停是一种比传统‘追击涨停’更具前瞻性的投资战法，强调提前介入和守候涨停，属于‘涨停特战队’的战术。 “追击涨停是 A 股市场中‘涨停敢死队’通用的手法，但更有前瞻性地伏击涨停，提前介入，守候涨停，则是‘涨停特战队’的战法。”"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.5,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261105.json",
+ "elapsed_seconds": 26.33,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

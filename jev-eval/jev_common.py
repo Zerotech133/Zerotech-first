@@ -36,6 +36,22 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
+# 回环禁代理：本机服务（Ollama 11434 等）的请求不走系统代理（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -188,7 +204,7 @@ def _jev_ask_ollama(state: str, questions: dict) -> dict:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with safe_urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read())
     except Exception as e:
         log(
@@ -294,18 +310,18 @@ def start_metrics(port: int) -> bool:
 
 
 # ── DB 直连（P1-7）：psycopg2 参数化，降级 docker exec psql ──
+# P1-02：不再保留默认口令。env/file 都缺失时返回 ("", "missing")，直连由调用方
+# 按 fail-closed 处理；禁止在源码里回落到共享默认口令。
 _PG_FALLBACK_ENV_FILE = r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local"
-_PG_DEFAULT_PASSWORD = "zhice_pass"  # 仅兜底；source=default 在诊断中可见（口令不打印）
 
 
 def _resolve_pg_password() -> "tuple[str, str]":
-    """凭据回落链：env → zhice 活部署 .env.local 的 V2_DB_PASSWORD → 旧默认（仅兜底）。
+    """凭据来源：env → zhice 活部署 .env.local 的 V2_DB_PASSWORD → missing。
 
-    返回 (password, source)，source ∈ {"env","file","default"}。
-    2026-10-30 R5：V2 口令轮换后 env 未注入时旧默认口令会认证失败，直连被静默降级
-    docker psql（功能可用但持续 WARN）；补文件回落链消噪并防漂移。
-    2026-11-02 S1-04 F2/F4：把 source 单独暴露给 `dsn_provenance()`，直连失败日志
-    因此能区分「凭据问题」与「通道问题」——口令值永不进入日志/返回值。
+    返回 (password, source)，source ∈ {"env","file","missing"}；missing 时
+    password 为空，调用方必须拒绝直连，不得回落到硬编码口令。
+    2026-11-02 S1-04 F2/F4：source 单独暴露给 `dsn_provenance()`，直连失败日志
+    可区分「凭据问题」与「通道问题」——口令值永不进入日志/返回值。
     """
     pw = os.environ.get("ZHICE_PG_PASSWORD", "").strip()
     if pw:
@@ -320,14 +336,18 @@ def _resolve_pg_password() -> "tuple[str, str]":
                         return val, "file"
     except OSError:
         pass
-    return _PG_DEFAULT_PASSWORD, "default"
+    return "", "missing"
 
 
 _PG_PASSWORD, PASSWORD_SOURCE = _resolve_pg_password()
 
 
 def _zhice_pg_password() -> str:
-    """兼容旧调用：只返回口令值（来源查 `dsn_provenance()["password_source"]`）。"""
+    """兼容旧调用：只返回口令值；未配置时返回空串。
+
+    空串表示 fail-closed：调用方不得把它当作可用凭据去连接，来源见
+    `dsn_provenance()["password_source"]`（可能为 missing）。
+    """
     return _PG_PASSWORD
 
 
@@ -355,7 +375,7 @@ _PG_ENV_KEYS = (
 def dsn_provenance() -> dict:
     """DSN 脱敏来源（S1-04 F4，供 portal/api_flow 等复用去重；绝不返回口令值）。
 
-    返回 host/port/user/dbname/container/password_source(env|file|default)/
+    返回 host/port/user/dbname/container/password_source(env|file|missing)/
     password_set/password_len/driver/env_overrides，可直接进日志或健康卡。
     """
     try:

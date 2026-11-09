@@ -190,6 +190,232 @@
     }).catch(showLogin);
   } else { showLogin(); }
 })();
+/* R5-B CATALOG BEGIN · 双通道状态机 + 258 表只读目录（照 portal/bt_view.html R4-C 模式，命名空间 r5b-） */
+/* 实时优先、失败静默回落；全部 r5b- 命名空间；同源相对路径；动态值一律经 esc() 防 XSS。 */
+(function(){
+  var R5B_LIVE=null, R5B_STATE='unknown';
+  var R5B_FAIL_NOTE='实时通道未就绪（待 8091 自然重启）';
+  /* 本页原无 esc()，在代码块内自带一份（HTML 文本 / 属性双用），只服务本块 */
+  function esc(v){
+    if(v===null || v===undefined) return '';
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  /* 3s 硬超时：AbortSignal.timeout 优先，老浏览器用 AbortController+setTimeout 兜底 */
+  function r5bTimeoutSignal(){
+    if(typeof AbortSignal!=='undefined' && typeof AbortSignal.timeout==='function') return AbortSignal.timeout(3000);
+    if(typeof AbortController!=='undefined'){ var ac=new AbortController(); setTimeout(function(){ ac.abort(); },3000); return ac.signal; }
+    return undefined;
+  }
+  /* 按状态设置标记，并隐藏/恢复「实时通道未就绪」提示（browser_review §3 缺陷 2，务必不重犯） */
+  function r5bSetState(t){
+    var f=document.getElementById('r5b-flag'); if(f) f.textContent=t;
+    var n=document.getElementById('r5b-notice'); if(!n) return;
+    if(t==='catalog 实时'){ n.classList.add('r5b-hidden'); n.style.display='none'; }
+    else { n.classList.remove('r5b-hidden'); n.style.display=''; }
+  }
+  async function probeCatalog(){
+    R5B_STATE='unknown'; R5B_LIVE=null;
+    try{
+      var r=await fetch('/api/data/catalog/tables?detail=brief',{cache:'no-store',signal:r5bTimeoutSignal()});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var live=await r.json();
+      if(!live || live.ok!==true || !(live.total>0)) throw new Error('bad payload');
+      R5B_LIVE=live; R5B_STATE='live';
+      r5bSetState('catalog 实时');
+    }catch(e){
+      /* 静默回落：404/401/502/超时/网络/JSON 解析错一律不 console.error 刷屏、不 alert、不抛未捕获异常 */
+    }
+    if(R5B_STATE!=='live'){
+      R5B_STATE='snapshot'; R5B_LIVE=null;
+      r5bSetState('catalog 静态快照');
+    }
+    r5bRenderTableList();
+    return R5B_STATE==='live';
+  }
+  /* 轻量样式（仅 r5b- 命名空间，随脚本注入，沿用本页既有配色变量，不改页面老 style） */
+  function r5bInjectCss(){
+    if(document.querySelector('style[data-r5b]')) return;
+    var css='.r5b-box{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:var(--panel);font-size:12px}'+
+      '.r5b-box>summary{cursor:pointer;list-style:none;font-weight:700;font-size:15px}'+
+      '.r5b-box>summary::-webkit-details-marker{display:none}'+
+      '.r5b-box>summary::before{content:"▸";color:var(--muted);margin-right:6px}'+
+      '.r5b-box[open]>summary::before{content:"▾"}'+
+      '.r5b-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}'+
+      '.r5b-bar input,.r5b-bar select{width:auto;background:#0f141a;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 8px;font-size:12px}'+
+      '.r5b-flag{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:8px;color:var(--muted);font-weight:400}'+
+      '.r5b-note{font-size:11.5px;color:var(--muted);margin:8px 0}'+
+      '.r5b-tbl,.r5b-kv{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums}'+
+      '.r5b-tbl th,.r5b-tbl td,.r5b-kv th,.r5b-kv td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}'+
+      '.r5b-tbl th,.r5b-kv th{color:var(--muted);background:#0f141a}'+
+      '.r5b-row{cursor:pointer}.r5b-row:hover{background:#0f141a}'+
+      '.r5b-scroll{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:8px}'+
+      '.r5b-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:99;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}'+
+      '.r5b-modal-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;max-width:960px;width:100%;padding:16px 18px;color:var(--txt)}'+
+      '.r5b-modal-card h3{margin:0 0 4px;font-size:15px}'+
+      '.r5b-h4{font-size:13px;color:var(--blue);margin:10px 0 6px}'+
+      '.r5b-close{float:right;cursor:pointer;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--txt);padding:2px 10px}'+
+      '.r5b-hidden{display:none}';
+    var st=document.createElement('style'); st.setAttribute('data-r5b','1'); st.textContent=css;
+    document.head.appendChild(st);
+  }
+  /* 可折叠只读区块：挂在 #main 底部（登录后才可见），不干扰配额/报告主功能区 */
+  function r5bBuildUI(){
+    if(document.getElementById('r5b-box')) return;
+    var host=document.getElementById('main')||document.querySelector('.wrap')||document.body;
+    var box=document.createElement('details'); box.className='r5b-box'; box.id='r5b-box'; box.open=true;
+    box.innerHTML=
+      '<summary>主仓表溯源（catalog 逻辑表 · 只读）<span class="r5b-flag" id="r5b-flag">检测中</span></summary>'+
+      '<div class="r5b-note" id="r5b-notice">实时通道未就绪（待 8091 自然重启）</div>'+
+      '<div id="r5b-wrap">'+
+        '<div class="r5b-bar">'+
+          '<input id="r5b-search" type="text" placeholder="关键词搜索表名 / 描述" size="26">'+
+          '<select id="r5b-source"><option value="">全部源</option></select>'+
+          '<span class="r5b-note" id="r5b-count" style="margin:0"></span>'+
+        '</div>'+
+        '<div class="r5b-scroll"><table class="r5b-tbl"><thead><tr>'+
+          '<th>表名</th><th>源</th><th>频率</th><th>新鲜度</th><th>行数</th><th>状态</th>'+
+        '</tr></thead><tbody id="r5b-body"></tbody></table></div>'+
+      '</div>'+
+      '<div id="r5b-modal" class="r5b-modal r5b-hidden">'+
+        '<div class="r5b-modal-card">'+
+          '<button class="r5b-close" id="r5b-close" type="button">关闭</button>'+
+          '<h3 id="r5b-modal-title"></h3>'+
+          '<div class="r5b-note" id="r5b-modal-sub"></div>'+
+          '<div id="r5b-modal-body"></div>'+
+        '</div>'+
+      '</div>';
+    host.appendChild(box);
+    var s=document.getElementById('r5b-search'); if(s) s.addEventListener('input',r5bApplyFilter);
+    var sel=document.getElementById('r5b-source'); if(sel) sel.addEventListener('change',r5bApplyFilter);
+    var c=document.getElementById('r5b-close'); if(c) c.onclick=r5bCloseModal;
+    var m=document.getElementById('r5b-modal');
+    if(m) m.addEventListener('click',function(ev){ if(ev.target===m) r5bCloseModal(); });
+    document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') r5bCloseModal(); });
+  }
+  function r5bRenderTableList(){
+    var wrap=document.getElementById('r5b-wrap'), body=document.getElementById('r5b-body'),
+        sel=document.getElementById('r5b-source'), count=document.getElementById('r5b-count'),
+        notice=document.getElementById('r5b-notice');
+    if(!wrap||!body||!sel) return;
+    var live=R5B_LIVE;
+    if(!live || !Array.isArray(live.items) || !live.items.length){
+      wrap.classList.add('r5b-hidden');
+      if(notice){ notice.classList.remove('r5b-hidden'); notice.style.display=''; notice.textContent=R5B_FAIL_NOTE; }
+      if(count) count.textContent='';
+      return;
+    }
+    wrap.classList.remove('r5b-hidden');
+    if(notice){ notice.classList.add('r5b-hidden'); notice.style.display='none'; }
+    var sources=Object.keys(live.by_source||{}).sort();
+    var cur=sel.value, stamp=String(live.version)+':'+sources.length;
+    if(sel.getAttribute('data-built')!==stamp){
+      sel.innerHTML='<option value="">全部源</option>'+
+        sources.map(function(s){ return '<option value="'+esc(s)+'">'+esc(s)+' ('+Number((live.by_source||{})[s]||0)+')</option>'; }).join('');
+      sel.setAttribute('data-built',stamp);
+      if(sources.indexOf(cur)>=0) sel.value=cur;
+    }
+    r5bApplyFilter();
+  }
+  function r5bApplyFilter(){
+    var live=R5B_LIVE, body=document.getElementById('r5b-body'), count=document.getElementById('r5b-count');
+    if(!live||!body) return;
+    var q=String((document.getElementById('r5b-search')||{}).value||'').trim().toLowerCase();
+    var src=String((document.getElementById('r5b-source')||{}).value||'');
+    var items=Array.isArray(live.items)?live.items:[];
+    var rows=items.filter(function(it){
+      if(src && it.source!==src) return false;
+      if(q && !(String(it.name||'').toLowerCase().indexOf(q)>=0 || String(it.desc||'').toLowerCase().indexOf(q)>=0)) return false;
+      return true;
+    });
+    if(count) count.textContent='共 '+rows.length+' / '+items.length+' 表'+(live.total?'（catalog total '+esc(live.total)+'）':'');
+    body.innerHTML=rows.map(function(it){
+      var name=String(it.name||'');
+      var st=it.deprecated?'已废弃':(it.verification_status||it.lifecycle||'—');
+      return '<tr class="r5b-row" data-tname="'+esc(name)+'">'+
+        '<td><b>'+esc(name)+'</b></td>'+
+        '<td>'+esc(it.source||'—')+'</td>'+
+        '<td>'+esc(it.freq||'—')+'</td>'+
+        '<td>'+esc(it.freshness==null?'—':it.freshness)+'</td>'+
+        '<td>'+esc(it.rows==null?'—':it.rows)+'</td>'+
+        '<td>'+esc(st)+'</td></tr>';
+    }).join('');
+    Array.prototype.forEach.call(body.querySelectorAll('tr[data-tname]'),function(tr){
+      tr.onclick=function(){ r5bOpenTableDetail(tr.getAttribute('data-tname')); };
+    });
+  }
+  async function r5bOpenTableDetail(name){
+    var title='表详情 · '+name;
+    r5bShowModal(title,esc(name),'<div class="r5b-note">加载中…</div>');
+    try{
+      var r=await fetch('/api/data/catalog/table?name='+encodeURIComponent(name)+'&limit=20',{cache:'no-store',signal:r5bTimeoutSignal()});
+      var d=null; try{ d=await r.json(); }catch(e){ d=null; }
+      if(!r.ok || !d || d.ok!==true){
+        var reason=(d&&(d.reason||d.message||d.error))||('HTTP '+r.status);
+        r5bShowModal(title,esc(name),'<div class="r5b-note">'+esc(reason)+'</div>');
+        return;
+      }
+      r5bShowModal(title,esc(d.resolved||d.name),r5bTableDetailHtml(d));
+    }catch(e){
+      r5bShowModal(title,esc(name),'<div class="r5b-note">'+esc(e&&e.message?e.message:String(e))+'</div>');
+    }
+  }
+  function r5bKv(k,v){ return '<tr><th>'+esc(k)+'</th><td>'+v+'</td></tr>'; }
+  /* 弹窗正文：meta.schema[] / primary_key / available / reason / sample_note / meta.freshness / clamped / limit_applied / 前 20 行，全部经 esc() */
+  function r5bTableDetailHtml(d){
+    var meta=d.meta||{}, cols=Array.isArray(d.columns)?d.columns:[], rows=Array.isArray(d.rows)?d.rows:[];
+    var pk=meta.primary_key==null?'—':(Array.isArray(meta.primary_key)?meta.primary_key.join(', '):meta.primary_key);
+    var h='<div class="r5b-note">catalog v'+esc(R5B_LIVE?R5B_LIVE.version:'?')+
+      ' · '+esc(d.name)+' → '+esc(d.resolved||d.name)+' · 返回 '+esc(d.row_count==null?rows.length:d.row_count)+' 行</div>';
+    h+='<table class="r5b-kv"><tbody>'+
+      r5bKv('源',esc(meta.source||'—'))+r5bKv('频率',esc(meta.freq||'—'))+
+      r5bKv('新鲜度 freshness',esc(meta.freshness==null?'—':meta.freshness))+r5bKv('行数',esc(meta.rows==null?'—':meta.rows))+
+      r5bKv('日期列',esc(meta.date_col||'—'))+r5bKv('代码列',esc(meta.code_col||'—'))+
+      r5bKv('主键 primary_key',esc(pk))+r5bKv('状态',esc(meta.verification_status||meta.lifecycle||'—'))+
+      r5bKv('可用 available',d.available===false?'否':'是')+'</tbody></table>';
+    var schema=Array.isArray(meta.schema)?meta.schema:[];
+    h+='<h4 class="r5b-h4">Schema（'+schema.length+' 列）</h4>';
+    h+=schema.length?('<table class="r5b-kv"><thead><tr><th>#</th><th>列名</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
+      schema.map(function(c,i){ return typeof c==='string'
+        ? '<tr><td>'+i+'</td><td>'+esc(c)+'</td><td>—</td><td>—</td></tr>'
+        : '<tr><td>'+i+'</td><td>'+esc(c.name||c.column||'')+'</td><td>'+esc(c.type||c.dtype||'—')+'</td><td>'+esc(c.desc||c.comment||'—')+'</td></tr>'; }).join('')+
+      '</tbody></table>'):'<div class="r5b-note">schema 未返回</div>';
+    /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
+    h+='<div class="r5b-note">样本说明：limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+
+      ' · clamped='+esc(!!d.clamped)+'。仅返回样本行，不代表全表数据。'+
+      (d.clamped===true?'请求的 limit 超过上限，已夹至 '+esc(d.limit_applied==null?'—':d.limit_applied)+' 行。':'')+
+      '（sample_note：'+esc(d.sample_note||'—')+' ｜ catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';
+    if(d.available===false){ h+='<div class="r5b-note">原因 reason：'+esc(d.reason||'该表当前不可读')+'</div>'; }
+    h+='<h4 class="r5b-h4">样本数据（前 '+Math.min(20,rows.length)+' 行）</h4>';
+    if(d.available!==false){
+      if(!rows.length){ h+='<div class="r5b-note">无样本数据</div>'; }
+      else{
+        var headCols=cols.length?cols:Object.keys(rows[0]||{});
+        h+='<div class="r5b-scroll"><table class="r5b-kv"><thead><tr>'+headCols.map(function(c){ return '<th>'+esc(c)+'</th>'; }).join('')+'</tr></thead><tbody>'+
+          rows.slice(0,20).map(function(rr){ return '<tr>'+headCols.map(function(c,i){
+            return '<td>'+esc(Array.isArray(rr)?(rr[i]==null?'':rr[i]):(rr&&rr[c]!=null?rr[c]:''))+'</td>'; }).join('')+'</tr>'; }).join('')+
+          '</tbody></table></div>';
+      }
+    }
+    return h;
+  }
+  function r5bShowModal(t,s,h){
+    var m=document.getElementById('r5b-modal'); if(!m) return;
+    var ti=document.getElementById('r5b-modal-title'); if(ti) ti.textContent=t;
+    var su=document.getElementById('r5b-modal-sub'); if(su) su.innerHTML=s;
+    var bo=document.getElementById('r5b-modal-body'); if(bo) bo.innerHTML=h;
+    m.classList.remove('r5b-hidden'); m.style.display='flex';
+  }
+  function r5bCloseModal(){
+    var m=document.getElementById('r5b-modal'); if(!m) return;
+    m.classList.add('r5b-hidden'); m.style.display='none';
+  }
+  /* 与既有 login/run/loadHistory 链并行，不 await、不阻塞；失败静默回落 */
+  r5bInjectCss();
+  r5bBuildUI();
+  try{ probeCatalog().catch(function(){}); }catch(e){}
+})();
+/* R5-B CATALOG END */
 </script>
 </body>
 </html>

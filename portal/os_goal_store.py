@@ -45,24 +45,51 @@ def _now() -> str:
     return datetime.now(BEIJING).isoformat(timespec="seconds")
 
 
+_LOCK_TIMEOUT_S = 10.0
+
+
 @contextmanager
 def _file_lock(path: str) -> Iterator[None]:
     """跨进程单写锁（Windows msvcrt.locking；失败回退进程内锁）。"""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd = os.open(path, os.O_CREAT | os.O_RDWR)
+    # 2026-11-07 K-ORG-20261107-LOCKOPEN：open 与加锁共用同一个 deadline。
+    # 原先 os.open 写在等待逻辑之外，Windows 上并发创建/打开同一文件会瞬时
+    # Errno 13（共享模式竞争 / 安全软件持有扫描句柄，inbox_gateway 实测约
+    # 16%），异常直接抛给调用方 → 看到的是"账本写入失败"，而加锁侧明明会等
+    # 10s。同一函数里两套等待语义，与 tools/devtask.py::_tasks_file_lock 的
+    # 正确形态（open 也在重试循环内）不一致。超时后仍按原异常类型抛出。
+    #
+    # 2026-11-08 K-ORG-20261108-MONO：deadline 改用 time.monotonic()。
+    # 原用 time.time() 有两类真实故障：① 墙钟被外部改动（NTP 回跳 / 用户改
+    # 时间），deadline 变成过去的时刻或远未来；② 测试里直接 patch 全局
+    # time.time（同目录 test_ifs_idempotency / test_os_auth_hardening 都这么
+    # 干）时 deadline = 冻结值 + timeout 恒大于 time.time()，两处重试循环
+    # 永不退出 —— 2026-11-08 全量跑 portal 卡死 120s+ 的栈就停在下面那个
+    # time.sleep。单调钟不受墙钟影响的语义正是"超时"需要的。
+    deadline = time.monotonic() + _LOCK_TIMEOUT_S
+    fd = None
+    while True:
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_RDWR)
+            break
+        except PermissionError:
+            if time.monotonic() > deadline:
+                raise
+            time.sleep(0.05)
     locked = False
     try:
         try:
             import msvcrt
 
-            deadline = time.time() + 10
+            # 复用上面同一个 deadline：open 与加锁共享 10s 总预算，
+            # 否则 open 重试 + 加锁重试会变成 20s，上层超时口径漂移。
             while True:
                 try:
                     msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
                     locked = True
                     break
                 except OSError:
-                    if time.time() > deadline:
+                    if time.monotonic() > deadline:
                         raise LedgerError("获取账本写锁超时：%s" % path)
                     time.sleep(0.05)
         except ImportError:  # 非 Windows：回退进程内锁

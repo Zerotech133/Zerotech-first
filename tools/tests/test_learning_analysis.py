@@ -207,7 +207,7 @@ def test_run_writes_json_and_md(tmp_path):
                           encoding="utf-8")
     cards_path.write_text(json.dumps({"cards": make_cards()}, ensure_ascii=False), encoding="utf-8")
     out_dir = tmp_path / "reports"
-    report = la.run(units_path, cards_path, out_dir=out_dir, date_tag="20261101")
+    la.run(units_path, cards_path, out_dir=out_dir, date_tag="20261101")
     jp = out_dir / "learning_analysis_20261101.json"
     mp = out_dir / "learning_analysis_20261101.md"
     assert jp.is_file() and mp.is_file()

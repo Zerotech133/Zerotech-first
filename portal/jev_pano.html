@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 全景舱 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px}
+    .crumb .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none}
+    .crumb .c:hover{border-color:var(--accent);color:var(--link)}
+    .crumb .sep{color:var(--gray-5);font-size:11px}
+    .mini{font-size:12px;color:var(--gray-6)}
+    /* 进度条（sticky）：正在组合第几块 */
+    .pbar-wrap{position:sticky;top:0;z-index:50;background:var(--bg-page);padding:8px 0 6px;border-bottom:1px solid var(--border-weak);margin-bottom:12px}
+    .pbar{display:flex;align-items:center;gap:8px}
+    .ptrack{flex:1;height:8px;border-radius:4px;background:var(--bg-raised);overflow:hidden}
+    .pfill{height:100%;width:0;background:var(--accent);transition:width .4s;border-radius:4px}
+    .psteps{display:flex;gap:6px;flex-wrap:wrap;font-size:11px}
+    .pstep{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border-weak);border-radius:999px;padding:2px 9px;color:var(--gray-5)}
+    .pstep.on{border-color:var(--accent);color:var(--text)}
+    .pstep.done{border-color:var(--color-ok);color:var(--color-ok)}
+    .pstep .d{width:7px;height:7px;border-radius:50%;background:var(--gray-5)}
+    .pstep.on .d{background:var(--accent);animation:pulse 1s infinite}
+    .pstep.done .d{background:var(--color-ok)}
+    @keyframes pulse{50%{opacity:.35}}
+    .status-line{font-size:12px;color:var(--gray-5);white-space:nowrap}
+    /* 区块 */
+    .block{margin-bottom:14px}
+    .blk-h{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}
+    .blk-h b{font-size:14px}
+    .blk-h .no{font:700 11px var(--font-mono);color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 6px}
+    .skel{height:90px}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+    .kpi{padding:10px 12px}
+    .kpi .k-label{font-size:11px;color:var(--gray-5)}
+    .kpi b{display:block;font:700 19px var(--font-mono);font-variant-numeric:tabular-nums;margin-top:3px}
+    .up{color:var(--color-up)} .dn{color:var(--color-dn)}
+    .verdict{border-left:3px solid var(--accent);padding:9px 13px;font-size:12.5px;line-height:1.85}
+    /* 量价时空图（story 同款，紧凑） */
+    .axis{position:relative;height:120px;display:flex;align-items:flex-end;gap:2px;border-bottom:2px solid var(--border)}
+    .aday{flex:1;position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-width:0;height:100%}
+    .abar{width:70%;max-width:20px;margin:0 auto;border-radius:2px 2px 0 0;min-height:2px}
+    .abar.up{background:var(--color-up)} .abar.dn{background:var(--color-dn)} .abar.fl{background:var(--gray-5)}
+    .vbar{width:70%;max-width:20px;margin:0 auto;background:var(--gray-5);opacity:.5;border-radius:1px 1px 0 0}
+    .impact-band{position:absolute;top:0;bottom:0;background:var(--blu-500);opacity:.13;pointer-events:none}
+    .amark{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:9px;cursor:default}
+    .amark.b{color:var(--color-up)} .amark.s{color:var(--color-dn)}
+    .dates{display:flex;gap:2px}
+    .dates div{flex:1;text-align:center;font-size:8px;color:var(--gray-5);font-family:var(--font-mono);overflow:hidden;white-space:nowrap}
+    .bias-chip{font-size:10.5px;border:1px solid var(--border);border-radius:999px;padding:1px 7px;white-space:nowrap}
+    .bias-chip.bull{color:var(--color-up);border-color:var(--color-up)}
+    .bias-chip.bear{color:var(--color-dn);border-color:var(--color-dn)}
+    .bias-chip.neutral{color:var(--gray-5)}
+    .hit-ok{color:var(--color-up)} .hit-no{color:var(--color-dn)}
+    .grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:12px}
+    @media (max-width:960px){.grid2{grid-template-columns:1fr}}
+    .search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+    .search input{background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 11px;font-size:14px;font-family:var(--font-mono);width:190px}
+    .accbar{display:inline-block;height:8px;border-radius:4px;background:var(--blu-500);vertical-align:middle}
+    .bars{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0}
+    .b-bull{background:var(--color-up)} .b-bear{background:var(--color-dn)} .b-neutral{background:var(--gray-5)}
+    .tl{display:flex;align-items:flex-end;gap:3px;height:80px}
+    .tday{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+    .tlab{font-size:8.5px;color:var(--gray-5);font-family:var(--font-mono)}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 全景舱</span>
+        <h1>输入一次，全部能力一页组合</h1>
+        <p>不用点来点去：输一个代码或关键词，判定快照、量价时空、影响区间、信源战绩、消息举证、三面依据<b>同时</b>在同页组合完成——进度条亮到头即全部就绪。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_api.html">📡 能力目录</a>
+        <a class="ui-btn" href="/jev_platform.html">🛰 中台总览</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <div class="ui-card crumb">
+      <a class="c" href="/jev_platform.html">🛰 总览</a><span class="sep">·</span>
+      <a class="c" href="/bt-jev">⚖ 判断</a><span class="sep">·</span>
+      <a class="c" href="/jev_wordcloud.html">☁ 词云</a><span class="sep">·</span>
+      <a class="c" href="/jev_target.html">🎯 下钻</a><span class="sep">·</span>
+      <a class="c" href="/jev_evidence.html">🧪 举证</a><span class="sep">·</span>
+      <a class="c" href="/jev_story.html">📖 叙事线</a>
+      <span style="margin-left:auto;color:var(--gray-5);font-size:11px">本页=以上全部的组合视图（单页聚合）</span>
+    </div>
+
+    <div class="ui-card search">
+      <span class="mini">标的 / 关键词</span>
+      <input id="q" placeholder="300750 或 宁德时代 或 回购">
+      <select id="days" style="background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px">
+        <option value="14">14 天</option><option value="30" selected>30 天</option>
+        <option value="60">60 天</option><option value="90">90 天</option>
+      </select>
+      <button class="ui-btn ui-btn--primary" id="go">⚡ 组合全景</button>
+      <span id="meta" class="mini" style="margin-left:auto">输入后一次拉全</span>
+    </div>
+    <div id="err" class="ui-error" hidden></div>
+
+    <!-- 进度条 -->
+    <div class="pbar-wrap" id="pbar" hidden>
+      <div class="pbar">
+        <div class="ptrack"><div class="pfill" id="pfill"></div></div>
+        <span class="status-line" id="pline">准备…</span>
+      </div>
+      <div class="psteps" id="psteps" style="margin-top:6px"></div>
+    </div>
+
+    <div id="pano" hidden>
+      <!-- ① 判定快照（target） -->
+      <div class="ui-card block" id="b1">
+        <div class="blk-h"><span class="no">①</span><b>判定快照 · 三面依据</b><span class="mini" id="b1-sub"></span></div>
+        <div id="b1-body"><div class="skel ui-skeleton"></div></div>
+      </div>
+
+      <div class="grid2">
+        <!-- ② 量价时空 -->
+        <div class="ui-card block" id="b2">
+          <div class="blk-h"><span class="no">②</span><b>量价时空</b><span class="mini">价格×量×事件×影响带</span></div>
+          <div id="b2-body"><div class="skel ui-skeleton"></div></div>
+        </div>
+        <!-- ③ 影响区间 -->
+        <div class="ui-card block" id="b3">
+          <div class="blk-h"><span class="no">③</span><b>影响区间（历史→未来）</b></div>
+          <div id="b3-body"><div class="skel ui-skeleton"></div></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- ④ 信源战绩 -->
+        <div class="ui-card block" id="b4">
+          <div class="blk-h"><span class="no">④</span><b>信源战绩 · 谁说对最多</b></div>
+          <div id="b4-body"><div class="skel ui-skeleton"></div></div>
+        </div>
+        <!-- ⑤ 消息流举证 -->
+        <div class="ui-card block" id="b5">
+          <div class="blk-h"><span class="no">⑤</span><b>消息流举证</b><span class="mini" id="b5-sub"></span></div>
+          <div id="b5-body"><div class="skel ui-skeleton"></div></div>
+        </div>
+      </div>
+
+      <!-- ⓪ AI 解读（置顶） -->
+      <div class="ui-card" style="margin-bottom:12px" id="ai-card">
+        <h3 style="margin:0 0 6px;font-size:13.5px">🤖 AI 解读结论 <span class="mini" id="ai-meta" style="margin-left:8px"></span></h3>
+        <div id="ai-body"><button class="ui-btn ui-btn--primary ui-btn--sm" id="ai-go">生成 AI 解读</button> <span class="mini">个股研判卡盘后已预生成（AIDE），打开本页自动加载；无卡时点此现算（本地推理 100 秒以上，云端约 15 秒）</span></div>
+      </div>
+
+      <!-- ⑥ 叙事结论 -->
+      <div class="ui-card block" id="b6">
+        <div class="blk-h"><span class="no">⑥</span><b>叙事结论（自动生成可引用）</b></div>
+        <div id="b6-body"><div class="skel ui-skeleton"></div></div>
+      </div>
+    </div>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 全景组合视图 · 并行调 /api/jev/target + story + evidence · 各块独立降级不拖全页</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    var BIAS_CN={bull:"利多",bear:"利空",neutral:"中性"};
+    var $=function(id){return document.getElementById(id)};
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    var CODE_RE=/^\d{6}$/;
+    function fmtVerdict(v){
+      var s=esc(v||"—");
+      return s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+    }
+
+    // ── 进度条 ──
+    var STEPS=["判定快照","量价时空","影响区间","信源战绩","消息流举证","叙事结论"];
+    var done={}, total=STEPS.length;
+    function initBar(){
+      $("pbar").hidden=false;
+      $("psteps").innerHTML=STEPS.map(function(s,i){
+        return '<span class="pstep" id="ps'+i+'"><span class="d"></span>'+s+'</span>';
+      }).join("");
+      done={};paint();
+    }
+    function step(i){
+      done[i]=1;paint();
+    }
+    function paint(){
+      var n=0;
+      STEPS.forEach(function(s,i){
+        var el=$("ps"+i); if(!el)return;
+        el.className="pstep"+(done[i]?" done":(n===Object.keys(done).length?" on":""));
+        if(done[i])n++;
+      });
+      var pct=Math.round(Object.keys(done).length/total*100);
+      $("pfill").style.width=pct+"%";
+      var next=STEPS[Object.keys(done).length];
+      $("pline").textContent=Object.keys(done).length>=total?"✅ 全部组合完成":("正在组合："+next+"…（"+Object.keys(done).length+"/"+total+"）");
+    }
+
+    function fetchJSON(u){
+      return fetch(u).then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        return r.json();
+      });
+    }
+
+    function load(q, days){
+      $("err").hidden=true;
+      $("meta").textContent="组合中… "+q;
+      $("pano").hidden=true;
+      initBar();
+      var isCode=CODE_RE.test(q);
+
+      // 三路并行：target（代码）/story（代码）/evidence（关键词或代码）
+      var pT=isCode?fetchJSON("/api/jev/target/"+q+"?days="+days+"&limit=40"):Promise.resolve(null);
+      var pS=isCode?fetchJSON("/api/jev/story/"+q+"?days="+days+"&limit=80"):Promise.resolve(null);
+      var pE=fetchJSON("/api/jev/evidence?q="+encodeURIComponent(q)+"&days="+days);
+
+      var results={};
+
+      // ①+③ 依赖 target/story；渐进 paint
+      pT.then(function(d){results.target=d;if(d){renderB1(d)}else{$("b1-body").innerHTML='<p class="mini">关键词模式无标的快照——输 6 位代码可得三面依据</p>'}step(0);step(2);})
+        .catch(function(e){$("b1-body").innerHTML='<p class="mini">判定快照不可用：'+esc(e.message)+'（关键词输入时此块留空，输代码可得）</p>';step(0);step(2);});
+      pS.then(function(d){results.story=d;if(d){renderB2(d);renderB3(d);renderB4(d);renderB6(d)}else{["b2","b3","b4","b6"].forEach(function(b){$(b+"-body").innerHTML='<p class="mini">关键词模式无个股叙事——输 6 位代码可得</p>'})}step(1);step(3);step(5);})
+        .catch(function(e){["b2","b3","b4","b6"].forEach(function(b){$(b+"-body").innerHTML='<p class="mini">该块不可用：'+esc(e.message)+'（输代码可得）</p>'});step(1);step(3);step(5);});
+      pE.then(function(d){results.evidence=d;renderB5(d,isCode);step(4);})
+        .catch(function(e){$("b5-body").innerHTML='<p class="mini">举证不可用：'+esc(e.message)+'</p>';step(4);});
+
+      Promise.allSettled([pT,pS,pE]).then(function(){
+        $("meta").textContent="「"+q+"」· "+(isCode?"标的全景":"消息全景")+" · 组合完成 "+new Date().toTimeString().slice(0,5);
+        setupAI(isCode
+          ? "/api/jev/interpret?kind=story&code="+encodeURIComponent(q)+"&days="+days
+          : "/api/jev/interpret?kind=evidence&q="+encodeURIComponent(q)+"&days="+days);
+        location.hash=encodeURIComponent(q);
+        $("pano").hidden=false;
+        if(isCode && results.target){var nm=(results.target.profile||{}).name;$("b1-sub").textContent=nm?("· "+nm):"";}
+      });
+    }
+
+    // ── ① 判定快照（三面依据浓缩） ──
+    function renderB1(d){
+      var p=d.profile||{},q=d.quotes||{},j=d.judgments||{},post=j.posterior||{};
+      var h='<div class="kpis">';
+      h+='<div class="ui-card kpi"><div class="k-label">'+esc(d.code)+(p.name?(" · "+esc(p.name)):"")+'</div><b style="font-size:15px">'+(p.industry||"—")+'</b><div class="mini">'+esc(p.area||"")+' · 上市'+esc(p.list_date||"?")+'</div></div>';
+      var cum=q.cum_chg_pct;
+      h+='<div class="ui-card kpi"><div class="k-label">区间涨跌（'+d.window_days+'日）</div><b class="'+(cum>0?"up":(cum<0?"dn":""))+'">'+(cum==null?"—":((cum>0?"+":"")+cum+"%"))+'</b><div class="mini">'+(q.available?("收 "+q.last_close+" · "+q.n_bars+" bar"):"行情不可用")+'</div></div>';
+      var net=j.net_bias;
+      h+='<div class="ui-card kpi"><div class="k-label">判定净倾向</div><b class="'+(net>0?"up":(net<0?"dn":""))+'">'+(net==null?"—":((net>0?"+":"")+net))+'</b><div class="mini">多'+((j.dist||{}).bull||0)+' / 空'+((j.dist||{}).bear||0)+' / 中'+((j.dist||{}).neutral||0)+'（窗口内）</div></div>';
+      h+='<div class="ui-card kpi"><div class="k-label">后验命中率（全历史）</div><b>'+(post.hit_rate==null?"—":((post.hit_rate*100).toFixed(1)+"%"))+'</b><div class="mini">'+(post.available?(post.verified+" / "+post.judged_total+" 已验证"):"—")+'</div></div>';
+      h+='</div>';
+      // 命中质量账（2026-11-08）：粗筛里有多少条只是模型自己填了代码、原文
+      // 通篇不提这只票（种业大会→宁德时代那种），这类已剔除且单独记账。
+      var ha=j.hit_audit||{};
+      if(ha.raw){
+        var dr=ha.dropped||0;
+        var rate=(ha.keep_rate!=null?(ha.keep_rate*100).toFixed(0):"—");
+        h+='<div class="mini" style="margin-top:8px;padding:6px 9px;border:1px solid var(--border-weak);border-radius:var(--r-s);background:var(--bg-raised)">'
+          +'命中质量：粗筛 <b>'+ha.raw+'</b> 条 → 采信 <b>'+ha.kept+'</b> 条（'+rate+'%）'
+          +(dr?('；剔除 <b style="color:var(--color-err)">'+dr+'</b> 条——仅 jev.companies 里有代码、'
+                +'标题与正文未出现公司名/代码/所属行业词，判为模型幻觉'):'')
+          +'</div>';
+      }
+      // 判定明细 top5
+      var items=(j.items||[]).slice(0,5);
+      if(items.length){
+        h+='<table class="ui-table" style="margin-top:8px"><thead><tr><th>时间</th><th>方向</th><th>conf</th><th>标题</th><th>命中依据</th><th>角色</th><th>来源</th></tr></thead><tbody>';
+        var VN={text_confirmed:["文本确证","var(--color-up)"],industry_only:["板块级","var(--os-amber)"],code_only:["无支撑","var(--color-err)"],none:["—","var(--gray-5)"]};
+        items.forEach(function(it){
+          var b=it.basis||{},tm=b.terms||{};
+          // 传播角色（老田令）：同一篇稿被 4 家转只有 1 个信号，转发旁边的
+          // 分钟数是"落后首发多久"，不是第二个独立事件。
+          var OKM={original:["原创","var(--color-up)"],first:["首发","var(--blu-500)"],
+                   repost:["转发","var(--os-amber)"],dup:["重复","var(--gray-5)"],
+                   recur:["复读","var(--gray-5)"],retell:["异稿","var(--gray-5)"],
+                   column:["栏目","var(--blu-500)"],unknown:["—","var(--gray-5)"]};
+          var okv=OKM[it.origin_kind]||OKM.unknown;
+          var okcell='<span style="color:'+okv[1]+';white-space:nowrap">'+okv[0]
+            +(it.origin_kind==="repost"&&it.lag_min!=null?(' Δ'+it.lag_min+'m'):'')+'</span>';
+          var trm=(tm.name&&tm.name[0])||(tm.code&&tm.code[0])||(tm.industry&&tm.industry[0])||"";
+          var vv=VN[b.verdict]||["—","var(--gray-5)"];
+          var cell='<span style="color:'+vv[1]+';font-weight:600">'+vv[0]+'</span>'
+            +(trm?('<span class="mini">「'+esc(trm)+'」</span>'):'');
+          var tip=b.hit_text?('原文：'+b.hit_text):(b.why||"");
+          h+="<tr><td class='mini' style='white-space:nowrap'>"+esc((it.ts||"").slice(5,16))+"</td><td><span class='bias-chip "+esc(it.bias||"neutral")+"'>"+(BIAS_CN[it.bias]||it.bias||"—")+"</span></td><td class='num'>"+(it.conf!=null?it.conf:"—")+"</td><td class='mini'>"+esc(it.title||"")+"</td><td title='"+esc(tip)+"' style='white-space:nowrap'>"+cell+"</td><td>"+okcell+"</td><td><span class='mini'>"+esc(it.src||"")+"</span></td></tr>";
+        });
+        h+='</tbody></table>';
+        h+='<p class="mini" style="margin-top:4px">命中依据：<b>文本确证</b>=标题/正文出现公司名或代码；<b>板块级</b>=未点名个股但出现其所属行业词（属板块关联，非个股事件）；<b>无支撑</b>=仅判定里填了代码。悬停可看原文片段。 角色：<b>原创</b>=本媒体电头自采；<b>首发</b>=本库最早；<b>转发</b>=跨源转载并标落后分钟数；重复/复读/异稿不计入方向统计。</p>';
+      }
+      $("b1-body").innerHTML=h;
+    }
+
+    // ── ② 量价时空（紧凑版） ──
+    function renderB2(d){
+      var qs=d.quotes||[],ev=d.timeline||[];
+      var evByDay={};
+      ev.forEach(function(e){var k=(e.ts||"").slice(0,10).replace(/-/g,"");(evByDay[k]=evByDay[k]||[]).push(e)});
+      var bandDays={};
+      qs.forEach(function(q,i){if(evByDay[q.date])for(var j=1;j<=3&&i+j<qs.length;j++)bandDays[qs[i+j].date]=1;});
+      if(!qs.length){$("b2-body").innerHTML='<p class="mini">无行情</p>';return}
+      var mx=1,mv=1;qs.forEach(function(q){mx=Math.max(mx,Math.abs(q.pct_chg||0));mv=Math.max(mv,q.vol||0)});
+      var h='<div class="axis">';
+      h+=qs.map(function(q){
+        var ph=Math.max(3,Math.abs(q.pct_chg||0)/mx*62),vh=Math.max(2,(q.vol||0)/mv*18);
+        var mk=evByDay[q.date]||[],marks="";
+        if(mk.length){
+          var b=mk.filter(function(e){return e.bias=="bull"}).length,s=mk.filter(function(e){return e.bias=="bear"}).length;
+          var tip=mk.map(function(e){return (e.bias=="bull"?"▲":"▼")+" "+e.source+" "+(e.title||"").slice(0,16)}).join("&#10;");
+          marks='<span class="amark'+(b>=s?" b":" s")+'" title="'+tip+'">'+(b?"▲":"")+(s?"▼":"")+(mk.length>1?("×"+mk.length):"")+'</span>';
+        }
+        var band=bandDays[q.date]?'<div class="impact-band"></div>':'';
+        return '<div class="aday" title="'+q.date+" "+((q.pct_chg>0?"+":"")+q.pct_chg+"%")+(q.vol?(" 量"+Math.round(q.vol/100)/100+"万手"):"")+'">'+band+marks
+          +'<div class="vbar" style="height:'+vh+'px"></div>'
+          +'<div class="abar '+((q.pct_chg>0)?"up":(q.pct_chg<0)?"dn":"fl")+'" style="height:'+ph+'px"></div></div>';
+      }).join("");
+      h+='</div><div class="dates">'+qs.map(function(q){return '<div>'+(q.date||"").slice(4)+'</div>'}).join("")+'</div>';
+      h+='<p class="mini" style="margin-top:4px">▲利多 ▼利空（悬停明细）｜红涨绿跌｜灰柱=量｜<span style="color:var(--blu-500)">蓝带=事件后3日影响区</span></p>';
+
+      // ── 事件传导流：谁先发生（2026-11-08 老田令）──
+      // 每条新闻有自己的时间点，时间点就是锚点。按交易日归并、日内按分钟
+      // 排序，标出当日首条（●）与跟随（○），悬停可看是哪条新闻、哪个渠道。
+      // 非交易日的消息顺延到下一交易日——周五晚的研报、周末的公告，影响本来
+      // 就发生在周一开盘，不该单独算一个「交易日」。
+      var seq=d.sequence||[];
+      if(seq.length){
+        var sh='<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border-weak)">'
+          +'<div style="font-size:12px;color:var(--gray-5);margin-bottom:5px">事件传导流 · 谁先发生（按交易日归并，非交易日消息顺延）</div>';
+        seq.slice(-6).forEach(function(s){
+          var dl=s.pending?('待验证 '+s.origin_dates.join('/')):s.trade_date;
+          var pc=(s.price_pct==null)?'—':((s.price_pct>0?'+':'')+s.price_pct+'%');
+          var pcl=(s.price_pct==null)?'':(s.price_pct>0?'up':(s.price_pct<0?'dn':''));
+          sh+='<div style="display:flex;gap:7px;align-items:baseline;padding:3px 0;flex-wrap:wrap">';
+          sh+='<b style="font:600 12px var(--font-mono);min-width:96px">'+esc(dl)+'</b>';
+          sh+='<span class="mini">'+s.n+'条</span>';
+          sh+='<span class="mini '+(s.net>0?'up':(s.net<0?'dn':''))+'">净'+((s.net>0?'+':'')+s.net)+'</span>';
+          sh+='<span class="mini '+pcl+'">当日'+pc+'</span>';
+          var pts=(s.items||[]).slice(0,8).map(function(it){
+            var c=(it.role=='lead')?'var(--color-up)':'var(--gray-5)';
+            var tip=it.ts+' '+(it.bias=='bull'?'利多':(it.bias=='bear'?'利空':'中性'))
+              +' · '+(it.source_cn||'')+' · '+((it.basis_verdict=='industry_only')?'板块级':'确证')+'\n'+it.title;
+            return '<span title="'+esc(tip)+'" style="font:11px var(--font-mono);color:'+c+'">'
+              +(it.role=='lead'?'●':'○')+esc(it.minute)+'</span>';
+          }).join('<span style="color:var(--gray-4);font-size:10px">›</span>');
+          sh+='<span>'+pts+'</span>';
+          if(s.n>8)sh+='<span class="mini">+'+(s.n-8)+'</span>';
+          sh+='</div>';
+        });
+        sh+='<p class="mini" style="margin-top:3px">●当日首条（lead） ○跟随（follow），悬停看具体新闻与渠道；净=多-空；当日=该交易日涨跌幅。</p></div>';
+        h+=sh;
+      }
+      $("b2-body").innerHTML=h;
+    }
+
+    // ── ③ 影响区间 ──
+    function renderB3(d){
+      var IS=(d.impact_stats||{}).by_window||{};
+      var WN={t1:"事件后 1 日",t3:"事件后 3 日",t5:"事件后 5 日"};
+      var h=Object.keys(WN).map(function(k){
+        var w=IS[k];if(!w)return "";
+        var days=(w.n_days!=null?w.n_days:w.n);
+        // 样本门槛（2026-11-08）：独立交易日不足 5 个就不给区间。之前 1~3 个
+        // 样本也印「+9.14%~+9.14%、同向 87%」，等于把一天行情包装成规律。
+        if(w.sufficient===false){
+          return '<div style="padding:6px 0;border-bottom:1px dashed var(--border-weak)">'
+            +'<div style="font-size:12px;color:var(--gray-5)">'+WN[k]+'（独立交易日 '+days+' 天）</div>'
+            +'<div class="mini" style="color:var(--os-amber)">样本不足，不给区间——'
+            +'不拿单日行情冒充规律</div></div>';
+        }
+        return '<div style="padding:6px 0;border-bottom:1px dashed var(--border-weak)"><div style="font-size:12px;color:var(--gray-5)">'+WN[k]+'（独立交易日 '+days+' 天 / 事件 '+w.n+' 条）</div>'
+          +'<div style="font:700 16px var(--font-mono)" class="'+(w.median>=0?"up":"dn")+'">'+(w.median>0?"+":"")+w.median+'% <span style="font-size:11px;font-weight:400">中位</span></div>'
+          +'<div class="mini">P25~P75：'+(w.p25>0?"+":"")+w.p25+'% ~ '+(w.p75>0?"+":"")+w.p75+'% · 同向概率 '+(w.same_dir_rate*100).toFixed(0)+'%</div></div>';
+      }).join("");
+      var note='<p class="mini" style="margin-top:6px">口径：按<b>事件所属交易日</b>去重，一个交易日算一个观测（同一天多条消息不重复计数）；'
+        +'非交易日（周末/节假日）的消息顺延至下一交易日；方向已按多空归一。</p>';
+      $("b3-body").innerHTML=(h||'<p class="mini">窗口内无可对齐样本（事件日需在 K 线内）</p>')+note;
+    }
+
+    // ── ④ 信源战绩 ──
+    function renderB4(d){
+      var ss=d.sources||[];
+      if(!ss.length){$("b4-body").innerHTML='<p class="mini">无信源样本</p>';return}
+      var h='<table class="ui-table"><thead><tr><th>信源</th><th>说了</th><th>已验</th><th>命中</th><th>准确率</th></tr></thead><tbody>';
+      ss.slice(0,7).forEach(function(s){
+        var acc=s.accuracy;
+        h+="<tr><td>"+esc(s.source_cn||s.source)+"</td><td class='num'>"+s.n+"</td><td class='num'>"+s.verified+"</td><td class='num'>"+s.hit+"</td><td class='num'>"+(acc!=null?('<span class="accbar" style="width:'+(acc*30)+'px"></span> '+(acc*100).toFixed(0)+"%"):"—")+"</td></tr>";
+      });
+      h+='</tbody></table>';
+      $("b4-body").innerHTML=h;
+    }
+
+    // ── ⑤ 消息流举证（浓缩） ──
+    function renderB5(d,isCode){
+      var f=d.flow||{};
+      $("b5-sub").textContent="「"+esc(f.q||"")+"」"+(f.total?(" · "+f.total+" 条"):"");
+      var b=f.bias||{};
+      var h='<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">';
+      h+='<div class="ui-card kpi"><div class="k-label">消息总量</div><b>'+(f.total!=null?f.total:"—")+'</b></div>';
+      h+='<div class="ui-card kpi"><div class="k-label">持续时间</div><b style="font-size:15px">'+(f.duration_h!=null?(f.duration_h+"h"):"—")+'</b><div class="mini">'+esc((f.first||"?")+" → "+(f.last||"?"))+'</div></div>';
+      var net=(b.bull||0)-(b.bear||0);
+      h+='<div class="ui-card kpi"><div class="k-label">方向基调</div><b class="'+(net>0?"up":(net<0?"dn":""))+'">'+(net>0?"+":"")+net+'</b><div class="mini">多'+(b.bull||0)+'/空'+(b.bear||0)+'/中'+(b.neutral||0)+'</div></div>';
+      var s0=(f.sources||[])[0]||{};
+      h+='<div class="ui-card kpi"><div class="k-label">主扩散渠道</div><b style="font-size:15px">'+esc(s0.source_cn||s0.source||"—")+'</b><div class="mini">'+(s0.n!=null?(s0.n+" 条"):"")+'</div></div>';
+      h+='</div>';
+      // 逐日消息条
+      var tl=d.timeline||[];
+      if(tl.length){
+        var mx=1;tl.forEach(function(t){mx=Math.max(mx,t.n)});
+        h+='<div class="tl" style="margin-top:8px">'+tl.map(function(t){
+          var hh=Math.max(3,t.n/mx*64);
+          return '<div class="tday" title="'+esc(t.t)+'：'+t.n+' 条（多'+t.bull+' 中'+t.neutral+' 空'+t.bear+'）"><div style="width:70%;max-width:18px;border-radius:2px 2px 0 0;background:'+(t.bull>=t.bear?"var(--color-up)":"var(--color-dn)")+';opacity:.75;height:'+hh+'px"></div><span class="tlab">'+esc(String(t.t).slice(5))+'</span></div>';
+        }).join("")+'</div>';
+      }
+      h+='<p class="mini" style="margin-top:6px">'+esc(d.verdict||"")+'</p>';
+      $("b5-body").innerHTML=h;
+    }
+
+    // ── ⑥ 叙事结论 ──
+    function renderB6(d){
+      var cf=d.confirm||{};
+      var h='<div class="verdict">'+fmtVerdict(d.verdict)+'</div>';
+      h+='<div class="mini" style="margin-top:6px">口径：证实/证伪为窗口内事件后验；影响区间为方向归一历史统计；信源准确率复用 T+1 后验（全历史）。</div>';
+      $("b6-body").innerHTML=h;
+    }
+
+
+    function setupAI(query){
+      var btn=document.getElementById("ai-go");
+      if(!btn)return;
+      var body=document.getElementById("ai-body"), meta=document.getElementById("ai-meta");
+      function paint(d){
+        var eng=d.engine_label?(d.engine_label+(d.model?" · "+d.model:"")):(d.engine==="model"?(d.model||"AI 模型"):"规则引擎");
+        var sd=d.sediment;
+        var tail=sd?(" · "+(sd.trade_date||"").slice(5)+" 盘后"+(sd.stale?"（隔日沉淀）":"（今日预生成）")):"";
+        meta.textContent=eng+" · "+(d.generated_at||"").slice(11)+tail;
+        body.innerHTML='<div class="verdict" style="margin:0">'+fmtVerdict(d.conclusion).replace(/\n/g,"<br>")+'</div>'
+          +'<div style="margin-top:8px"><button class="ui-btn ui-btn--sm" id="ai-re">重算</button>'
+          +(d.engine==="rule"&&d.degrade_note?'<span class="mini" style="margin-left:8px">'+esc(d.degrade_note)+'</span>':'')
+          +'</div>';
+        var re=document.getElementById("ai-re");
+        if(re) re.addEventListener("click",function(){ run(true); });
+      }
+      function run(force){
+        body.innerHTML='<span class="mini">🤖 正在研判…（本地模型约 100 秒以上；云端配好后数秒）</span>';
+        fetch(query+(force?"&refresh=1":"")).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(function(d){
+          if(!d.conclusion) throw new Error(d.message||"无结论");
+          paint(d);
+        }).catch(function(e){
+          body.innerHTML='<span class="mini">解读失败：'+esc(e.message)+'</span>';
+        });
+      }
+      btn.addEventListener("click",function(){ run(false); });
+      fetch(query+"&peek=1").then(function(r){return r.json()}).then(function(d){
+        if(d&&d.ok&&d.conclusion){ paint(d); }
+      }).catch(function(){});
+    }
+        $("go").addEventListener("click",function(){var v=$("q").value.trim();if(v)load(v,$("days").value)});
+    $("q").addEventListener("keydown",function(e){if(e.key==="Enter")$("go").click()});
+    if(location.hash.length>1){var v=decodeURIComponent(location.hash.slice(1));$("q").value=v;load(v,30)}
+  })();
+  </script>
+</body>
+</html>

@@ -424,7 +424,7 @@ def _case_actor(headers) -> tuple[str, set]:
     try:
         req = urllib.request.Request("http://127.0.0.1:8091/api/auth/me",
                                      headers={"Cookie": cookie, "Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=3) as resp:
+        with safe_urlopen(req, timeout=3) as resp:
             d = json.loads(resp.read().decode("utf-8"))
         sess = d.get("session") or {}
         ctx = sess.get("identity_context") or {}

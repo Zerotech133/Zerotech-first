@@ -1,0 +1,72 @@
+{
+  "probe": "smoke_monitor.py",
+  "target": "http://127.0.0.1:8091",
+  "generated_at": "2026-11-06T05:15:57+0800",
+  "note": "read-only GET probe; no POST/write endpoints called",
+  "results": [
+    {
+      "path": "/health",
+      "status": 200,
+      "elapsed_s": 0.005,
+      "json": true,
+      "body": {
+        "ok": true,
+        "ts": "2026-11-06 05:15:57"
+      }
+    },
+    {
+      "path": "/api/monitor/pools",
+      "status": 200,
+      "elapsed_s": 0.02,
+      "json": true,
+      "body": {
+        "ok": true,
+        "pools": {
+          "watchlist": 3
+        },
+        "summary": {
+          "pools": {
+            "watchlist": 3
+          },
+          "alerts_total": 0,
+          "by_severity": {
+            "high": 0,
+            "medium": 0,
+            "low": 0
+          },
+          "last_run": null
+        }
+      }
+    },
+    {
+      "path": "/api/monitor/summary",
+      "status": 200,
+      "elapsed_s": 0.015,
+      "json": true,
+      "body": {
+        "ok": true,
+        "pools": {
+          "watchlist": 3
+        },
+        "alerts_total": 0,
+        "by_severity": {
+          "high": 0,
+          "medium": 0,
+          "low": 0
+        },
+        "last_run": null
+      }
+    },
+    {
+      "path": "/api/monitor/alerts?pool=watchlist&limit=3",
+      "status": 200,
+      "elapsed_s": 0.002,
+      "json": true,
+      "body": {
+        "ok": true,
+        "alerts": [],
+        "count": 0
+      }
+    }
+  ]
+}

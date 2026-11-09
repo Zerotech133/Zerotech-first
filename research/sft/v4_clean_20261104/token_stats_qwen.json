@@ -1,0 +1,47 @@
+{
+  "tokenizer": "Qwen/Qwen3.5-9B",
+  "vocab_size": 248044,
+  "chat_template_applied": true,
+  "splits": {
+    "train": {
+      "rows": 3169,
+      "tokens": {
+        "sum": 578101,
+        "mean": 182.4,
+        "p50": 128,
+        "p90": 190,
+        "p99": 1346,
+        "max": 1941
+      },
+      "over_4096": 0,
+      "over_8192": 0
+    },
+    "val": {
+      "rows": 394,
+      "tokens": {
+        "sum": 65790,
+        "mean": 167.0,
+        "p50": 124,
+        "p90": 178,
+        "p99": 1178,
+        "max": 1594
+      },
+      "over_4096": 0,
+      "over_8192": 0
+    },
+    "holdout": {
+      "rows": 206,
+      "tokens": {
+        "sum": 38970,
+        "mean": 189.2,
+        "p50": 126,
+        "p90": 187,
+        "p99": 1407,
+        "max": 1654
+      },
+      "over_4096": 0,
+      "over_8192": 0
+    }
+  },
+  "total_tokens": 682861
+}

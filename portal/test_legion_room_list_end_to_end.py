@@ -13,6 +13,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "portal"))
 sys.path.insert(0, str(ROOT / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 import api_legion_ops_v2 as ops
 import legion_meeting_room as rooms
@@ -78,7 +80,7 @@ def _http_list(server, headers):
         f"http://127.0.0.1:{server.server_port}/api/legion/room/list", headers=headers
     )
     try:
-        response = urllib.request.urlopen(request, timeout=5)
+        response = safe_urlopen(request, timeout=5)
     except urllib.error.HTTPError as exc:
         response = exc
     with response:

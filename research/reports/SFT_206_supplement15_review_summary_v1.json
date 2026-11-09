@@ -1,0 +1,294 @@
+{
+  "source": "C:\\Users\\t\\Desktop\\206人工抽检_补充15条_审阅表_v1.xlsx",
+  "generated_at": "2026-11-04T22:52:14+08:00",
+  "status": "human_reviewed_targeted_sample",
+  "representative": false,
+  "sample_kind": "targeted_15 = 10 worst_char_regression + 5 unknown_ood_refusal",
+  "reviewer_values": [
+    "老田"
+  ],
+  "reviewer_is_draft": false,
+  "n": 15,
+  "base_correct": 13,
+  "rag_correct": 3,
+  "winner": {
+    "rag": 1,
+    "base": 12,
+    "tie": 2
+  },
+  "citation_ok": 4,
+  "time_sensitive": 0,
+  "both_correct": [
+    "holdout-156",
+    "holdout-164"
+  ],
+  "both_wrong": [
+    "holdout-040"
+  ],
+  "rag_only_correct": [
+    "holdout-077"
+  ],
+  "base_only_correct": [
+    "holdout-124",
+    "holdout-146",
+    "holdout-074",
+    "holdout-184",
+    "holdout-190",
+    "holdout-168",
+    "holdout-151",
+    "holdout-177",
+    "holdout-149",
+    "holdout-192",
+    "holdout-189"
+  ],
+  "by_selection_reason": {
+    "unknown_ood_refusal": {
+      "n": 5,
+      "base_correct": 5,
+      "rag_correct": 0,
+      "winner": {
+        "base": 5
+      },
+      "citation_ok": 0,
+      "rag_refusal_like": [
+        "holdout-151",
+        "holdout-177",
+        "holdout-149",
+        "holdout-192",
+        "holdout-189"
+      ]
+    },
+    "worst_char_regression": {
+      "n": 10,
+      "base_correct": 8,
+      "rag_correct": 3,
+      "winner": {
+        "rag": 1,
+        "base": 7,
+        "tie": 2
+      },
+      "citation_ok": 4,
+      "rag_refusal_like": [
+        "holdout-124",
+        "holdout-146",
+        "holdout-074",
+        "holdout-184",
+        "holdout-190",
+        "holdout-168"
+      ]
+    }
+  },
+  "warnings": [],
+  "rows": [
+    {
+      "id": "holdout-077",
+      "category": "E_variant",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.3924,
+      "rag_char_f1": 0.1631,
+      "reviewer": "老田",
+      "notes": "base 把「缠论工具」说成方法论体系，未答出它是自动标识中枢与买卖点的软件；RAG 准确，但未遵守「一句话」约束",
+      "base_correct": 0,
+      "rag_correct": 1,
+      "winner": "rag",
+      "citation_ok": 1,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-124",
+      "category": "E_variant",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.2991,
+      "rag_char_f1": 0.0923,
+      "reviewer": "老田",
+      "notes": "RAG 检索到的是股评与科技内容、与航空无关故拒答；base 一句话定义准确，但未给出 reference 的净增 9 架 / 3426 架 / 较上年末 +1.2% 数据",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-146",
+      "category": "unknown",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.4545,
+      "rag_char_f1": 0.2686,
+      "reviewer": "老田",
+      "notes": "base 准确引用资料[1]并补充[2]背景、注明资料未给技术定义；RAG 称找不到依据，而资料[1]原文即为依据，属漏检",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-074",
+      "category": "E_variant",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.2178,
+      "rag_char_f1": 0.0649,
+      "reviewer": "老田",
+      "notes": "base 一句话定义准确；RAG 明确表示无法给出定义，仅列特征，未完成「一句话解释」",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-156",
+      "category": "unknown",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.5795,
+      "rag_char_f1": 0.4453,
+      "reviewer": "老田",
+      "notes": "base 覆盖低点上移、包含关系与「跟随至空头标志」的出场条件；RAG 仅覆盖前两点、遗漏出场条件，但来源标注更细",
+      "base_correct": 1,
+      "rag_correct": 1,
+      "winner": "base",
+      "citation_ok": 1,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-184",
+      "category": "unknown",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.3505,
+      "rag_char_f1": 0.2165,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为金融内容拒答；base 完整给出差值 3/5/7/9→11→37 与 n²+1 两种解法，答案正确",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-190",
+      "category": "unknown",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.3339,
+      "rag_char_f1": 0.2088,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为金融内容拒答；base 给出 SELECT/FROM/WHERE 分步写法与示例，覆盖 reference 全部步骤",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-168",
+      "category": "unknown",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.3618,
+      "rag_char_f1": 0.2397,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为量化交易内容拒答；base 正确指出不必强求对应，并给出直译加注、意译、借用习语、保留原词四种处理",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-040",
+      "category": "C_reading_comprehension",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.2303,
+      "rag_char_f1": 0.1207,
+      "reviewer": "老田",
+      "notes": "两版均未答出 reference 的「扫破低点后收回形成候选 + 低周期 CISD 收盘确认」；base 作威科夫式推测，RAG 正确辨析 SEPA 的 C2 与缠论分形属不同体系，但同样未命中",
+      "base_correct": 0,
+      "rag_correct": 0,
+      "winner": "tie",
+      "citation_ok": 1,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-164",
+      "category": "unknown",
+      "selection_reason": "worst_char_regression",
+      "base_char_f1": 0.6327,
+      "rag_char_f1": 0.5248,
+      "reviewer": "老田",
+      "notes": "两者均完整给出排序、报告名与页码，RAG 额外附 PDF 路径，完成度相当",
+      "base_correct": 1,
+      "rag_correct": 1,
+      "winner": "tie",
+      "citation_ok": 1,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-151",
+      "category": "unknown",
+      "selection_reason": "unknown_ood_refusal",
+      "base_char_f1": 0.2762,
+      "rag_char_f1": 0.1746,
+      "reviewer": "老田",
+      "notes": "RAG 因资料无关拒答；base 给出矛盾法入手思路与甲乙丙案例，推理与结论一致",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-177",
+      "category": "unknown",
+      "selection_reason": "unknown_ood_refusal",
+      "base_char_f1": 0.2482,
+      "rag_char_f1": 0.1466,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为虾滑供应链内容拒答；base 给出先软化后擦拭的思路与小苏打加洗洁精的具体做法",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-149",
+      "category": "unknown",
+      "selection_reason": "unknown_ood_refusal",
+      "base_char_f1": 0.2836,
+      "rag_char_f1": 0.2024,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为量化交易内容拒答；base 列出只讲过程不讲结果、信息堆砌、只提问题不给方案等误区，并给出结论先行等改法",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-192",
+      "category": "unknown",
+      "selection_reason": "unknown_ood_refusal",
+      "base_char_f1": 0.2029,
+      "rag_char_f1": 0.1239,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为量化与 AI 工程内容拒答；base 列出背景堆砌、陈词滥调、缺乏冲突等误区并给具体切入点建议",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    },
+    {
+      "id": "holdout-189",
+      "category": "unknown",
+      "selection_reason": "unknown_ood_refusal",
+      "base_char_f1": 0.211,
+      "rag_char_f1": 0.1338,
+      "reviewer": "老田",
+      "notes": "RAG 因资料为股票指标公式内容拒答；base 给出锁白平衡、关 HDR、控曝光、避镜头边缘等要点，与 reference 一致",
+      "base_correct": 1,
+      "rag_correct": 0,
+      "winner": "base",
+      "citation_ok": 0,
+      "time_sensitive": 0
+    }
+  ]
+}

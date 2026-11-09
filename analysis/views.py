@@ -6,16 +6,31 @@
 import json
 import re
 import sys
-import urllib.request
 
 from . import config
+# 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py
+import sys as _sys
+from pathlib import Path as _Path
+
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 SEMI_WORDS = re.compile(r"半导体|芯片|晶圆|封测")
 
 
 def _research(code):
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8091/api/research?c=%s&force=1" % code, timeout=180) as r:
+        with safe_urlopen("http://127.0.0.1:8091/api/research?c=%s&force=1" % code, timeout=180) as r:
             return json.loads(r.read().decode())
     except Exception as e:
         return {"error": str(e)[:150]}

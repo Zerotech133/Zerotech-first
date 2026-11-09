@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>赵云下钻看板 · A0/JEV + 数据血缘</title>
+<style>
+  :root{
+    --bg:#0f1419;--card:#1a2230;--card2:#222c3c;--line:#2b3850;--txt:#e6edf3;
+    --sub:#9aa7b8;--work:#27c08a;--idle:#e0a23b;--debt:#ef5a5a;--silent:#7d8aa0;
+    --link:#58a6ff;--code:#0d1117;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:14px/1.5 -apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);
+         display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0}
+  .tag{font-size:11px;color:var(--sub);border:1px solid var(--line);
+       border-radius:20px;padding:2px 10px}
+  .banner{margin:12px 20px;padding:10px 14px;border-radius:8px;font-size:12.5px;
+          background:#2a2410;border:1px solid #5a4a1a;color:#f0d58a;line-height:1.6}
+  .wrap{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:0 20px 30px}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:12px 14px;margin-bottom:14px}
+  .card h2{font-size:13px;margin:0 0 10px;color:var(--sub);text-transform:uppercase;
+           letter-spacing:.04em}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+  .filters input{flex:1;min-width:120px;background:var(--code);border:1px solid var(--line);
+        color:var(--txt);border-radius:6px;padding:7px 10px;font-size:13px}
+  .filters select{background:var(--code);border:1px solid var(--line);color:var(--txt);
+        border-radius:6px;padding:7px 8px;font-size:13px}
+  button{cursor:pointer;background:var(--link);color:#06121f;border:none;border-radius:6px;
+         padding:7px 14px;font-weight:600;font-size:13px}
+  .chip{font-size:12px;border:1px solid var(--line);background:var(--card2);color:var(--sub);
+        border-radius:18px;padding:4px 11px;cursor:pointer;user-select:none}
+  .chip.on{background:var(--link);color:#06121f;border-color:var(--link);font-weight:600}
+  .chips-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .trace{padding:9px 11px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;
+         cursor:pointer;background:var(--card2);transition:.12s}
+  .trace:hover{border-color:var(--link)}
+  .trace.sel{border-color:var(--link);box-shadow:0 0 0 1px var(--link)}
+  .trace .id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--link);
+             word-break:break-all}
+  .trace .meta{font-size:11.5px;color:var(--sub);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+  .badge{font-size:11px;border-radius:5px;padding:1px 7px;font-weight:600}
+  .b-ok{background:#103527;color:var(--work)}
+  .b-err{background:#3a1414;color:var(--debt)}
+  .b-warn{background:#3a2e10;color:var(--idle)}
+  .summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .stat{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:10px}
+  .stat .n{font-size:22px;font-weight:700}
+  .stat .l{font-size:11px;color:var(--sub);margin-top:2px}
+  .stat.bad .n{color:var(--debt)} .stat.warn .n{color:var(--idle)} .stat.ok .n{color:var(--work)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--sub);font-weight:600;font-size:11.5px;position:sticky;top:0;background:var(--card)}
+  td.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--link)}
+  .spandetail{max-height:430px;overflow:auto}
+  .attrs{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:8px;
+         font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#a5d6ff;
+         white-space:pre-wrap;word-break:break-all;margin-top:5px}
+  pre.review{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:12px;
+             white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto;font-size:12.5px}
+  .tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .tabs .chip.on{background:var(--idle);color:#1a1206;border-color:var(--idle)}
+  .muted{color:var(--silent);font-size:12px}
+  .empty{color:var(--silent);font-style:italic;padding:14px 0}
+  a{color:var(--link)}
+  .kv{font-size:12px;color:var(--sub)}
+  .kv b{color:var(--txt)}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<header>
+  <h1>🔭 赵云下钻看板</h1>
+  <span class="tag">A0/JEV + 数据血缘</span>
+  <span class="tag" id="srcTag">traces.sqlite 只读</span>
+  <span style="flex:1"></span>
+  <button id="refresh">↻ 刷新</button>
+</header>
+
+<div class="banner">
+  <b>诚实说明（根因定位）：</b> 当前 <b>A0/JEV 没有专属的、带席位标记的 trace 埋点</b>。
+  traces.sqlite 真实采集的是底层 <b>llm.call / llm.attempt / hq.meeting / cap.drill</b> 等通用 span
+  （A0/JEV 的「快速判断」底层即这些 LLM 调用，但无席位 tag，无法按 JEV 单独过滤）。
+  本看板直接接出这些<b>真实 span</b>做下钻；A0 判读文本取自其<b>影子点评文件</b>；数据血缘复用既有
+  <b>/api/kg/lineage</b> 三表。把「静默」变成「可下钻」的第一步已落地，<b>给 JEV 接专属 trace 埋点</b>见文末下一步。
+</div>
+
+<div class="wrap">
+  <!-- 左：过滤器 + 最近 traces -->
+  <div>
+    <div class="card">
+      <h2>过滤器</h2>
+      <div class="filters">
+        <input id="qName" placeholder="span name 子串（如 llm.call / hq.meeting / cap.drill）">
+        <select id="qDays"><option value="1">近1天</option><option value="7" selected>近7天</option>
+          <option value="30">近30天</option><option value="365">全部</option></select>
+        <select id="qLimit"><option value="25">25条</option><option value="50" selected>50条</option>
+          <option value="100">100条</option></select>
+        <button id="go">查询</button>
+      </div>
+      <div class="chips-row" id="chips">
+        <span class="chip" data-v="">全部</span>
+        <span class="chip" data-v="llm.call">llm.call</span>
+        <span class="chip" data-v="hq.meeting">hq.meeting</span>
+        <span class="chip" data-v="cap.drill">cap.drill</span>
+        <span class="chip" data-v="zhuge">zhuge</span>
+        <span class="chip" data-v="approval">approval</span>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+      <h2>A0 / JEV 快速入口</h2>
+      <div class="chips-row" id="seatChips">
+        <span class="chip" data-seat="A0">🧠 A0 判读席位</span>
+        <span class="chip" data-seat="JEV_GATE">廖化·JEV_GATE</span>
+        <span class="chip" data-seat="JEV_QD">伊籍·JEV_QD</span>
+        <span class="chip" data-seat="JEV_REVIEW">蒋干·JEV_REVIEW</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>最近 Traces</h2>
+      <div id="traceList"><div class="empty">点击「查询」加载…</div></div>
+    </div>
+  </div>
+
+  <!-- 右：详情 + 汇总 + 专项面板 -->
+  <div>
+    <div class="card">
+      <h2>汇总（窗口内）</h2>
+      <div class="summary" id="summary"><div class="muted">—</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Trace 下钻明细</h2>
+      <div id="detail"><div class="empty">从左侧选择一条 trace 查看 span（输入/输出元数据·耗时·失败）。</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🧠 A0 判读面板（影子点评 + 能力钻取）</h2>
+      <div id="a0"><div class="muted">加载中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🛰 JEV 运行体面板</h2>
+      <div id="jev"><div class="muted">加载中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🧬 数据血缘（复用 /api/kg/lineage）</h2>
+      <div class="tabs" id="linTabs">
+        <span class="chip on" data-v="runs">作业流 runs</span>
+        <span class="chip" data-v="breaks">断链亮牌 breaks</span>
+        <span class="chip" data-v="upstream">上游溯源 upstream</span>
+        <span class="chip" data-v="downstream">下游影响 downstream</span>
+      </div>
+      <div class="filters" id="linCtrl" style="display:none">
+        <input id="linTable" placeholder="表 URN（upstream/downstream 必填，如 quant_raw.t_daily）">
+        <button id="linGo">查</button>
+      </div>
+      <div id="linOut"><div class="muted">选择上方标签加载血缘…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🕸 知识图谱健康 / 漂移（Neo4j 只读）</h2>
+      <div id="kg"><div class="muted">加载中…</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "/api/trace";
+let selectedTrace = null;
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+function fmtMs(ms){if(ms==null)return "—";if(ms<1000)return ms+" ms";return (ms/1000).toFixed(2)+" s";}
+
+async function getJSON(u){const r=await fetch(u);if(!r.ok)return {ok:false,error:r.status};return r.json();}
+
+// ---- 查询 traces ----
+async function loadTraces(name="",days=7,limit=50){
+  const u=`${API}/data?name=${encodeURIComponent(name)}&days=${days}&limit=${limit}`;
+  const d=await getJSON(u);
+  if(!d.ok){document.getElementById("traceList").innerHTML=`<div class="empty">错误：${esc(d.error)}</div>`;return d;}
+  window._lastData=d;
+  renderSummary(d.summary);
+  renderTraces(d.recent||[]);
+  if(d.a0)renderA0(d.a0);
+  if(d.jev)renderJEV(d.jev);
+  return d;
+}
+
+function renderTraces(list){
+  const el=document.getElementById("traceList");
+  if(!list.length){el.innerHTML=`<div class="empty">无匹配 trace（该 name 在窗口内无 span）。</div>`;return;}
+  el.innerHTML=list.map(t=>{
+    const eb=t.errors>0?`<span class="badge b-err">${t.errors} 失败</span>`:`<span class="badge b-ok">正常</span>`;
+    return `<div class="trace" data-id="${esc(t.trace_id)}">
+      <div class="id">${esc(t.trace_id)}</div>
+      <div class="meta"><span>${t.spans} spans</span><span>${esc(t.start||"").slice(0,19)}</span>${eb}</div>
+    </div>`;}).join("");
+  el.querySelectorAll(".trace").forEach(n=>n.onclick=()=>selectTrace(n.dataset.id));
+}
+
+function renderSummary(s){
+  const errCls=s.error_rate>=0.3?"bad":(s.error_rate>0?"warn":"ok");
+  document.getElementById("summary").innerHTML=`
+    <div class="stat"><div class="n">${s.total_spans}</div><div class="l">窗口内 span 数</div></div>
+    <div class="stat ${errCls}"><div class="n">${(s.error_rate*100).toFixed(1)}%</div><div class="l">错误率（${s.error_spans} 个 error）</div></div>
+    <div class="stat"><div class="n">${s.window_days}d</div><div class="l">统计窗口</div></div>
+    <div class="stat" style="grid-column:span 2"><div class="l">Top 错误 span</div>
+      ${s.top_errored.slice(0,5).map(x=>`<div class="kv">${esc(x.name)} · <b>${x.errors}</b>/${x.total} 失败</div>`).join("")||"<div class='muted'>无</div>"}</div>`;
+}
+
+async function selectTrace(id){
+  selectedTrace=id;
+  document.querySelectorAll(".trace").forEach(n=>n.classList.toggle("sel",n.dataset.id===id));
+  const d=await getJSON(`${API}/data?trace=${encodeURIComponent(id)}`);
+  const el=document.getElementById("detail");
+  if(!d.ok||!d.detail){el.innerHTML=`<div class="empty">错误：${esc(d.error)}</div>`;return;}
+  const sp=d.detail.spans;
+  el.innerHTML=`<div class="kv" style="margin-bottom:8px">trace <span class="mono">${esc(id)}</span> · ${sp.length} spans</div>
+    <div class="spandetail"><table><thead><tr><th>#</th><th>name</th><th>kind</th><th>状态</th><th>start</th><th>耗时</th></tr></thead><tbody>
+    ${sp.map((s,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(s.name)}</td><td>${esc(s.kind)}</td>
+      <td>${s.status==="error"?'<span class="badge b-err">error</span>':'<span class="badge b-ok">ok</span>'}</td>
+      <td>${esc((s.start||"").slice(11,19))}</td><td>${fmtMs(s.latency_ms)}</td></tr>
+      <tr><td colspan="6"><div class="attrs">${esc(JSON.stringify(s.attrs,null,2))}</div></td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="muted" style="margin-top:8px">注：trace 仅记录调用<b>元数据</b>（model / purpose / error），不留存原始 prompt/completion 文本。</div>`;
+}
+
+function renderA0(a0){
+  const r=a0.latest_review;
+  const rev=r?`<div class="kv">最新点评文件：<b>${esc(r.file)}</b> · ${esc(r.mtime)}</div>
+    <pre class="review">${esc(r.text)}</pre>`:`<div class="empty">未找到 a0_review_*.md</div>`;
+  const spans=(a0.related_spans||[]).map(s=>`<div class="kv">${esc(s.name)} · ${s.status==="error"?'<span class="badge b-err">err</span>':'<span class="badge b-ok">ok</span>'} · ${esc((s.start||"").slice(0,19))}</div>`).join("")||"<div class='muted'>窗口内无 cap.drill/approval/zhuge span</div>";
+  document.getElementById("a0").innerHTML=rev+`<hr style="border:none;border-top:1px solid var(--line);margin:10px 0"><div class="kv">能力钻取 span：</div>${spans}`;
+}
+
+function renderJEV(j){
+  const hits=(j.trace_hits||[]).map(h=>`<div class="kv">${esc(h.name)} · ${esc((h.start||"").slice(0,19))}</div>`).join("")||"<div class='muted'>traces 中无 JEV 关键字命中（印证「静默」）</div>";
+  document.getElementById("jev").innerHTML=
+    `<div class="banner" style="margin:0 0 10px">${esc(j.note)}</div>
+     <div class="kv">traces 命中：</div>${hits}
+     <div class="muted" style="margin-top:8px">下一步：为 JEV_GATE/QD/REVIEW 在 handler 入口加 <code>trace.span("jev.qd", attrs={"seat":"JEV_QD", ...})</code> 埋点，即可在此按席位过滤。</div>`;
+}
+
+// ---- 血缘 ----
+async function loadLineage(view,table){
+  let u=`${API}/lineage?view=${view}&limit=50`;
+  if(table)u+=`&table=${encodeURIComponent(table)}`;
+  const d=await getJSON(u);
+  const el=document.getElementById("linOut");
+  if(!d.ok){el.innerHTML=`<div class="empty">血缘查询失败：${esc(d.error)}（Postgres 5442 未起或 LINEAGE_PASSWORD 未配置时属预期）</div>`;return;}
+  if(!d.rows.length){el.innerHTML=`<div class="empty">无数据（view=${view}${table?" table="+esc(table):""}）</div>`;return;}
+  const cols=Object.keys(d.rows[0]);
+  el.innerHTML=`<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
+    ${d.rows.map(r=>`<tr>${cols.map(c=>`<td class="${c==='output_table'||c==='input_table'?'mono':''}">${esc(r[c])}</td>`).join("")}</tr>`).join("")}
+    </tbody></table><div class="muted" style="margin-top:6px">${d.count} 行</div>`;
+}
+
+// ---- 知识图谱健康/漂移（B1）----
+async function loadKG(){
+  const el=document.getElementById("kg");
+  const d=await getJSON(`${API}/kg`);
+  if(!d.ok){el.innerHTML=`<div class="empty">图谱查询失败：${esc(d.error)}（Neo4j 未起或凭据未配置时属预期；D5 zerobound-neo4j 挂账中）</div>`;return;}
+  const r=d.registry||{};
+  const gate=d.gate||{};
+  const gRules=gate.rules||[];
+  const gFail=gRules.filter(x=>x.level==="FAIL").length;
+  const gWarn=gRules.filter(x=>x.level==="WARN").length;
+  const gPass=!!gate.passed;
+  const gCls=gPass?"ok":"bad";
+  const gVerdict=gPass?"门禁 PASS":"门禁 FAIL";
+  const driftN=(r.drift_extra_labels||[]).length+(r.drift_extra_rels||[]).length+(r.drift_missing_rels||[]).length;
+  const driftCls = driftN>0 ? "warn" : "ok";
+  // C3：Competency Questions 能力回归面板
+  const cq=d.cq||{};
+  const cqPass=!!cq.passed;
+  const cqSchemaFail=cq.schema_failures||0;
+  const cqLiveFail=cq.live_failures||0;
+  const cqLiveSkip=cq.live_skipped||0;
+  const cqTotal=cq.total||0;
+  const cqCls=cqPass?"ok":"bad";
+  const cqVerdict=cqPass?"CQ PASS":"CQ FAIL";
+  const cqIssues=cq.schema_issues||[];
+  const cqLive=cq.live||[];
+  const totFmt=n=> n>=1e4 ? (n/1e4).toFixed(1)+"万" : (""+n);
+  el.innerHTML=`
+    <div class="banner ${gCls}" style="margin:0 0 10px">⚡ ${gVerdict}（TBox v${esc(gate.tbox_version||"?")}） · ${gFail} 项 FAIL / ${gWarn} 项 WARN · 刷新查看实时裁决</div>
+    <div class="summary">
+      <div class="stat"><div class="n">${totFmt(d.node_total)}</div><div class="l">节点总数</div></div>
+      <div class="stat"><div class="n">${totFmt(d.rel_total)}</div><div class="l">关系总数</div></div>
+      <div class="stat ${driftCls}"><div class="n">${driftN}</div><div class="l">本体漂移项</div></div>
+    </div>
+    <div class="kv" style="margin:8px 0">URI <span class="mono">${esc(d.uri)}</span> · db=${esc(d.db)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div style="color:var(--sub);font-size:11px;margin-bottom:4px">Top 标签</div>
+        <table>${ (d.top_labels||[]).slice(0,12).map(x=>`<tr><td class="mono">${esc(x.label)}</td><td>${x.count.toLocaleString()}</td></tr>`).join("") }</table></div>
+      <div><div style="color:var(--sub);font-size:11px;margin-bottom:4px">Top 关系</div>
+        <table>${ (d.top_rels||[]).slice(0,12).map(x=>`<tr><td class="mono">${esc(x.type)}</td><td>${x.count.toLocaleString()}</td></tr>`).join("") }</table></div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+    <div class="kv"><b>本体注册表漂移</b>（图 vs ontology.py）</div>
+    <div class="kv">预期标签 ${r.expected_label_count} / 关系 ${r.expected_rel_count} · 图实际标签 ${r.graph_label_count} / 关系 ${r.graph_rel_count}</div>
+    <div class="kv">④ 图有但本体未注册（K264 旁路）：<b>${(r.drift_extra_labels||[]).length}</b> 标签 / <b>${(r.drift_extra_rels||[]).length}</b> 关系
+      ${ (r.drift_extra_labels||[]).length?`<div class="mono muted">${(r.drift_extra_labels||[]).slice(0,12).join(", ")}</div>`:"" }</div>
+    <div class="kv">④ 本体注册但图缺失（断边/未建）：<b>${(r.drift_missing_rels||[]).length}</b> 关系
+      ${ (r.drift_missing_rels||[]).length?`<div class="mono muted">${(r.drift_missing_rels||[]).slice(0,12).join(", ")}</div>`:"" }</div>
+    <div class="kv">保鲜探针：market_max_list_date=${esc((d.freshness||{}).market_max_list_date||"—")} · event_max_pub_time=${esc((d.freshness||{}).event_max_pub_time||"—")}</div>
+    <div class="muted" style="margin-top:8px">总量/Top 走 counts store 瞬时返回；漂移对比 ontology.py 注册表（K264 旁路防线）。D5 zerobound-neo4j 停库窗口会导致本面板全黑。</div
+    <details style="margin-top:8px"><summary style="cursor:pointer;color:var(--sub)">门禁规则明细（C2）</summary>
+      ${gRules.map(x=>`<div class="kv"><span class="badge ${x.level==="FAIL"?"b-err":x.level==="WARN"?"b-warn":"b-ok"}">${x.level}</span> <b>${esc(x.id)}</b> · actual=${esc(x.actual)} · ${esc(x.threshold)}<div class="muted">${esc(x.msg)}</div></div>`).join("")}
+    </details>
+    <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+    <div class="banner ${cqCls}" style="margin:0 0 10px">🧪 ${cqVerdict}（CQ 注册表 v${esc(cq.cq_registry_version||"?")} / TBox v${esc(cq.tbox_version||"?")}） · 静态失败 ${cqSchemaFail} · 实时失败 ${cqLiveFail} · 实时跳过 ${cqLiveSkip}</div>
+    <div class="summary">
+      <div class="stat"><div class="n">${cqTotal}</div><div class="l">CQ 总数</div></div>
+      <div class="stat ${cqSchemaFail>0?"bad":""}"><div class="n">${cqSchemaFail}</div><div class="l">静态校验失败</div></div>
+      <div class="stat ${cqLiveFail>0?"bad":""}"><div class="n">${cqLiveFail}</div><div class="l">实时断言失败</div></div>
+      <div class="stat"><div class="n">${cqLiveSkip}</div><div class="l">实时跳过</div></div>
+    </div>
+    <div class="muted" style="margin-top:6px">静态守卫：CQ 引用的类型若被本体删除即 FAIL；实时守卫：live_non_empty 的 CQ 还要求图里确有实例（无 DB 时跳过，可用性由 C2 门禁管）。</div>
+    <details style="margin-top:8px"><summary style="cursor:pointer;color:var(--sub)">能力问句明细（C3）</summary>
+      ${cqIssues.length?cqIssues.map(x=>`<div class="kv"><span class="badge b-err">FAIL</span> <b>${esc(x.cq)}</b> 引用了不存在的 ${esc(x.kind)}：<span class="mono">${esc(x.name)}</span></div>`).join(""):`<div class="muted">静态校验全部通过（本体无删类型回归）</div>`}
+      ${cqLive.filter(x=>x.ok===false).map(x=>`<div class="kv"><span class="badge b-err">FAIL</span> <b>${esc(x.id)}</b> ${esc(x.question)}<div class="muted">value=${esc(x.value)} · ${esc(x.error||"")}</div></div>`).join("")}
+      ${cqLive.filter(x=>x.ok===true).map(x=>`<div class="kv"><span class="badge b-ok">OK</span> <b>${esc(x.id)}</b> ${esc(x.question)} <span class="muted">（实例数 ${esc(x.value)}）</span></div>`).join("")}
+    </details>`;
+}
+
+// ---- 事件 ----
+document.getElementById("go").onclick=()=>{
+  const name=document.getElementById("qName").value.trim();
+  const days=document.getElementById("qDays").value;
+  const limit=document.getElementById("qLimit").value;
+  loadTraces(name,days,limit);
+};
+document.getElementById("refresh").onclick=()=>{
+  const name=document.getElementById("qName").value.trim();
+  const days=document.getElementById("qDays").value;
+  const limit=document.getElementById("qLimit").value;
+  loadTraces(name,days,limit);
+  loadLineage(document.querySelector("#linTabs .chip.on").dataset.v, document.getElementById("linTable").value.trim());
+  loadKG();
+};
+document.getElementById("chips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  document.getElementById("qName").value=c.dataset.v;
+  loadTraces(c.dataset.v,document.getElementById("qDays").value,document.getElementById("qLimit").value);
+});
+document.getElementById("seatChips").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  const seat=c.dataset.seat;
+  if(seat==="A0"){loadTraces("",document.getElementById("qDays").value,document.getElementById("qLimit").value).then(d=>{if(d&&d.a0)renderA0(d.a0);});return;}
+  // JEV 席位：诚实展示——当前无专属埋点，跳转 JEV 面板
+  document.getElementById("jev").scrollIntoView({behavior:"smooth"});
+  loadTraces("",document.getElementById("qDays").value,document.getElementById("qLimit").value).then(d=>{if(d&&d.jev)renderJEV(d.jev);});
+});
+document.getElementById("linTabs").querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  document.querySelectorAll("#linTabs .chip").forEach(x=>x.classList.remove("on"));
+  c.classList.add("on");
+  const v=c.dataset.v;
+  document.getElementById("linCtrl").style.display=(v==="upstream"||v==="downstream")?"flex":"none";
+  loadLineage(v, document.getElementById("linTable").value.trim());
+});
+document.getElementById("linGo").onclick=()=>loadLineage(
+  document.querySelector("#linTabs .chip.on").dataset.v, document.getElementById("linTable").value.trim());
+
+// 初始加载
+loadTraces("",7,50);
+loadLineage("runs","");
+loadKG();
+</script>
+</body>
+</html>

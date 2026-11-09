@@ -1,0 +1,46 @@
+{
+  "policy": "C:\\项目\\老田的AI助手\\agent_platform\\registry\\model_policy.yaml",
+  "tested_at": "2026-11-04T06:15:11+0800",
+  "results": [
+    {
+      "binding": "glm/glm-5.3",
+      "ok": true,
+      "status": "normal",
+      "text_head": "OK",
+      "error": null,
+      "latency_sec": 2.66
+    },
+    {
+      "binding": "deepseek/deepseek-v4-pro",
+      "ok": true,
+      "status": "normal",
+      "text_head": "OK",
+      "error": null,
+      "latency_sec": 1.23
+    },
+    {
+      "binding": "deepseek/deepseek-flash",
+      "ok": true,
+      "status": "normal",
+      "text_head": "OK",
+      "error": null,
+      "latency_sec": 1.87
+    },
+    {
+      "binding": "glm/glm-5.3-flash",
+      "ok": true,
+      "status": "normal",
+      "text_head": "OK",
+      "error": null,
+      "latency_sec": 2.14
+    },
+    {
+      "binding": "ollama/qwen3.5:9b",
+      "ok": true,
+      "status": "normal",
+      "text_head": "OK",
+      "latency_sec": 9.13
+    }
+  ],
+  "all_ok": true
+}

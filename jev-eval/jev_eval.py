@@ -44,6 +44,12 @@ API_KEY = os.environ.get("JEV_API_KEY", "")
 BASE_URL = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
 MODEL = os.environ.get("JEV_MODEL", "jev-latest")
 TIMEOUT = 30
+# 可选代理（2026-11-05）：typesafe.ai 对本机直连出口返回 451（地区法律屏蔽），
+# 生产侧早已切到本地 ollama（jev-gate.env.ps1: JEV_BACKEND=ollama）。评测若要
+# 继续对 jev-latest 打分，必须显式给出口代理，例如
+#   $env:JEV_PROXY='http://127.0.0.1:7890'
+# 不设则维持 urllib 默认（读环境代理，任务环境里等于直连）。
+PROXY = os.environ.get("JEV_PROXY", "").strip()
 
 
 # ── 请求构造 ────────────────────────────────────────────────
@@ -85,10 +91,52 @@ def call_jev(body: dict) -> dict:
         method="POST",
     )
     t0 = time.perf_counter()
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+    op = (
+        urllib.request.build_opener(
+            urllib.request.ProxyHandler({"http": PROXY, "https": PROXY})
+        )
+        if PROXY
+        else urllib.request.build_opener()
+    )
+    with op.open(req, timeout=TIMEOUT) as resp:
         data = json.loads(resp.read())
     latency = (time.perf_counter() - t0) * 1000
     return data, latency
+
+
+def probe_endpoint() -> int:
+    """端点体检：只问 1 题，确认「网络通 / 密钥活 / schema 对」。
+
+    为什么要有：月度评测在计划任务里无人值守跑，端点被 451 屏蔽时会静默
+    产出 30 题全失败的「正式结果」，污染基线并触发假漂移告警。
+    退出码：0 通 / 4 HTTP 错误（含 401/451）/ 5 网络不可达。
+    """
+    body = {
+        "model": MODEL,
+        "state": "贵州茅台今日公告称，2026 年第三季度营业收入同比增长 8%。",
+        "questions": {"main": {"type": "noul", "instructions": "这段材料提到营业收入增长了。"}},
+    }
+    print(f"endpoint {BASE_URL}/systemone  model={MODEL}  proxy={PROXY or '(env/default)'}")
+    try:
+        resp, lat = call_jev(body)
+    except urllib.error.HTTPError as e:
+        _body = e.read()[:160].decode("utf-8", errors="replace")
+        if re.search(r"key|token|sk-", _body, re.IGNORECASE):
+            _body = "[REDACTED]"
+        print(f"PROBE FAIL HTTP {e.code} {_body!r}")
+        if e.code == 451:
+            print("诊断：地区屏蔽。要么给出口代理（$env:JEV_PROXY='http://127.0.0.1:7890'），"
+                  "要么按生产口径改评测后端（JEV_BACKEND=ollama）")
+        elif e.code in (401, 403):
+            print("诊断：密钥无效/无权限 → 换 JEV_API_KEY")
+        return 4
+    except Exception as e:  # noqa: BLE001
+        print(f"PROBE FAIL {type(e).__name__}: {str(e)[:160]}")
+        print("诊断：网络不可达（DNS/代理/防火墙）")
+        return 5
+    ans = (resp.get("answers") or {}).get("main")
+    print(f"PROBE OK model={resp.get('model')} latency={lat:.0f}ms answer={ans}")
+    return 0
 
 
 # ── 答案解析 ────────────────────────────────────────────────
@@ -299,6 +347,8 @@ def run(repeats: int, dry_run: bool) -> None:
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if "--probe-endpoint" in args:
+        sys.exit(probe_endpoint())
     dry = "--dry-run" in args
     reps = 1
     if "--repeats" in args:

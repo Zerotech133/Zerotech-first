@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
-"""RPS 相对强度 + 多维共振打分（借鉴 D:\\青萍之末2 方法论，数据独立部署）。
+"""RPS 相对强度 + 多维加权打分（借鉴 D:\\青萍之末2 方法论，数据独立部署）。
 
 方法论来源（青萍之末2，只读借鉴未改动其系统）:
   · RPS: src/indicators/rps.py —— 全市场 N 日涨幅百分位(0-100)
-  · 共振: src/screeners/resonance_screener.py —— 技术0.35/板块0.30/
-    RPS0.20/环境0.15 四维加权，缺维自动降权重分配；环境可一票否决
+  · 共振: src/screeners/resonance_screener.py —— 外部来源原口径为技术0.35/
+    板块0.30/RPS0.20/环境0.15 四因子加权，缺维自动降权重分配；环境可一票否决
+
+口径澄清（2026-11-05 审计，勿再称「四维共振」）:
+  · JEV 维依赖历史新闻，回测不可重放 → 全窗口恒缺维；实际计分只有
+    tech/rps/env 三维，缺维归一后权重 = tech .4667 / rps .3333 / env .2
+    （0.35/0.75、0.25/0.75、0.15/0.75，与 qpzm_backtest.py:61 的 W4 同源）
+  · 四维加权排序的增量不显著且跨年不稳：W1 +0.0985pp(p=0.54)、
+    W2 −0.1637pp、W3 −0.0908pp(p=0.33)，Cochran Q p=0.005（符号会翻）
+  · 真正扛住收益的是 tech≥75 门槛与环境闸门，不是维度数量
 
 本模块实现（四市场全市场数据）:
   · A 股全市场: 首次拷贝 D:\\青萍之末2\\data_cache\\daily Parquet，之后
@@ -13,12 +21,21 @@
     — 美股/加密历史约半年 → RPS50；港股 → RPS50+120 复合
   · 环境闸门: 全市场宽度（站上MA20占比 + 20日中位涨幅），四市场各一道；
     池内宽度仅作 DB 不可用时兜底
-  · 自选池共振: 技术(4策略多头占比) + RPS(全市场) + 环境(对应市场闸门)，
+  · 自选池多维加权: 技术(4策略多头占比) + RPS(全市场) + 环境(对应市场闸门)，
     缺维降权；闸门收紧一票否决
+
+主口径约定（T10 落地；全文见 _qpzm_audit_20261105/t10_wording/t10_main_caliber.md）:
+  · 持有期 = hold10（T1 平衡点：零成本基准下 hold5 净 −11.5bp、hold10 +24.3bp；
+    T5：hold10 排序增量 +0.1973pp > hold5 +0.0815pp，且单调性最好）
+  · 成本 = 往返 30bp（CN 单边 cost_bps 12 + slippage_bps 3，买卖各计一次）
+  · 默认窗口 = 20251015~20261014，不切全窗口（T9：全窗口差值 −0.0908pp、
+    p=0.33，Q 检验 p=0.005 符号不稳）
+  · 对外口径：多维加权相对同笔数随机名单「方向为正但统计不显著，且跨年
+    不稳定」——禁止引用「+0.0815pp 即有增量」
 
 用法:
   python rps_resonance.py --sync     # 同步 A 股日线（首次拷贝+增量）
-  python rps_resonance.py --daily    # 全量：同步+四市场RPS/闸门+共振+页面+推卡
+  python rps_resonance.py --daily    # 全量：同步+四市场RPS/闸门+自选池打分+页面+推卡
   python rps_resonance.py --dry      # 只算不推卡（调试）
   python rps_resonance.py --shadow-tech   # 影子：技术维×缠论信号打分对比
                                           # （独立入口，不推送不影响 --daily）
@@ -510,7 +527,7 @@ def batch_rps(closes, periods=None):
 def market_env(closes):
     """宽度法环境闸门: 站上MA20占比 + 20日中位涨幅。
     safe 三态（S6 修正）: True=放行 / False=一票否决 / None=数据缺失
-    —— 有效样本 < POOL_GATE_MIN 时宽度无统计意义，返回 None 让共振
+    —— 有效样本 < POOL_GATE_MIN 时宽度无统计意义，返回 None 让自选池
     打分对该市场环境维走缺维降权，不再误触发一票否决。"""
     above, ret20 = [], []
     for c in closes.values():
@@ -711,7 +728,7 @@ def _archive_jev(since, agg):
 
 
 def _link_code(code):
-    """榜单/共振行 → /kg/stock/ 的入参（watchlist 代码形态）。"""
+    """榜单/自选池行 → /kg/stock/ 的入参（watchlist 代码形态）。"""
     from urllib.parse import quote
 
     code = str(code)
@@ -720,13 +737,15 @@ def _link_code(code):
     return quote(code, safe="")
 
 
-# ── 自选池共振（缺维降权，规则照搬青萍 resonance_screener） ──
+# ── 自选池多维加权（缺维降权，规则照搬青萍 resonance_screener） ──
 def resonance_watchlist(rps_df, env, full_envs=None, full_rps=None):
-    """watchlist 逐股四维打分。
+    """watchlist 逐股多维加权打分（实际三维：tech/rps/env）。
     技术 = 4策略多头占比*100 ± MA20修正；JEV = 近7天关联新闻消息面；
     RPS = 全市场（A股 tushare / 美港加密 zhice-db，DB 缺符号时兜底池内
     百分位）；环境 = 对应市场全市场闸门（DB 失败兜底池内闸门）。
-    权重 技术.35/JEV.25/RPS.25/环境.15，缺维按比例降权（青萍规则）。"""
+    权重 技术.35/JEV.25/RPS.25/环境.15（青萍规则），缺维按比例降权。
+    JEV 依赖历史新闻、回测不可重放 → 全窗口恒缺维，实际归一为
+    tech .4667 / rps .3333 / env .2。"""
     from data_loader import load_bars
     import strategies as strat
     import runner
@@ -821,7 +840,8 @@ def resonance_watchlist(rps_df, env, full_envs=None, full_rps=None):
         js = jev_scores.get(code)
         jev = js["score"] if js else None
 
-        # 四维权重（技术/消息面JEV/RPS/环境，青萍结构）；缺维按比例降权
+        # 多维权重（技术/消息面JEV/RPS/环境，青萍结构）；缺维按比例降权
+        # （JEV 依赖历史新闻、回测不可重放 → 恒缺维，实际按 tech/rps/env 归一）
         W4 = {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15}
         parts = {"tech": tech}
         if jev is not None:
@@ -1050,8 +1070,8 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
     """选股中心：hub + 四市场页（五块结构）+ 快照。"""
     os.makedirs(REPORTS, exist_ok=True)
     foot = (
-        "<div class='dim' style='margin-top:26px'>数据截至 %s · 共振四维"
-        "=技术/JEV消息面/RPS/环境（缺维降权，青萍结构）· 环境闸门="
+        "<div class='dim' style='margin-top:26px'>数据截至 %s · 多维加权"
+        "=技术/RPS/环境三维（JEV 缺维时归一，缺维降权，青萍结构）· 环境闸门="
         "全市场宽度 · A股=tushare 美港加密=zhice-db · JEV 情绪来自 "
         "news.db 近7天已判断新闻 · 纸面研究不构成投资建议</div>" % latest
     )
@@ -1094,7 +1114,7 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
                 "</tr>%s</table>" % ("<th>RPS120</th>" if has120 else "", "".join(trs))
             )
 
-        # ③ 自选共振（本市场子集）
+        # ③ 自选池打分（本市场子集）
         mres = [r for r in res if r["market"] == meta["mkt"]]
         if mres:
             trs = "".join(
@@ -1125,8 +1145,8 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
                 for r in mres
             )
             parts.append(
-                "<h2>③ 自选池共振（%d 只 · 四维：技术/JEV/RPS/"
-                "环境，缺维降权）</h2>"
+                "<h2>③ 自选池多维加权（%d 只 · 技术/RPS/环境三维，"
+                "缺维降权）</h2>"
                 "<table><tr><th>标的</th><th>现价</th><th>技术"
                 "</th><th>JEV</th><th>RPS</th><th>环境</th>"
                 "<th>综合</th><th>建议</th><th>维度</th>"
@@ -1209,12 +1229,12 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
             f.write(_page(meta["label"] + " · 选股中心", "".join(parts)))
 
     # ── hub ── K233 四市场模块化：每市场一个模块卡
-    # （头部=旗标+闸门徽标+计数+进入链接；体内=env 详情行 + 自选池共振表
+    # （头部=旗标+闸门徽标+计数+进入链接；体内=env 详情行 + 自选池打分表
     #  Top8；空市场保留模块壳不消失——四模块恒在）
     hub = [
         _mkt_nav(None),
         "<h1>🎯 选股中心</h1>",
-        "<h2>四市场模块 · 自选池共振（点「进入模块」看全量与五块全景）</h2>",
+        "<h2>四市场模块 · 自选池多维加权（点「进入模块」看全量与五块全景）</h2>",
     ]
     for k, meta in MARKETS.items():
         lb, e = env_by_key.get(k, ("—", {}))
@@ -1443,9 +1463,9 @@ def write_strategy_pages(strat_data, res, latest):
             for r in rows
         )
         parts.append(
-            "<h2>② 自选池状态（%d 只，按信号+共振排序）</h2>"
+            "<h2>② 自选池状态（%d 只，按信号+综合分排序）</h2>"
             "<table><tr><th>标的</th><th>市场</th><th>现价</th>"
-            "<th>本策略</th><th>共振分</th><th>共振建议</th></tr>"
+            "<th>本策略</th><th>综合分</th><th>建议</th></tr>"
             "%s</table>" % (len(rows), trs)
         )
 
@@ -1503,7 +1523,7 @@ def write_strategy_pages(strat_data, res, latest):
     print("STRAT pages x%d" % len(STRAT_CN))
 
 
-# ── W3-4 分位数口径：原始共振分强右偏（中位数全档为负），分高≠能买， ──
+# ── W3-4 分位数口径：原始多维加权分强右偏（中位数全档为负），分高≠能买， ──
 #    要看分位。历史分布基准 = 日批归档（rps_daily_batches.jsonl）live 行
 #    滚动 60 交易日的候选分集合；replay 行 score 恒 None 不参与。
 def load_hist_scores(batches_path, window=60, exclude_date=None):
@@ -1604,7 +1624,7 @@ def push_daily_card(snap):
         1 for e in snap.get("envs", []) if e.get("safe") is False
     )  # S6: None(缺数据)不计收紧
     jn = sum(1 for r in res if r.get("jev") is not None)
-    jev_line = "· JEV 消息面：%d/%d 只进入四维打分（无判断自动缺维降权）" % (
+    jev_line = "· JEV 消息面：%d/%d 只有判断（其余缺维→按 技术/RPS/环境 三维归一）" % (
         jn,
         len(res),
     )
@@ -1648,7 +1668,7 @@ def push_daily_card(snap):
             {
                 "tag": "markdown",
                 "text_size": "notation",
-                "content": "<font color='grey'>分数为原始共振分（右偏分布），"
+                "content": "<font color='grey'>分数为原始多维加权分（右偏分布），"
                 "括号内为当日全市场分位</font>",
             }
         ]
@@ -1658,7 +1678,7 @@ def push_daily_card(snap):
     card = {
         "config": {"update_multi": True, "width_mode": "default"},
         "header": {
-            "title": {"tag": "plain_text", "content": "📊 RPS 强度榜 × 共振（四市场）"},
+            "title": {"tag": "plain_text", "content": "📊 RPS 强度榜 × 多维加权（四市场）"},
             "subtitle": {
                 "tag": "plain_text",
                 "content": "环境闸门 %d/%d 开启 · %s"
@@ -1681,7 +1701,7 @@ def push_daily_card(snap):
             {"tag": "hr"},
             {"tag": "markdown", "content": "**跨市场最强**\n%s" % cross},
             {"tag": "hr"},
-            {"tag": "markdown", "content": "**自选池共振 ≥50**\n%s" % res_lines},
+            {"tag": "markdown", "content": "**自选池综合分 ≥50**\n%s" % res_lines},
             {"tag": "hr"},
             {
                 "tag": "action",

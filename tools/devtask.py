@@ -3,6 +3,11 @@
 
 一单一线程：每个任务单 = 独立 git worktree + 独立分支，worker 互不踩脚。
 
+安全提示：
+  不要用 `--help` 建单；帮助请用 `devtask.py --help` 或
+  `devtask.py <命令> --help`。`--help` 不是 TID，会被 TID 校验拒绝，
+  不会生成 aborted 空单。
+
 命令：
   new <TID> <一句话描述> [--project <pid>] [--dept <部门>] [--acceptance "<命令串>"]
                             [--approver <席位>] [--expected-output <格式>]
@@ -591,9 +596,14 @@ def _visual_warn_gate(branch, worktree=""):
               % ("组件视觉基线", str(exc)[:120]))
 
 
-def _git(*args, cwd=REPO):
-    r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace")
+def _git(*args, cwd=REPO, timeout=None):
+    try:
+        r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace",
+                           timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # 统一走 SystemExit：调用方都按"git 失败"处理，不额外引入异常类型
+        raise SystemExit("git %s 超时（%ss）" % (" ".join(args), timeout))
     if r.returncode != 0:
         raise SystemExit("git %s 失败: %s" % (" ".join(args),
                                              (r.stderr or r.stdout).strip()))
@@ -667,14 +677,42 @@ def _tasks():
     return {}
 
 
+def _lock_fd(fd):
+    """跨平台非阻塞独占锁；被占用时抛 OSError，由 _tasks_file_lock 重试。
+
+    2026-11-07 K-RELEASE-20261106：原实现无条件 ``import msvcrt``，Linux 生产机
+    （CentOS 7）上 ``cmd_new`` / ``_save`` 必崩 ModuleNotFoundError，19 个
+    devtask 回归用例在服务器全挂。按 os.name 分派：Windows 保留 msvcrt.locking
+    字节锁，POSIX 用 fcntl.flock；两者均在进程退出/fd 关闭时由 OS 自动释放。
+    """
+    if os.name == "nt":
+        import msvcrt
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def _unlock_fd(fd):
+    """释放 _lock_fd 加的锁（失败不影响主流程；close(fd) 亦会兜底释放）。"""
+    if os.name == "nt":
+        import msvcrt
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
 @contextmanager
 def _tasks_file_lock(timeout_s=20.0):
-    """tasks.json 读-改-写互斥（2026-10-30 P45，Windows 原生字节锁）。
+    """tasks.json 读-改-写互斥（2026-10-30 P45；2026-11-07 跨平台化）。
 
     门禁并行后多会话可同时 merge 并各自 _save；原「读盘→合并→写盘」在并发
-    窗口内可能丢字段。改用 msvcrt.locking（锁定 1 字节）：进程退出/崩溃由 OS
-    自动释放，无 O_EXCL+unlink 的残留锁竞态（实证：Windows 上 unlink 会被
-    并发读句柄阻塞，导致锁永久残留、后来者超时）。
+    窗口内可能丢字段。锁由进程退出/崩溃时 OS 自动释放，无 O_EXCL+unlink 的
+    残留锁竞态（实证：Windows 上 unlink 会被并发读句柄阻塞，导致锁永久残留、
+    后来者超时）。
     """
     os.makedirs(WT_DIR, exist_ok=True)
     path = os.path.join(WT_DIR, "tasks.json.lock")
@@ -687,9 +725,7 @@ def _tasks_file_lock(timeout_s=20.0):
             fd = None
         if fd is not None:
             try:
-                os.lseek(fd, 0, os.SEEK_SET)
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                _lock_fd(fd)
                 break
             except OSError:
                 try:
@@ -704,9 +740,7 @@ def _tasks_file_lock(timeout_s=20.0):
         yield
     finally:
         try:
-            import msvcrt
-            os.lseek(fd, 0, os.SEEK_SET)
-            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+            _unlock_fd(fd)
         except OSError:
             pass
         try:
@@ -1089,10 +1123,15 @@ def _dev_gate_check(dept, owner_ok, acceptance, gate=None, owner=None,
 # 背景：创建速率 ~4 棵/小时 > 清理速率（10-31 已 60+ 棵）。三条闸：
 #   1) merge 成功即回收 worktree+分支（--keep-worktree 可跳过，脏树保留）
 #   2) prune 输出 age>TTL(72h) 标 [TTL-RED]（只标注，不自动删）
-#   3) devtask new 并发上限（默认 60，env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
+#   3) devtask new 并发上限（env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
 WT_TTL_HOURS_DEFAULT = 72.0
 WT_TTL_ENV = "DEVTOOL_WT_TTL_HOURS"
-MAX_WORKTREES_DEFAULT = 65
+# 2026-11-08 校准：65 → 80（K-ORG-20261108-OVWSPLIT）。
+# 依据：当日收口到 58 棵后，其余 49 棵都有未合入提交、是真正在跑的活，
+# 常态水位就是 55~60。原 cap 65（warn 线 52）比常态还低，等于每次 new 都告警；
+# 而 warn 一响就没人再看，闸门等于失效。抬到 80 后 warn=64 / block=80，
+# 既能容纳当前并发，也还能拦住 worktree 失控增长。
+MAX_WORKTREES_DEFAULT = 80
 MAX_WORKTREES_ENV = "DEVTOOL_MAX_WORKTREES"
 KEEP_WORKTREE_ENV = "DEVTOOL_KEEP_WORKTREE"
 
@@ -1164,7 +1203,7 @@ def _concurrency_verdict(count, cap):
 
 
 def _active_worktree_count(repo=None):
-    """当前在册任务 worktree 数（不含主树）；git 不可用时返回 0（不拦单）。"""
+    """当前在册任务 worktree 数（不含主树与空壳登记）；git 不可用返回 0（不拦单）。"""
     repo = repo or REPO
     try:
         wts = _prune_worktrees(repo)
@@ -1172,7 +1211,10 @@ def _active_worktree_count(repo=None):
         return 0
     except Exception:  # noqa: BLE001
         return 0
-    return len([w for w in wts if not _prune_same_path(w["path"], repo)])
+    # 空壳登记（`.git` 指针已失）不该挤占并发名额：它既跑不了活，也无法回收出磁盘，
+    # 只会让闸门长期虚高。见 _wt_pointer_ok 的判例说明。
+    return len([w for w in wts
+                if not _prune_same_path(w["path"], repo) and not w.get("dead")])
 
 
 def _enforce_worktree_cap():
@@ -1205,6 +1247,14 @@ def _recycle_worktree(tid, task):
         return False, "无 worktree/分支登记"
     if not os.path.isdir(wt):
         return False, "worktree 目录不存在（可能已回收）"
+    if not _wt_pointer_ok(wt):
+        # 空壳目录：`.git` 指针没了，此时 `git status` 会向上读到主仓状态，
+        # 把主树的未提交改动误当成这个 worktree 的脏（2026-11-08 踩过）。
+        try:
+            _git("worktree", "prune")
+        except SystemExit:
+            pass
+        return False, "worktree 登记已死（.git 缺失），已 prune 解注册；残留目录需人工清理"
     try:
         st = _git("status", "--porcelain", cwd=wt)
     except SystemExit as e:
@@ -1213,8 +1263,18 @@ def _recycle_worktree(tid, task):
     if dirty:
         return False, "worktree 脏（%d 项未提交），保留待 owner 处理" % len(dirty)
     try:
-        _git("worktree", "remove", wt)
+        _git("worktree", "remove", wt, timeout=300)
     except SystemExit as e:
+        # 删大目录超时/失败后，git 可能已经删掉 `.git` 指针却留下整棵树。
+        # 这种壳不能再当"活 worktree"留在台账里（会被计入并发、且下次 status 假脏）。
+        if not _wt_pointer_ok(wt):
+            try:
+                _git("worktree", "prune")
+            except SystemExit:
+                pass
+            freed = _prune_rmtree(wt)
+            return False, ("worktree 删到一半（指针已失），已解注册；"
+                           "残留目录%s（%s）" % ("已清" if freed else "未清", str(e)[:80]))
         return False, "git worktree remove 失败：%s" % str(e)[:120]
     try:
         _git("branch", "-d", br)
@@ -1223,7 +1283,36 @@ def _recycle_worktree(tid, task):
     return True, "worktree + 分支已回收"
 
 
-def cmd_new(tid, *desc):
+_TID_MAX_LEN = 64
+
+
+def _validate_tid(tid):
+    """校验新建工单的 TID，必须发生在任何副作用之前。
+
+    历史事故：``devtask.py new --help`` 曾把 ``--help`` 当 TID 建单，留下
+    ``--help-aborted-*`` 空单。这里同时挡住空串、选项形态、路径分隔符、
+    空白/控制字符、``..``、超长等非法值；合法值保持原样返回。
+    """
+    if not isinstance(tid, str) or not tid:
+        raise SystemExit("非法 TID：TID 不能为空")
+    if tid != tid.strip():
+        raise SystemExit("非法 TID %r：不能包含首尾空白" % tid)
+    if len(tid) > _TID_MAX_LEN:
+        raise SystemExit("非法 TID %r：长度不能超过 %d 字符" % (tid, _TID_MAX_LEN))
+    if tid[0] in ("-", "."):
+        raise SystemExit("非法 TID %r：不能以 '-' 或 '.' 开头" % tid)
+    if ".." in tid or tid.endswith("."):
+        raise SystemExit("非法 TID %r：不能包含 '..' 或以 '.' 结尾" % tid)
+    if any(ch in "/\\:*?\"<>|" or ch.isspace() or ord(ch) < 32 for ch in tid):
+        raise SystemExit("非法 TID %r：不能包含路径分隔符、空白或控制字符" % tid)
+    if not all(ch.isalnum() or ch in "-_." for ch in tid):
+        raise SystemExit("非法 TID %r：只允许字母/数字/中文、'_'、'.'、'-'" % tid)
+    return tid
+
+
+def cmd_new(tid=None, *desc):
+    # 2026-11-06 FIX-DEVTASK-HELP：TID 校验必须先于 worktree cap/写盘/建分支。
+    tid = _validate_tid(tid)
     # 2026-10-31 WO-WORKTREE-MECH：并发上限闸（在任何副作用之前，达上限直接拒单）
     _enforce_worktree_cap()
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
@@ -2558,15 +2647,56 @@ PRUNE_PROTECTED = ("master", "main")
 _PRUNE_FLAGS = ("--apply", "--dry-run", "--merged", "--worktrees", "--all")
 
 
-def _prune_git(repo, *args, check=False):
-    """prune 专用 git 调用（独立于 _git：需支持 --repo 指向临时演练仓）。"""
-    r = subprocess.run(["git"] + list(args), cwd=repo, capture_output=True,
-                       text=True, encoding="utf-8", errors="replace",
-                       env=GUARD_ENV)
+def _prune_git(repo, *args, check=False, timeout=None):
+    """prune 专用 git 调用（独立于 _git：需支持 --repo 指向临时演练仓）。
+
+    `timeout` 是必需的逃生口：`git worktree remove` 在 Windows 上删大目录可能
+    跑十几分钟，没有超时就会把整个 prune 钉死（2026-11-08 实测卡满 400s）。
+    超时不抛异常，返回 rc=124 的假 CompletedProcess，由调用方按失败处理并走
+    兜底路径 —— 抛异常会让"已删一半"的状态没人收尾。
+    """
+    args = list(args)
+    try:
+        r = subprocess.run(["git"] + args, cwd=repo, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace",
+                           env=GUARD_ENV, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        r = subprocess.CompletedProcess(
+            ["git"] + args, 124, stdout="",
+            stderr="timeout after %ss: git %s" % (timeout, " ".join(args)))
     if check and r.returncode != 0:
         raise SystemExit("git %s 失败: %s"
                          % (" ".join(args), (r.stderr or r.stdout).strip()))
     return r
+
+
+def _prune_remove_worktree(repo, path, timeout=600):
+    """回收一个 worktree，返回 (ok, note)。两段式，专治"删到一半"。
+
+    ① `git worktree remove`（**不带 --force**，脏树由 git 自己拒）；
+    ② 若超时/失败，但 `.git` 指针已经消失 —— 这是 Windows 删大目录的典型
+       中间态 —— 则 `git worktree prune` 解注册，再清残留目录。
+
+    对并发闸而言**解注册就已经收口**（闸数的是 `git worktree list`），
+    清目录只是把磁盘拿回来，所以②即使清不干净也算成功，note 里会写明。
+
+    timeout 默认 600s 是实测定的：2026-11-08 五个 worktree 逐个删，
+    耗时 186s / 225s / 228s / 251s —— 原先 180s 的口径**必然**误判成超时。
+    """
+    r = _prune_git(repo, "worktree", "remove", path, timeout=timeout)
+    if r.returncode == 0:
+        return True, "git worktree remove 完成"
+    err = (r.stderr or r.stdout or "").strip().replace("\n", " ")[:160]
+    if _wt_pointer_ok(path):
+        # 指针还在 → 是真的删不动（被占用/权限/树不干净），保持原样交人工
+        return False, "git worktree remove 失败：%s" % err
+    pr = _prune_git(repo, "worktree", "prune", timeout=60)
+    if pr.returncode != 0:
+        return False, ("指针已失但 prune 失败：%s"
+                       % (pr.stderr or pr.stdout).strip()[:120])
+    freed = _prune_rmtree(path)
+    return True, "指针已失 → 已解注册；残留目录清理%s（%s）" % (
+        "完成" if freed else "未完成，需人工", err)
 
 
 def _prune_load_tasks(tasks_path):
@@ -2588,8 +2718,57 @@ def _prune_same_path(a, b):
     return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
 
 
+def _wt_pointer_ok(path):
+    """worktree 目录里是否还带 `.git` 指针 —— 判断"活着"的唯一可信依据。
+
+    2026-11-08 判例（K-ORG-20261108-OVWSPLIT）：Windows 上 `git worktree remove`
+    先删 `.git` 指针、再删树，超时被杀会留下"指针没了、树还在"的空壳；这种壳
+    仍会出现在 `git worktree list` 里。
+
+    **不能用 `git -C <path> status` 判活**：指针缺失时 git 会沿父目录一路向上，
+    命中主仓的 `.git`，于是返回**主树的**状态——看起来像"这个 worktree 刚被人
+    改脏了"，实际它早已是空壳。同理也不能据此判"脏"来决定是否保留。
+    """
+    return os.path.exists(os.path.join(path, ".git"))
+
+
+def _wt_is_dead(item, repo):
+    """在册但已是空壳：目录还在，`.git` 指针已失（bare / 主树除外）。"""
+    if item.get("bare") or not item.get("exists"):
+        return False
+    if _prune_same_path(item["path"], repo):
+        return False
+    return not _wt_pointer_ok(item["path"])
+
+
+def _prune_rmtree(path):
+    """尽力删掉一个残留目录（清只读位后重试），返回是否已不存在。
+
+    只用于**已确认 `.git` 指针缺失**的空壳：库内内容早已不在版本控制视野里，
+    删它属于清盘，不涉及任何未提交的受控文件。
+    """
+    if not os.path.isdir(path):
+        return True
+
+    def _onexc(func, p, exc):
+        try:
+            os.chmod(p, 0o700)
+            func(p)
+        except OSError:
+            pass
+
+    try:
+        if sys.version_info >= (3, 12):
+            shutil.rmtree(path, onexc=_onexc)
+        else:  # pragma: no cover - 3.11 及以下
+            shutil.rmtree(path, onerror=lambda f, p, e: _onexc(f, p, e[1]))
+    except OSError:
+        pass
+    return not os.path.isdir(path)
+
+
 def _prune_worktrees(repo):
-    """git worktree list --porcelain → [{path, branch, detached, bare, exists}]。"""
+    """git worktree list --porcelain → [{path, branch, detached, bare, exists, dead}]。"""
     out = _prune_git(repo, "worktree", "list", "--porcelain", check=True).stdout
     items = []
     for line in out.splitlines():
@@ -2605,6 +2784,7 @@ def _prune_worktrees(repo):
             items[-1]["bare"] = True
     for it in items:
         it["exists"] = os.path.isdir(it["path"])
+        it["dead"] = _wt_is_dead(it, repo)
     return items
 
 
@@ -2670,7 +2850,11 @@ def _prune_plan(repo, do_branches=True, do_worktrees=True):
                 elif tv.get("status", "?") not in ("done", "aborted"):
                     reasons.append("任务状态=%s（非 done/aborted）"
                                    % tv.get("status", "?"))
-            if w is not None and w["exists"]:
+            if w is not None and w.get("dead"):
+                # 这里**绝不能**跑 git status：指针缺失时它会向上命中主仓 .git，
+                # 返回主树状态，看起来像"worktree 脏了"（2026-11-08 实际误判过）。
+                reasons.append("登记已死（.git 指针缺失，目录为空壳）")
+            elif w is not None and w["exists"]:
                 st = _prune_git(path, "status", "--porcelain")
                 if st.returncode != 0:
                     reasons.append("git status 失败（%s）"
@@ -2718,26 +2902,27 @@ def _prune_plan(repo, do_branches=True, do_worktrees=True):
                 plan["branches"].append({
                     "branch": name, "action": "delete-branch", "skip": False,
                     "reason": "已合并 master"})
-    # ③ 陈旧登记：worktree list 中路径已不存在
+    # ③ 陈旧登记：目录已不存在，或目录还在但 `.git` 指针已失（空壳）
     for w in wts:
-        if not _prune_same_path(w["path"], repo) and not os.path.isdir(w["path"]):
+        if _prune_same_path(w["path"], repo):
+            continue
+        if not os.path.isdir(w["path"]) or w.get("dead"):
             plan["stale"].append(w["path"])
     return plan
 
 
 def _prune_apply(repo, plan):
-    """执行计划：先回收 worktree（git worktree remove，无 --force），再删分支。"""
+    """执行计划：先回收 worktree（两段式，见 _prune_remove_worktree），再删分支。"""
     rc = 0
     for it in plan["worktrees"]:
         if it["skip"]:
             continue
-        r = _prune_git(repo, "worktree", "remove", it["path"])
-        if r.returncode == 0:
-            print("  [DONE] git worktree remove \"%s\"" % it["path"])
+        ok, note = _prune_remove_worktree(repo, it["path"])
+        if ok:
+            print("  [DONE] %s → %s" % (it["path"], note))
         else:
             rc = 1
-            print("  [FAIL] git worktree remove \"%s\" → %s"
-                  % (it["path"], (r.stderr or r.stdout).strip()[:160]))
+            print("  [FAIL] %s → %s" % (it["path"], note))
     for it in plan["branches"]:
         if it["skip"]:
             continue
@@ -2911,8 +3096,10 @@ def _git_health_autofix(repo=None):
 
 def main():
     a = sys.argv[1:]
-    # 2026-11-02 P1.2：--help/-h 只读打印用法（不触发 core.bare 自愈等写动作）。
-    if a and a[0] in ("-h", "--help", "help"):
+    # 2026-11-02 P1.2 / 2026-11-06：--help/-h 只读打印用法，绝不进入命令分发。
+    # 兼容 ``new --help`` / ``list -h`` 等子命令后置帮助，避免被 cmd_new 当成 TID
+    # 误建空单（历史上已产生多个 --help-aborted-* 脏单）。
+    if (a and a[0] == "help") or any(x in ("-h", "--help") for x in a):
         print(__doc__)
         return 0
     _git_health_autofix()

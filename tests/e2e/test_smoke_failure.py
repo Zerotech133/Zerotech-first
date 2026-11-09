@@ -11,6 +11,9 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 
 def _run_json(args, timeout=120):
@@ -60,7 +63,7 @@ def test_http_401_body_is_readable():
     t.start()
     try:
         url = "http://127.0.0.1:%d/protected" % srv.server_port
-        with urllib.request.urlopen(url, timeout=5) as r:  # pragma: no cover
+        with safe_urlopen(url, timeout=5) as r:  # pragma: no cover
             raise AssertionError("预期 401，实际 HTTP %s" % r.status)
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
@@ -76,7 +79,7 @@ def test_8796_auth_failure_or_ok_is_readable():
     req = urllib.request.Request("http://127.0.0.1:8796/api/zhaoyun/mcp",
                                  headers={"Authorization": "Bearer e2e-invalid-token"})
     try:
-        with urllib.request.urlopen(req, timeout=8) as r:
+        with safe_urlopen(req, timeout=8) as r:
             body = r.read().decode("utf-8", "replace")
             assert r.status == 200
             json.loads(body)  # 必须可读

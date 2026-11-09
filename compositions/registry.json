@@ -1,6 +1,6 @@
 {
   "schema": "zerobound/composition-registry/v0.1",
-  "generated_at": "2026-11-03",
+  "generated_at": "2026-11-06",
   "status": "draft-shadow",
   "note": "P0 影子账本：只登记、不装载、不改变运行时。P1 起由 tools/composition.py 校验与维护。",
   "host": {
@@ -61,8 +61,13 @@
       "status": {
         "phase": "shadow",
         "health": "unknown",
+        "health_basis": "single_probe_pass",
+        "health_window": "not_measured",
         "validated": false,
-        "evidence": "WO-Q2-D1-20261104：Q2 证据 2 已证/2 部分/1 未证（health 只读探针 8/8 GET 200；SLO 目标已登记未实测；rollback 四步已写演练 pending；D1 单测 21 passed 入 fast 门、IFS 契约 109 passed 部分未入闸；envelope 缺口）→ Q2 未成立，仍 draft/validated=false；证据 docs/plans/2026-11-04_D1_Q2验收证据_v1.md"
+        "q2_complete": false,
+        "q_level": "Q1",
+        "watch_runtime": "watch_engine_running_paper_only",
+        "evidence": "P0-01 2026-11-06T07:38:00+08:00：q2_probe 单次 8/8 GET 200（不是 7d 窗口）；SLO not_measured；rollback dry-run ok / last_drilled=pending；D1 portal 45 passed、IFS registry 38；meeting/training 账空；4 席 HR 缺 → Q2 未成立，仍 draft/validated=false；P0-06 2026-11-07：WA2/WA3/TR2/TR3 已补 observer/备用 HR（active=false），13/13 名册齐；Q2 仍因 SLO/meeting/training/rollback 未成立；证据 deliverables/d1_q2/20261106/ 与 20261107/P0-06_名册与observer定编.md"
       }
     },
     {

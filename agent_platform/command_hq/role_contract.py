@@ -156,7 +156,7 @@ def validate_opinion(opinion) -> list:
     schema = opinion.get("schema")
     if schema != SCHEMA:
         _err(errors, "schema", "必须是 %r" % SCHEMA)
-    topic_id = _text(opinion.get("topic_id"), errors, "topic_id", allow_empty=False, limit=120)
+    _text(opinion.get("topic_id"), errors, "topic_id", allow_empty=False, limit=120)
     role = _text(opinion.get("role"), errors, "role", allow_empty=False)
     if role and role.upper() not in ROLES:
         _err(errors, "role", "必须是 %s 之一" % "/".join(ROLES))

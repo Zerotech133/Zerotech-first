@@ -10,7 +10,7 @@ from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.request import Request, urlopen
+from urllib.request import Request
 from urllib.error import HTTPError, URLError
 import logging
 try:
@@ -27,6 +27,22 @@ except ImportError:
  from chat_profiles import ProfileError, get_profile, list_profile_specs
  from a9_supervision import A9Service, StoreError
  from a9_brief import BriefService
+# 回环禁代理：Ollama 在 127.0.0.1:11434，系统代理会接管回环请求（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
 MAX_HISTORY_CHARS = 12000
 MAX_REQUEST_BYTES = 1024 * 1024
@@ -235,7 +251,7 @@ class ChatHandler(BaseHTTPRequestHandler):
   except ValueError as e:self._err(400,str(e)); return
   response_started=False
   try:
-   with urlopen(Request(OLLAMA_URL,data=json.dumps(p).encode(),headers={'Content-Type':'application/json'},method='POST'),timeout=120) as r:
+   with safe_urlopen(Request(OLLAMA_URL,data=json.dumps(p).encode(),headers={'Content-Type':'application/json'},method='POST'),timeout=120) as r:
     self.send_response(200); response_started=True; self.send_header('Content-Type','application/x-ndjson'); self.send_header('Cache-Control','no-cache'); self.end_headers()
     while c:=r.read(8192): self.wfile.write(c); self.wfile.flush()
   except (HTTPError,URLError,OSError,TimeoutError):

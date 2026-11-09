@@ -367,7 +367,7 @@ def analyze(repo: Path | str = REPO_DEFAULT, days: int = 8, docker_mode: str = "
     mounts = docker_info if docker_info is not None else _docker_mounts(CONTAINER_NAME, docker_mode)
     consumers = _consumers(repo, mounts)
     options = _options(repo, tracked, mounts)
-    option_b = next(o for o in options if o["id"] == OPTION_B)
+    next(o for o in options if o["id"] == OPTION_B)
     plan = _plan_b(tracked)
     after = _snapshot(candidate)
 

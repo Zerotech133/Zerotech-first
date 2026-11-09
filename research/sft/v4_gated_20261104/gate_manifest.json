@@ -1,0 +1,32 @@
+{
+  "source": "C:\\项目\\老田的AI助手\\research\\sft\\v4_clean_20261104",
+  "holdout_frozen": true,
+  "counts": {
+    "train": {
+      "before": 3169,
+      "after": 2902,
+      "excluded": 267,
+      "reasons": {
+        "time_sensitive": 229,
+        "a_concept_operational_answer": 1,
+        "short_answer": 37
+      }
+    },
+    "val": {
+      "before": 394,
+      "after": 350,
+      "excluded": 44,
+      "reasons": {
+        "time_sensitive": 38,
+        "short_answer": 6
+      }
+    }
+  },
+  "excluded_total": 311,
+  "rules": [
+    "time_sensitive",
+    "short_answer",
+    "A_concept_operational_answer"
+  ],
+  "holdout_sha256": "ac5f8e987f39081869b0ad58675578931b5e4c35fabdeab8af3f610203c96241"
+}

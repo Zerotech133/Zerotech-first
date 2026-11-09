@@ -29,8 +29,11 @@ sys.path.insert(0, str(REPO / "tools" / "research"))
 import selection_engine  # noqa: E402
 
 
-def trade_dates(n: int = 30) -> list[str]:
+def trade_dates(n: int = 30, end: str | None = None) -> list[str]:
     fs = sorted(glob.glob(str(DATA / "daily" / "d_*.parquet")))
+    if end:
+        end = str(end).replace("-", "")
+        fs = [f for f in fs if Path(f).stem[2:] <= end]
     return [Path(f).stem[2:] for f in fs[-n:]]
 
 
@@ -56,7 +59,7 @@ def build(date: str, target_vol: float = 0.15, top: int = 20, single_cap: float 
     sel = selection_engine.build(date, top)
     picks = sel["picks"]
     codes = [p["ts_code"] for p in picks]
-    dates = trade_dates(25)
+    dates = trade_dates(25, end=date)
     px = adj_close_panel(dates, codes)
     rets = px.pct_change().iloc[1:]
     vol = rets.std(ddof=1) * np.sqrt(252)  # Series: index=股票
@@ -118,7 +121,7 @@ def build(date: str, target_vol: float = 0.15, top: int = 20, single_cap: float 
 def build_baseline(date: str, top: int = 20, single_cap: float = 0.05, ind_cap: float = 0.30) -> dict:
     """S01 基线：过滤后候选池内按流通市值降序取 top，等权（无 alpha 排序因子）。"""
     import selection_engine as se  # 同目录
-    sel = se.build(date, max(top * 3, 60))  # 复用过滤后的候选（含选中池）
+    se.build(date, max(top * 3, 60))  # 复用过滤后的候选（含选中池）
     # 重新取候选池：用 build 内部逻辑不可直接拿；改为对 picks 的父候选做近似：
     # 简化且透明：用 picks（S02 排名结果）不合适 → 重新加载候选池：调用 se.build 的 filters 后无池返回。
     # 因此此处直接调用 se.build 拿候选数，但池需要独立；为保持简单，使用 picks 的行业/市值不可靠。

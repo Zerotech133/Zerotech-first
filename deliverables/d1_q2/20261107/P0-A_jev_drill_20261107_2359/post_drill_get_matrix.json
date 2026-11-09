@@ -1,0 +1,91 @@
+{
+  "schema": "p0_a_jev_post_drill_get/v1",
+  "checked_at": "2026-11-08T00:08:15+08:00",
+  "note": "GET only; no POST sent; after exact restore",
+  "routes": [
+    {
+      "name": "jev_root",
+      "path": "/api/jev/",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    {
+      "name": "jev_capabilities",
+      "path": "/api/jev/capabilities",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    {
+      "name": "jev_evidence",
+      "path": "/api/jev/evidence",
+      "method": "GET",
+      "status": 400,
+      "error": ""
+    },
+    {
+      "name": "jev_evidence_item",
+      "path": "/api/jev/evidence/item",
+      "method": "GET",
+      "status": 400,
+      "error": ""
+    },
+    {
+      "name": "jev_interpret",
+      "path": "/api/jev/interpret",
+      "method": "GET",
+      "status": 400,
+      "error": ""
+    },
+    {
+      "name": "jev_intraday",
+      "path": "/api/jev/intraday/",
+      "method": "GET",
+      "status": 400,
+      "error": ""
+    },
+    {
+      "name": "jev_platform",
+      "path": "/api/jev/platform",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    {
+      "name": "jev_review_get",
+      "path": "/api/jev/review/",
+      "method": "GET",
+      "status": 401,
+      "error": ""
+    },
+    {
+      "name": "jev_story",
+      "path": "/api/jev/story/",
+      "method": "GET",
+      "status": 400,
+      "error": ""
+    },
+    {
+      "name": "jev_target",
+      "path": "/api/jev/target/",
+      "method": "GET",
+      "status": 400,
+      "error": ""
+    },
+    {
+      "name": "jev_trace",
+      "path": "/api/jev/trace",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    },
+    {
+      "name": "jev_wordcloud",
+      "path": "/api/jev/wordcloud",
+      "method": "GET",
+      "status": 200,
+      "error": ""
+    }
+  ]
+}

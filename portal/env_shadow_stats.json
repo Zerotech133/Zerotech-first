@@ -1,0 +1,79 @@
+{
+ "asof": {
+  "last_date": "2026-11-05",
+  "last_score": 56,
+  "n_days": 135,
+  "n_settled": 126,
+  "n_pending": 9
+ },
+ "window": [
+  "2026-04-15",
+  "2026-11-05"
+ ],
+ "from": "2026-04-15",
+ "cuts": [
+  40,
+  60
+ ],
+ "bands": [
+  {
+   "label": "<40",
+   "days": 19,
+   "n": 95,
+   "signals": 386,
+   "ret_avg": -1.58,
+   "ret_win": 42.1,
+   "alpha_avg": -0.72,
+   "idx_avg": -0.97,
+   "total": -1.5,
+   "mdd": -2.29,
+   "sharpe": -4.42
+  },
+  {
+   "label": "40-60",
+   "days": 51,
+   "n": 573,
+   "signals": 1358,
+   "ret_avg": -6.51,
+   "ret_win": 31.4,
+   "alpha_avg": -3.85,
+   "idx_avg": -2.46,
+   "total": -15.39,
+   "mdd": -16.23,
+   "sharpe": -9.48
+  },
+  {
+   "label": ">=60",
+   "days": 56,
+   "n": 1161,
+   "signals": 2127,
+   "ret_avg": -4.38,
+   "ret_win": 25.0,
+   "alpha_avg": -0.54,
+   "idx_avg": -4.01,
+   "total": -11.59,
+   "mdd": -12.16,
+   "sharpe": -9.41
+  }
+ ],
+ "welch_alpha": {
+  "diff": -0.18,
+  "t": -0.12,
+  "p": 0.9082613915671304,
+  "hi_n": 19,
+  "lo_n": 56
+ },
+ "verdict": "样本不足：低档仅 19 个已结算日（需 ≥120 日），继续记账，不作任何仓位建议",
+ "hist_ref": {
+  "low_total": 19.68,
+  "low_cagr": 6.53,
+  "low_sharpe": 1.58,
+  "high_total": 6.82,
+  "high_cagr": 2.35,
+  "high_sharpe": 0.52,
+  "low_days": 164,
+  "high_days": 317,
+  "label": "3年扩展池 2024-01~2026-10"
+ },
+ "warn": "低档 alpha 若仍为负，则收益是超跌反弹 beta，只能当仓位参考，不能当选股能力"
+}

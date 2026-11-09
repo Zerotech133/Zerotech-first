@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-11-04T23:41:08+08:00",
+  "doing": 22,
+  "worktrees": 32,
+  "worktree_actions": {
+    "active_task_review": 22,
+    "stale_review": 9,
+    "dirty_review": 1
+  },
+  "doing_owners": {
+    "DSH-Lead": 20,
+    "ARCH1": 1,
+    "arch1-catalog-p0": 1
+  },
+  "targets": {
+    "doing": 8,
+    "worktree": 20,
+    "parked": 8
+  }
+}

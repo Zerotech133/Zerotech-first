@@ -19,13 +19,15 @@ import importlib.util
 import json
 import sys
 import urllib.error
-import urllib.request
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "kb_corpus"))
+sys.path.insert(0, str(ROOT / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 
 def _load():
@@ -144,7 +146,7 @@ def test_page_consumes_samples_fields():
 # ------------------------------------------------------------------ 5. HTTP 200
 def _get(path: str) -> tuple[int, bytes]:
     try:
-        with urllib.request.urlopen(BASE + path, timeout=5) as r:
+        with safe_urlopen(BASE + path, timeout=5) as r:
             return r.status, r.read()
     except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:  # pragma: no cover
         pytest.skip(f"门户离线：{exc}")

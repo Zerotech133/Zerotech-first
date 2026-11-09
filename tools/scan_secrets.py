@@ -140,6 +140,11 @@ COMMIT_CTX_RE = re.compile(r"(?i)(commit|sha|hash|版本号|revision|git\s+[0-9a
 CRED_CONTEXT_RE = re.compile(
     r"(?i)(token|api[_-]?key|secret|password|passwd|pwd|密码|口令|authorization|bearer|credential|密钥)")
 
+# 2026-11-07 K-ORG-20261107-ENTROPY：文件名主体被当成高熵候选时的右侧闭合判据。
+# 只认常见文本/代码扩展名，避免把 `abc/def123456789ghi`（无扩展名）也算路径成分。
+FILE_EXT_RE = re.compile(
+    r"\.(?:py|md|json|tsv|csv|txt|log|ya?ml|js|ts|ps1|html?|sh|sql|cfg|ini|toml|xml|java|go)\b")
+
 
 def shannon_entropy(s: str) -> float:
     if not s:
@@ -198,7 +203,8 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
     """高熵规则判定：len>=20、base64/hex 字符集；剔除 UUID、纯数字、
     含点号的标识符/路径形态、commit 上下文 40 位 hex（git sha）、
     base64 图片 data URI（SVG/PNG 内嵌资源）、KEY=value 连写赋值片段（第6轮）、
-    PascalCase 长标识符类名（第7轮）、标识符=True|False 布尔开关（第8轮）。"""
+    PascalCase 长标识符类名（第7轮）、标识符=True|False 布尔开关（第8轮）、
+    文档里引用的带扩展名路径成分（第9轮）。"""
     if len(cand) < 20:
         return False
     # 2026-11-01 SCANFIX：JSON 字符串字段 `"id": "..."` 是标识符/策略 id，不是凭据。
@@ -232,6 +238,17 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
         return False  # 被引号包裹且后接冒号 → JSON/字典键名，非密钥
     if "." in cand:
         return False  # 含点号 → 多为标识符/路径/域名，非密钥
+    # 第9轮（2026-11-07 K-ORG-20261107-ENTROPY）：文档里引用「带扩展名的路径成分」必然命中。
+    # 例：portal/test_legion_live_boot_p0.py —— 文件名主体 test_legion_live_boot_p0 共 24 字符、
+    # 全小写字母+数字+下划线，正好落在高熵字符集内；改措辞消不掉（命中的是文件名本身）。
+    # 三条**同时**满足才豁免：全小写候选 + 左侧紧邻 '/'（或 '\'）+ 右侧紧跟已知扩展名。
+    # 因此混合大小写 token 不在范围内（真实随机 token 必含大写或符号）；URL 末端裸 token
+    # 也不在范围内（无左侧 '/' 或右侧无扩展名）。不放 `"://" not in line`：本判据看的是候选
+    # 两侧形态而非整行内容，同一行既含 URL 又含文件路径时仍应豁免，否则该类误报会复发。
+    if re.fullmatch(r"[a-z0-9_]{12,}", cand) \
+            and re.search(r"[/\\]" + re.escape(cand), line) \
+            and re.search(re.escape(cand) + FILE_EXT_RE.pattern, line):
+        return False
     if len(cand) == 40 and HEX_RE.match(cand) and COMMIT_CTX_RE.search(line):
         return False  # 疑似 git sha
     if HEX_RE.match(cand):

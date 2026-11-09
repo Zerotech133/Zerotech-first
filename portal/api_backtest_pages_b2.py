@@ -174,7 +174,7 @@ def _fin_page(self):
         opp_blk = (
             "<div class='dim' style='margin-bottom:4px'>全池 %d 只 · "
             "<span style='color:#f85149'>买入 %d</span></div>"
-            "<table><tr><th>标的</th><th>市场</th><th>共振分</th></tr>"
+            "<table><tr><th>标的</th><th>市场</th><th>综合分</th></tr>"
             "%s</table>"
             "<div style='margin-top:6px'><a href='/bt-qpzm'>全部 →</a></div>"
             % (len(res), len(buys), opp_rows or

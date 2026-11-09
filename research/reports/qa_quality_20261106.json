@@ -1,0 +1,331 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-06T23:49:02+08:00",
+ "date": "2026-11-06",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.5,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.2,
+  "avg_elapsed_seconds": 21.9,
+  "avg_completeness_score": 5.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-06】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 5,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.3,
+  "avg_elapsed_seconds": 12.352,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-06"
+ },
+ "history_entries": 5,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-06",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.2,
+    "avg_elapsed_seconds": 21.9,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_ef78939178",
+     "q2_87eff8d7a3"
+    ],
+    "alerts": []
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 5,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.3,
+   "avg_elapsed_seconds": 12.352,
+   "window": 7,
+   "date_from": "2026-11-02",
+   "date_to": "2026-11-06"
+  },
+  "updated_at": "2026-11-06T23:49:02+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_ef78939178",
+   "category": "风险限制",
+   "theme": "其他/综合",
+   "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+   "http_status": 200,
+   "elapsed_seconds": 24.8,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "ccec1052fa9c",
+     "ccf7787f6c23"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.0,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】批判性思维、沟通能力和问题解决能力是网络安全专业人员最重要的三项软技能，分别占比 59%、57% 和 53%（[ccec1052fa9c] p.1）。\n【事实】网络安全合规正从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验证、责任能否追溯”（[ccf7787f6c23] p.2）。\n【推断】\n【推断】软技能需求的不确定性在于人才供给与合规转型要求的错配，导致 SecOps 成为第二大技能缺口（依据：[ccec1052fa9c] p.1、[ccf7787f6c23] p.2）。",
+   "answer_length": 263,
+   "citations": [
+    {
+     "unit_id": "ccec1052fa9c",
+     "book": "rp_AP202609301830015404",
+     "chapter": "全球劳动力、资源与网络安全运营更新报告",
+     "page": 1,
+     "text": "批判性思维、沟通能力和问题解决能力是网络安全专业人员最重要的三项软技能，分别占比59%、57%和53%。 受访者指出的安全专业人员最重要的软技能与去年一致，排名前五的分别是：批判性思维（59%）、沟通能力（57%）、问题解决能力（53%）。"
+    },
+    {
+     "unit_id": "ccf7787f6c23",
+     "book": "rp_AP202609301830015419",
+     "chapter": "目录",
+     "page": 2,
+     "text": "网络安全合规正从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验证、责任能否追溯”，推动需求由一次性建设转向持续审计与闭环整改。 网络安全合规正在从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验证、责任能否追溯”。...推动需求由一次性合规建设转向持续审计、监测评估、证据管理和闭环整改。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.0,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_87eff8d7a3",
+   "category": "关键数据",
+   "theme": "AI算力/半导体",
+   "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+   "http_status": 200,
+   "elapsed_seconds": 19.0,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 3,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "fd49b3da595b",
+     "ae43fb5b59e8",
+     "78b15c29b532"
+    ],
+    "citation_invalid": [],
+    "citation_total": 3,
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 3,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】品牌 AI 心智总得分由五维指标加权得出，理论最高分为 180 分（[fd49b3da595b] p.2）。\n【事实】计算公式为：总得分=100×(10−平均排名)/10+45×提及率+15×首位率+15×前三率+15×正面率（[fd49b3da595b] p.2）。\n【事实】苹果触达指数 1731.3 高于均值，但品牌 AI 心智总得分 81.1 低于均值（[ae43fb5b59e8] p.2）。\n【推断】\n【推断】该统计口径基于全体 AI 用户样本，通过排名、提及率等五维数据加权计算得出（依据：[fd49b3da595b] p.2）。\n【推断】头部品牌集中效应判定标准 CR3SOV≥25% 亦纳入相关分析维度（依据：[78b15c29b532] p.2）。",
+   "answer_length": 345,
+   "citations": [
+    {
+     "unit_id": "fd49b3da595b",
+     "book": "rp_AP202610021830110823",
+     "chapter": "目录",
+     "page": 2,
+     "text": "品牌AI心智总得分由五维指标加权得出，用于衡量品牌在全体AI用户中的综合口碑与推荐表现，理论最高分为180分。 总得分=100×(10−平均排名)/10+45×提及率+15×首位率+15×前三率+15×正面率。系数合计190，总得分为加权累加值，理论最高180分。"
+    },
+    {
+     "unit_id": "ae43fb5b59e8",
+     "book": "rp_AP202610021830110823",
+     "chapter": "目录",
+     "page": 2,
+     "text": "品牌的用户基础（触达指数）与AI推荐表现（心智得分）并不必然一致，如苹果呈现高触达低心智，小米呈现高心智低触达的错位现象。 多数头部品牌两者同步领先；但苹果与小米呈现明显错位，说明品牌的用户基础与AI推荐表现并不必然一致。苹果触达指数1731.3高于均值，但品牌AI心智总得分81.1低于均值。"
+    },
+    {
+     "unit_id": "78b15c29b532",
+     "book": "rp_AP202610021830110823",
+     "chapter": "目录",
+     "page": 2,
+     "text": "手机行业在四大AI平台的头部品牌心智份额高度集中，CR3SOV（前三品牌声量份额合计）超过25%即判定为高度集中。 2026年9月第2周，Top1品牌荣耀提及率67%，前三品牌SOV合计27%（判定标准：CR3SOV≥25%为高度集中），头部品牌AI心智份额高度集中。"
+    }
+   ],
+   "citation_count": 3,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 3,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261106.json",
+ "elapsed_seconds": 47.05,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

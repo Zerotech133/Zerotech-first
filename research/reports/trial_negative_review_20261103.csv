@@ -1,0 +1,2 @@
+﻿strategy_id,market,signal_date,entry_date,code,name,signal,ret_t1,max_dd,market_ret,excess,draft_category
+v1-cn-strat-4-v7,CN,2026-11-03,2026-11-04,601998.SH,中信银行,CHAN_V7,-0.016358,-0.016358,0.01880787037037024,-0.035165870370370236,个股显著弱于市场

@@ -134,6 +134,15 @@ def sandbox(tmp_root, monkeypatch):
     )
     monkeypatch.setattr(devtask, "DEV_ROUTING", str(routing_path))
     monkeypatch.setenv("AGENT_NAME", "DEV1")  # org.json 内的合法成员
+    # 并发闸隔离（2026-11-08 K-ORG-20261108-OVWSPLIT 复跑时踩到）：
+    # ``cmd_new`` 第一步调 ``_enforce_worktree_cap()``，而 ``_active_worktree_count()``
+    # 数的是**本机真实** ``.worktrees``（git worktree list），夹具的 WT_DIR/TASKS
+    # 覆盖不到它。08:0x 本机恰好顶到 65/65（并行会话开了第 65 个 worktree），
+    # 闸门 SystemExit → 本文件 23 项全部连带判红，而同文件 07:0x 跑是绿的：
+    # 结论随机器状态漂移，不是功能回归。
+    # 本文件只验 dev_owner_gate（warn/block/路由/向后兼容），并发闸的真实覆盖在
+    # tools/tests/test_devtask_worktree_mech.py（它自己 patch 计数），故此处钉成 0。
+    monkeypatch.setattr(devtask, "_active_worktree_count", lambda repo=None: 0)
     return {
         "ledger": ledger,
         "git_calls": git_calls,

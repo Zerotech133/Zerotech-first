@@ -1,0 +1,54 @@
+{
+ "schema": "governed_export.v1",
+ "generated_at": "2026-11-03T10:40:09+08:00",
+ "files": [
+  {
+   "name": "01_知识单元_已治理.csv",
+   "size": 2246762,
+   "sha256": "2155f1877aa474b76ee64ddcc8937e5eba33857c16e635d037b86688e297db0b"
+  },
+  {
+   "name": "02_学习卡_已审计.csv",
+   "size": 237875,
+   "sha256": "8567367d55dd0fff33a45a29a20d5126016e6754127e1be6ac5d58253ca99bdf"
+  },
+  {
+   "name": "03_有效结论库.csv",
+   "size": 77993,
+   "sha256": "eed673583b3cd5b49c6d85bf05f9d89efd59b19377a8cc76b67866390fb38bf1"
+  },
+  {
+   "name": "04_多源概念_人工签批.csv",
+   "size": 4162,
+   "sha256": "ea0ca5ea8dbf06cf2a97fbdf9e7c0f3b6fcff67278f7065b12b569b3585a8849"
+  },
+  {
+   "name": "05_候选卡_人工审核结果.csv",
+   "size": 141557,
+   "sha256": "61ff711378c7bd50d2d0a89b2c9cde2c76125f91e3ab70adff60b99969ffb124"
+  },
+  {
+   "name": "06_原始来源清单.csv",
+   "size": 1586,
+   "sha256": "a552aba9bd43857e287d2274e66186dc6495e72c6bd7ef654944fe6d8c56c915"
+  },
+  {
+   "name": "07_治理指标.csv",
+   "size": 692,
+   "sha256": "f1fde969c07c68e8ab2d5bf83a73d71fb60cdbcd2a7e53db4a0f1fe2652baedb"
+  },
+  {
+   "name": "README.md",
+   "size": 1317,
+   "sha256": "c3506f1d4303b1198cf467d96694d80f495092fce482a77d2f96fda26ecace5c"
+  }
+ ],
+ "counts": {
+  "units": 2204,
+  "cards": 400,
+  "conclusions": 100,
+  "multi_source_concepts": 27,
+  "reviewed_candidates": 400,
+  "source_files": 12
+ }
+}

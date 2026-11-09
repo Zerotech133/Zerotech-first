@@ -23,6 +23,9 @@
 设计约定（与并行工具一致）：
   · 所有外部命令经模块级 `_run(cmd, cwd=...)` 执行，测试可 monkeypatch；
   · 所有路径可用 CLI 覆盖：--repo-root / --work-dir / --out-dir / --date / --now。
+· 目标日期参数化（HZ-FINAL-DATE-20261104）：默认 --date 2026-11-04，行为与 v1 完全
+  一致；显式 --target-date 2026-11-10（优先于 --date）时，草案标题/九段内日期引用/
+  文件名/preflight 子调用一并切到目标日期，用于 11-10 最终验收复算。
 """
 from __future__ import annotations
 
@@ -233,9 +236,27 @@ def _parse_target(date_value: str | None) -> dt.datetime:
                                  TARGET_HOUR, 0)
     except ValueError as exc:
         raise ValueError(
-            "--date 无法解析：%r（支持 2026-11-04 或 ISO 日期时间）" % raw
+            "--target-date/--date 无法解析：%r（支持 2026-11-10 或 ISO 日期时间）"
+            % raw
         ) from exc
     return target if target.tzinfo else target.replace(tzinfo=_tz())
+
+
+def _target_label(target: dt.datetime) -> str:
+    """目标日期短标签：默认 '11-04'，显式 11-10 → '11-10'。"""
+    return target.strftime("%m-%d")
+
+
+def _target_label_hm(target: dt.datetime) -> str:
+    """目标日期+时刻标签：默认 '11-04 10:00'。"""
+    return "%s %s" % (target.strftime("%m-%d"), target.strftime("%H:%M"))
+
+
+def _target_label_from_iso(raw) -> str:
+    """从 rep 的 target_time（ISO）反推短标签；解析失败回退默认 '11-04'。"""
+    target = _parse_ts(raw)
+    return _target_label(target if isinstance(target, dt.datetime)
+                         else _parse_target(None))
 
 
 # ------------------------------------------------------------------ 五个子步骤
@@ -311,13 +332,19 @@ def step_review(repo: Path, work: Path, custom_work: bool) -> dict:
 
 
 def step_preflight(repo: Path, work: Path, out: Path,
-                   custom_work: bool) -> dict:
+                   custom_work: bool, target: dt.datetime | None = None,
+                   now: dt.datetime | None = None) -> dict:
     tool = PREFLIGHT_TOOL
     if not _has_tool(repo, tool):
         return {"name": "preflight", "tool": tool, "cmd": [], "rc": None,
                 "ok": False, "status": "missing", "data": None,
                 "error": "preflight 工具缺失（已跳过）"}
     cmd = [_py(), "-X", "utf8", tool, "--json", "--out-dir", str(out)]
+    # 仅显式目标日期/时钟时下发（默认路径保持 v1 命令行完全一致）
+    if isinstance(target, dt.datetime):
+        cmd += ["--target-date", target.strftime("%Y-%m-%dT%H:%M")]
+    if isinstance(now, dt.datetime):
+        cmd += ["--now", _iso(now)]
     if custom_work:
         cmd += ["--work-dir", str(work)]
     step = _step(tool, cmd, repo, DEFAULT_TIMEOUT, "preflight")
@@ -421,8 +448,11 @@ def step_incidents(repo: Path, work: Path, custom_work: bool) -> dict:
 # ------------------------------------------------------------------ 建议推导
 
 def _derive_suggestion(review: dict, gng: dict | None,
-                       trend: dict | None) -> dict:
+                       trend: dict | None,
+                       target: dt.datetime | None = None) -> dict:
     """优先用 go_no_go 工具决策；缺工具/坏数据时按六条+覆盖率兜底推导。"""
+    date_label = (_target_label(target) if isinstance(target, dt.datetime)
+                  else DEFAULT_DATE[5:])
     if gng and isinstance(gng.get("decision"), dict):
         d = gng["decision"]
         return {"code": d.get("code") or "UNKNOWN",
@@ -450,8 +480,8 @@ def _derive_suggestion(review: dict, gng: dict | None,
     conditions: list[str] = []
     tracking_note = None
     if only_tracking:
-        tracking_note = ("仅时间项待满窗：%s（11-04 满窗后重跑复核，0 事故即 ④ 转 ✓）"
-                         % "、".join(i.get("id") for i in non_ok))
+        tracking_note = ("仅时间项待满窗：%s（%s 满窗后重跑复核，0 事故即 ④ 转 ✓）"
+                         % ("、".join(i.get("id") for i in non_ok), date_label))
         rationale.append(tracking_note)
     if all_ok and coverage is not None and coverage >= COVERAGE_THRESHOLD:
         code, label = "GO", "建议 GO"
@@ -695,13 +725,20 @@ def render_md(rep: dict) -> str:
     """渲染九段中文回执草案（结构对齐 runbook v6 §十 / 一键流程 v1.1 §六）。"""
     target = rep.get("target_time") or ""
     date_text = rep.get("date") or DEFAULT_DATE
+    target_dt = _parse_ts(rep.get("target_time"))
+    if isinstance(target_dt, dt.datetime):
+        date_label = _target_label(target_dt)
+        date_label_hm = _target_label_hm(target_dt)
+    else:
+        date_label = DEFAULT_DATE[5:]
+        date_label_hm = "%s %02d:00" % (date_label, TARGET_HOUR)
     review = rep.get("review") or {}
     items = _review_items(review)
     summary = review.get("summary") or {}
     kpi = review.get("kpi") or {}
-    preflight = rep.get("preflight")
-    gng = rep.get("go_no_go")
-    trend = rep.get("coverage_trend")
+    rep.get("preflight")
+    rep.get("go_no_go")
+    rep.get("coverage_trend")
     cov = rep.get("coverage") or {}
     maturity = rep.get("maturity") or {}
     incidents = rep.get("incidents") or {}
@@ -780,7 +817,7 @@ def render_md(rep: dict) -> str:
     lines.append("")
 
     # ---- 三、覆盖率
-    lines.append("## 三、覆盖率（当前 / 11-04 投影 / unique 补充）")
+    lines.append("## 三、覆盖率（当前 / %s 投影 / unique 补充）" % date_label)
     lines.append("")
     lines.append("| 口径 | 值 | 判读 |")
     lines.append("|---|---|---|")
@@ -790,8 +827,9 @@ def render_md(rep: dict) -> str:
                     "达标" if cov.get("threshold_pass_now") else "未达标/不可判定",
                     _fmt_pct(cov.get("threshold") or COVERAGE_THRESHOLD)))
     proj = cov.get("projection") or {}
-    lines.append("| 11-04 投影（趋势工具） | runs≈%s / merge≈%s = **%s**；unique≈**%s** | %s |"
-                 % (_fmt_num(proj.get("projected_runs")),
+    lines.append("| %s 投影（趋势工具） | runs≈%s / merge≈%s = **%s**；unique≈**%s** | %s |"
+                 % (date_label,
+                    _fmt_num(proj.get("projected_runs")),
                     _fmt_num(proj.get("projected_merge_done")),
                     _fmt_pct(proj.get("projected_coverage")),
                     _fmt_pct(proj.get("projected_unique_coverage")),
@@ -808,9 +846,10 @@ def render_md(rep: dict) -> str:
     # ---- 四、④ 满窗
     lines.append("## 四、④ 满窗核对（漏放=0 前置）")
     lines.append("")
-    lines.append("- now 满窗：**%s 单**；跟踪中：**%s 单**；11-04 10:00 预计满窗：**%s 单**"
+    lines.append("- now 满窗：**%s 单**；跟踪中：**%s 单**；%s 预计满窗：**%s 单**"
                  % (_fmt_num(maturity.get("mature_count")),
                     _fmt_num(maturity.get("tracking_count")),
+                    date_label_hm,
                     _fmt_num(maturity.get("mature_at_1030"))))
     lines.append("- 最早满窗：`%s`；下一满窗：`%s`"
                  % (maturity.get("earliest_window_end") or "—",
@@ -929,28 +968,32 @@ def render_md(rep: dict) -> str:
                      % (_confirm.get("confirmer") or "—",
                         _confirm.get("time") or "—",
                         _confirm.get("conclusion") or "无已知事故")
-                     + "11-04 满窗时仍按 runbook 再核对一次；")
+                     + "%s 满窗时仍按 runbook 再核对一次；" % date_label)
     else:
         lines.append("3. ④ 满窗人工核对：`work/huangzhong/incidents.jsonl` 缺失时须人工确认"
                      "「无已知事故」；")
-    lines.append("4. 11-04 09:30 preflight 复核：`python -X utf8 tools/huangzhong_1104_preflight.py --json`；")
+    lines.append("4. %s 09:30 preflight 复核：`python -X utf8 tools/huangzhong_1104_preflight.py --json`；"
+                 % date_label)
     lines.append("5. 复核数据时效：本草案数据为生成时刻快照，正式回执前如重跑验收/刷新证据需重跑本工具。")
     lines.append("")
 
     # ---- 九、签署与生效
     lines.append("## 九、签署与生效（草案非最终）")
     lines.append("")
-    lines.append("- **本文件为草案，非最终回执**；经下列签字后方可作为 2026-11-04 观察期复核回执归档：")
+    lines.append("- **本文件为草案，非最终回执**；经下列签字后方可作为 %s 观察期复核回执归档："
+                 % date_text)
     lines.append("")
     lines.append("| 角色 | 职责 | 签字位 |")
     lines.append("|---|---|---|")
-    lines.append("| 黄忠（验收守门官） | 自证六条与证据链 | DSH-Lead 代执行（2026-11-04） |")
+    lines.append("| 黄忠（验收守门官） | 自证六条与证据链 | DSH-Lead 代执行（%s） |"
+                 % date_text)
     lines.append("| 赵云（平台质量门/审计） | 抽查 3/3 一致 | （待签） |")
     lines.append("| 老田 | Go/No-Go 最终决策（L3） | （待签） |")
     lines.append("")
-    lines.append("- 归档落点（正式回执）：`deliverables/2026-11-04_黄忠观察期复核回执.md`；")
+    lines.append("- 归档落点（正式回执）：`deliverables/%s_黄忠观察期复核回执.md`；"
+                 % date_text)
     lines.append("- 关联：认证标准 v2、`runbook v6 §十`、一键流程 v1.1 §六、"
-                 "`deliverables/2026-11-04_黄忠复核_READ_ME_FIRST.md`。")
+                 "`deliverables/%s_黄忠复核_READ_ME_FIRST.md`。" % date_text)
     lines.append("")
     lines.append("---")
     lines.append("")
@@ -969,13 +1012,20 @@ def run(work_dir: Path | str | None = None,
         date_value: str | None = None,
         now: dt.datetime | None = None,
         write_draft: bool = True) -> dict:
-    """编排五个只读子工具并生成回执草案（返回 JSON 摘要；不抛业务异常）。"""
+    """编排五个只读子工具并生成回执草案（返回 JSON 摘要；不抛业务异常）。
+
+    date_value 缺省 = DEFAULT_DATE（2026-11-04，v1 行为）；显式 2026-11-10 时
+    草案标题/文件名/日期引用切到目标日期，并把 --target-date 转发给 preflight。
+    now 显式传入时固定时钟并转发（--now），用于 11-10 复算/测试。
+    """
     clock = now or _now()
     repo = Path(repo_root) if repo_root else ROOT
     out = Path(out_dir) if out_dir else DEFAULT_OUT_DIR
     custom_work = work_dir is not None and str(work_dir).strip() != ""
     work = Path(work_dir) if custom_work else (repo / "work" / "huangzhong")
     target = _parse_target(date_value)
+    explicit_target = bool(str(date_value or "").strip())
+    explicit_now = isinstance(now, dt.datetime)
     date_text = target.date().isoformat()
     steps: list[dict] = []
     rep: dict = {
@@ -1023,7 +1073,9 @@ def run(work_dir: Path | str | None = None,
         "warnings": review.get("warnings") or [],
     }
 
-    preflight_step = step_preflight(repo, work, out, custom_work)
+    preflight_step = step_preflight(repo, work, out, custom_work,
+                                    target=target if explicit_target else None,
+                                    now=clock if explicit_now else None)
     steps.append(preflight_step)
     preflight = preflight_step.get("data") if preflight_step.get("status") == "ok" else None
     rep["preflight"] = {
@@ -1070,7 +1122,7 @@ def run(work_dir: Path | str | None = None,
     rep["evidence"] = _evidence_view(preflight, review)
     rep["evidence_paths"] = _evidence_paths(review_step, preflight, gng, trend,
                                             incidents)
-    rep["suggestion"] = _derive_suggestion(review, gng, trend)
+    rep["suggestion"] = _derive_suggestion(review, gng, trend, target)
     rep["warnings"] = _collect_warnings(steps, review, preflight, gng, trend,
                                         rep["suggestion"])
     rep["steps"] = [_public_step(s) for s in steps]
@@ -1167,7 +1219,8 @@ def _summary(rep: dict) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
-        description="黄忠 11-04 观察期复核回执自动生成器（只读编排，草案非最终回执）")
+        description="黄忠观察期复核回执自动生成器（只读编排，草案非最终回执；"
+                    "默认目标 2026-11-04）")
     ap.add_argument("--json", action="store_true", help="输出 JSON 摘要")
     ap.add_argument("--work-dir", default="",
                     help="数据目录（默认 <repo-root>/work/huangzhong）")
@@ -1175,11 +1228,15 @@ def main(argv=None) -> int:
                     help="仓库根（默认工具所在仓库；worktree 内用主仓数据时显式指定）")
     ap.add_argument("--out-dir", default="",
                     help="草案输出目录（默认 C:\\项目\\deliverables）")
-    ap.add_argument("--date", default=DEFAULT_DATE,
+    ap.add_argument("--date", default="",
                     help="复核日期（默认 2026-11-04；支持 ISO 日期/日期时间）")
+    ap.add_argument("--target-date", default="",
+                    help="显式目标日期/时刻（优先于 --date；默认 2026-11-04；"
+                         "11-10 复算用，支持 2026-11-10 或 ISO 日期时间）")
     ap.add_argument("--now", default="",
                     help="固定生成时钟（ISO；默认当前时间，测试/复算用）")
     args = ap.parse_args(argv)
+    date_value = args.target_date.strip() or args.date.strip()
     try:
         fixed_now = _parse_ts(args.now) if args.now else None
         if args.now and fixed_now is None:
@@ -1187,7 +1244,7 @@ def main(argv=None) -> int:
         rep = run(work_dir=args.work_dir or None,
                   out_dir=args.out_dir or None,
                   repo_root=args.repo_root or None,
-                  date_value=args.date,
+                  date_value=date_value or None,
                   now=fixed_now)
     except ValueError as exc:
         print("参数错误：%s" % exc, file=sys.stderr)
@@ -1199,8 +1256,9 @@ def main(argv=None) -> int:
         review = rep.get("review") or {}
         summary_r = review.get("summary") or {}
         suggestion = rep.get("suggestion") or {}
-        print("11-04 回执草案：ok=%s 六条=%s/%s 建议=%s"
-              % (rep.get("ok"), summary_r.get("passed"),
+        date_label = _target_label_from_iso(rep.get("target_time"))
+        print("%s 回执草案：ok=%s 六条=%s/%s 建议=%s"
+              % (date_label, rep.get("ok"), summary_r.get("passed"),
                  summary_r.get("total"), suggestion.get("label")))
         print("  草案：%s" % (rep.get("draft") or {}).get("path"))
         for warn in _cap(rep.get("warnings") or [], 10):

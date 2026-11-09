@@ -6,7 +6,7 @@
 
 ## 一、谁能调度
 
-D1 鲁肃、ARCH1 曹操、DATA1 张松、PM1 吕蒙、QA1 于禁、DEV3 蒋济、MKT1 简雍、LEG1 诸葛瑾、A0A 董允、ACAD1 司马徽、INTEL0 是仪、LUSU1 阚泽、R3 陆逊。
+D1 鲁肃、ARCH1 曹操、DATA1 张松、PM1 吕蒙、QA1 于禁、DEV3 蒋济、MKT1 简雍、LEG1 诸葛瑾、A0A 董允、ACAD1 司马徽、INTEL0 马超、LUSU1 阚泽、R3 陆逊。
 
 - 主绑：`glm/glm-5.3` 云端；
 - 降级：`deepseek/deepseek-flash` → `ollama/qwen3.5:9b`；

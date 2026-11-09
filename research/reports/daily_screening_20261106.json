@@ -1,0 +1,315 @@
+{
+ "schema_version": "daily_screening.v1",
+ "kind": "daily_screening",
+ "generated_at": "2026-11-07T13:13:18+08:00",
+ "date": "20261106",
+ "dry_run": false,
+ "disclaimer": "研究输出，不构成投资建议；S02/S05 已暂停/关闭，RS 仅为当日相对强度。",
+ "universe": {
+  "input": 5573,
+  "eligible_after_S01": 2430,
+  "filters_dropped": {
+   "st": 195,
+   "new": 117,
+   "price": 85,
+   "liquidity": 1691,
+   "limitup": 43,
+   "missing": 1737,
+   "loss": 1476,
+   "extreme": 12,
+   "h14_trap_excluded": 174,
+   "eligible_after_h14": 2430
+  }
+ },
+ "S02_ranking_research_only": {
+  "note": "S02 复合排序已因影子盘 -9.6% 熔断暂停；仅研究参考，不作实盘依据",
+  "top": 30,
+  "picks": [
+   {
+    "ts_code": "002724.SZ",
+    "name": "海洋王",
+    "industry": "元器件",
+    "score": 2.7882,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +75.3%；5d -18.7%；换手 16.1%；高估值"
+   },
+   {
+    "ts_code": "605488.SH",
+    "name": "福莱新材",
+    "industry": "塑料",
+    "score": 1.9736,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +75.4%；5d +4.5%；换手 15.3%；高估值"
+   },
+   {
+    "ts_code": "603337.SH",
+    "name": "杰克科技",
+    "industry": "纺织机械",
+    "score": 1.7027,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +29.9%；5d -3.4%；换手 2.4%；中估值"
+   },
+   {
+    "ts_code": "002242.SZ",
+    "name": "九阳股份",
+    "industry": "家用电器",
+    "score": 1.607,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +65.9%；5d +13.4%；换手 9.9%；高估值"
+   },
+   {
+    "ts_code": "688787.SH",
+    "name": "海天瑞声",
+    "industry": "软件服务",
+    "score": 1.4255,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +54.7%；5d +5.2%；换手 11.0%；高估值"
+   },
+   {
+    "ts_code": "300832.SZ",
+    "name": "新产业",
+    "industry": "医疗保健",
+    "score": 1.4184,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +19.6%；5d -2.3%；换手 1.2%；中估值"
+   },
+   {
+    "ts_code": "603369.SH",
+    "name": "今世缘",
+    "industry": "白酒",
+    "score": 1.3425,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +23.8%；5d +1.8%；换手 1.0%；低估值"
+   },
+   {
+    "ts_code": "301261.SZ",
+    "name": "恒工精密",
+    "industry": "机械基件",
+    "score": 1.3115,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +31.7%；5d +3.0%；换手 4.7%；中估值"
+   },
+   {
+    "ts_code": "001219.SZ",
+    "name": "青岛食品",
+    "industry": "食品",
+    "score": 1.3055,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +69.6%；5d +12.8%；换手 19.0%；中估值"
+   },
+   {
+    "ts_code": "300979.SZ",
+    "name": "华利集团",
+    "industry": "服饰",
+    "score": 1.3016,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +22.4%；5d +1.1%；换手 0.5%；低估值"
+   },
+   {
+    "ts_code": "688360.SH",
+    "name": "德马科技",
+    "industry": "机械基件",
+    "score": 1.275,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.5%；5d -7.6%；换手 3.3%；中估值"
+   },
+   {
+    "ts_code": "688160.SH",
+    "name": "步科股份",
+    "industry": "电器仪表",
+    "score": 1.2532,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.8%；5d -1.9%；换手 2.3%；高估值"
+   },
+   {
+    "ts_code": "601857.SH",
+    "name": "中国石油",
+    "industry": "石油开采",
+    "score": 1.2469,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.5%；5d -8.2%；换手 0.1%；低估值"
+   },
+   {
+    "ts_code": "003021.SZ",
+    "name": "兆威机电",
+    "industry": "元器件",
+    "score": 1.2335,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +47.6%；5d +12.8%；换手 7.3%；高估值"
+   },
+   {
+    "ts_code": "000559.SZ",
+    "name": "万向钱潮",
+    "industry": "汽车配件",
+    "score": 1.1799,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.3%；5d -0.9%；换手 2.4%；中估值"
+   },
+   {
+    "ts_code": "301413.SZ",
+    "name": "安培龙",
+    "industry": "电器仪表",
+    "score": 1.1766,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +45.8%；5d +0.2%；换手 12.5%；高估值"
+   },
+   {
+    "ts_code": "300529.SZ",
+    "name": "健帆生物",
+    "industry": "医疗保健",
+    "score": 1.1548,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +36.1%；5d +16.3%；换手 2.6%；中估值"
+   },
+   {
+    "ts_code": "300307.SZ",
+    "name": "慈星股份",
+    "industry": "纺织机械",
+    "score": 1.1547,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +27.5%；5d -1.1%；换手 6.6%；中估值"
+   },
+   {
+    "ts_code": "300760.SZ",
+    "name": "迈瑞医疗",
+    "industry": "医疗保健",
+    "score": 1.1376,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +14.1%；5d +1.3%；换手 0.7%；中估值"
+   },
+   {
+    "ts_code": "605118.SH",
+    "name": "力鼎光电",
+    "industry": "元器件",
+    "score": 1.1154,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.4%；5d -4.1%；换手 1.8%；中估值"
+   },
+   {
+    "ts_code": "603198.SH",
+    "name": "迎驾贡酒",
+    "industry": "白酒",
+    "score": 1.088,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +14.8%；5d +0.3%；换手 1.5%；低估值"
+   },
+   {
+    "ts_code": "000415.SZ",
+    "name": "渤海租赁",
+    "industry": "多元金融",
+    "score": 1.0876,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +19.5%；5d +4.8%；换手 1.2%；低估值"
+   },
+   {
+    "ts_code": "600329.SH",
+    "name": "达仁堂",
+    "industry": "中成药",
+    "score": 1.0776,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +17.7%；5d +4.5%；换手 0.6%；中估值"
+   },
+   {
+    "ts_code": "603868.SH",
+    "name": "飞科电器",
+    "industry": "家用电器",
+    "score": 1.0773,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +11.2%；5d +0.6%；换手 0.4%；中估值"
+   },
+   {
+    "ts_code": "603728.SH",
+    "name": "鸣志电器",
+    "industry": "电气设备",
+    "score": 1.0628,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.7%；5d +1.7%；换手 2.0%；高估值"
+   },
+   {
+    "ts_code": "600295.SH",
+    "name": "鄂尔多斯",
+    "industry": "特种钢",
+    "score": 1.0606,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +12.1%；5d -1.6%；换手 0.5%；低估值"
+   },
+   {
+    "ts_code": "688097.SH",
+    "name": "博众精工",
+    "industry": "专用机械",
+    "score": 1.059,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +15.4%；5d +1.0%；换手 1.8%；中估值"
+   },
+   {
+    "ts_code": "600519.SH",
+    "name": "贵州茅台",
+    "industry": "白酒",
+    "score": 1.0386,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +15.0%；5d +4.4%；换手 0.3%；低估值"
+   },
+   {
+    "ts_code": "603173.SH",
+    "name": "福斯达",
+    "industry": "机械基件",
+    "score": 1.034,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +13.1%；5d +1.0%；换手 1.1%；低估值"
+   },
+   {
+    "ts_code": "002727.SZ",
+    "name": "一心堂",
+    "industry": "医药商业",
+    "score": 1.0331,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +22.7%；5d +1.7%；换手 2.1%；低估值"
+   }
+  ]
+ },
+ "S03_H18_watch": {
+  "rule": null,
+  "count": 0,
+  "items": [],
+  "note": "无 selection_daily_20261106.json"
+ },
+ "pinxue_signals": {
+  "factors": {
+   "LX20_牛股三绝": {
+    "factor": "lx20_three_absolutes",
+    "signal_count": 519,
+    "sample_codes": [
+     "000026.SZ",
+     "000035.SZ",
+     "000039.SZ",
+     "000151.SZ",
+     "000400.SZ",
+     "000410.SZ",
+     "000417.SZ",
+     "000513.SZ",
+     "000516.SZ",
+     "000525.SZ"
+    ]
+   },
+   "LX06_长阴短柱": {
+    "factor": "lx06_long_yin_short",
+    "signal_count": 0,
+    "sample_codes": []
+   },
+   "LX12_双阴出货": {
+    "factor": "lx12_double_yin_exit",
+    "signal_count": 416,
+    "sample_codes": [
+     "000056.SZ",
+     "000096.SZ",
+     "000100.SZ",
+     "000166.SZ",
+     "000338.SZ",
+     "000403.SZ",
+     "000408.SZ",
+     "000507.SZ",
+     "000544.SZ",
+     "000552.SZ"
+    ]
+   },
+   "LX22_凹口淘金": {
+    "factor": "aokou",
+    "signal_count": 321,
+    "sample_codes": [
+     "000019.SZ",
+     "000037.SZ",
+     "000407.SZ",
+     "000420.SZ",
+     "000498.SZ",
+     "000505.SZ",
+     "000525.SZ",
+     "000537.SZ",
+     "000595.SZ",
+     "000600.SZ"
+    ]
+   }
+  },
+  "union_count": 1187
+ },
+ "RS_overlay": {
+  "enabled": false,
+  "mode": "off",
+  "date": "20261106",
+  "note": "RS 叠加未启用（--rs-mode off，默认）；原筛选结果不变"
+ },
+ "boundary_notes": [
+  "S02 已暂停、S05 已关闭；量学信号为反向/规避研究线索，不可直接用于 S01 大市值组合。",
+  "RS overlay：板块=行业等权当日涨幅（pct_chg 百分比数值）；A/B/C 口径见文档。",
+  "本脚本不调用 LLM、不重跑已有研究；定时任务未注册（需审批后另行接入）。"
+ ]
+}

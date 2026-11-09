@@ -99,8 +99,6 @@ def main() -> int:
 
     rows = []
     prev = set()
-    last_codes = []
-    last_score = {}
     for i, dt in enumerate(mends[:-1]):
         nxt = mends[i + 1]
         if dt not in adj.index or nxt not in adj.index:
@@ -137,7 +135,7 @@ def main() -> int:
                      "excess": r_top - cost - r_mkt, "turnover": turnover, "cap_yi": cap,
                      "ic": ic, "regime": "up" if mkt60 > 0 else "down", "n": len(top)})
         prev = set(top.index)
-        last_codes, last_score = list(top.index), top.to_dict()
+        _last_codes, _last_score = list(top.index), top.to_dict()
 
     df = pd.DataFrame(rows)
     nav = (1 + df["ret"]).cumprod()

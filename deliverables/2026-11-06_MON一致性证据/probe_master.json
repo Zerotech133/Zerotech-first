@@ -1,0 +1,36 @@
+﻿{
+ "cwd": "C:\\项目\\老田的AI助手",
+ "module_file": "C:\\项目\\老田的AI助手\\analysis\\monitor.py",
+ "module_sha256": "e3956d1fc586b77d56feab867f237c352910922723cb5008ab83f300421cc55c",
+ "summary_keys": [
+  "alerts_total",
+  "by_severity",
+  "last_run",
+  "pools"
+ ],
+ "load_pools_type": "dict",
+ "load_pools_keys": [
+  "watchlist"
+ ],
+ "list_pools_type": "dict",
+ "list_pools": {
+  "watchlist": 3
+ },
+ "list_alerts_type": "list",
+ "list_alerts_len": 0,
+ "alert_item_keys": null,
+ "run_monitor_keys": [
+  "alerts",
+  "as_of",
+  "by_severity",
+  "dry_run",
+  "items",
+  "new_alerts",
+  "ok",
+  "pool",
+  "run_id",
+  "scanned"
+ ],
+ "run_monitor_ok": true,
+ "evaluate_keys": null
+}

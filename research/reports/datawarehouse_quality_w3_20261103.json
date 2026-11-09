@@ -1,46 +1,29 @@
 {
  "schema_version": "datawarehouse_quality_w3.v1",
  "task": "task-146 W3-2 数据质量遗留修复",
- "generated_at": "2026-11-03T07:04:36+08:00",
- "dry_run": false,
+ "generated_at": "2026-11-03T15:03:08+08:00",
+ "dry_run": true,
  "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data",
  "kg_log_tail_before": [
-  "analysis_curated_extras_fix date=2026-11-03T05:53:44+08:00 note=append-only_no_dedupe incident_restored_from=curated_p0_backup_20261103-055138 exit=0 agent=DSH-Lead",
-  "catalog_build exit=0 2026-11-03T06:25:31",
-  "evt_build exit=0 2026-11-03T06:31:18",
-  "registry_align date=2026-11-03T06:46:42+08:00 action=apply catalog=v35 sha=3ef34d921d6bf602 physical=256 display=258 rebuild=ok exit=0",
-  "quality_legacy_repair date=2026-11-03T07:04:09+08:00 tables=ts_daily_basic,tdx_forecast,tdx_report_rc manifest_fixed=9 dedupe=0 exit=0"
+  "graph_check exit=0 2026-11-03T09:39:56",
+  "ontology_snap exit=0 2026-11-03T09:40:04",
+  "kg_brief exit=0 2026-11-03T09:40:18",
+  "kg_sync OK 2026-11-03T09:40:18",
+  "registry_align date=2026-11-03T09:41:25+08:00 action=apply catalog=v35 sha=e13b6a08a5f16f0c physical=256 display=258 rebuild=ok exit=0"
  ],
  "before": {
   "manifest_rows": 4253717,
   "footer_rows": 4253717,
   "delta": 0,
-  "forecast_dups": 891,
-  "report_rc_dups": 166,
+  "forecast_dups": 0,
+  "report_rc_dups": 0,
   "freshness_catalog": "20261013",
   "freshness_footer": "20271231"
  },
  "check": {
   "checked": 9,
-  "mismatch": [
-   {
-    "table": "ts_forecast",
-    "manifest_rows": 33451,
-    "footer_rows": 34342,
-    "delta": 891,
-    "files_manifest": 2,
-    "files_disk": 2
-   },
-   {
-    "table": "ts_report_rc",
-    "manifest_rows": 528027,
-    "footer_rows": 530153,
-    "delta": 2126,
-    "files_manifest": 14,
-    "files_disk": 14
-   }
-  ],
-  "all_ok": false,
+  "mismatch": [],
+  "all_ok": true,
   "evidence": [
    {
     "table": "ts_daily_basic",
@@ -53,16 +36,16 @@
    {
     "table": "ts_forecast",
     "manifest_rows": 33451,
-    "footer_rows": 34342,
-    "delta": 891,
+    "footer_rows": 33451,
+    "delta": 0,
     "files_manifest": 2,
     "files_disk": 2
    },
    {
     "table": "ts_report_rc",
-    "manifest_rows": 528027,
-    "footer_rows": 530153,
-    "delta": 2126,
+    "manifest_rows": 529987,
+    "footer_rows": 529987,
+    "delta": 0,
     "files_manifest": 14,
     "files_disk": 14
    },
@@ -119,116 +102,32 @@
  "fix": {
   "manifest": {
    "src": "tdx",
-   "changed": [
-    {
-     "table": "ts_report_rc",
-     "before_rows": 528027,
-     "after_rows": 529987,
-     "before_files": 14,
-     "after_files": 14
-    }
-   ],
-   "dry": false,
-   "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426\\tdx___manifest.json"
+   "changed": [],
+   "dry": true
   },
   "dedupe": {
    "src": "tdx",
    "tables": [
     {
      "table": "ts_forecast",
-     "total": 34342,
-     "dups": 891,
+     "total": 33451,
+     "dups": 0,
      "dups_within_files": 0,
-     "dups_cross_files": 891,
+     "dups_cross_files": 0,
      "affected_files": [],
-     "action": "deduped_global",
-     "total_before": 34342,
-     "total_after": 33451,
-     "removed": 891,
-     "affected": [
-      {
-       "file": "part_0001.parquet",
-       "before": 891,
-       "after": 0
-      }
-     ],
-     "backup": {
-      "dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426",
-      "files": [
-       {
-        "path": "tdx\\ts_forecast\\part_0001.parquet",
-        "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426\\tdx\\ts_forecast\\part_0001.parquet",
-        "sha256": "ef46dbc9cbe02fea90fc51d2472db93c70536ebb6b23ce8deeb80b4f20600a64",
-        "bytes": 357934
-       }
-      ]
-     }
+     "action": "noop"
     },
     {
      "table": "ts_report_rc",
-     "total": 530153,
-     "dups": 166,
+     "total": 529987,
+     "dups": 0,
      "dups_within_files": 0,
-     "dups_cross_files": 166,
+     "dups_cross_files": 0,
      "affected_files": [],
-     "action": "deduped_global",
-     "total_before": 530153,
-     "total_after": 529987,
-     "removed": 166,
-     "affected": [
-      {
-       "file": "part_0005.parquet",
-       "before": 208,
-       "after": 169
-      },
-      {
-       "file": "part_0011.parquet",
-       "before": 474,
-       "after": 384
-      },
-      {
-       "file": "part_0012.parquet",
-       "before": 700,
-       "after": 692
-      },
-      {
-       "file": "part_0013.parquet",
-       "before": 744,
-       "after": 715
-      }
-     ],
-     "backup": {
-      "dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426",
-      "files": [
-       {
-        "path": "tdx\\ts_report_rc\\part_0005.parquet",
-        "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426\\tdx\\ts_report_rc\\part_0005.parquet",
-        "sha256": "b2ca49885b48c310b754004830fc1654c61def8835e2d28f30da5f0865a0e7b5",
-        "bytes": 29985
-       },
-       {
-        "path": "tdx\\ts_report_rc\\part_0011.parquet",
-        "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426\\tdx\\ts_report_rc\\part_0011.parquet",
-        "sha256": "7339c551457fce5edc7891dcccba31665cb12e43b2fcb7573dc5722445780855",
-        "bytes": 69449
-       },
-       {
-        "path": "tdx\\ts_report_rc\\part_0012.parquet",
-        "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426\\tdx\\ts_report_rc\\part_0012.parquet",
-        "sha256": "9f314e042a2195a0273393561454737c32ff31d0a09393bf381b44cd528ff38d",
-        "bytes": 92934
-       },
-       {
-        "path": "tdx\\ts_report_rc\\part_0013.parquet",
-        "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\_repair_backup_w3\\20261103-070426\\tdx\\ts_report_rc\\part_0013.parquet",
-        "sha256": "8278875360de18b6d24374bfdb500ad123bc374a1a7aefe1dcd6bef8a4bab162",
-        "bytes": 99074
-       }
-      ]
-     }
+     "action": "noop"
     }
    ],
-   "dry": false
+   "dry": true
   }
  },
  "verify": {
@@ -368,12 +267,5 @@
   "C8": "PASS（口径说明）",
   "all": true
  },
- "rollback": "备份目录 quant_backtest/data/_repair_backup_w3/<tag>/（manifest 原件+受影响 parquet 原件，含 sha256）；恢复=按相对路径 copy 回原位并重跑 --check",
- "c7_history_note": "历史 +5,559（manifest 4,242,587 vs footer 4,248,146）已在 2026-11-02T17:12 由既有 repair 流程修复；本次复检 ts_daily_basic manifest=footer=4,253,717（Δ=0）",
- "incident_note": "首次 apply 写回条件误用全路径匹配 basename，导致 4 个 report_rc 分片被写成 0 行（未影响源端其他文件）；已立即从 _repair_backup_w3/20261103-070402 备份按 sha256 全量恢复并修正条件，二次 apply 后行数校验：forecast 34,342→33,451（-891）、report_rc 530,153→529,987（-166），无其他行损失",
- "final_rows": {
-  "ts_daily_basic": 4253717,
-  "ts_forecast": 33451,
-  "ts_report_rc": 529987
- }
+ "rollback": "备份目录 quant_backtest/data/_repair_backup_w3/<tag>/（manifest 原件+受影响 parquet 原件，含 sha256）；恢复=按相对路径 copy 回原位并重跑 --check"
 }

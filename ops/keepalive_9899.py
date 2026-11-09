@@ -15,6 +15,8 @@ push_admin_server.py）并入本守护：同一稳定宿主，一次任务跑四
 复活：看门狗自己 Popen 分离拉起（本进程宿主=计划任务，子进程随任务存活；
 与 8094 走 Start-ScheduledTask 不同——两者均无既有服务任务）。
 防抖：探针 x2 间隔 3s；8095 复活宽限 ~15s、cow 宽限 60s 内不重复拉。
+预算：main() 入口起算 BUDGET_S=100s 的 monotonic 截止时刻，到期收缩宽限/跳过
+      后续守卫——四口全死也不会顶爆任务执行上限 PT2M（2026-11-07）。
 
 日志：C:/Temp/watchdog_9899.log（只记动作，静默通过不写）。
 """
@@ -34,6 +36,22 @@ COW_DIR = os.path.join(STATION, "CowAgent")
 COW_PY = os.path.join(COW_DIR, "venv", "Scripts", "python.exe")
 PICKS_PORT = 8095
 PORTAL_DIR = os.path.join(STATION, "portal")
+# ── 全局预算（2026-11-07 K-ORG-20261107-WATCHDOG）──────────────────────
+# 病根不是「某个守卫宽限太长」，而是「任一守卫都能吃满自己的宽限，串行叠加
+# 顶爆任务执行上限」。四口全死最坏 4×(2+3+2+宽限)，cow 宽限 60s 时 ≈103s，
+# 而任务上限 PT2M=120s：一旦某一跳碰上三个端口同时死，任务在第 2 分钟被
+# 强杀，Job 连坐把刚 spawn 的子进程一起带走（K-PUSH-004 判例）→ 表现为
+# 「端口被拉起又被杀」，日志里看不出原因。
+# 解法：用统一的 monotonic 截止时刻替代「各守卫各自算」，到期就收缩宽限/
+# 跳过后续守卫（下一跳 5 分钟后重试）。不压任何单端口宽限——压 cow 的 60s
+# 会让 CowAgent 冷启慢时产生新的假「复活失败」，等于拿假信号换真安全。
+BUDGET_S = 100.0
+_DEADLINE = None  # monotonic 秒；None 表示不受预算约束（单函数独立调用时）
+
+
+def _budget_left():
+    """剩余预算秒；未设预算返回 None（单函数直调保持旧语义）。"""
+    return None if _DEADLINE is None else _DEADLINE - time.monotonic()
 SYS_PY = r"C:\Program Files\Python311\python.exe"  # 2026-10-16 实测在位
 # 8099 KM 知识库飞书联动（km_feishu_hub.py）——与 Legion 8096 分离
 KM_PORT = 8099
@@ -81,6 +99,12 @@ def guard_port(port, script_args, log_name, grace_iters, tag):
     """通用端口看护：x2 防抖 → 分离拉起 → 宽限验证。"""
     if alive_on(port):
         return
+    left = _budget_left()
+    if left is not None and left <= 8:
+        # 探针 x2(≈5s)+拉起都放不进剩余预算：跳过整口，下一跳再试。
+        # 宁可少守一跳，也不在预算边缘 spawn 出一个随后被任务强杀的子进程。
+        log("%s:%d SKIP（本次预算剩 %.1fs 不足，下一跳再试）" % (tag, port, left))
+        return
     time.sleep(3)
     if alive_on(port):
         return  # 抖动
@@ -101,6 +125,11 @@ def guard_port(port, script_args, log_name, grace_iters, tag):
         log("%s SPAWN_FAILED: %r" % (tag, e))
         return
     for i in range(grace_iters):
+        left = _budget_left()
+        if left is not None and left <= 3:
+            log("%s REVIVE_UNCONFIRMED（预算耗尽，已 spawn 未确认——看 %s）"
+                % (tag, log_name))
+            return
         time.sleep(3)
         if alive_on(port):
             log("%s REVIVED after ~%ds" % (tag, (i + 1) * 3))
@@ -127,11 +156,19 @@ def guard_push_admin():
 
 
 def guard_cow():
+    """9899 CowAgent：掉线则分离拉起。
+    返回 True=活/已复活（或已拉起未确认），False=拉起失败。
+    2026-11-07：原实现用 sys.exit() 收尾——因为当时它是最后一个且独立成进程；
+    并入 main() 后 sys.exit 会横穿调用栈提前终止进程，改为 return，语义不变。"""
     if alive():
-        sys.exit(0)
+        return True
+    left = _budget_left()
+    if left is not None and left <= 8:
+        log("cow:9899 SKIP（本次预算剩 %.1fs 不足，下一跳再试）" % left)
+        return False
     time.sleep(3)
     if alive():
-        sys.exit(0)  # 抖动
+        return True  # 抖动
     log("DOWN x2 -> spawn CowAgent")
     try:  # K-STOCK-414：同 guard_port，spawn 故障留痕不裸炸
         logf = open(r"C:\Temp\cowagent_wd.log", "ab")
@@ -144,21 +181,29 @@ def guard_cow():
         logf.close()
     except Exception as e:  # noqa: BLE001
         log("cow SPAWN_FAILED: %r" % e)
-        sys.exit(1)
-    for i in range(20):  # 宽限 60s
+        return False
+    for i in range(20):  # 宽限 60s（预算到期则提前收工）
+        left = _budget_left()
+        if left is not None and left <= 3:
+            log("cow REVIVE_UNCONFIRMED（预算耗尽，已 spawn 未确认——看 C:/Temp/cowagent_wd.log）")
+            return True
         time.sleep(3)
         if alive():
             log("REVIVED after ~%ds" % ((i + 1) * 3))
-            sys.exit(0)
+            return True
     log("REVIVE_FAIL（60s 仍无监听——看 C:/Temp/cowagent_wd.log）")
-    sys.exit(1)
+    return False
 
 
 def main():
+    """四端口一次巡完。预算在入口统一起算，避免任一守卫吃满宽限挤掉后面的。"""
+    global _DEADLINE
+    _DEADLINE = time.monotonic() + BUDGET_S
     guard_picks_sched()
     guard_km_hub()
     guard_push_admin()
     guard_cow()
+    return 0
 
 
 if __name__ == "__main__":

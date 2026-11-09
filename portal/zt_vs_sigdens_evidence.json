@@ -1,0 +1,138 @@
+{
+ "meta": {
+  "pool": "chanlun_pool_ext_v2.jsonl",
+  "sig_th": 0.4843,
+  "zt_q": 0.7,
+  "window": [
+   "20231009",
+   "20261106"
+  ],
+  "n_rows": 15347,
+  "n_days": 729,
+  "hot_days": 135,
+  "sig_pass_days": 212
+ },
+ "corr": {
+  "sigdens~zt_cnt": 0.016,
+  "sigdens~zt_dens": 0.097,
+  "sigdens~trend": -0.107,
+  "sigdens~vol": -0.087,
+  "zt_cnt~zt_dens": 0.73
+ },
+ "rules": {
+  "R0 全信号": {
+   "days": 729,
+   "avg": 2.029,
+   "win": 57.3,
+   "p_vs_random": null,
+   "null_p50": null,
+   "null_p95": null,
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 1.163
+    },
+    "2024": {
+     "days": 236,
+     "avg": 2.599
+    },
+    "2025": {
+     "days": 242,
+     "avg": 4.405
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.416
+    }
+   }
+  },
+  "R1 sigdens pass": {
+   "days": 212,
+   "avg": 1.057,
+   "win": 54.2,
+   "p_vs_random": 0.9575,
+   "null_p50": 2.069,
+   "null_p95": 2.988,
+   "by_year": {
+    "2023": {
+     "days": 13,
+     "avg": -3.269
+    },
+    "2024": {
+     "days": 89,
+     "avg": 2.788
+    },
+    "2025": {
+     "days": 57,
+     "avg": 3.809
+    },
+    "2026": {
+     "days": 53,
+     "avg": -3.747
+    }
+   }
+  },
+  "R2 排除 hot": {
+   "days": 594,
+   "avg": 2.327,
+   "win": 58.8,
+   "p_vs_random": 0.025,
+   "null_p50": 2.026,
+   "null_p95": 2.289,
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 1.163
+    },
+    "2024": {
+     "days": 166,
+     "avg": 2.377
+    },
+    "2025": {
+     "days": 220,
+     "avg": 4.632
+    },
+    "2026": {
+     "days": 148,
+     "avg": -0.682
+    }
+   }
+  },
+  "R3 sigdens pass 且非 hot": {
+   "days": 165,
+   "avg": 1.359,
+   "win": 55.8,
+   "p_vs_random": 0.7975,
+   "null_p50": 1.954,
+   "null_p95": 3.161,
+   "by_year": {
+    "2023": {
+     "days": 13,
+     "avg": -3.269
+    },
+    "2024": {
+     "days": 54,
+     "avg": 2.761
+    },
+    "2025": {
+     "days": 55,
+     "avg": 3.89
+    },
+    "2026": {
+     "days": 43,
+     "avg": -2.24
+    }
+   }
+  }
+ },
+ "increment": {
+  "R1_avg": 1.057,
+  "R3_avg": 1.359,
+  "diff": 0.302,
+  "days_dropped": 47,
+  "null_p50": 1.097,
+  "null_p95": 1.641,
+  "p_value": 0.2025
+ },
+ "verdict": "zt 增量不能与「少交易」区分 → 无增量价值"
+}

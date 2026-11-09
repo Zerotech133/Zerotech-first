@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "status": "active",
+  "approved_by": "老田",
+  "approved_at": "2026-11-04",
+  "approval_basis": "用户指令：按计划组织实施（m01649 / m01665 / m01670）；仅限受控研究观察，不进入生产。",
+  "observation_dates": [
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-09",
+    "2026-11-10",
+    "2026-11-11"
+  ],
+  "report_threshold": 10,
+  "report_deadline_time": "09:30",
+  "feedback_consumer": "鲁肃",
+  "supervisor": "ACAD1",
+  "operators": {
+    "feedback": "鲁肃",
+    "supervision": "ACAD1",
+    "feedback_entry": "选股中台 → 统一池 + 反馈（人工填写）",
+    "supervision_entry": "选股中台 → 日报经验与督导（人工填写）"
+  },
+  "stop_after_consecutive_fail_days": 2,
+  "no_production": true,
+  "notes": [
+    "本观察不自动交易、不自动批准、不自动改池/权重/索引；",
+    "反馈与督导必须由真实责任人填写，脚本只检查，不代填；",
+    "报告数固定按 report_date=数据日，截止次一交易日 09:30；",
+    "策略规则修改须另立预注册，观察期内不改。"
+  ]
+}

@@ -66,9 +66,11 @@ def test_unified_send_success_records_flow(monkeypatch):
         return True, "ok", "om_123"
 
     monkeypatch.setattr(feishu_client, "send_msg_tracked", fake_send)
-    ok, why = pdd.send({"config": {}})
+    ok, why = pdd.send({"schema": "2.0", "body": {"elements": []}})
     assert ok is True
     assert "om_123" in why
+    assert isinstance(seen["content"], str), "dict 必须先序列化，避免 OpenAPI 9499"
+    assert '"schema": "2.0"' in seen["content"]
     assert seen["kind"] == "auto:push_digest"
     assert seen["via_hub"] is True
     assert seen["sender_role"] == "zb.ops.notify"

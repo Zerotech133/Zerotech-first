@@ -1,0 +1,29 @@
+### Qwen2.5-7B-Instruct QLoRA SFT · 4090 24G（bf16/fa2）· 冒烟
+model_name_or_path: <Qwen2.5-7B-Instruct 本地路径>
+quantization_bit: 4
+stage: sft
+finetuning_type: lora
+lora_target: all
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+dataset: quant_kb_sft_smoke
+template: qwen
+cutoff_len: 1024
+train_on_prompt: false
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
+learning_rate: 8.0e-5
+num_train_epochs: 1.0
+lr_scheduler_type: cosine
+warmup_steps: 10
+bf16: true
+fp16: false
+gradient_checkpointing: true
+flash_attn: fa2
+weight_decay: 0.0
+max_grad_norm: 1.0
+packing: false
+logging_steps: 5
+output_dir: saves/smoke-7b-4090
+seed: 42

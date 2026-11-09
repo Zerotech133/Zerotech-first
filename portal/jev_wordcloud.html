@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 词云 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px}
+    .crumb .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none}
+    .crumb .c:hover{border-color:var(--accent);color:var(--link)}
+    .crumb .sep{color:var(--gray-5);font-size:11px}
+    .mini{font-size:12px;color:var(--gray-6)}
+    /* 进度条 */
+    .pbar{display:flex;align-items:center;gap:10px;margin:10px 0}
+    .ptrack{flex:1;height:7px;border-radius:4px;background:var(--bg-raised);overflow:hidden}
+    .pfill{height:100%;width:0;background:var(--accent);transition:width .35s;border-radius:4px}
+    .pline{font-size:12px;color:var(--gray-5);white-space:nowrap}
+    /* 真词云 */
+    .cloud{position:relative;min-height:340px;padding:18px 10px;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:2px 10px;line-height:1.15}
+    .w{cursor:pointer;font-weight:700;transition:transform .12s;border-radius:6px;padding:1px 5px;user-select:none}
+    .w:hover{transform:scale(1.12);background:var(--bg-raised)}
+    .w.bull{color:var(--color-up)} .w.bear{color:var(--color-dn)} .w.neutral{color:var(--gray-5)}
+    .w.both{color:var(--blu-500)}
+    .legend{display:flex;gap:14px;font-size:11.5px;color:var(--gray-5);margin-top:8px;justify-content:center;flex-wrap:wrap}
+    .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+    /* 详情侧滑面板 */
+    .detail{position:fixed;top:0;right:-440px;width:420px;max-width:92vw;height:100vh;background:var(--bg-surface);border-left:1px solid var(--border);z-index:100;transition:right .25s;overflow-y:auto;box-shadow:-8px 0 24px rgba(0,0,0,.35)}
+    .detail.open{right:0}
+    .detail .inner{padding:18px 18px 40px}
+    .d-close{position:absolute;top:10px;right:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;color:var(--gray-5);cursor:pointer;padding:4px 10px;font-size:12px}
+    .bias-chip{font-size:10.5px;border:1px solid var(--border);border-radius:999px;padding:1px 7px;white-space:nowrap}
+    .bias-chip.bull{color:var(--color-up);border-color:var(--color-up)}
+    .bias-chip.bear{color:var(--color-dn);border-color:var(--color-dn)}
+    .bias-chip.neutral{color:var(--gray-5)}
+    .bars{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0}
+    .b-bull{background:var(--color-up)} .b-bear{background:var(--color-dn)} .b-neutral{background:var(--gray-5)}
+    .samp{border:1px solid var(--border-weak);border-radius:8px;padding:8px 10px;margin:6px 0}
+    .samp .t{font-size:12.5px;line-height:1.55}
+    .samp .m{font-size:11px;color:var(--gray-5);margin-top:3px;display:flex;gap:8px;align-items:center}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .chip-w{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--gray-6);text-decoration:none}
+    .chip-w b{font-variant-numeric:tabular-nums;color:var(--gray-5);font-weight:400}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:960px){.grid2{grid-template-columns:1fr}}
+    .et-row{display:flex;flex-wrap:wrap;gap:6px}
+    .et-chip{border:1px solid var(--border-weak);border-radius:6px;padding:3px 8px;font-size:11.5px;color:var(--gray-6)}
+    .et-chip b{font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 词云</span>
+        <h1>近期判定词，一图看明白</h1>
+        <p>词的大小=出现频率，颜色=方向（<span style="color:var(--color-up)">利多</span>/<span style="color:var(--gray-5)">中性</span>/<span style="color:var(--color-dn)">利空</span>，蓝=多空双向）。<b>点任意词看详情</b>：方向构成、扩散渠道、最近相关新闻、完整举证直达。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_pano.html">🔭 全景舱</a>
+        <a class="ui-btn" href="/jev_platform.html">🛰 中台总览</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <div class="ui-card crumb">
+      <a class="c" href="/jev_platform.html">🛰 总览</a><span class="sep">·</span>
+      <a class="c" href="/bt-jev">⚖ 判断</a><span class="sep">·</span>
+      <a class="c" href="/jev_evidence.html">🧪 举证</a><span class="sep">·</span>
+      <a class="c" href="/jev_story.html">📖 叙事线</a><span class="sep">·</span>
+      <a class="c" href="/jev_pano.html">🔭 全景舱</a>
+      <span style="margin-left:auto;color:var(--gray-5);font-size:11px">词即入口：点词看详情</span>
+    </div>
+
+    <!-- 窗口快选 + 进度条 -->
+    <div class="ui-card" style="padding:12px 14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+        <span class="mini">统计窗口</span>
+        <span id="wins"></span>
+        <span id="meta" class="mini" style="margin-left:auto"></span>
+      </div>
+      <div class="pbar" id="pbar" hidden>
+        <div class="ptrack"><div class="pfill" id="pfill"></div></div>
+        <span class="pline" id="pline">加载中…</span>
+      </div>
+    </div>
+    <div id="err" class="ui-error" hidden></div>
+
+    <!-- 真词云 -->
+    <div class="ui-card" style="margin-bottom:12px">
+      <div class="cloud" id="cloud"></div>
+      <div class="legend">
+        <span><i style="background:var(--color-up)"></i>利多词</span>
+        <span><i style="background:var(--color-dn)"></i>利空词</span>
+        <span><i style="background:var(--gray-5)"></i>中性词</span>
+        <span><i style="background:var(--blu-500)"></i>多空双向</span>
+        <span>字号=频率 · 悬停看计数 · <b>点击看详情</b></span>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="ui-card">
+        <h3 style="margin:0 0 8px;font-size:13.5px">涉及公司（窗口内判定条数，点击看详情）</h3>
+        <div class="chips" id="targets"></div>
+      </div>
+      <div class="ui-card">
+        <h3 style="margin:0 0 8px;font-size:13.5px">事件类型分布</h3>
+        <div class="et-row" id="et-row"></div>
+        <p class="mini" style="margin-top:8px">类型=判定的事件归类计数（其他/股权/价格/业绩/政策/供给/宏观）。</p>
+      </div>
+    </div>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 只读 · /api/jev/wordcloud + /api/jev/evidence（词详情）· 金融泛词已清洗</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+
+  <!-- 词详情侧滑面板 -->
+  <aside class="detail" id="detail" aria-label="词详情">
+    <button class="d-close" id="d-close">关闭 ✕</button>
+    <div class="inner" id="d-inner"></div>
+  </aside>
+
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    var BIAS_CN={bull:"利多",bear:"利空",neutral:"中性"};
+    function fmtVerdict(v){var s=esc(v||"—");return s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")}
+    var $=function(id){return document.getElementById(id)};
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    var DATA=null, DAYS=7;
+    var WINS=[[1,"当天"],[3,"3 天"],[5,"5 天"],[7,"7 天"],[10,"10 天"],[15,"15 天"],[30,"一个月"]];
+    var etCN={other:"其他",equity:"股权",price:"价格",earnings:"业绩",policy:"政策",supply:"供给",macro:"宏观"};
+
+    $("wins").innerHTML=WINS.map(function(w){
+      return '<button class="ui-btn ui-btn--sm'+(w[0]===7?" on":"")+'" data-d="'+w[0]+'" style="margin:0 3px">'+w[1]+'</button>';
+    }).join("");
+
+    function prog(pct,txt){$("pbar").hidden=false;$("pfill").style.width=pct+"%";$("pline").textContent=txt}
+
+    function load(days){
+      DAYS=days;
+      document.querySelectorAll("#wins .ui-btn").forEach(function(b){
+        b.classList.toggle("on",+b.dataset.d===days);
+      });
+      $("err").hidden=true;
+      prog(15,"拉取词频…");
+      fetch("/api/jev/wordcloud?days="+days+"&top_n=60&event_top=7&event_words=6").then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        prog(55,"分桶聚合…");
+        return r.json();
+      }).then(function(d){
+        if(d.schema!=="jev_wordcloud.v1")throw new Error("schema 不符");
+        DATA=d;
+        prog(85,"渲染词云…");
+        renderCloud(d);renderRollup(d);renderEvents(d);
+        prog(100,"完成");
+        setTimeout(function(){$("pbar").hidden=true},700);
+        var b=d.buckets.bull||{count:0},e=d.buckets.bear||{count:0};
+        $("meta").textContent=d.window_days+" 天窗口 · 利多 "+b.count+" / 利空 "+e.count+" 条 · 生成于 "+(d.generated_at||"").slice(11);
+        location.hash="d"+days;
+      }).catch(function(e){
+        $("pbar").hidden=true;
+        $("err").hidden=false;$("err").innerHTML="加载失败："+esc(e.message)+"——若 401：<a href='/login?next=/jev_wordcloud.html' style='color:var(--link)'>→ 去登录（回跳本页）</a>";
+      });
+    }
+
+    function renderCloud(d){
+      var agg={};
+      ["bull","bear","neutral"].forEach(function(bk){
+        var b=d.buckets[bk];
+        if(!b||!b.top)return;
+        b.top.forEach(function(w){(agg[w.w]=agg[w.w]||{bull:0,bear:0,neutral:0})[bk]=w.n;});
+      });
+      var words=Object.keys(agg).map(function(w){
+        var a=agg[w];a.w=w;a.total=a.bull+a.bear+a.neutral;
+        a.cls=(a.bull>0&&a.bear>0)?"both":(a.bull>=a.bear&&a.bull>=a.neutral?"bull":(a.bear>=a.neutral?"bear":"neutral"));
+        return a;
+      }).sort(function(x,y){return y.total-x.total}).slice(0,60);
+      if(!words.length){$("cloud").innerHTML='<p class="mini" style="margin:auto">窗口内无判定</p>';return}
+      var mx=words[0].total, mn=words[words.length-1].total;
+      $("cloud").innerHTML=words.map(function(w){
+        var t=(w.total-mn)/Math.max(1,mx-mn);
+        var size=Math.round(13+t*30);
+        return '<span class="w '+w.cls+'" data-w="'+esc(w.w)+'" style="font-size:'+size+'px" title="'+esc(w.w)+'：'+w.total+' 次（多'+w.bull+' 中'+w.neutral+' 空'+w.bear+'）">'+esc(w.w)+'</span>';
+      }).join("");
+      $("cloud").querySelectorAll(".w").forEach(function(el){
+        el.addEventListener("click",function(){openDetail(el.dataset.w)});
+      });
+    }
+
+    function openDetail(word){
+      $("detail").classList.add("open");
+      $("d-inner").innerHTML='<div class="ui-skeleton" style="height:22px;width:50%"></div><div class="ui-skeleton" style="height:80px;margin-top:10px"></div>';
+      fetch("/api/jev/evidence?q="+encodeURIComponent(word)+"&days="+DAYS).then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(ev){
+        var f=ev.flow||{},b=f.bias||{},t=b.judged||0;
+        var h='<div style="font-size:11px;color:var(--gray-5);letter-spacing:.06em">词详情</div>';
+        h+='<h2 style="margin:4px 0 2px;font-size:24px">'+esc(f.q||word)+' <span class="mini" style="font-size:12px">'+(f.total!=null?f.total:"—")+' 条 · 窗口 '+DAYS+' 天</span></h2>';
+        if(f.duration_h!=null)h+='<p class="mini">'+esc((f.first||"").slice(0,16))+' → '+esc((f.last||"").slice(0,16))+' · 持续 '+f.duration_h+' 小时</p>';
+        if(t){
+          var pct=function(x){return (x/t*100).toFixed(0)+"%"};
+          h+='<div class="bars"><div class="b-bull" style="width:'+pct(b.bull||0)+'"></div><div class="b-neutral" style="width:'+pct(b.neutral||0)+'"></div><div class="b-bear" style="width:'+pct(b.bear||0)+'"></div></div>';
+          h+='<div class="mini" style="display:flex;justify-content:space-between"><span style="color:var(--color-up)">利多 '+(b.bull||0)+'</span><span>中性 '+(b.neutral||0)+'</span><span style="color:var(--color-dn)">利空 '+(b.bear||0)+'</span></div>';
+        }
+        var srcs=f.sources||[];
+        if(srcs.length){
+          h+='<div style="margin-top:12px;font-size:12px;color:var(--gray-5)">扩散渠道</div>';
+          h+=srcs.slice(0,5).map(function(s){return '<div class="mini" style="display:flex;justify-content:space-between"><span>'+esc(s.source_cn||s.source)+'</span><span>'+s.n+' 条</span></div>'}).join("");
+        }
+        var ss=ev.samples||[];
+        if(ss.length){
+          h+='<div style="margin-top:14px;font-size:12px;color:var(--gray-5)">最近相关</div>';
+          h+=ss.map(function(s){
+            return '<div class="samp"><div class="t">'+esc(s.title||"")+'</div><div class="m"><span>'+esc((s.ts||"").slice(5,16))+'</span><span>'+esc(s.source_cn||s.source||"")+'</span><span class="bias-chip '+(s.bias||"neutral")+'">'+(BIAS_CN[s.bias]||s.bias||"—")+'</span></div></div>';
+          }).join("");
+        }
+        var tgs=ev.targets||[];
+        if(tgs.length){
+          h+='<div style="margin-top:14px;font-size:12px;color:var(--gray-5)">涉及公司（点击看详情）</div><div class="chips">';
+          h+=tgs.slice(0,10).map(function(c2){return '<a class="chip-w" href="/jev_target.html#'+c2.code+'">'+c2.code+'<b>'+c2.n+'</b></a>'}).join("");
+          h+='</div>';
+        }
+        h+='<div style="margin-top:16px"><a class="ui-btn ui-btn--primary" href="/jev_evidence.html#'+encodeURIComponent(f.q||word)+'" style="text-decoration:none">🧪 查看完整举证 →</a></div>';
+        h+='<p class="mini" style="margin-top:10px">'+fmtVerdict(ev.verdict)+'</p>';
+        $("d-inner").innerHTML=h;
+      }).catch(function(e){
+        $("d-inner").innerHTML='<p class="mini">详情加载失败：'+esc(e.message)+'</p>';
+      });
+    }
+    $("d-close").addEventListener("click",function(){$("detail").classList.remove("open")});
+    document.addEventListener("keydown",function(e){if(e.key==="Escape")$("detail").classList.remove("open")});
+
+    function renderRollup(d){
+      var ru=(d.bias_rollup||{});
+      var h='<span class="mini" style="margin-right:6px">利多 <b class="up">'+((ru.bull||{}).count||0)+'</b> · 利空 <b class="dn">'+((ru.bear||{}).count||0)+'</b> 条，集中公司：</span>';
+      var comps=((ru.bull||{}).companies||[]).slice(0,8).concat(((ru.bear||{}).companies||[]).slice(0,4));
+      var seen={};
+      $("targets").innerHTML=h+comps.filter(function(c){return seen[c.code]?false:(seen[c.code]=1)}).map(function(c){
+        return '<a class="chip-w" href="/jev_target.html#'+c.code+'" title="看该公司三面详情">'+c.code+'<b>'+c.n+'</b></a>';
+      }).join("")||'<span class="mini">窗口内无带标的判定</span>';
+    }
+    function renderEvents(d){
+      var em=d.event_matrix||[];
+      $("et-row").innerHTML=em.map(function(r){
+        return '<span class="et-chip">'+(etCN[r.event_type]||r.event_type)+'<b>'+r.count+'</b></span>';
+      }).join("")||'<span class="mini">无</span>';
+    }
+
+    document.querySelectorAll("#wins .ui-btn").forEach(function(b){
+      b.addEventListener("click",function(){load(+b.dataset.d)});
+    });
+    var m=location.hash.match(/^d(\d+)$/);
+    load(m?Math.min(30,Math.max(1,+m[1])):7);
+  })();
+  </script>
+</body>
+</html>

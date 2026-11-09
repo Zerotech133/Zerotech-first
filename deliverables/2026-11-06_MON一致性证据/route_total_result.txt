@@ -1,0 +1,2 @@
+﻿HEAD {"total_field": 305, "signatures_len": 305, "generated_at": "2026-11-05T21:41:55", "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py"}
+task/K-STOCK-ANALYSIS-MON-20261104 {"total_field": 305, "signatures_len": 305, "generated_at": "2026-11-06T02:59:49", "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py"}

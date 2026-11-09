@@ -28,7 +28,8 @@ CONF = Path(__file__).resolve().parents[1] / "nginx.conf"
 PORTAL_ROOT = CONF.parent
 
 PROTECTED_API_PREFIXES = ("/api/platform/", "/api/org/", "/api/analysis/",
-                          "/api/os/", "/api/jev/", "/api/dw/", "/api/hq/", "/api/a2a/")
+                          "/api/os/", "/api/jev/", "/api/dw/", "/api/hq/",
+                          "/api/a2a/", "/api/monitor/")
 # 既有专项保护（精确/前缀），H4-B 不得把它们放进公开白名单
 SPECIAL_PROTECTED = (
     ("=", "/api/news/intel"),
@@ -37,10 +38,12 @@ SPECIAL_PROTECTED = (
     ("^~", "/api/jev/review/"),
     ("=", "/api/intel/bus"),
     ("=", "/api/intel/evidence-targets"),
+    ("=", "/api/intel/health"),
 )
 # 公开静态页/JS 里对受保护前缀的引用（这些页面本身要求登录，不参与白名单覆盖）
-PROTECTED_EXACT = {"/api/news/intel", "/api/intel/bus", "/api/intel/evidence-targets"}
-PROTECTED_PREFIXES_EXTRA = ("/api/xq/intel", "/api/case/")
+PROTECTED_EXACT = {"/api/news/intel", "/api/intel/bus", "/api/intel/evidence-targets",
+                   "/api/intel/health", "/api/trace"}
+PROTECTED_PREFIXES_EXTRA = ("/api/xq/intel", "/api/case/", "/api/trace/")
 
 H4B_START = "    # ===== H4-B（K-ORG-20261101-H4HARDEN"
 H4B_END = "    # 未登记前缀默认拒绝（H4-B）"

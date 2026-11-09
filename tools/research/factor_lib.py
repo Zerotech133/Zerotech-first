@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""因子库 v1.0 · 因子注册表 + PIT 特征 + 20 日 CAR 按日横截面 IC 评测。
+"""因子库 v1.1 · 因子注册表 + PIT 特征 + 20 日 CAR 按日横截面 IC 评测。
 
 本模块是「选股因子/量学形态 → 可复现评测」的统一底座：
-  - FACTORS（dict[str, FactorSpec]）注册表，共 17 个因子（9 个量学形态可计算版 + 8 个通用因子）；
+  - FACTORS（dict[str, FactorSpec]）注册表：内置 17 个因子（9 个量学形态可计算版 + 8 个通用因子），
+    启动时自动注册 Tushare factor_list 的 B1 行情 86 / B2 Alpha101 101 / B3 财报 84 个因子
+    （合计 288 个；映射全表见 `map` 子命令，B3 的 dividend_yield_3y_avg 因无数据源标记 blocked）；
   - 所有因子函数签名统一：fn(panel) -> DataFrame（日期 × 代码），只允许使用「当日及以前」的数据；
   - 20 日 CAR 口径：T 日收盘出信号 → T+1 收盘入场 → 持有 20 个交易日后（T+21 收盘）卖出，
     收益 = 个股区间涨跌幅 - 等权市场同期涨跌幅 - 单边 30bp 成本（与 H24/H26/H29 口径一致）；
@@ -67,17 +69,17 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 import stat_utils  # noqa: E402
 
-LIB_VERSION = "1.0.0"
+LIB_VERSION = "1.2.0"  # 1.2.0: B2 Alpha101 + B3 PIT 财报因子接入；B1 行情因子 86 个
 DEFAULT_HORIZON = 20          # 持有期（交易日）：T+1 收盘入场，T+1+h 收盘卖出
 DEFAULT_COST = 0.003          # 单边成本 30bp（买卖各 15bp 近似为单边 30bp，与 H24/H29 同口径）
 DEFAULT_MIN_CROSS_SECTION = 50  # 单日横截面最少有效股票数（少于此不计 IC 日）
 DEFAULT_SEED = 42
-DEFAULT_BLOCK = 5             # block bootstrap 块长（≥ 持有期重叠修正的最低要求，见 MEETING.md）
+DEFAULT_BLOCK = 20            # block bootstrap 块长（≥ 持有期，修正重叠窗口自相关）
 WARMUP_DAYS = 40              # 载入面板时多载入的历史交易日数（供 20 日滚动窗口使用）
 AMOUNT_UNIT = 1000.0          # tushare daily.amount 单位为千元 → 元
 MIN_PRICE = 2.0               # 可交易股票池：股价下限（元）
 MIN_AMOUNT_YUAN = 5e7         # 可交易股票池：成交额下限（元）
-MIN_LIST_DAYS = 250           # 可交易股票池：上市天数下限
+MIN_LIST_DAYS = 365           # 可交易股票池：上市日历天数下限（≈250 个交易日）
 REQUIRED_FACTORS = (
     # 任务验收点名必须存在的因子（≥15 个中的硬性清单）
     "vol_ratio5", "double_vol", "shrink_vol", "up_vol_down", "yin_yang",
@@ -86,6 +88,11 @@ REQUIRED_FACTORS = (
 )
 
 DAILY_FIELDS = ("open", "high", "low", "close", "pre_close", "pct_chg", "vol", "amount")
+
+# daily_basic 扩展字段（Tushare factor_list B1 批次需要：换手/估值/股本/市值）
+DAILY_BASIC_FIELDS = ("pe_ttm", "pb", "ps_ttm", "dv_ratio", "turnover_rate",
+                      "total_share", "float_share", "free_share", "total_mv",
+                      "circ_mv", "volume_ratio")
 
 
 # ---------------------------------------------------------------- 数值小工具
@@ -166,8 +173,30 @@ def _spearman_ic(x: np.ndarray, y: np.ndarray, min_n: int) -> np.ndarray:
     return np.where(ok, ic, np.nan)
 
 
-def _series_stats(x: pd.Series) -> dict:
-    """日频序列的均值/标准差/IR/t/胜率（IC 用）。"""
+def _newey_west_t(s: pd.Series, lags: int) -> float | None:
+    """Newey-West HAC t 值（Bartlett 核），修正 h 日重叠收益导致的自相关。"""
+    n = int(len(s))
+    if n < 3:
+        return None
+    x = np.asarray(s, dtype=float)
+    mean = float(np.nanmean(x))
+    e = x - mean
+    gamma0 = float(np.dot(e, e) / n)
+    var = gamma0
+    for k in range(1, min(int(lags), n - 1) + 1):
+        gamma = float(np.dot(e[k:], e[:-k]) / n)
+        var += 2.0 * (1.0 - k / float(lags + 1)) * gamma
+    if var <= 0:
+        return None
+    se = math.sqrt(var / n)
+    return mean / se if se > 0 else None
+
+
+def _series_stats(x: pd.Series, hac_lags: int = 0) -> dict:
+    """日频序列的均值/标准差/IR/t/胜率（IC 用）。
+
+    hac_lags>0 时 t 用 Newey-West HAC；重叠 h 日前瞻 IC 应传 hac_lags=h。
+    """
     s = pd.Series(x, dtype=float).dropna()
     n = int(len(s))
     if n == 0:
@@ -175,12 +204,14 @@ def _series_stats(x: pd.Series) -> dict:
     mean = float(s.mean())
     std = float(s.std(ddof=1)) if n > 1 else 0.0
     ir = mean / std if std > 0 else None
-    t = ir * math.sqrt(n) if ir is not None else None
+    t_iid = ir * math.sqrt(n) if ir is not None else None
+    t = _newey_west_t(s, hac_lags) if hac_lags and n > 1 else t_iid
     return {"n_days": n,
             "mean": _num(mean, 6),
             "std": _num(std, 6) if n > 1 else None,
             "ir": _num(ir, 4),
             "t": _num(t, 3),
+            "t_iid": _num(t_iid, 3),
             "positive_rate": _num(float((s > 0).mean()), 4)}
 
 
@@ -300,13 +331,18 @@ class Panel:
         keep = self.dates[mask]
         fields = {k: v.loc[keep] for k, v in self.fields.items()}
         elig = self.eligible.loc[keep] if self.eligible is not None else None
-        return Panel(fields, eligible=elig, meta=dict(self.load_meta, subset_to=str(max_date)))
+        meta = dict(self.load_meta, subset_to=str(max_date))
+        # 指数收益/成交量等 meta 序列也截断到保留日期，保证 PIT 截断不变性
+        for key in ("index_returns", "index_volume"):
+            if isinstance(meta.get(key), dict):
+                meta[key] = {k: v.loc[v.index.intersection(keep)] for k, v in meta[key].items()}
+        return Panel(fields, eligible=elig, meta=meta)
 
     @classmethod
     def empty(cls) -> "Panel":
         idx = pd.Index([], dtype="str")
         cols = pd.Index([], dtype="str")
-        names = set(DAILY_FIELDS) | {"adj_close", "pe_ttm", "turnover_rate", "roe"}
+        names = set(DAILY_FIELDS) | {"adj_close", "roe"} | set(DAILY_BASIC_FIELDS)
         return cls({name: pd.DataFrame(index=idx, columns=cols, dtype=float) for name in names})
 
     def __repr__(self) -> str:  # pragma: no cover - 调试辅助
@@ -421,7 +457,7 @@ def _f_near_high_vol(p: Panel) -> pd.DataFrame:
           source="伏击涨停·第8章 黄金柱 / 判例 H29（确认型形态不得按形态日索引）")
 def _f_golden_pillar(p: Panel) -> pd.DataFrame:
     vr = _f_vol_ratio5(p)
-    base = (p.pct_chg > 0) & (vr >= 1.5)                       # 基柱（T-3）条件
+    base = (p.close > p.open) & (vr >= 1.5)                   # 基柱（T-3）必须是阳线，不能只用 pct_chg>0
     base3 = base.astype(float).shift(3) == 1.0                # 基柱信号平移到确认日窗口
     base_close = p.close.shift(3)
     base_vol = p.vol.shift(3)
@@ -601,12 +637,11 @@ def _resolve_window(dates: pd.Index, start: str | None, end: str | None,
 
 # ---------------------------------------------------------------- 单因子评测
 def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: list[str],
-                    direction: int, ann_factor: float, kind: str, n_groups: int = 5) -> dict:
+                    direction: int, ann_factor: float, kind: str, n_groups: int = 5,
+                    cost: float = 0.0) -> dict:
     """分组收益：连续因子按日横截面五分组；0/1 事件因子用「信号组(Q5) vs 非信号组(Q1)」。
 
-    事件因子为二值时，按秩五分组会因同值并列而只能靠代码顺序破并列（会引入板块/代码顺序偏差，
-    实证中 Q5−Q1 甚至与信号组超额反号），因此事件因子明确采用二值分组，Q2~Q4 无定义（空），
-    多空口径 = 信号组 − 非信号组；事件组明细另见 event_split。
+    car 已逐票扣单边成本；多空价差还须再扣两腿 2×cost，否则报告的是毛价差。
     """
     pair = elig & np.isfinite(f) & np.isfinite(car)
     if kind == "event":
@@ -628,6 +663,8 @@ def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: lis
         }
         groups = dict(sorted(groups.items(), key=lambda kv: int(kv[0][1:])))
         spread = (daily_sig - daily_non).dropna()
+        if cost:
+            spread = spread - 2.0 * float(cost)
         tb_stat = _return_stats(spread, ann_factor)
         tb_stat["directed_ann_pct"] = _num((tb_stat.get("ann_pct") or 0.0) * direction, 2) \
             if tb_stat.get("ann_pct") is not None else None
@@ -652,6 +689,8 @@ def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: lis
     top = daily.get(n_groups, pd.Series(dtype=float))
     bottom = daily.get(1, pd.Series(dtype=float))
     spread = (top - bottom).dropna()
+    if cost:
+        spread = spread - 2.0 * float(cost)
     tb_stat = _return_stats(spread, ann_factor)
     tb_stat["directed_ann_pct"] = _num((tb_stat.get("ann_pct") or 0.0) * direction, 2) \
         if tb_stat.get("ann_pct") is not None else None
@@ -661,14 +700,14 @@ def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: lis
 
 
 def _event_split(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: list[str],
-                 ann_factor: float) -> dict:
-    """事件因子（0/1）：信号组 vs 非信号组的按日 CAR 与超额。"""
+                 ann_factor: float, cost: float = 0.0) -> dict:
+    """事件因子（0/1）：信号组 vs 非信号组的按日 CAR 与净超额。"""
     pair = elig & np.isfinite(f) & np.isfinite(car)
     sig = pair & (f == 1.0)
     non = pair & (f == 0.0)
     daily_sig = _daily_mean(car, sig, dates)
     daily_non = _daily_mean(car, non, dates)
-    excess = (daily_sig - daily_non).dropna()
+    excess = (daily_sig - daily_non - 2.0 * float(cost)).dropna()
     sig_stat = _return_stats(daily_sig, ann_factor)
     non_stat = _return_stats(daily_non, ann_factor)
     exc_stat = _return_stats(excess, ann_factor)
@@ -730,30 +769,31 @@ def _eval_one_factor(spec: FactorSpec, fmat: pd.DataFrame, car_w: np.ndarray, el
     ic = _spearman_ic(np.where(elig_w, f, np.nan), car_w, min_cross_section)
     ic_series = pd.Series(ic, index=pd.Index(dates_w))
     directed = ic_series * spec.direction
-    raw_stats = _series_stats(ic_series)
-    dir_stats = _series_stats(directed)
+    raw_stats = _series_stats(ic_series, hac_lags=horizon)
+    dir_stats = _series_stats(directed, hac_lags=horizon)
 
     years = sorted({d[:4] for d in dates_w})
     by_year = {}
     for year in years:
         sub = directed[[d[:4] == year for d in dates_w]]
-        by_year[year] = _series_stats(sub)
+        by_year[year] = _series_stats(sub, hac_lags=horizon)
 
     if split_date is None:
         is_mask = np.zeros(len(dates_w), dtype=bool)
     else:
         is_mask = np.asarray([d <= split_date for d in dates_w])
     is_oos = {"split_date": split_date, "source": split_source,
-              "IS": _series_stats(directed.iloc[is_mask]),
-              "OOS": _series_stats(directed.iloc[~is_mask])}
+              "IS": _series_stats(directed.iloc[is_mask], hac_lags=horizon),
+              "OOS": _series_stats(directed.iloc[~is_mask], hac_lags=horizon)}
 
-    quant = _quantile_stats(f, car_w, elig_w, dates_w, spec.direction, ann_factor, spec.kind)
+    quant = _quantile_stats(f, car_w, elig_w, dates_w, spec.direction, ann_factor,
+                            spec.kind, cost=cost)
     spread_series = quant.pop("_spread_series")
 
     signal = None
     event_split = None
     if spec.kind == "event":
-        ev = _event_split(f, car_w, elig_w, dates_w, ann_factor)
+        ev = _event_split(f, car_w, elig_w, dates_w, ann_factor, cost=cost)
         event_split = ev
         signal = {"n_events": ev["n_signal_obs"], "n_signal_days": ev["n_signal_days"],
                   "avg_signals_per_day": ev["avg_signals_per_day"],
@@ -769,12 +809,34 @@ def _eval_one_factor(spec: FactorSpec, fmat: pd.DataFrame, car_w: np.ndarray, el
         "by_year": by_year,
         "is_oos": is_oos,
         "bootstrap": {
-            "ic_directed": _bootstrap(directed, n_boot, seed, "directed_daily_ic"),
-            "long_short_spread": _bootstrap(spread_series, n_boot, seed, "daily_top_minus_bottom"),
+            "ic_directed": _bootstrap(directed, n_boot, seed, "directed_daily_ic",
+                                      block=max(int(horizon), DEFAULT_BLOCK)),
+            "long_short_spread": _bootstrap(spread_series, n_boot, seed, "daily_top_minus_bottom",
+                                            block=max(int(horizon), DEFAULT_BLOCK)),
         },
         "quintiles": quant,
         "event_split": event_split,
     }
+
+
+def _json_safe_meta(meta: dict) -> dict:
+    """把 Panel.load_meta 转成可 JSON 序列化的摘要（不把 Series/大 dict 原样写进报告）。"""
+    out: dict = {}
+    for key, value in meta.items():
+        if value is None or isinstance(value, (str, int, float, bool)):
+            out[key] = value
+        elif isinstance(value, pd.Series):
+            head = []
+            for idx, item in value.head(5).items():
+                head.append([str(idx), None if pd.isna(item) else str(item)])
+            out[key] = {"len": int(len(value)), "nunique": int(value.nunique()), "head": head}
+        elif isinstance(value, dict):
+            out[key] = {"n": len(value), "keys": sorted(str(k) for k in value.keys())[:10]}
+        elif isinstance(value, (list, tuple)):
+            out[key] = [str(x) for x in list(value)[:10]]
+        else:
+            out[key] = str(value)
+    return out
 
 
 def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
@@ -782,11 +844,15 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
                    start: str | None = None, end: str | None = None,
                    is_end: str | None = None, seed: int = DEFAULT_SEED,
                    min_cross_section: int = DEFAULT_MIN_CROSS_SECTION,
-                   n_boot: int = 300, universe: str = "") -> dict:
+                   n_boot: int = 300, universe: str = "",
+                   factor_specs: dict[str, "FactorSpec"] | None = None,
+                   neutralization: dict | None = None) -> dict:
     """在给定面板上评测因子（纯计算，不做数据 IO，便于单测与复现）。
 
     factor_names: 因子名列表 / 逗号分隔字符串 / None（全部）。
     is_end: IS/OOS 切分日（含 IS）；None 时自动取信号窗口交易日中点，并在 meta 标注 source。
+    factor_specs: 可选的临时因子定义（如中性化残差）；同名时优先于 FACTORS。
+    neutralization: 可选的中性化元数据，原样写入报告 meta。
     """
     t0 = time.time()
     if factor_names is None:
@@ -795,7 +861,8 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         names = [x.strip() for x in factor_names.split(",") if x.strip()]
     else:
         names = [str(x) for x in factor_names]
-    unknown = [x for x in names if x not in FACTORS]
+    extra_specs = factor_specs or {}
+    unknown = [x for x in names if x not in FACTORS and x not in extra_specs]
     if unknown:
         raise KeyError(f"未注册因子: {unknown}；可用: {list(FACTORS)}")
     if not names:
@@ -817,7 +884,7 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         "entry": "T+1 收盘入场", "exit": f"T+{1 + int(horizon)} 收盘卖出",
         "market": "equal_weight_daily_rebalanced（等权市场日收益复利，与 H24/H26/H29 同口径）",
         "seed": int(seed), "min_cross_section": int(min_cross_section), "block": DEFAULT_BLOCK,
-        "data": dict(panel.load_meta),
+        "data": _json_safe_meta(panel.load_meta),
         "notes": [
             "PIT：因子只用 T 日及以前数据；golden_pillar 等确认型形态信号索引=确认完成日，T+1 入场。",
             "CAR = 个股 T+1→T+1+h 复权买入持有收益 - 等权市场同期复利收益 - 30bp。",
@@ -830,6 +897,8 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         ],
         "runtime_sec": None,
     }
+    if neutralization is not None:
+        meta["neutralization"] = neutralization
     window = _resolve_window(panel.dates, start, end, horizon)
     empty_report = {"meta": meta, "factors": {}}
     if window is None or panel.shape[0] == 0:
@@ -841,7 +910,7 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         meta["baseline"] = {"n_obs": 0, "mean_pct": None, "median_pct": None}
         meta["runtime_sec"] = round(time.time() - t0, 3)
         for name in names:
-            empty_report["factors"][name] = _empty_factor_entry(FACTORS[name])
+            empty_report["factors"][name] = _empty_factor_entry(extra_specs.get(name) or FACTORS[name])
         return empty_report
 
     car = forward_car(panel, horizon=horizon, cost=cost)
@@ -875,7 +944,7 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
     }
 
     for name in names:
-        spec = FACTORS[name]
+        spec = extra_specs.get(name) or FACTORS[name]
         try:
             fmat = spec.compute(panel)
         except Exception as exc:  # 单因子失败不影响其他因子，但显式报错（研究可复现优先）
@@ -916,18 +985,63 @@ def _load_stock_basic(root: Path) -> pd.DataFrame:
     return sb.drop_duplicates("ts_code")
 
 
+def _load_index_meta(root: Path, load_dates: list[str]) -> dict:
+    """指数日收益/成交量（000300.SH/000001.SH），供 beta/alpha/rsrs/量能因子使用。
+
+    返回 Series（index=trade_date）而不是 DataFrame，避免在 date×code 面板里广播
+    两个 5000 列的大矩阵（约 80MB）。
+    """
+    empty = {"index_returns": {}, "index_volume": {}}
+    frames = _read_frames(root, load_dates, "index_daily", ["ts_code", "close", "vol"])
+    if not frames:
+        return empty
+    long = pd.concat(frames, ignore_index=True)
+    long["ts_code"] = long["ts_code"].astype(str)
+    long = long[long["ts_code"].isin(("000300.SH", "000001.SH"))]
+    if long.empty:
+        return empty
+    long = long.drop_duplicates(["trade_date", "ts_code"])
+    close = long.pivot(index="trade_date", columns="ts_code", values="close")
+    vol = long.pivot(index="trade_date", columns="ts_code", values="vol")
+    dates = pd.Index(load_dates)
+    returns: dict[str, pd.Series] = {}
+    volumes: dict[str, pd.Series] = {}
+    for code in close.columns:
+        c = pd.to_numeric(close[code], errors="coerce").reindex(dates)
+        returns[str(code)] = c / c.shift(1) - 1.0
+        v = pd.to_numeric(vol[code], errors="coerce").reindex(dates)
+        volumes[str(code)] = v
+    return {"index_returns": returns, "index_volume": volumes}
+
+
 def _load_fina_roe(root: Path, panel_dates: pd.Index, codes: pd.Index) -> pd.DataFrame:
-    """PIT ROE 矩阵：每个交易日取 ann_date ≤ 该日 的最新一期 ROE（同报告日多期取 end_date 最大）。"""
+    """PIT ROE 矩阵：取 ann_date ≤ 该日的最新一期 **年化** ROE（fina_indicator.roe_yearly）。
+
+    原始 `roe` 是报告期累计值；披露季内 Q1/H1/Q3/FY 混排会让截面排名反映披露时点。
+    优先 roe_yearly，缺失时才回退到 roe；同报告日多期取 end_date 最大。
+    """
     files = sorted(glob.glob(str(root / "fina_indicator" / "*.parquet")))
     if not files:
         return pd.DataFrame(np.nan, index=panel_dates, columns=codes)
+    roe_col = "roe"
     rows = []
     for f in files:
-        rows.append(pq.read_table(f, columns=["ts_code", "ann_date", "end_date", "roe"]).to_pandas())
+        names = set(pq.read_schema(f).names)
+        cols = ["ts_code", "ann_date", "end_date",
+                "roe_yearly" if "roe_yearly" in names else "roe"]
+        rows.append(pq.read_table(f, columns=cols).to_pandas())
+        if "roe_yearly" in names:
+            roe_col = "roe_yearly"
     fin = pd.concat(rows, ignore_index=True)
     fin["ts_code"] = fin["ts_code"].astype(str)
     fin["ann_date"] = fin["ann_date"].astype(str)
     fin["end_date"] = fin["end_date"].astype(str)
+    fin = fin.rename(columns={roe_col: "roe"})
+    # 某文件缺 roe_yearly 时，该文件的行在 concat 后由 roe_yearly 列承载；统一回退。
+    if "roe_yearly" in fin.columns and "roe" not in fin.columns:
+        fin = fin.rename(columns={"roe_yearly": "roe"})
+    elif "roe_yearly" in fin.columns:
+        fin["roe"] = fin["roe"].where(fin["roe"].notna(), fin["roe_yearly"])
     fin = fin[(fin["ann_date"].str.len() == 8) & fin["roe"].notna()].copy()
     fin = fin[fin["ts_code"].isin(set(codes))]
     if fin.empty:
@@ -1001,18 +1115,22 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
     adj = adj.reindex(index=dates_idx, columns=codes)
     fields["adj_close"] = fields["close"] * adj
 
-    # 估值/换手（daily_basic；缺失日期留 NaN，不影响其他因子）
-    db_frames = _read_frames(root, load_dates, "daily_basic", ["ts_code", "pe_ttm", "turnover_rate"])
+    # 估值/换手/股本/市值（daily_basic；缺失日期留 NaN，不影响其他因子）
+    db_cols = ["ts_code", *DAILY_BASIC_FIELDS]
+    db_frames = _read_frames(root, load_dates, "daily_basic", db_cols)
     if db_frames:
         db_long = pd.concat(db_frames, ignore_index=True)
         db_long["ts_code"] = db_long["ts_code"].astype(str)
         db_long = db_long.drop_duplicates(["trade_date", "ts_code"])
-        for col in ("pe_ttm", "turnover_rate"):
-            fields[col] = (db_long.pivot(index="trade_date", columns="ts_code", values=col)
-                           .reindex(index=dates_idx, columns=codes))
+        for col in DAILY_BASIC_FIELDS:
+            if col in db_long.columns:
+                fields[col] = (db_long.pivot(index="trade_date", columns="ts_code", values=col)
+                               .reindex(index=dates_idx, columns=codes))
+            else:
+                fields[col] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
     else:
-        fields["pe_ttm"] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
-        fields["turnover_rate"] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
+        for col in DAILY_BASIC_FIELDS:
+            fields[col] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
 
     # 财务 ROE（PIT；只有 roe / quality_trap 需要时才加载，5586 个小文件约 10~15s）
     if load_roe:
@@ -1023,8 +1141,13 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
     # 可交易股票池（只用 T 日可知信息 + 静态上市日期）
     sb = _load_stock_basic(root)
     list_date = None
+    list_date_missing = 0
     if not sb.empty:
         list_date = pd.to_numeric(sb.set_index("ts_code")["list_date"].reindex(codes), errors="coerce")
+        list_date_missing = int(list_date.isna().sum())
+        # stock_basic 只含在市股票；退市股在 daily 中仍可能有历史行情。
+        # 缺失 list_date 视为“上市已久”，避免把退市股整段历史剔出样本（幸存者偏差）。
+        list_date = list_date.fillna(0)
     if universe == "all":
         eligible = None
     elif universe == "tradable":
@@ -1043,14 +1166,22 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
     else:
         raise ValueError(f"未知 universe: {universe}（可选 tradable/all）")
 
+    index_meta = _load_index_meta(root, load_dates)
+    industry = None
+    if not sb.empty and "industry" in sb.columns:
+        industry = sb.set_index("ts_code")["industry"].reindex(codes)
+
     meta = {
         "data_root": str(root), "universe": universe,
         "load_dates": [load_dates[0], load_dates[-1]], "load_days": len(load_dates),
         "warmup_days": int(warmup), "horizon": int(horizon),
         "panel_dates": int(len(dates_idx)), "codes": int(len(codes)),
+        "list_date_missing_codes": int(list_date_missing),
         "eligible_avg_per_day": _num(float(eligible.sum(axis=1).mean()), 1) if eligible is not None else None,
         "eligible_share": _num(float(eligible.to_numpy().mean()), 4) if eligible is not None else None,
         "load_sec": round(time.time() - t0, 2),
+        **index_meta,
+        "industry": industry,
     }
     return Panel(fields, eligible=eligible, meta=meta)
 
@@ -1059,8 +1190,12 @@ def run_eval(start: str, end: str, factor_names: list[str] | str | None = None,
              horizon: int = DEFAULT_HORIZON, cost: float = DEFAULT_COST,
              is_end: str | None = None, universe: str = "tradable",
              data_root: str | Path | None = None, seed: int = DEFAULT_SEED,
-             min_cross_section: int = DEFAULT_MIN_CROSS_SECTION, n_boot: int = 300) -> dict:
-    """加载真实数据并评测（CLI eval 的实现；返回可直接落盘的 JSON dict）。"""
+             min_cross_section: int = DEFAULT_MIN_CROSS_SECTION, n_boot: int = 300,
+             neutralize: str = "") -> dict:
+    """加载真实数据并评测（CLI eval 的实现；返回可直接落盘的 JSON dict）。
+
+    neutralize: ""/"none" 不中性化；"industry,size" 对因子做逐日行业+市值残差化。
+    """
     if factor_names is None:
         names = list(FACTORS)
     elif isinstance(factor_names, str):
@@ -1073,10 +1208,30 @@ def run_eval(start: str, end: str, factor_names: list[str] | str | None = None,
     need_roe = any("roe" in FACTORS[name].requires for name in names)
     panel = load_panel(start, end, horizon=horizon, universe=universe,
                        data_root=data_root, load_roe=need_roe)
+    factor_specs = None
+    neutralization = None
+    if neutralize and neutralize.strip().lower() not in ("", "none", "off"):
+        from factor_neutralize import build_neutralized_specs, parse_modes
+        by_industry, by_size = parse_modes(neutralize)
+        industry_map = None
+        if by_industry:
+            # 通用 CLI 原先默默使用 stock_basic 当前行业快照（前视/幸存偏差）；
+            # 改为默认加载 PIT L2（含快照 fallback），失败则 fail-visible。
+            try:
+                from pit_industry import load_sw_l2_industry_with_snapshot_fallback
+                industry_map = load_sw_l2_industry_with_snapshot_fallback()
+            except Exception as exc:  # noqa: BLE001 - 明确暴露数据/口径问题
+                raise RuntimeError(
+                    "行业中性化需要 PIT 行业映射（sw_l2 + snapshot fallback），加载失败: "
+                    f"{type(exc).__name__}: {exc}") from exc
+        factor_specs, neutralization = build_neutralized_specs(
+            panel, names, industry=by_industry, size=by_size, min_obs=min_cross_section,
+            industry_map=industry_map)
     return evaluate_panel(panel, factor_names=names, horizon=horizon, cost=cost,
                           start=start, end=end, is_end=is_end, seed=seed,
                           min_cross_section=min_cross_section, n_boot=n_boot,
-                          universe=universe)
+                          universe=universe, factor_specs=factor_specs,
+                          neutralization=neutralization)
 
 
 # ---------------------------------------------------------------- CLI
@@ -1155,7 +1310,8 @@ def cmd_eval(args) -> int:
                           horizon=args.horizon, cost=cost,
                           is_end=(args.is_end or None), universe=args.universe,
                           data_root=(args.data_root or None), seed=args.seed,
-                          min_cross_section=args.min_cross_section, n_boot=args.n_boot)
+                          min_cross_section=args.min_cross_section, n_boot=args.n_boot,
+                          neutralize=args.neutralize)
     except (FileNotFoundError, ValueError, KeyError) as exc:
         print(f"[factor_lib] eval 失败: {exc}", file=sys.stderr)
         return 2
@@ -1170,14 +1326,45 @@ def cmd_eval(args) -> int:
     return 0
 
 
+def cmd_map(args) -> int:
+    """Tushare factor_list 272 因子的映射/批次/实现状态。"""
+    try:
+        from factor_lib_tushare import TUSHARE_FACTOR_MAP, factor_map_summary
+    except ImportError as exc:  # pragma: no cover
+        print(f"[factor_lib] map 失败: {exc}", file=sys.stderr)
+        return 2
+    summary = factor_map_summary()
+    rows = list(TUSHARE_FACTOR_MAP.values())
+    if args.batch:
+        rows = [r for r in rows if r["batch"] == args.batch]
+    if args.status:
+        rows = [r for r in rows if r["status"] == args.status]
+    if args.json:
+        print(json.dumps({"summary": summary, "factors": rows}, ensure_ascii=False, indent=1))
+        return 0
+    print(f"# Tushare factor_list 映射：{summary['total']} 因子 | "
+          f"已实现 {summary['implemented']} | 批次 {summary['by_batch']}")
+    print(f"# 类型分布: {summary['by_type']}")
+    print(f"# {'name':<26}{'type':<11}{'batch':<22}{'status':<12}requires")
+    for row in rows:
+        print(f"  {row['name']:<26}{row['factor_type']:<11}{row['batch']:<22}"
+              f"{row['status']:<12}{','.join(row['requires'])}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="factor_lib.py",
-        description="因子库 v1.0：因子注册表 + PIT 特征 + 20 日 CAR IC/分组评测（研究用途）")
+        description="因子库 v1.1：因子注册表 + PIT 特征 + 20 日 CAR IC/分组评测（研究用途）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p_list = sub.add_parser("list", help="列出已注册因子")
     p_list.add_argument("--json", action="store_true", help="以 JSON 输出")
+
+    p_map = sub.add_parser("map", help="Tushare factor_list 272 因子映射/批次状态")
+    p_map.add_argument("--json", action="store_true", help="以 JSON 输出")
+    p_map.add_argument("--batch", default="", help="只看某批次（B1_price_volume / B2_alpha101_expression / B3_financial_pit）")
+    p_map.add_argument("--status", default="", choices=["", "implemented", "mapped", "blocked_missing_data"], help="按实现状态过滤")
 
     p_eval = sub.add_parser("eval", help="评测因子（真实数据）")
     p_eval.add_argument("--start", required=True, help="信号起始日 YYYYMMDD（含）")
@@ -1193,15 +1380,28 @@ def main(argv: list[str] | None = None) -> int:
                         help="单日横截面最少有效股票数")
     p_eval.add_argument("--n-boot", type=int, default=300, help="block bootstrap 次数")
     p_eval.add_argument("--seed", type=int, default=DEFAULT_SEED, help="bootstrap 随机种子")
+    p_eval.add_argument("--neutralize", default="", help="中性化：industry,size / industry / size / none")
     p_eval.add_argument("--json", action="store_true", help="stdout 打印完整 JSON")
 
     args = ap.parse_args(argv)
     if args.cmd == "list":
         return cmd_list(args.json)
+    if args.cmd == "map":
+        return cmd_map(args)
     if args.cmd == "eval":
         return cmd_eval(args)
     ap.print_help()
     return 1
+
+
+# ---------------------------------------------------------------- 外部批次因子
+# Tushare factor_list B1 批次在 factor_lib 全部定义完成后注册（避免循环导入）。
+try:  # pragma: no cover - 导入失败时退化为内置 17 因子
+    from factor_lib_tushare import register_batch as _register_tushare_batch
+except ImportError:  # pragma: no cover
+    _register_tushare_batch = None
+if _register_tushare_batch is not None:
+    _register_tushare_batch(register, FACTORS)
 
 
 if __name__ == "__main__":

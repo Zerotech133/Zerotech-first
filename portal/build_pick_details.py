@@ -2,7 +2,7 @@
 """对今日选股清单逐只抓取全维度事实包 → portal/data/pick_details/<code>.json
 
 数据源：portal_report.collect_facts（纯只读零 LLM）：
-  resonance 共振四维 / chanlun 缠论结论 / chips 筹码 / sectors 板块联动 /
+  resonance 多维加权 / chanlun 缠论结论 / chips 筹码 / sectors 板块联动 /
   notices 公告 / lhb 龙虎榜 / entry_signal 买点定位 / vol_events 量能事件 /
   no_buy_reasons 不买决策链
 

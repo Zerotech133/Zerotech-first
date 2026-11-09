@@ -1,0 +1,11 @@
+{
+  "model": "qwen3.5:9b",
+  "n": 206,
+  "ok": 206,
+  "mean_char_f1": 0.1886,
+  "mean_bigram_f1": 0.0738,
+  "mean_number_hit": 0.1936,
+  "errors": 0,
+  "retrieval": null,
+  "note": "resumable parallel eval; seed = first 20 prior results"
+}

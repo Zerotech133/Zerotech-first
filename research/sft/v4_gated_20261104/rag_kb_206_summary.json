@@ -1,0 +1,17 @@
+{
+  "model": "qwen3.5:9b+kb_rag_v2",
+  "n": 206,
+  "ok": 206,
+  "mean_char_f1": 0.2257,
+  "mean_bigram_f1": 0.1104,
+  "mean_number_hit": 0.224,
+  "errors": 0,
+  "retrieval": {
+    "index": "C:\\项目\\知识库\\50_RAG\\rag_index_corpus_v2_20261104.json",
+    "records": 6826,
+    "top_k": 4,
+    "embed_model": "bge-m3",
+    "source": "production KB corpus candidate v2"
+  },
+  "note": "resumable parallel eval; seed = first 20 prior results"
+}

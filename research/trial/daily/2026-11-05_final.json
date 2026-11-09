@@ -1,0 +1,252 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-11-06T10:05:08+08:00",
+  "date": "2026-11-05",
+  "mode": "final",
+  "day_number": 1,
+  "in_observation_window": true,
+  "observation_dates": [
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-09",
+    "2026-11-10",
+    "2026-11-11"
+  ],
+  "report_deadline": "2026-11-06T09:30:00+08:00",
+  "final_due": true,
+  "overall_status": "FAIL",
+  "checks": {
+    "data_dates": {
+      "status": "PASS",
+      "detail_short": "bar 全部达到期望"
+    },
+    "reports_on_time": {
+      "status": "FAIL",
+      "detail_short": "on_time=3（阈值10），total=3"
+    },
+    "feedback_lusu": {
+      "status": "FAIL",
+      "detail_short": "0 条"
+    },
+    "supervision_acad1": {
+      "status": "FAIL",
+      "detail_short": "0 条"
+    },
+    "observations_t1": {
+      "status": "FAIL",
+      "detail_short": "12/24 已实现 T+1，coverage=50.00%；未覆盖市场：CRYPTO、HK"
+    }
+  },
+  "data_dates": {
+    "ok": true,
+    "bar_all_ok": true,
+    "pool_all_ok": false,
+    "acad1_all_ok": false,
+    "expected": {
+      "CN": "2026-11-05",
+      "HK": "2026-11-05",
+      "US": "2026-11-04",
+      "CRYPTO": "2026-11-05"
+    },
+    "detail": {
+      "CN": {
+        "expected": "2026-11-05",
+        "bar": "2026-11-05",
+        "pool": "2026-11-05",
+        "acad1": "2026-11-04",
+        "bar_ok": true,
+        "pool_ok": true,
+        "acad1_ok": false
+      },
+      "HK": {
+        "expected": "2026-11-05",
+        "bar": "2026-11-05",
+        "pool": "2026-11-04",
+        "acad1": "2026-11-04",
+        "bar_ok": true,
+        "pool_ok": false,
+        "acad1_ok": false
+      },
+      "US": {
+        "expected": "2026-11-04",
+        "bar": "2026-11-05",
+        "pool": "2026-11-03",
+        "acad1": "2026-11-03",
+        "bar_ok": true,
+        "pool_ok": false,
+        "acad1_ok": false
+      },
+      "CRYPTO": {
+        "expected": "2026-11-05",
+        "bar": "2026-11-06",
+        "pool": "2026-11-04",
+        "acad1": "2026-11-04",
+        "bar_ok": true,
+        "pool_ok": false,
+        "acad1_ok": false
+      }
+    }
+  },
+  "reports": {
+    "threshold": 10,
+    "by_market": {
+      "CN": {
+        "total": 3,
+        "on_time": 3,
+        "strategies": [
+          "v1-cn-strat-2",
+          "v1-cn-strat-4",
+          "v1-cn-strat-4-v7"
+        ]
+      }
+    },
+    "total": 3,
+    "on_time": 3,
+    "strategies": [
+      "v1-cn-strat-2",
+      "v1-cn-strat-4",
+      "v1-cn-strat-4-v7"
+    ]
+  },
+  "feedback": {
+    "total": 0,
+    "target": 0,
+    "consumers": [],
+    "target_consumer": "鲁肃"
+  },
+  "supervision": {
+    "total": 0,
+    "target": 0,
+    "supervisors": [],
+    "target_supervisor": "ACAD1"
+  },
+  "observations": {
+    "signal_date": "2026-11-04",
+    "total": 24,
+    "with_t1": 12,
+    "negative": 4,
+    "coverage": 0.5,
+    "status_counts": {
+      "partial": 12,
+      "pending": 12
+    },
+    "by_market": {
+      "CN": {
+        "total": 12,
+        "with_t1": 12,
+        "negative": 4
+      },
+      "CRYPTO": {
+        "total": 2,
+        "with_t1": 0,
+        "negative": 0
+      },
+      "HK": {
+        "total": 10,
+        "with_t1": 0,
+        "negative": 0
+      }
+    },
+    "coverage_by_market": {
+      "CN": {
+        "total": 12,
+        "with_t1": 12,
+        "negative": 4,
+        "coverage": 1.0
+      },
+      "CRYPTO": {
+        "total": 2,
+        "with_t1": 0,
+        "negative": 0,
+        "coverage": 0.0
+      },
+      "HK": {
+        "total": 10,
+        "with_t1": 0,
+        "negative": 0,
+        "coverage": 0.0
+      }
+    },
+    "pending_markets": [
+      "CRYPTO",
+      "HK"
+    ],
+    "negatives": [
+      {
+        "strategy_id": "chanlun",
+        "market": "CN",
+        "signal_date": "2026-11-04",
+        "entry_date": "2026-11-05",
+        "code": "001872.SZ",
+        "name": "招商港口",
+        "signal": "3买,CHAN_V7",
+        "ret_t1": -0.00673,
+        "max_dd": -0.00673,
+        "market_ret": 0.0201673893542359,
+        "excess": -0.0268973893542359,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-04",
+        "entry_date": "2026-11-05",
+        "code": "002463.SZ",
+        "name": "沪电股份",
+        "signal": "均值回归",
+        "ret_t1": -0.057592,
+        "max_dd": -0.057592,
+        "market_ret": 0.0201673893542359,
+        "excess": -0.0777593893542359,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-04",
+        "entry_date": "2026-11-05",
+        "code": "300990.SZ",
+        "name": "同飞股份",
+        "signal": "均值回归",
+        "ret_t1": -0.0174,
+        "max_dd": -0.0174,
+        "market_ret": 0.0201673893542359,
+        "excess": -0.0375673893542359,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-04",
+        "entry_date": "2026-11-05",
+        "code": "605100.SH",
+        "name": "华丰股份",
+        "signal": "均值回归",
+        "ret_t1": -0.0506,
+        "max_dd": -0.0506,
+        "market_ret": 0.0201673893542359,
+        "excess": -0.0707673893542359,
+        "draft_category": "个股显著弱于市场"
+      }
+    ],
+    "worksheet": "C:\\项目\\老田的AI助手\\research\\reports\\trial_negative_review_20261104.csv"
+  },
+  "operators": {
+    "feedback": "鲁肃",
+    "supervision": "ACAD1",
+    "feedback_entry": "选股中台 → 统一池 + 反馈（人工填写）",
+    "supervision_entry": "选股中台 → 日报经验与督导（人工填写）"
+  },
+  "no_production": true,
+  "notes": [
+    "反馈/督导必须由真实责任人填写；本脚本只读检查，不代填。",
+    "负向草稿自动归类，仅作 ACAD1 复核材料，不是人工签署结论。",
+    "报告数按 report_date=数据日、次一交易日 09:30 截止口径。",
+    "当前 calc_observations.py 只覆盖 TDX/CN；HK/US/CRYPTO 的 T+1 未接入，验收会如实 FAIL，不代算、不伪造。",
+    "本检查不写业务表、不交易、不批准、不改池/权重/索引。"
+  ],
+  "json_path": "C:\\Temp\\trial_observation_2026-11-05_final.json",
+  "consecutive_fail_days": 1,
+  "stop_recommended": false,
+  "markdown_path": "C:\\项目\\deliverables\\2026-11-05_五日观察_第1日_复盘_v1.md"
+}

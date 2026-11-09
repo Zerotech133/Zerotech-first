@@ -1,10 +1,10 @@
 {
  "protocolVersion": "0.3.0",
  "name": "鲁肃 D1 投研裁决流水线",
- "description": "鲁肃 D1 投研裁决流水线 A2A 入口（W3 planned；经零界 8734 单点登录/内部调用）",
+ "description": "鲁肃 D1 投研裁决流水线 A2A 入口（draft/shadow；经零界 8734 单点登录/内部调用）",
  "url": "http://127.0.0.1:8091/api/a2a/lusu-d1-flow",
  "preferredTransport": "JSONRPC",
- "version": "1.0.0",
+ "version": "1.1.0",
  "provider": {
   "organization": "零界",
   "owner": "D1"
@@ -51,6 +51,16 @@
   }
  ],
  "x-composition": "lusu-d1-flow",
+ "x-lifecycle": "draft",
  "x-status": "discovery",
+ "x-q2": {
+  "phase": "shadow",
+  "health": "unknown",
+  "health_basis": "single_probe_pass",
+  "health_window": "not_measured",
+  "validated": false,
+  "q2_complete": false,
+  "q_level": "Q1"
+ },
  "x-auth": "8734 OIDC / internal key"
 }

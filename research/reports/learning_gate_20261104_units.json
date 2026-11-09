@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-04T02:44:14+08:00",
+ "generated_at": "2026-11-04T20:00:06+08:00",
  "stage": "units",
  "projects": [
   {
@@ -45,11 +45,33 @@
     }
    },
    "fail": 0
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "status": "distilling",
+   "stages": {
+    "units": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "status": "distilling",
+   "stages": {
+    "units": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
   }
  ],
  "summary": {
-  "projects": 4,
-  "checks": 4,
+  "projects": 6,
+  "checks": 6,
   "fail": 0
  },
  "ok": true

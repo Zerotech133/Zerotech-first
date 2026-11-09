@@ -1,0 +1,4 @@
+strategy,ts_code,asof_date,base_date,base_type,line_top,line_bottom,support_relation,stack_relation,label,reason,annotator,annotated_at
+LX03,000001.SZ,2026-01-05,2025-12-29,将军柱,,,踩顶,单柱,unsure,待标注,,
+LX03,000002.SZ,2026-02-10,2026-02-03,将军柱,,,踩腰,双柱搭梯,unsure,待标注,,
+LX05,600000.SH,2026-03-12,2026-03-05,黄金柱,,,踩脚,双线,unsure,待标注,,

@@ -1,0 +1,97 @@
+{
+ "generated_at": "2026-11-03T18:10:43+08:00",
+ "latest_date": "20261102",
+ "window": "20251128 .. 20261102",
+ "months": 12,
+ "owner": "FACTOR1/蒋琬（数据智能部·张松团队）",
+ "factors": [
+  {
+   "factor": "mom_20",
+   "ic_mean12": -0.1059,
+   "t": -1.56,
+   "ic_pos_rate": 33.3,
+   "last3_mean": -0.1052,
+   "prev3_mean": -0.3001,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 PASS（LS）/ long-only 弱"
+  },
+  {
+   "factor": "rev_5",
+   "ic_mean12": 0.074,
+   "t": 1.47,
+   "ic_pos_rate": 75.0,
+   "last3_mean": -0.0017,
+   "prev3_mean": 0.2335,
+   "sign_flip": true,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 FAIL"
+  },
+  {
+   "factor": "vol_20",
+   "ic_mean12": -0.0663,
+   "t": -0.74,
+   "ic_pos_rate": 50.0,
+   "last3_mean": -0.1937,
+   "prev3_mean": -0.0379,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 PASS（LS）"
+  },
+  {
+   "factor": "liq_neg",
+   "ic_mean12": 0.0534,
+   "t": 0.88,
+   "ic_pos_rate": 41.7,
+   "last3_mean": 0.1614,
+   "prev3_mean": 0.0613,
+   "sign_flip": false,
+   "months": 12,
+   "type": "candidate_new",
+   "verdict": "新候选：未过四关"
+  },
+  {
+   "factor": "mom_120",
+   "ic_mean12": -0.0398,
+   "t": -0.62,
+   "ic_pos_rate": 58.3,
+   "last3_mean": -0.1501,
+   "prev3_mean": -0.1028,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 PASS（LS）/ S08 观察"
+  },
+  {
+   "factor": "amihud",
+   "ic_mean12": 0.0384,
+   "t": 0.79,
+   "ic_pos_rate": 58.3,
+   "last3_mean": 0.1109,
+   "prev3_mean": 0.0721,
+   "sign_flip": false,
+   "months": 12,
+   "type": "candidate_new",
+   "verdict": "新候选：未过四关"
+  }
+ ],
+ "decay_alerts": [
+  {
+   "factor": "rev_5",
+   "ic_mean12": 0.074,
+   "t": 1.47,
+   "ic_pos_rate": 75.0,
+   "last3_mean": -0.0017,
+   "prev3_mean": 0.2335,
+   "sign_flip": true,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 FAIL"
+  }
+ ],
+ "proposals": [],
+ "note": "每日挖掘；只出假设/告警，不直接改策略库；候选须走四关+复核"
+}

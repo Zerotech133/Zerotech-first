@@ -503,7 +503,7 @@ def _print(c):
     print("─" * 62)
     if best:
         print(
-            "2 买质量：%s级 %s @%.2f · 位置[%s] · 止损 %.1f%%%s · 回撤 %s%s"
+            "2 买质量：%s级 %s @%.2f · 位置[%s] · 失效位 %.1f%%%s · 回撤 %s%s"
             % (
                 best["level"],
                 _fd(best["sig_dt"]),

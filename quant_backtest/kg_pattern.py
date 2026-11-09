@@ -49,6 +49,8 @@ def build(cli=None, dryrun=False, limit=0):
         if not evs:
             return
         if not dryrun:
+            for _e in evs:
+                _e["data_source"] = "ashare_daily"  # F2-P2-b
             cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
             cli.upsert_edge(
                 S.LBL_SECURITY,

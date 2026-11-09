@@ -1,0 +1,19 @@
+﻿id,category,AI分歧类型,base_A正确,RAG_A正确,winner_A,backup_base,backup_rag,base人工复核,RAG人工复核,最终winner,人工备注,changed
+holdout-014,E_variant,仅 base 正确（RAG 错）,1,0,base,1,0,对,错,base,沿用 AI 判定,False
+holdout-017,A_concept_qa,仅 base 正确（RAG 错）,1,0,base,0,2,错,错,tie,人工修正（备份 J/K：base 1→0；RAG 0→2；2=错）；其余沿用 AI,True
+holdout-018,E_variant,仅 base 正确（RAG 错）,1,0,base,1,0,对,错,base,沿用 AI 判定,False
+holdout-019,E_variant,仅 base 正确（RAG 错）,1,0,base,2,0,错,错,tie,人工修正（备份 J/K：base 1→2；RAG 0→0；2=错）；其余沿用 AI,True
+holdout-020,E_variant,仅 base 正确（RAG 错）,1,0,base,2,1,错,对,rag,人工修正（备份 J/K：base 1→2；RAG 0→1；2=错）；其余沿用 AI,True
+holdout-100,E_variant,仅 base 正确（RAG 错）,1,0,base,1,0,对,错,base,沿用 AI 判定,False
+holdout-122,A_concept_qa,仅 base 正确（RAG 错）,1,0,base,0,1,错,对,rag,人工修正（备份 J/K：base 1→0；RAG 0→1；2=错）；其余沿用 AI,True
+holdout-143,unknown,仅 base 正确（RAG 错）,1,0,base,1,0,对,错,base,沿用 AI 判定,False
+holdout-153,unknown,仅 base 正确（RAG 错）,1,0,base,1,0,对,错,base,沿用 AI 判定,False
+holdout-021,A_concept_qa,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-023,A_concept_qa,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-024,E_variant,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-049,C_reading_comprehension,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-066,C_reading_comprehension,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-071,D_multi_source,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-078,A_concept_qa,仅 RAG 正确（base 错）,0,1,rag,0,1,错,对,rag,沿用 AI 判定,False
+holdout-022,A_concept_qa,双方都错,0,0,tie,0,0,错,错,tie,沿用 AI 判定,False
+holdout-034,B_conclusion_rewrite,双方都错,0,0,tie,0,0,错,错,tie,沿用 AI 判定,False

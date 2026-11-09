@@ -84,6 +84,29 @@ _CONFIRMED_PATCHSETS: dict[str, dict] = {}
 _PREVIEW_TTL_S = 600
 _PREVIEW_MAX = 20
 
+# ── 回环目标一律绕过系统代理（2026-11-06 修） ─────────────────────────
+# 本机设了 HTTP_PROXY/HTTPS_PROXY（实测 127.0.0.1:57508），且 urllib 的
+# proxy_bypass('127.0.0.1') 返回 False —— 也就是说对 127.0.0.1:8091（默认门户）
+# 的请求会被送去外部代理。后果随代理状态漂移：
+#   代理活着但到不了目标端口 → HTTP 502；代理不通 → URLError。
+# 同一段代码因此在不同环境落进不同分支：test_chat_proxy_unavailable_is_fail_soft
+# 期望「门户不可达 → 503」，代理回 502 时就变成 502 ≠ 503 的假红
+# （2026-11-06 两次在并发门禁里复现，隔离单跑必过）。
+# 内部回环调用本就不该受外部代理影响，故显式禁用。
+_NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _is_loopback(url: str) -> bool:
+    host = (urlparse(getattr(url, "full_url", None) or str(url)).hostname or "").lower()
+    return host in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
+def _open(url, timeout: float):
+    """回环目标禁代理；其余仍走 safe_urlopen（保留 scheme 校验）。"""
+    if _is_loopback(url):
+        return _NO_PROXY_OPENER.open(url, timeout=timeout)
+    return safe_urlopen(url, timeout=timeout)
+
 
 def _prune_previews() -> None:
     now = time.time()
@@ -154,7 +177,7 @@ def _portal_alive(url: str, timeout: float = 0.6) -> bool:
     base = url.rstrip("/")
     for path in ("/api/health", "/"):
         try:
-            with safe_urlopen(base + path, timeout=timeout) as r:
+            with _open(base + path, timeout=timeout) as r:
                 return 200 <= r.status < 500
         except urllib.error.HTTPError:
             return True
@@ -890,7 +913,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 method="POST",
             )
             try:
-                with safe_urlopen(req, timeout=180) as r:
+                with _open(req, timeout=180) as r:
                     return self._send(r.status, r.read(), _JSON_CT)
             except urllib.error.HTTPError as exc:
                 return self._send(exc.code, exc.read(), _JSON_CT)

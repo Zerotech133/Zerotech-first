@@ -295,6 +295,10 @@ def test_cli_json_and_human_output(tmp_path, capsys, monkeypatch):
     work = _passing_work(tmp_path, 3)
     out = tmp_path / "deliverables"
     monkeypatch.setattr(h, "_run", _FakeRun())  # main 无 runner 参数 → 模块级 _run
+    # 时间注入：fixture generated_at 硬编码 2026-11-01T06:00Z，而 main 走真实时钟判
+    # 7 天窗口 → 2026-11-08 起样本出窗（时间炸弹，Run10 实爆）。与其余用例一致，
+    # 把模块级 _now 钉在 fixture 同日，保证窗口判定不随日历漂移。
+    monkeypatch.setattr(h, "_now", _now)
     rc = h.main(["--json", "--no-write", "--samples", "2", "--seed", "cli-seed",
                  "--work-dir", str(work), "--out-dir", str(out)])
     assert rc == 0

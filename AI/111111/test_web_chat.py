@@ -155,7 +155,7 @@ class WebChatTests(unittest.TestCase):
         self.assertIn('通用助手', page)
         self.assertIn('研究助手', page)
 
-    @patch.object(web_chat, 'urlopen')
+    @patch.object(web_chat, 'safe_urlopen')
     def test_stream(self, urlopen):
         payload = b'{"message":{"content":"a"}}\n{"done":true}\n'
         urlopen.return_value = Response(payload)
@@ -164,7 +164,7 @@ class WebChatTests(unittest.TestCase):
         self.assertEqual(data, payload)
         self.assertTrue(json.loads(urlopen.call_args.args[0].data)['stream'])
 
-    @patch.object(web_chat, 'urlopen')
+    @patch.object(web_chat, 'safe_urlopen')
     def test_chat_defaults_to_fast_thinking_and_model_keep_alive(self, urlopen):
         urlopen.return_value = Response(b'{"done":true}\n')
         response, _ = self.request('POST', '/api/chat', {'message': 'hi'})
@@ -173,14 +173,14 @@ class WebChatTests(unittest.TestCase):
         self.assertFalse(payload['think'])
         self.assertEqual(payload['keep_alive'], '30m')
 
-    @patch.object(web_chat, 'urlopen')
+    @patch.object(web_chat, 'safe_urlopen')
     def test_chat_can_enable_deep_thinking(self, urlopen):
         urlopen.return_value = Response(b'{"done":true}\n')
         response, _ = self.request('POST', '/api/chat', {'message': 'hi', 'think': True})
         self.assertEqual(response.status, 200)
         self.assertTrue(json.loads(urlopen.call_args.args[0].data)['think'])
 
-    @patch.object(web_chat, 'urlopen')
+    @patch.object(web_chat, 'safe_urlopen')
     def test_history_is_trimmed_to_character_budget(self, urlopen):
         urlopen.return_value = Response(b'{"done":true}\n')
         history = [
@@ -196,7 +196,7 @@ class WebChatTests(unittest.TestCase):
         self.assertLessEqual(sum(len(item['content']) for item in sent_history), web_chat.MAX_HISTORY_CHARS)
         self.assertEqual(sent_history[-1]['content'], 'd' * 5000)
 
-    @patch.object(web_chat, 'urlopen')
+    @patch.object(web_chat, 'safe_urlopen')
     def test_chat_payload_carries_profile_and_bounded_history(self, urlopen):
         urlopen.return_value = Response(b'{"message":{"content":"a"}}\n{"done":true}\n')
         history = [{"role": "user", "content": "旧问题"}, {"role": "assistant", "content": "旧回答"}]
@@ -266,7 +266,7 @@ class WebChatTests(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(data, '{"message": {"content": "首段"}}\n'.encode())
 
-    @patch.object(web_chat, 'urlopen', side_effect=OSError('secret'))
+    @patch.object(web_chat, 'safe_urlopen', side_effect=OSError('secret'))
     def test_error(self, _urlopen):
         response, data = self.request('POST', '/api/chat', {'message': 'x'})
         self.assertEqual(response.status, 502)
@@ -277,7 +277,7 @@ class WebChatTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             web_chat.make_server('0.0.0.0', 0)
 
-    @patch.object(web_chat, 'urlopen')
+    @patch.object(web_chat, 'safe_urlopen')
     def test_stream_failure_does_not_send_second_response(self, urlopen):
         class FailingResponse(Response):
             def __init__(self):

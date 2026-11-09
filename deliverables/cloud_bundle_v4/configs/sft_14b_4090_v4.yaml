@@ -1,0 +1,32 @@
+### Qwen2.5-14B-Instruct QLoRA SFT v4 · 单卡 4090 24G（4bit/bf16）
+### 用途：引用上下文修正数据（quant_kb_sft_v4）
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 64
+lora_alpha: 128
+lora_dropout: 0.05
+lora_target: all
+
+dataset: quant_kb_sft_v4d
+dataset_dir: .
+template: qwen
+cutoff_len: 2048
+max_samples: 100000
+overwrite_cache: true
+preprocessing_num_workers: 8
+
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+logging_steps: 10
+save_steps: 200
+save_total_limit: 2
+bf16: true
+gradient_checkpointing: true
+flash_attn: fa2
+quantization_bit: 4
+quantization_method: bnb

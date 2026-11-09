@@ -34,18 +34,65 @@ try {
         W ('P0 WARN env missing: ' + $envPs1 + ' (inherit environment)')
     }
 
+    # 0.1) 出口代理自举（2026-11-05 补）：typesafe.ai 对本机直连出口返回 451，
+    #      而计划任务里没有交互式 shell 的 $env:JEV_PROXY，导致预检必挂 → 每月静默 SKIP。
+    #      仅在 JEV_PROXY 未显式设置、且本机 7890（快安）在监听时补默认值；
+    #      端口不通则保持空，让预检如实报 451/不可达，不掩盖故障。
+    if (-not $env:JEV_PROXY) {
+        $proxyUp = $false
+        try {
+            $proxyUp = [bool](Get-NetTCPConnection -State Listen -LocalPort 7890 -ErrorAction Stop |
+                Select-Object -First 1)
+        } catch {
+            $proxyUp = $false
+        }
+        if (-not $proxyUp) {
+            try {
+                $tc = New-Object System.Net.Sockets.TcpClient
+                $proxyUp = $tc.ConnectAsync('127.0.0.1', 7890).Wait(800)
+                $tc.Close()
+            } catch { $proxyUp = $false }
+        }
+        if ($proxyUp) {
+            $env:JEV_PROXY = 'http://127.0.0.1:7890'
+            W 'P0.1 proxy: JEV_PROXY 未设置，7890 在监听 -> 自动设为 http://127.0.0.1:7890'
+        } else {
+            W 'P0.1 proxy: JEV_PROXY 未设置且 7890 未监听 -> 直连（预检可能 451）'
+        }
+    } else {
+        W ('P0.1 proxy: JEV_PROXY 已显式设置 -> ' + $env:JEV_PROXY)
+    }
+
     $py = 'C:\Program Files\Python311\python.exe'
     if (-not (Test-Path -LiteralPath $py)) {
         $py = (Get-Command python.exe -ErrorAction Stop).Source
     }
 
-    # 1) 正式评测
-    W 'P1 eval: jev_eval.py --repeats 3'
-    & $py -X utf8 (Join-Path $here 'jev_eval.py') --repeats 3 `
-        1> (Join-Path $logDir 'monthly_eval_out.log') `
-        2> (Join-Path $logDir 'monthly_eval_err.log')
-    $rc = $LASTEXITCODE
-    W ('P1 eval exit=' + $rc)
+    # 0.5) 端点预检（2026-11-05 加）：typesafe.ai 对本机直连出口返回 451，
+    #      不加这道闸门会让 30 题全失败、却照样落一份 repeats=3 的「正式结果」，
+    #      污染基线并触发假漂移告警。预检不过 → 跳过评测，只跑守卫。
+    #      出口代理用 $env:JEV_PROXY 指定（如 http://127.0.0.1:7890）。
+    W ('P0.5 probe: endpoint base may be overridden by JEV_BASE_URL; proxy=' + $(if ($env:JEV_PROXY) { $env:JEV_PROXY } else { '(none)' }))
+    & $py -X utf8 (Join-Path $here 'jev_eval.py') --probe-endpoint `
+        1> (Join-Path $logDir 'monthly_probe_out.log') `
+        2> (Join-Path $logDir 'monthly_probe_err.log')
+    $prc = $LASTEXITCODE
+    $probeLast = Get-Content -LiteralPath (Join-Path $logDir 'monthly_probe_out.log') `
+        -Tail 2 -Encoding UTF8 -ErrorAction SilentlyContinue
+    W ('P0.5 probe exit=' + $prc + ' out=' + ($probeLast -join ' | '))
+
+    # 1) 正式评测（预检不过则跳过，避免产出全失败的「正式结果」）
+    if ($prc -ne 0) {
+        $rc = $prc
+        W ('P1 eval SKIP：端点预检失败（rc=' + $prc + '）→ 不产出正式结果，只跑守卫')
+    } else {
+        W 'P1 eval: jev_eval.py --repeats 3'
+        & $py -X utf8 (Join-Path $here 'jev_eval.py') --repeats 3 `
+            1> (Join-Path $logDir 'monthly_eval_out.log') `
+            2> (Join-Path $logDir 'monthly_eval_err.log')
+        $rc = $LASTEXITCODE
+        W ('P1 eval exit=' + $rc)
+    }
 
     # 2) 守卫判定（评测失败也跑：MAX_AGE 会提示结果过期）
     W 'P2 guard: jev_eval_guard.py --cadence monthly'

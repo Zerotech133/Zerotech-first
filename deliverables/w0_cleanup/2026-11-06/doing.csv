@@ -1,0 +1,23 @@
+﻿task_id,owner,created,worktree,desc
+K-STOCK-ANALYSIS-MON-20261104,DEV2,2026-11-04 02:48:46,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MON-20261104,批量监控引擎：规则评估/池管理/告警持久化/CLI/测试（analysis/monitor.py）
+UI-MOBILE-RESIDUAL-20261104,DEV3,2026-11-04 02:51:17,C:\项目\老田的AI助手\.worktrees\UI-MOBILE-RESIDUAL-20261104,UI残余收口：学习项目/回测页短屏化+methods/screening等390横向溢出修复
+UI-GATECHECK-20261104,DEV3,2026-11-04 02:51:23,C:\项目\老田的AI助手\.worktrees\UI-GATECHECK-20261104,UI门禁聚合器：standalone ui_gate_checks.py（tokens/page_manifest/page_shell changed/visual）不接merge闸
+K-STOCK-ANALYSIS-NORTH-20261104,DEV2,2026-11-04 03:01:05,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-NORTH-20261104,数据P1 北向资金维度：analysis/northbound.py 接入 extras/snapshot/报告（栈在 P2.9 分支）
+K-STOCK-ANALYSIS-MONSCHED-20261104,DEV1,2026-11-04 03:01:14,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONSCHED-20261104,批量监控运营化：15:40 批后自动跑监控 + 飞书告警推送（栈在 MONPAGE 分支）
+K-STOCK-ANALYSIS-H3-20261104,DEV1,2026-11-04 03:44:29,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-H3-20261104,H3 策略工作室后端：StrategySpec v1 schema/validate/compile + 策略库注册 + 门户代理 + 测试（栈 H2B）
+K-STOCK-ANALYSIS-F3-20261104,DOC1,2026-11-04 03:44:36,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-F3-20261104,F3 策略工作室前端页 /sa/strategy：Spec 编辑→校验→预览→保存，演示降级（栈 F2）
+K-STOCK-ANALYSIS-MONCFG-20261104,DEV1,2026-11-04 03:44:42,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONCFG-20261104,监控规则配置化：阈值/规则按池配置 + /api/monitor/config + 页面规则面板（栈 MONSCHED）
+K-STOCK-ANALYSIS-DATA2-20261104,DEV6,2026-11-04 03:44:49,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-DATA2-20261104,数据P1续：limit_list_d 上游空分区诊断修复 + 龙虎榜 top_list/top_inst extras 接入（栈 NORTH）
+UI-A11Y2-20261104,DEV3,2026-11-04 03:49:09,C:\项目\老田的AI助手\.worktrees\UI-A11Y2-20261104,a11y第三波：10个未触碰active页focus/aria/表格语义深修（无视觉变化）
+W1-PILOT-TOOLFIX-20261104,ARCH1,2026-11-04 03:52:50,C:\项目\老田的AI助手\.worktrees\W1-PILOT-TOOLFIX-20261104,修composition裸id/resolver --manifest --strict，锁131分母
+CATALOG-PERSIST-20261104,ARCH1,2026-11-04 14:03:36,C:\项目\老田的AI助手\.worktrees\CATALOG-PERSIST-20261104,Catalog外部资产持久化修复(方案A):external_assets_registry+build_catalog合并+回归测试 [UNOWNED]
+WO-WEAK-CLOSE-DATE-20261105,DEV6,2026-11-04 23:54:48,C:\项目\老田的AI助手\.worktrees\WO-WEAK-CLOSE-DATE-20261105,修复 weak_track_close.close_fields 跟踪日数把非法 px_d 当交易日：加 valid_day 守卫并补回归测试；不改其他逻辑，不重启/不部署
+WO-DEV7-L1L4-EVID-20261106,DEV7,2026-11-06 04:31:36,C:\项目\老田的AI助手\.worktrees\WO-DEV7-L1L4-EVID-20261106,T27 DEV7 L1-L4 证据补证（4 文件+4/4；截止 11-09 18:00；详见 work/dev7-learning-closeout-20261106/remediation_dispatch.md）
+WO-DEV7-PRACTICE-ACC-20261106,DEV7,2026-11-06 04:31:43,C:\项目\老田的AI助手\.worktrees\WO-DEV7-PRACTICE-ACC-20261106,T27 DEV7 实践单验收归档（WIKI/LS10 重跑+归档；截止 11-09 18:00；详见 work/dev7-learning-closeout-20261106/remediation_dispatch.md）
+K-PII-W3-20261106,DSH-Lead,2026-11-06 05:12:41,C:\项目\老田的AI助手\.worktrees\K-PII-W3-20261106,PII W3: learning_intake 入仓前 PII 清洗（复用 intel-kg pii_policy）
+WO-DEVBUS-ROUTE-20261106,DEV1,2026-11-06 08:20:35,C:\项目\老田的AI助手\.worktrees\WO-DEVBUS-ROUTE-20261106,P0-B 席位路由与WIP上限：dev_routing_rules v2 + dev_bus_route（audit/plan/apply/dry-run）+ wip_check 扩展；34条路由计划，apply默认不执行；只读复核/测试 [UNOWNED]
+legion-1106093009,T1,2026-11-06 09:30:23,C:\项目\老田的AI助手\.worktrees\legion-1106093009,[T1] 盘前 weak 池三线扫描
+WO-GUANYU-P21SIGN-20261106,GUANYU,2026-11-06 10:03:00,C:\项目\老田的AI助手\.worktrees\WO-GUANYU-P21SIGN-20261106,[P2-1] 入口归档回签进度 R2 回填：docs/ops/2026-10-30_入口归档分派包_P2-1_v1.md 补 §六 11-06 行与 §七 回签进度（0/116 回签、归档项0、k_stock 逾期3天、A0 裁定项）；仅文档无代码；依据 _reviews_20261026/2026-11-06_1000_P2-1回签截止汇总_v1.md
+legion-1106234248,A0A,2026-11-06 23:43:46,C:\aios\.worktrees\legion-1106234248,[A0A] 每日复盘三问汇总
+legion-1106234809,A0A,2026-11-06 23:48:52,C:\aios\.worktrees\legion-1106234809,[A0A] 每日复盘三问汇总
+legion-1106234909,A0A,2026-11-06 23:49:34,C:\aios\.worktrees\legion-1106234909,[A0A] 每日复盘三问汇总

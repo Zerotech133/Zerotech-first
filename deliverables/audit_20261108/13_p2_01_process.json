@@ -1,0 +1,51 @@
+{
+  "captured_at": "2026-11-08 10:25:03 +08:00",
+  "audit_ref": {
+    "pid": 37264,
+    "source": "deliverables/audit_20261108/09_port_8870.txt",
+    "present_at_capture": false,
+    "note": "审计时的 PID 37264 已退出，8870 当前由新 PID 接替"
+  },
+  "current": {
+    "pid": 62340,
+    "name": "python",
+    "exe": "C:\\项目\\py312\\python.exe",
+    "cmdline": "C:\\项目\\py312\\python.exe server.py",
+    "username": "DESKTOP-ARF447U\\t",
+    "create_time": "2026-11-08 09:54:51.801 +08:00",
+    "cwd": "C:\\项目\\zerobound-kg\\factor_proto\\factor_console",
+    "working_set_mb": 58.3
+  },
+  "parent_chain": [
+    {
+      "pid": 50528,
+      "name": "bash.exe",
+      "parent_pid": 63108,
+      "create_time": "2026-11-08 09:54:51"
+    },
+    {
+      "pid": 63108,
+      "name": "bash.exe",
+      "parent_pid": 54832,
+      "create_time": "2026-11-08 09:54:51"
+    },
+    {
+      "pid": 54832,
+      "name": "bash.exe",
+      "parent_pid": 39176,
+      "create_time": "2026-11-08 09:54:51"
+    },
+    {
+      "pid": 39176,
+      "name": "sandbox-cli.exe",
+      "parent_pid": 53604,
+      "create_time": "2026-11-08 01:26:24"
+    }
+  ],
+  "startup": {
+    "launcher_script": "C:\\Users\\t\\AppData\\Local\\Temp\\codebuddy-shell-payload-53604-PfZTEX\\script.sh",
+    "session_id": "92de345a-65e8-449d-830e-08dfd422e777",
+    "command_line": "eval 'cd \"C:/项目/zerobound-kg/factor_proto/factor_console\" && /c/项目/py312/python.exe server.py'",
+    "kind": "WorkBuddy shell payload (ephemeral), not a Windows service or scheduled task"
+  }
+}

@@ -1,0 +1,56 @@
+{
+ "generated_at": "2026-11-04T03:14:16+08:00",
+ "governance_single": {
+  "units": 800,
+  "knowledge_units": 800,
+  "meta_units": 0,
+  "verified": 800,
+  "verified_pct": 100.0,
+  "unverifiable": 0,
+  "exact_dup_units": 0,
+  "near_dup_pairs": 0,
+  "dup_ratio_pct": 0.0,
+  "card_concept_dup": 0,
+  "candidate_pool": 259,
+  "multi_source_concepts": 0,
+  "conflicts": 0
+ },
+ "governance_all": {
+  "units": 2202,
+  "meta_lines": 18,
+  "dup_groups": 8,
+  "verified": 2181,
+  "junk_units": 871,
+  "projects": 3,
+  "verify_pct": 99.0,
+  "junk_pct": 39.6
+ },
+ "counts": {
+  "units_total": 2202,
+  "units_effective": 1331,
+  "per_project": {
+   "视频号学习_8博主": {
+    "total": 800,
+    "effective": 800
+   },
+   "视频号学习_第二期": {
+    "total": 1116,
+    "effective": 245
+   },
+   "laomu_notes": {
+    "total": 286,
+    "effective": 286
+   }
+  },
+  "cards": 400,
+  "conclusions_top100": 100,
+  "multi_source_concepts": 28,
+  "reviewed_candidates": 417,
+  "source_files": 12
+ },
+ "audit": {
+  "cards_issues": 0,
+  "traceable_rate": 1.0
+ },
+ "source": "W0 治理（元数据过滤/去重/核验）+ 多源人工双签 后的可输出数据；只读生成"
+}

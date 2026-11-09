@@ -130,7 +130,7 @@ def qd_login() -> str:
         method="POST",
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    with jc.safe_urlopen(req, timeout=10) as resp:
         data = json.loads(resp.read())
     tok = (data.get("data") or {}).get("token", "")
     if not tok:
@@ -159,7 +159,7 @@ def qd_call(method: str, path: str, payload: dict | None = None) -> dict:
             },
         )
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with jc.safe_urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read())
         except urllib.error.HTTPError as e:
             if e.code == 401 and _attempt == 0:

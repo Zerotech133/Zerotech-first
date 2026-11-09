@@ -1,0 +1,442 @@
+{
+  "meta": {
+    "holdout_sha": "ac5f8e987f39081869b0ad58675578931b5e4c35fabdeab8af3f610203c96241",
+    "n": 206,
+    "base_file": "C:\\项目\\老田的AI助手\\research\\sft\\v4_gated_20261104\\holdout_base_206.jsonl",
+    "rag_file": "C:\\项目\\老田的AI助手\\research\\sft\\v4_gated_20261104\\rag_kb_206.jsonl",
+    "note": "base 文件仅前20行保留 category/source；本分析从 holdout_eval.jsonl 重新关联分类，未改预测。"
+  },
+  "overall": {
+    "n": 206,
+    "base": {
+      "char_f1": 0.1886,
+      "bigram_f1": 0.0738,
+      "number_hit": 0.1936,
+      "mean_chars": 758.6,
+      "refusal": 33
+    },
+    "rag": {
+      "char_f1": 0.2257,
+      "bigram_f1": 0.1104,
+      "number_hit": 0.224,
+      "mean_chars": 528.5,
+      "refusal": 78,
+      "citation": 142
+    },
+    "delta_char": 0.0371,
+    "delta_bigram": 0.0366,
+    "delta_number": 0.0304,
+    "char_wins": 135,
+    "char_losses": 71
+  },
+  "known": {
+    "n": 141,
+    "base": {
+      "char_f1": 0.1574,
+      "bigram_f1": 0.0512,
+      "number_hit": 0.1041,
+      "mean_chars": 734.0,
+      "refusal": 25
+    },
+    "rag": {
+      "char_f1": 0.2188,
+      "bigram_f1": 0.1186,
+      "number_hit": 0.1864,
+      "mean_chars": 575.3,
+      "refusal": 27,
+      "citation": 108
+    },
+    "delta_char": 0.0614,
+    "delta_bigram": 0.0674,
+    "delta_number": 0.0823,
+    "char_wins": 108,
+    "char_losses": 33
+  },
+  "unknown": {
+    "n": 65,
+    "base": {
+      "char_f1": 0.2562,
+      "bigram_f1": 0.1228,
+      "number_hit": 0.3877,
+      "mean_chars": 812.0,
+      "refusal": 8
+    },
+    "rag": {
+      "char_f1": 0.2408,
+      "bigram_f1": 0.0925,
+      "number_hit": 0.3057,
+      "mean_chars": 427.2,
+      "refusal": 51,
+      "citation": 34
+    },
+    "delta_char": -0.0154,
+    "delta_bigram": -0.0303,
+    "delta_number": -0.082,
+    "char_wins": 27,
+    "char_losses": 38
+  },
+  "by_category": {
+    "A_concept_qa": {
+      "n": 25,
+      "base": {
+        "char_f1": 0.1187,
+        "bigram_f1": 0.0375,
+        "number_hit": 0.1212,
+        "mean_chars": 914.5,
+        "refusal": 2
+      },
+      "rag": {
+        "char_f1": 0.1794,
+        "bigram_f1": 0.0947,
+        "number_hit": 0.2514,
+        "mean_chars": 659.8,
+        "refusal": 3,
+        "citation": 19
+      },
+      "delta_char": 0.0607,
+      "delta_bigram": 0.0572,
+      "delta_number": 0.1302,
+      "char_wins": 22,
+      "char_losses": 3
+    },
+    "B_conclusion_rewrite": {
+      "n": 10,
+      "base": {
+        "char_f1": 0.1698,
+        "bigram_f1": 0.0518,
+        "number_hit": 0.125,
+        "mean_chars": 729.1,
+        "refusal": 3
+      },
+      "rag": {
+        "char_f1": 0.2432,
+        "bigram_f1": 0.1181,
+        "number_hit": 0.125,
+        "mean_chars": 573.4,
+        "refusal": 3,
+        "citation": 9
+      },
+      "delta_char": 0.0734,
+      "delta_bigram": 0.0663,
+      "delta_number": 0.0,
+      "char_wins": 8,
+      "char_losses": 2
+    },
+    "C_reading_comprehension": {
+      "n": 35,
+      "base": {
+        "char_f1": 0.1361,
+        "bigram_f1": 0.0419,
+        "number_hit": 0.1352,
+        "mean_chars": 826.2,
+        "refusal": 9
+      },
+      "rag": {
+        "char_f1": 0.2333,
+        "bigram_f1": 0.1472,
+        "number_hit": 0.1629,
+        "mean_chars": 588.1,
+        "refusal": 8,
+        "citation": 24
+      },
+      "delta_char": 0.0972,
+      "delta_bigram": 0.1053,
+      "delta_number": 0.0277,
+      "char_wins": 28,
+      "char_losses": 7
+    },
+    "D_multi_source": {
+      "n": 1,
+      "base": {
+        "char_f1": 0.1373,
+        "bigram_f1": 0.0473,
+        "number_hit": 0.0833,
+        "mean_chars": 893,
+        "refusal": 0
+      },
+      "rag": {
+        "char_f1": 0.3918,
+        "bigram_f1": 0.2997,
+        "number_hit": 0.75,
+        "mean_chars": 764,
+        "refusal": 0,
+        "citation": 0
+      },
+      "delta_char": 0.2545,
+      "delta_bigram": 0.2524,
+      "delta_number": 0.6667,
+      "char_wins": 1,
+      "char_losses": 0
+    },
+    "E_variant": {
+      "n": 70,
+      "base": {
+        "char_f1": 0.1804,
+        "bigram_f1": 0.0607,
+        "number_hit": 0.0797,
+        "mean_chars": 621.8,
+        "refusal": 11
+      },
+      "rag": {
+        "char_f1": 0.2195,
+        "bigram_f1": 0.1103,
+        "number_hit": 0.1757,
+        "mean_chars": 536.3,
+        "refusal": 13,
+        "citation": 56
+      },
+      "delta_char": 0.0391,
+      "delta_bigram": 0.0496,
+      "delta_number": 0.096,
+      "char_wins": 49,
+      "char_losses": 21
+    },
+    "unknown": {
+      "n": 65,
+      "base": {
+        "char_f1": 0.2562,
+        "bigram_f1": 0.1228,
+        "number_hit": 0.3877,
+        "mean_chars": 812.0,
+        "refusal": 8
+      },
+      "rag": {
+        "char_f1": 0.2408,
+        "bigram_f1": 0.0925,
+        "number_hit": 0.3057,
+        "mean_chars": 427.2,
+        "refusal": 51,
+        "citation": 34
+      },
+      "delta_char": -0.0154,
+      "delta_bigram": -0.0303,
+      "delta_number": -0.082,
+      "char_wins": 27,
+      "char_losses": 38
+    }
+  },
+  "review_audit": {
+    "n": 40,
+    "categories": {
+      "A_concept_qa": 12,
+      "E_variant": 18,
+      "B_conclusion_rewrite": 3,
+      "C_reading_comprehension": 3,
+      "D_multi_source": 1,
+      "unknown": 3
+    },
+    "all_categories": {
+      "A_concept_qa": 25,
+      "E_variant": 70,
+      "B_conclusion_rewrite": 10,
+      "C_reading_comprehension": 35,
+      "D_multi_source": 1,
+      "unknown": 65
+    },
+    "unique_sources": 20,
+    "all_unique_sources": 60,
+    "first_25_ids": 25,
+    "worst10_in_review": [
+      "holdout-015",
+      "holdout-020"
+    ],
+    "b1r0": [
+      "holdout-015",
+      "holdout-016",
+      "holdout-032",
+      "holdout-172",
+      "holdout-177"
+    ],
+    "b0r1": [
+      "holdout-072",
+      "holdout-096",
+      "holdout-097",
+      "holdout-098",
+      "holdout-173"
+    ]
+  },
+  "worst10": [
+    {
+      "id": "holdout-077",
+      "category": "E_variant",
+      "delta_char": -0.2293,
+      "base": 0.3924,
+      "rag": 0.1631,
+      "in_review": false,
+      "question": "用一句话解释「缠论工具」。"
+    },
+    {
+      "id": "holdout-124",
+      "category": "E_variant",
+      "delta_char": -0.2068,
+      "base": 0.2991,
+      "rag": 0.0923,
+      "in_review": false,
+      "question": "用一句话解释「机队规模变化」。"
+    },
+    {
+      "id": "holdout-146",
+      "category": "unknown",
+      "delta_char": -0.1859,
+      "base": 0.4545,
+      "rag": 0.2686,
+      "in_review": false,
+      "question": "资料：\n[1] 什么是「双底洗盘」？ 目前双底洗盘接近尾声，指数在 3992 点附近仍有强支撑。周五大盘回踩后反弹，带动 30 分钟级别拐点出现，新一轮大涨行情即将开启，有业绩的个股别跑。 20261103一修论市(1).md L951（来源：视频号学习_8博主 · 20261103_一修论市(1).md · L951）\n[2] 什么是「双底形态」？ 指数在 4258 点见顶后连续调整数月，昨日探"
+    },
+    {
+      "id": "holdout-074",
+      "category": "E_variant",
+      "delta_char": -0.1529,
+      "base": 0.2178,
+      "rag": 0.0649,
+      "in_review": false,
+      "question": "用一句话解释「AI赛道」。"
+    },
+    {
+      "id": "holdout-156",
+      "category": "unknown",
+      "delta_char": -0.1342,
+      "base": 0.5795,
+      "rag": 0.4453,
+      "in_review": false,
+      "question": "资料：\n[1] 什么是「上涨趋势核心」？ 缠论中上涨趋势的核心是低点上移。跟随向上一笔时，内部次级别低点不断抬高，高点可不完全上移（构成包含关系）。入场后一直跟随至出现空头标志，如下破前三笔低点或第二类卖点，即可完整获取利润空间。 20261103乔木缠论ROEE.md L741（来源：视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L741）\n[2] 缠论是如何跟随向上一笔"
+    },
+    {
+      "id": "holdout-184",
+      "category": "unknown",
+      "delta_char": -0.134,
+      "base": 0.3505,
+      "rag": 0.2165,
+      "in_review": false,
+      "question": "数列 2，5，10，17，26，？ 有什么规律？下一项是多少？请说明。"
+    },
+    {
+      "id": "holdout-190",
+      "category": "unknown",
+      "delta_char": -0.1251,
+      "base": 0.3339,
+      "rag": 0.2088,
+      "in_review": false,
+      "question": "我想从一张员工表里查出工资高于 8000 的姓名和部门，SQL 基础查询的具体步骤该怎么写？"
+    },
+    {
+      "id": "holdout-168",
+      "category": "unknown",
+      "delta_char": -0.1221,
+      "base": 0.3618,
+      "rag": 0.2397,
+      "in_review": false,
+      "question": "把中文成语翻成英文，是不是都要找一个英文成语来对应？"
+    },
+    {
+      "id": "holdout-015",
+      "category": "E_variant",
+      "delta_char": -0.1198,
+      "base": 0.3662,
+      "rag": 0.2464,
+      "in_review": true,
+      "question": "用一句话解释「MACD指标的D0轴之上」。"
+    },
+    {
+      "id": "holdout-020",
+      "category": "E_variant",
+      "delta_char": -0.114,
+      "base": 0.2901,
+      "rag": 0.1761,
+      "in_review": true,
+      "question": "用一句话解释「最优执行轨迹」。"
+    }
+  ],
+  "best10": [
+    {
+      "id": "holdout-114",
+      "category": "E_variant",
+      "delta_char": 0.4565,
+      "base": 0.2179,
+      "rag": 0.6744,
+      "in_review": false,
+      "question": "「六大量化交易模块」的要点是什么？"
+    },
+    {
+      "id": "holdout-123",
+      "category": "E_variant",
+      "delta_char": 0.3988,
+      "base": 0.0948,
+      "rag": 0.4936,
+      "in_review": false,
+      "question": "「客座率水平」的要点是什么？"
+    },
+    {
+      "id": "holdout-061",
+      "category": "C_reading_comprehension",
+      "delta_char": 0.3935,
+      "base": 0.0966,
+      "rag": 0.4901,
+      "in_review": false,
+      "question": "原文提出防止过度拟合的方法有哪些？"
+    },
+    {
+      "id": "holdout-119",
+      "category": "E_variant",
+      "delta_char": 0.3842,
+      "base": 0.1783,
+      "rag": 0.5625,
+      "in_review": false,
+      "question": "用一句话解释「航空业运力与需求」。"
+    },
+    {
+      "id": "holdout-096",
+      "category": "E_variant",
+      "delta_char": 0.3449,
+      "base": 0.2767,
+      "rag": 0.6216,
+      "in_review": false,
+      "question": "用一句话解释「购房贷款贴息政策」。"
+    },
+    {
+      "id": "holdout-054",
+      "category": "C_reading_comprehension",
+      "delta_char": 0.3423,
+      "base": 0.1401,
+      "rag": 0.4824,
+      "in_review": false,
+      "question": "一夜吃股法第一步在什么时间筛选涨幅？"
+    },
+    {
+      "id": "holdout-003",
+      "category": "E_variant",
+      "delta_char": 0.3152,
+      "base": 0.2458,
+      "rag": 0.561,
+      "in_review": true,
+      "question": "用一句话解释「条件交易单的风险有哪些」。"
+    },
+    {
+      "id": "holdout-001",
+      "category": "A_concept_qa",
+      "delta_char": 0.3149,
+      "base": 0.2309,
+      "rag": 0.5458,
+      "in_review": true,
+      "question": "什么是「条件交易单的风险有哪些」？"
+    },
+    {
+      "id": "holdout-045",
+      "category": "C_reading_comprehension",
+      "delta_char": 0.294,
+      "base": 0.1996,
+      "rag": 0.4936,
+      "in_review": false,
+      "question": "该项目如何筛选并分层整理量化工具？"
+    },
+    {
+      "id": "holdout-029",
+      "category": "B_conclusion_rewrite",
+      "delta_char": 0.2824,
+      "base": 0.1751,
+      "rag": 0.4575,
+      "in_review": false,
+      "question": "关于「均线老丫头是一种中继形态」，知识库的结论是什么？"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+ "api": "factor_list",
+ "source": "https://api.tushare.pro",
+ "fetched_at": "2026-11-05 06:59:32",
+ "asset_type": "STK",
+ "rows": 272,
+ "unique_factor_name": 272,
+ "by_type": {
+  "Alpha101": 101,
+  "Growth": 15,
+  "Liquidity": 35,
+  "Momentum": 20,
+  "Quality": 59,
+  "Reversal": 3,
+  "Risk": 25,
+  "Size": 3,
+  "Value": 11
+ },
+ "by_asset": {"STK": 272},
+ "fields": ["factor_name", "asset_type", "factor_type", "factor_desc"],
+ "snapshot_json": "quant_backtest/data/factor_library/tushare_factor_list/snapshots/factor_list_20261105.json",
+ "snapshot_parquet": "quant_backtest/data/factor_library/tushare_factor_list/snapshots/factor_list_20261105.parquet",
+ "sha256": "80892d701a0ff737c9817c2ca8877cc037beb325e8fbcbc3fb909f38315a7f6f",
+ "bytes_json": 101008,
+ "bytes_parquet": 25360,
+ "token_sha8": "0fd89b25",
+ "tool": "tools/data_sources/tushare_factor_list.py",
+ "note": "静态因子清单快照；不含因子值，不进入 catalog 时序扫描。本轮实调 code=0，返回 272 行，与 Tushare 文档分类计数一致。"
+}

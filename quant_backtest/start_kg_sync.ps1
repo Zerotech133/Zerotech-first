@@ -155,15 +155,27 @@ try {
     $alignScript = 'C:\项目\老田的AI助手\tools\datawarehouse\registry_align.py'
     $alignOut = 'C:\Temp\kg_registry_align_out.log'
     $alignErr = 'C:\Temp\kg_registry_align_err.log'
-    $alignProc = Start-Process -FilePath $alignPy `
-        -ArgumentList @('-X','utf8',$alignScript,'--apply','--json') `
-        -WorkingDirectory 'C:\项目\老田的AI助手' `
-        -RedirectStandardOutput $alignOut -RedirectStandardError $alignErr `
-        -PassThru -WindowStyle Hidden -Wait
-    $alignRc = $alignProc.ExitCode
-    ('registry_align exit=' + $alignRc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+    # R9 (2026-11-06): 链尾对齐加 1 次重试 (60s 退避)，全失败标 STALE 并告警。
+    # 背景: 11-05 出现 rc=1，链日志只有一行 WARN，registry 旧一整天无人察觉。
+    # 退出码: 0=已对齐/对齐成功; 1=写后校验失败已回滚; 2=前置错误(锁占用/前置未满足/catalog 不可读)。
+    # 回滚: cp C:\项目\backups\start_kg_sync.ps1.bak-20261106-R9 <本文件>
+    $alignRc = 1
+    $alignTry = 0
+    $alignMax = 2
+    while ($alignTry -lt $alignMax) {
+        $alignTry++
+        $alignProc = Start-Process -FilePath $alignPy `
+            -ArgumentList @('-X','utf8',$alignScript,'--apply','--json') `
+            -WorkingDirectory 'C:\项目\老田的AI助手' `
+            -RedirectStandardOutput $alignOut -RedirectStandardError $alignErr `
+            -PassThru -WindowStyle Hidden -Wait
+        $alignRc = $alignProc.ExitCode
+        ('registry_align attempt=' + $alignTry + '/' + $alignMax + ' exit=' + $alignRc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+        if ($alignRc -eq 0) { break }
+        if ($alignTry -lt $alignMax) { Start-Sleep -Seconds 60 }
+    }
     if ($alignRc -ne 0) {
-        ('kg_sync WARN registry_align (data chain already done) rc=' + $alignRc) | Out-File $log -Append -Encoding utf8
+        ('kg_sync STALE registry_align rc=' + $alignRc + ' after ' + $alignMax + ' attempts at ' + (Get-Date -Format s) + ': warehouse_registry may be outdated; run tools/datawarehouse/registry_align.py --apply manually') | Out-File $log -Append -Encoding utf8
         & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py kg_sync:registry_align $alignRc $alignErr 1>$null 2>$null
     }
     ('kg_sync OK ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8

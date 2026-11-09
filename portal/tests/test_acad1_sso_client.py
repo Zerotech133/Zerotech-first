@@ -285,12 +285,35 @@ def test_route_baseline_unchanged():
 
 
 # ── 3. live 只读契约（不可达 skip，不依赖服务） ─────────────────────
+# nginx 返回 502/503/504 表示「反代上游没有应答」，本用例的上游是 8105 智策 API。
+# 本用例校验的是**鉴权语义**（未登录不得拿到数据），不是上游存活；
+# 上游存活由 ZhiceAPI8105Guard 与 portal_health 负责，不该让 fast 门依赖 live 服务健康度。
+#
+# 但「5xx 就 skip」会把「反代配错/改错地址」也一起吞掉（那也是 502，却是真 bug）。
+# 故 5xx 时再探一次上游端口：
+#   - 8105 未监听 → 服务没起，环境故障 → skip（附原因，写明探测结果）
+#   - 8105 在监听 → 说明服务活着却反代不通，属配置缺陷 → 返回真实码，让断言红。
+_UPSTREAM_DOWN = (502, 503, 504)
+_UPSTREAM_PORT = 8105
+
+
+def _upstream_listening() -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(1.0)
+        return sock.connect_ex(("127.0.0.1", _UPSTREAM_PORT)) == 0
+
+
 def _http_status(req):
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.status, resp.read()[:500]
     except urllib.error.HTTPError as exc:
-        return exc.code, (exc.read() or b"")[:500]
+        code, body = exc.code, (exc.read() or b"")[:500]
+        if code in _UPSTREAM_DOWN and not _upstream_listening():
+            pytest.skip("8734 反代上游 %d 未监听（HTTP %s），跳过 live 契约校验"
+                        % (_UPSTREAM_PORT, code))
+        return code, body
     except Exception as exc:  # noqa: BLE001 — 服务不可达 → skip
         pytest.skip("8734 不可达，跳过 live 契约校验：%s" % str(exc)[:120])
 

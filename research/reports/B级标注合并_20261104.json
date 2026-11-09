@@ -1,0 +1,11 @@
+{
+  "total": 200,
+  "both_labeled": 0,
+  "consensus": 0,
+  "disagreements": 0,
+  "unevaluated": 200,
+  "agreement_rate": null,
+  "consensus_csv": "C:\\项目\\老田的AI助手\\research\\annotations\\B级标注_共识_20261104.csv",
+  "disagreement_csv": "C:\\项目\\老田的AI助手\\research\\annotations\\B级标注_分歧_20261104.csv",
+  "unevaluated_csv": "C:\\项目\\老田的AI助手\\research\\annotations\\B级标注_未完成_20261104.csv"
+}

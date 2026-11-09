@@ -1,12 +1,12 @@
 {
  "schema_version": 1,
  "date": "20261101",
- "generated_at": "2026-11-01T14:19:00+08:00",
+ "generated_at": "2026-11-07T08:58:14+08:00",
  "generator": "tools/kb_corpus/card_proposal_v3.py",
  "status": "pending_review",
  "baseline": {
-  "expected_total": 69,
-  "cards_file": 70,
+  "expected_total": 400,
+  "cards_file": 400,
   "note": "70 张基线 = 现有 cards 文件 + 清单 pass36（已授权合并）+ 修订 merge_fix14；按 concept 去重"
  },
  "coverage": {
@@ -15,39 +15,39 @@
   "covered_after": 21,
   "coverage_rate_before": 1.0,
   "coverage_rate_after": 1.0,
-  "depth_covered_before": 15,
-  "depth_covered_after": 17,
-  "depth_coverage_rate_before": 0.7143,
-  "depth_coverage_rate_after": 0.8095,
-  "units_total": 498,
-  "unit_coverage_before": 0.1386,
-  "unit_coverage_after": 0.2189,
-  "cards_before": 69,
-  "cards_after": 109,
+  "depth_covered_before": 19,
+  "depth_covered_after": 19,
+  "depth_coverage_rate_before": 0.9048,
+  "depth_coverage_rate_after": 0.9048,
+  "units_total": 516,
+  "unit_coverage_before": 0.7752,
+  "unit_coverage_after": 0.8411,
+  "cards_before": 400,
+  "cards_after": 434,
   "rows": [
    {
-    "theme": "AI算力/硬件",
-    "units": 108,
-    "cards_before": 10,
-    "cards_after": 10,
-    "delta": 0,
+    "theme": "其他",
+    "units": 117,
+    "cards_before": 201,
+    "cards_after": 204,
+    "delta": 3,
     "covered_before": true,
     "covered_after": true
    },
    {
-    "theme": "其他",
-    "units": 102,
-    "cards_before": 6,
-    "cards_after": 8,
-    "delta": 2,
+    "theme": "AI算力/硬件",
+    "units": 108,
+    "cards_before": 37,
+    "cards_after": 40,
+    "delta": 3,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "新能源/电力",
     "units": 71,
-    "cards_before": 5,
-    "cards_after": 8,
+    "cards_before": 19,
+    "cards_after": 22,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -55,17 +55,17 @@
    {
     "theme": "宏观/政策",
     "units": 42,
-    "cards_before": 6,
-    "cards_after": 6,
-    "delta": 0,
+    "cards_before": 21,
+    "cards_after": 24,
+    "delta": 3,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "量学/交易",
     "units": 31,
-    "cards_before": 4,
-    "cards_after": 7,
+    "cards_before": 25,
+    "cards_after": 28,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -73,8 +73,8 @@
    {
     "theme": "消费/零售",
     "units": 27,
-    "cards_before": 3,
-    "cards_after": 6,
+    "cards_before": 8,
+    "cards_after": 11,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -82,8 +82,17 @@
    {
     "theme": "金融/地产",
     "units": 25,
-    "cards_before": 2,
-    "cards_after": 5,
+    "cards_before": 17,
+    "cards_after": 20,
+    "delta": 3,
+    "covered_before": true,
+    "covered_after": true
+   },
+   {
+    "theme": "机械/制造",
+    "units": 17,
+    "cards_before": 10,
+    "cards_after": 13,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -91,17 +100,8 @@
    {
     "theme": "军工/航天",
     "units": 16,
-    "cards_before": 3,
-    "cards_after": 6,
-    "delta": 3,
-    "covered_before": true,
-    "covered_after": true
-   },
-   {
-    "theme": "机械/制造",
-    "units": 16,
-    "cards_before": 3,
-    "cards_after": 6,
+    "cards_before": 7,
+    "cards_after": 10,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -109,8 +109,8 @@
    {
     "theme": "化工/材料",
     "units": 9,
-    "cards_before": 1,
-    "cards_after": 4,
+    "cards_before": 4,
+    "cards_after": 7,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -118,41 +118,50 @@
    {
     "theme": "交运/物流",
     "units": 8,
-    "cards_before": 3,
-    "cards_after": 6,
-    "delta": 3,
+    "cards_before": 6,
+    "cards_after": 7,
+    "delta": 1,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "网络安全/信创",
     "units": 8,
-    "cards_before": 3,
-    "cards_after": 6,
-    "delta": 3,
+    "cards_before": 7,
+    "cards_after": 7,
+    "delta": 0,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "有色/金属",
     "units": 7,
-    "cards_before": 3,
-    "cards_after": 6,
-    "delta": 3,
+    "cards_before": 8,
+    "cards_after": 9,
+    "delta": 1,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "农业",
     "units": 5,
-    "cards_before": 3,
+    "cards_before": 5,
     "cards_after": 5,
-    "delta": 2,
+    "delta": 0,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "半导体/电子",
+    "units": 5,
+    "cards_before": 8,
+    "cards_after": 8,
+    "delta": 0,
+    "covered_before": true,
+    "covered_after": true
+   },
+   {
+    "theme": "评级/研报方法论",
     "units": 5,
     "cards_before": 3,
     "cards_after": 5,
@@ -163,36 +172,27 @@
    {
     "theme": "建筑/建材",
     "units": 4,
-    "cards_before": 3,
+    "cards_before": 4,
     "cards_after": 4,
-    "delta": 1,
+    "delta": 0,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "通信/互联网",
     "units": 4,
-    "cards_before": 3,
+    "cards_before": 4,
     "cards_after": 4,
-    "delta": 1,
+    "delta": 0,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "医药/生物",
     "units": 3,
-    "cards_before": 2,
-    "cards_after": 2,
+    "cards_before": 3,
+    "cards_after": 3,
     "delta": 0,
-    "covered_before": true,
-    "covered_after": true
-   },
-   {
-    "theme": "评级/研报方法论",
-    "units": 3,
-    "cards_before": 1,
-    "cards_after": 2,
-    "delta": 1,
     "covered_before": true,
     "covered_after": true
    },
@@ -208,9 +208,9 @@
    {
     "theme": "汽车/智驾",
     "units": 2,
-    "cards_before": 1,
+    "cards_before": 2,
     "cards_after": 2,
-    "delta": 1,
+    "delta": 0,
     "covered_before": true,
     "covered_after": true
    }
@@ -218,258 +218,212 @@
  },
  "groups": [
   {
-   "theme": "交运/物流",
+   "theme": "AI算力/硬件",
    "count": 3,
-   "units": 8,
-   "before": 3,
-   "after": 6,
+   "units": 108,
+   "before": 37,
+   "after": 40,
    "card_ids": [
-    "CP3-20261101-018",
-    "CP3-20261101-019",
-    "CP3-20261101-020"
+    "CP3-20261101-029",
+    "CP3-20261101-030",
+    "CP3-20261101-031"
+   ]
+  },
+  {
+   "theme": "交运/物流",
+   "count": 1,
+   "units": 8,
+   "before": 6,
+   "after": 7,
+   "card_ids": [
+    "CP3-20261101-006"
    ]
   },
   {
    "theme": "其他",
-   "count": 2,
-   "units": 102,
-   "before": 6,
-   "after": 8,
+   "count": 3,
+   "units": 117,
+   "before": 201,
+   "after": 204,
    "card_ids": [
-    "CP3-20261101-039",
-    "CP3-20261101-040"
+    "CP3-20261101-032",
+    "CP3-20261101-033",
+    "CP3-20261101-034"
    ]
   },
   {
    "theme": "军工/航天",
    "count": 3,
    "units": 16,
-   "before": 3,
-   "after": 6,
+   "before": 7,
+   "after": 10,
    "card_ids": [
-    "CP3-20261101-012",
-    "CP3-20261101-013",
-    "CP3-20261101-014"
-   ]
-  },
-  {
-   "theme": "农业",
-   "count": 2,
-   "units": 5,
-   "before": 3,
-   "after": 5,
-   "card_ids": [
-    "CP3-20261101-027",
-    "CP3-20261101-028"
+    "CP3-20261101-007",
+    "CP3-20261101-008",
+    "CP3-20261101-009"
    ]
   },
   {
    "theme": "化工/材料",
    "count": 3,
    "units": 9,
-   "before": 1,
-   "after": 4,
+   "before": 4,
+   "after": 7,
    "card_ids": [
-    "CP3-20261101-001",
-    "CP3-20261101-002",
-    "CP3-20261101-003"
+    "CP3-20261101-003",
+    "CP3-20261101-004",
+    "CP3-20261101-005"
    ]
   },
   {
-   "theme": "半导体/电子",
-   "count": 2,
-   "units": 5,
-   "before": 3,
-   "after": 5,
+   "theme": "宏观/政策",
+   "count": 3,
+   "units": 42,
+   "before": 21,
+   "after": 24,
    "card_ids": [
-    "CP3-20261101-029",
-    "CP3-20261101-030"
-   ]
-  },
-  {
-   "theme": "建筑/建材",
-   "count": 1,
-   "units": 4,
-   "before": 3,
-   "after": 4,
-   "card_ids": [
-    "CP3-20261101-031"
+    "CP3-20261101-023",
+    "CP3-20261101-024",
+    "CP3-20261101-025"
    ]
   },
   {
    "theme": "新能源/电力",
    "count": 3,
    "units": 71,
-   "before": 5,
-   "after": 8,
+   "before": 19,
+   "after": 22,
    "card_ids": [
-    "CP3-20261101-036",
-    "CP3-20261101-037",
-    "CP3-20261101-038"
+    "CP3-20261101-020",
+    "CP3-20261101-021",
+    "CP3-20261101-022"
    ]
   },
   {
    "theme": "有色/金属",
-   "count": 3,
+   "count": 1,
    "units": 7,
-   "before": 3,
-   "after": 6,
+   "before": 8,
+   "after": 9,
    "card_ids": [
-    "CP3-20261101-024",
-    "CP3-20261101-025",
-    "CP3-20261101-026"
+    "CP3-20261101-013"
    ]
   },
   {
    "theme": "机械/制造",
    "count": 3,
-   "units": 16,
-   "before": 3,
-   "after": 6,
+   "units": 17,
+   "before": 10,
+   "after": 13,
    "card_ids": [
+    "CP3-20261101-014",
     "CP3-20261101-015",
-    "CP3-20261101-016",
-    "CP3-20261101-017"
-   ]
-  },
-  {
-   "theme": "汽车/智驾",
-   "count": 1,
-   "units": 2,
-   "before": 1,
-   "after": 2,
-   "card_ids": [
-    "CP3-20261101-005"
+    "CP3-20261101-016"
    ]
   },
   {
    "theme": "消费/零售",
    "count": 3,
    "units": 27,
-   "before": 3,
-   "after": 6,
+   "before": 8,
+   "after": 11,
    "card_ids": [
-    "CP3-20261101-009",
     "CP3-20261101-010",
-    "CP3-20261101-011"
-   ]
-  },
-  {
-   "theme": "网络安全/信创",
-   "count": 3,
-   "units": 8,
-   "before": 3,
-   "after": 6,
-   "card_ids": [
-    "CP3-20261101-021",
-    "CP3-20261101-022",
-    "CP3-20261101-023"
+    "CP3-20261101-011",
+    "CP3-20261101-012"
    ]
   },
   {
    "theme": "评级/研报方法论",
-   "count": 1,
-   "units": 3,
-   "before": 1,
-   "after": 2,
-   "card_ids": [
-    "CP3-20261101-004"
-   ]
-  },
-  {
-   "theme": "通信/互联网",
-   "count": 1,
-   "units": 4,
+   "count": 2,
+   "units": 5,
    "before": 3,
-   "after": 4,
+   "after": 5,
    "card_ids": [
-    "CP3-20261101-032"
+    "CP3-20261101-001",
+    "CP3-20261101-002"
    ]
   },
   {
    "theme": "量学/交易",
    "count": 3,
    "units": 31,
-   "before": 4,
-   "after": 7,
+   "before": 25,
+   "after": 28,
    "card_ids": [
-    "CP3-20261101-033",
-    "CP3-20261101-034",
-    "CP3-20261101-035"
+    "CP3-20261101-026",
+    "CP3-20261101-027",
+    "CP3-20261101-028"
    ]
   },
   {
    "theme": "金融/地产",
    "count": 3,
    "units": 25,
-   "before": 2,
-   "after": 5,
+   "before": 17,
+   "after": 20,
    "card_ids": [
-    "CP3-20261101-006",
-    "CP3-20261101-007",
-    "CP3-20261101-008"
+    "CP3-20261101-017",
+    "CP3-20261101-018",
+    "CP3-20261101-019"
    ]
   }
  ],
  "summary": {
-  "candidates": 40,
+  "candidates": 34,
   "themes_covered_after": 21,
   "coverage_rate_before": 1.0,
   "coverage_rate_after": 1.0,
-  "depth_coverage_rate_before": 0.7143,
-  "depth_coverage_rate_after": 0.8095,
-  "unit_coverage_before": 0.1386,
-  "unit_coverage_after": 0.2189,
+  "depth_coverage_rate_before": 0.9048,
+  "depth_coverage_rate_after": 0.9048,
+  "unit_coverage_before": 0.7752,
+  "unit_coverage_after": 0.8411,
   "gap_themes": [
+   "AI算力/硬件",
    "交运/物流",
    "其他",
    "军工/航天",
-   "农业",
    "化工/材料",
-   "半导体/电子",
-   "建筑/建材",
+   "宏观/政策",
    "新能源/电力",
    "有色/金属",
    "机械/制造",
-   "汽车/智驾",
    "消费/零售",
-   "网络安全/信创",
    "评级/研报方法论",
-   "通信/互联网",
    "量学/交易",
    "金融/地产"
   ],
   "angles": {
-   "概念定义": 14,
-   "关键事实": 13,
-   "影响传导": 13
+   "概念定义": 12,
+   "关键事实": 11,
+   "影响传导": 11
   }
  },
  "candidates": [
   {
    "card_id": "CP3-20261101-001",
    "status": "pending_review",
-   "theme": "化工/材料",
+   "theme": "评级/研报方法论",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「PTFE材料路线」？",
-   "a": "PTFE作为低损耗材料的下一代路线，其介电常数约2.1-2.2、损耗低于0.0004，性能优于M9体系；但因其热塑性导致的加工难题（如钻孔毛刺），产业化需采用'PTFE芯层+M9半固化片’的混压结构来平衡信号完整性与工艺可行性。",
-   "concept": "PTFE材料路线",
+   "q": "什么是「趋势模板」？",
+   "a": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
+   "concept": "趋势模板",
    "unit_id": "u001",
    "unit_key": {
-    "book": "rp_AP202610071830180005",
-    "chapter": "图表目录",
-    "p1": 2,
-    "p2": 14
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "一、趋势模板（00:00–00:26）",
+    "p1": 1,
+    "p2": 1
    },
-   "book": "rp_AP202610071830180005",
-   "chapter": "图表目录",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "PTFE是低损耗材料潜在的下一代路线...10GHz条件下介电常数约2.1-2.2、介电损耗低于0.0004，较M9的介电常数约3.0-3.1、介电损耗约0.00046-0.00050实现代际级领先...但PTFE属热塑性材料，不发生交联固化反应，存在压合稳定性差、钻孔易产生毛刺等难题；产业界当前讨论的方案并非整板PTFE，而是以PTFE层作芯层、搭配M9等级半固化片提供机械支撑的混压结构。",
-   "claim": "PTFE作为低损耗材料的下一代路线，其介电常数约2.1-2.2、损耗低于0.0004，性能优于M9体系；但因其热塑性导致的加工难题（如钻孔毛刺），产业化需采用'PTFE芯层+M9半固化片’的混压结构来平衡信号完整性与工艺可行性。",
-   "source_tag": "研报",
-   "quality_score": 86.3,
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "一、趋势模板（00:00–00:26）",
+   "page_start": 1,
+   "page_end": 1,
+   "evidence": "米勒维尼用一张清单筛股，称之为趋势模板；八条：50/150/200 均线上方且多头排列；200 日线上升≥1 个月；52 周低点+30%以上；52 周高点-25%以内；相对强度≥70（最好90+）。先筛出领涨股，再找买点。",
+   "claim": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
+   "source_tag": "策略经典",
+   "quality_score": 70.8,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -484,27 +438,27 @@
   {
    "card_id": "CP3-20261101-002",
    "status": "pending_review",
-   "theme": "化工/材料",
+   "theme": "评级/研报方法论",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「球形硅微粉」有哪些关键事实或数据？",
-   "a": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球形硅微粉由日本Admatechs、Denka、Resonac垄断，合计占据六成以上市场份额。",
-   "concept": "球形硅微粉",
+   "q": "「RS 评级口径」有哪些关键事实或数据？",
+   "a": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
+   "concept": "RS 评级口径",
    "unit_id": "u002",
    "unit_key": {
-    "book": "rp_AP202610071830180005",
-    "chapter": "图表目录",
-    "p1": 2,
-    "p2": 14
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "十二、资源：O'Neil RS Rating 方法",
+    "p1": 13,
+    "p2": 13
    },
-   "book": "rp_AP202610071830180005",
-   "chapter": "图表目录",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球形硅微粉由日本Admatechs、Denka、Resonac垄断，合计占据六成以上市场份额。",
-   "claim": "球形硅微粉是低损耗材料的关键卡位材料，其纯度、粒度与球形度直接决定高速基板的线性膨胀系数（CTE）、信号质量及散热性能；高端亚微米级产品目前由日本厂商垄断，国产替代空间巨大。",
-   "source_tag": "研报",
-   "quality_score": 74.4,
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "十二、资源：O'Neil RS Rating 方法",
+   "page_start": 13,
+   "page_end": 13,
+   "evidence": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
+   "claim": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。",
+   "source_tag": "策略经典",
+   "quality_score": 66.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -522,24 +476,24 @@
    "theme": "化工/材料",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「主要原材料价格波动」的影响与传导是什么？",
-   "a": "2026 年 9 月第一周，铁矿石期货价格小幅下跌，铜价上涨约 1.5%，铝价下跌约 0.9%，环氧树脂价格持平。 依据：本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。环氧树脂价格为 15650 元/吨，环比持平。",
-   "concept": "主要原材料价格波动",
+   "q": "「原材料价格变动」的影响与传导是什么？",
+   "a": "截至 2026 年 9 月 18 日，铁矿石期货价格为 715.5 元/吨，环比下降；铜、铝现货价格分别上涨 2.0% 和 0.3%。 依据：本周铁矿石期货收盘价 715.5 元/吨，环比 -2.5 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3512 元/吨，环比 -14 元/吨；铜、铝现货价格分别为 14529、3285 美元/吨，单价分别+290.5、+11 美元/吨。",
+   "concept": "原材料价格变动",
    "unit_id": "u003",
    "unit_key": {
-    "book": "rp_AP202610021830105372",
-    "chapter": "市场研究部 2026 年9 月30 日",
+    "book": "rp_AP202610021830105333",
+    "chapter": "市场研究部 2026 年9 月22 日",
     "p1": 1,
-    "p2": 9
+    "p2": 10
    },
-   "book": "rp_AP202610021830105372",
-   "chapter": "市场研究部 2026 年9 月30 日",
+   "book": "rp_AP202610021830105333",
+   "chapter": "市场研究部 2026 年9 月22 日",
    "page_start": 1,
-   "page_end": 9,
-   "evidence": "本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。环氧树脂价格为 15650 元/吨，环比持平。",
-   "claim": "2026 年 9 月第一周，铁矿石期货价格小幅下跌，铜价上涨约 1.5%，铝价下跌约 0.9%，环氧树脂价格持平。",
+   "page_end": 10,
+   "evidence": "本周铁矿石期货收盘价 715.5 元/吨，环比 -2.5 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3512 元/吨，环比 -14 元/吨；铜、铝现货价格分别为 14529、3285 美元/吨，单价分别+290.5、+11 美元/吨。",
+   "claim": "截至 2026 年 9 月 18 日，铁矿石期货价格为 715.5 元/吨，环比下降；铜、铝现货价格分别上涨 2.0% 和 0.3%。",
    "source_tag": "研报",
-   "quality_score": 66.2,
+   "quality_score": 62.9,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -554,27 +508,27 @@
   {
    "card_id": "CP3-20261101-004",
    "status": "pending_review",
-   "theme": "评级/研报方法论",
+   "theme": "化工/材料",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「恒生科技指数估值」？",
-   "a": "截至2026年9月27日，恒生科技指数PE-TTM为22.93x，处于成立以来34.27%分位点，显示估值较上月有所下降。",
-   "concept": "恒生科技指数估值",
+   "q": "什么是「化工行业产业链议价能力」？",
+   "a": "化工行业中游制造环节受上下游双重挤压，利润空间有限；仅具备技术壁垒的高端精细化学品或寡头垄断品类（如 MDI）拥有较强议价权，通用大宗品缺乏定价权。",
+   "concept": "化工行业产业链议价能力",
    "unit_id": "u004",
    "unit_key": {
-    "book": "rp_AP202610021830111802",
-    "chapter": "优于大市 互联网行业2026 年10 月投资策略",
+    "book": "rp_AP202610021830105528",
+    "chapter": "摘要：",
     "p1": 1,
-    "p2": 13
+    "p2": 12
    },
-   "book": "rp_AP202610021830111802",
-   "chapter": "优于大市 互联网行业2026 年10 月投资策略",
+   "book": "rp_AP202610021830105528",
+   "chapter": "摘要：",
    "page_start": 1,
-   "page_end": 13,
-   "evidence": "从市盈率看，恒生科技指数估值较上月下降：截至2026 年9 月27 日，恒生科技指数PE-TTM 为22.93x，处于恒生科技指数成立以来34.27%分位点。",
-   "claim": "截至2026年9月27日，恒生科技指数PE-TTM为22.93x，处于成立以来34.27%分位点，显示估值较上月有所下降。",
+   "page_end": 12,
+   "evidence": "上游资源端凭借禀赋拥有强议价权，下游对通用产品有强议价能力。中游大宗品因产能过剩普遍缺乏定价权，但二苯基甲烷二异氰酸酯（MDI）等寡头垄断品类基本可完全转嫁成本，高端领域可凭技术壁垒构筑优势。",
+   "claim": "化工行业中游制造环节受上下游双重挤压，利润空间有限；仅具备技术壁垒的高端精细化学品或寡头垄断品类（如 MDI）拥有较强议价权，通用大宗品缺乏定价权。",
    "source_tag": "研报",
-   "quality_score": 53.4,
+   "quality_score": 59.5,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -589,27 +543,27 @@
   {
    "card_id": "CP3-20261101-005",
    "status": "pending_review",
-   "theme": "汽车/智驾",
+   "theme": "化工/材料",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「四足机器人商业化挑战」有哪些关键事实或数据？",
-   "a": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
-   "concept": "四足机器人商业化挑战",
+   "q": "「化工行业信用风险格局」有哪些关键事实或数据？",
+   "a": "微观财务数据显示，多数企业维持正向现金流，但盈利修复缓慢；头部企业凭规模与融资优势率先修复，尾部企业在现金成本以下持续亏损。预计 2026 年下半年，尾部企业信用事件进入高发区间。",
+   "concept": "化工行业信用风险格局",
    "unit_id": "u005",
    "unit_key": {
-    "book": "rp_AP202610021830105414",
-    "chapter": "中国四足机器人商业化研究报告",
+    "book": "rp_AP202610021830105528",
+    "chapter": "摘要：",
     "p1": 1,
-    "p2": 13
+    "p2": 12
    },
-   "book": "rp_AP202610021830105414",
-   "chapter": "中国四足机器人商业化研究报告",
+   "book": "rp_AP202610021830105528",
+   "chapter": "摘要：",
    "page_start": 1,
-   "page_end": 13,
-   "evidence": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
-   "claim": "当前四足机器人面临的核心挑战包括：在动态复杂环境下泛化能力不足、极端环境感知失效、核心零部件半定制化导致开发效率低，以及缺乏跨设备数据流通标准。",
+   "page_end": 12,
+   "evidence": "微观财务数据显示，多数企业维持正向现金流，但盈利修复缓慢；头部企业凭规模与融资优势率先修复，尾部企业在现金成本以下持续亏损。预计 2026 年下半年，尾部企业信用事件进入高发区间。",
+   "claim": "化工行业信用风险呈现“头部稳健、中部分化、尾部承压”的格局，预计下半年尾部企业信用事件将进入高发区间，因其在现金成本以下持续亏损且融资优势丧失。",
    "source_tag": "研报",
-   "quality_score": 56.7,
+   "quality_score": 58.0,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -624,27 +578,27 @@
   {
    "card_id": "CP3-20261101-006",
    "status": "pending_review",
-   "theme": "金融/地产",
+   "theme": "交运/物流",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「资本市场改革成效」的影响与传导是什么？",
-   "a": "在“十五五”期间，中国资本市场将在支持技术创新、促进居民财富配置和提升金融部门国际竞争力方面发挥关键作用。 依据：Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial role in supporting technological innovation, facilitating household wealth allocation, and enhancing the financial sector's international competitivene…",
-   "concept": "资本市场改革成效",
+   "q": "「快递行业量价走势」的影响与传导是什么？",
+   "a": "淡季下快递业务量环比回落，但单件均价保持稳健回升态势。 依据：8 月淡季短期快递量环比仍有所下滑，但件均价保持稳健；1-8 月单件均价为 7.68 元/件，同比 +2.7%。",
+   "concept": "快递行业量价走势",
    "unit_id": "u006",
    "unit_key": {
-    "book": "rp_AP202610031830124601",
-    "chapter": "VOL.172 2026.09《金融市场研究》13",
-    "p1": 13,
-    "p2": 13
+    "book": "rp_AP202609301830034661",
+    "chapter": "8 月快递行业月度数据跟踪报告 强于大市(维持)",
+    "p1": 1,
+    "p2": 3
    },
-   "book": "rp_AP202610031830124601",
-   "chapter": "VOL.172 2026.09《金融市场研究》13",
-   "page_start": 13,
-   "page_end": 13,
-   "evidence": "Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial role in supporting technological innovation, facilitating household wealth allocation, and enhancing the financial sector's international competitiveness.",
-   "claim": "在“十五五”期间，中国资本市场将在支持技术创新、促进居民财富配置和提升金融部门国际竞争力方面发挥关键作用。",
+   "book": "rp_AP202609301830034661",
+   "chapter": "8 月快递行业月度数据跟踪报告 强于大市(维持)",
+   "page_start": 1,
+   "page_end": 3,
+   "evidence": "8 月淡季短期快递量环比仍有所下滑，但件均价保持稳健；1-8 月单件均价为 7.68 元/件，同比 +2.7%。",
+   "claim": "淡季下快递业务量环比回落，但单件均价保持稳健回升态势。",
    "source_tag": "研报",
-   "quality_score": 78.2,
+   "quality_score": 41.1,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -659,27 +613,27 @@
   {
    "card_id": "CP3-20261101-007",
    "status": "pending_review",
-   "theme": "金融/地产",
+   "theme": "军工/航天",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「中小行配债增速回落」？",
-   "a": "2026 年 8 月末，中小银行债券配置增速降至 4.87%，与大行 18.05% 的高位形成鲜明对比，呈现‘大行放贷、小行买债’逻辑重构。",
-   "concept": "中小行配债增速回落",
+   "q": "什么是「进口产品结构」？",
+   "a": "2026 年 1-8 月，中国无人驾驶航空器进口额中，“仅使用遥控飞行”类产品占比高达 98.6%，显示出极高的市场集中度。",
+   "concept": "进口产品结构",
    "unit_id": "u007",
    "unit_key": {
-    "book": "rp_AP202609301830035477",
-    "chapter": "中小行配债走弱：成因与趋势判断",
-    "p1": 1,
-    "p2": 13
+    "book": "rp_AP202610061830165864",
+    "chapter": "一、贸易总体情况",
+    "p1": 2,
+    "p2": 12
    },
-   "book": "rp_AP202609301830035477",
-   "chapter": "中小行配债走弱：成因与趋势判断",
-   "page_start": 1,
-   "page_end": 13,
-   "evidence": "截至 2026 年 8 月末，中小行配债增速下降至 4.87%，与大行 18.05% 的高位形成鲜明对比。关键背离在于：中小行存贷增速差 3.33%（高于大行 2.84%），逻辑上冗余流动性更多，但配债反而放缓——说明部分机构不是无钱可配，而是有钱也不买债。",
-   "claim": "2026 年 8 月末，中小银行债券配置增速降至 4.87%，与大行 18.05% 的高位形成鲜明对比，呈现‘大行放贷、小行买债’逻辑重构。",
+   "book": "rp_AP202610061830165864",
+   "chapter": "一、贸易总体情况",
+   "page_start": 2,
+   "page_end": 12,
+   "evidence": "2026 年 1-8 月，中国无人驾驶航空器进口额排名前二的产品为仅使用遥控飞行的无人驾驶航空器和其他...分别占无人驾驶航空器贸易进口总额的 98.6%和 1.4%。",
+   "claim": "2026 年 1-8 月，中国无人驾驶航空器进口额中，“仅使用遥控飞行”类产品占比高达 98.6%，显示出极高的市场集中度。",
    "source_tag": "研报",
-   "quality_score": 64.0,
+   "quality_score": 54.5,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -694,27 +648,27 @@
   {
    "card_id": "CP3-20261101-008",
    "status": "pending_review",
-   "theme": "金融/地产",
+   "theme": "军工/航天",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「房地产行业板块表现」有哪些关键事实或数据？",
-   "a": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。",
-   "concept": "房地产行业板块表现",
+   "q": "「主要出口市场」有哪些关键事实或数据？",
+   "a": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚...分别占无人驾驶航空器贸易出口总额的 14.5%、10.4%和 6.6%。",
+   "concept": "主要出口市场",
    "unit_id": "u008",
    "unit_key": {
-    "book": "rp_AP202609301830054738",
-    "chapter": "中性",
-    "p1": 1,
+    "book": "rp_AP202610061830165864",
+    "chapter": "一、贸易总体情况",
+    "p1": 2,
     "p2": 12
    },
-   "book": "rp_AP202609301830054738",
-   "chapter": "中性",
-   "page_start": 1,
+   "book": "rp_AP202610061830165864",
+   "chapter": "一、贸易总体情况",
+   "page_start": 2,
    "page_end": 12,
-   "evidence": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。",
-   "claim": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，涨幅位列申万行业第 1 位，领先沪深 300 指数 3.79 个百分点。",
+   "evidence": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚...分别占无人驾驶航空器贸易出口总额的 14.5%、10.4%和 6.6%。",
+   "claim": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚，合计占出口总额的约 31.5%。",
    "source_tag": "研报",
-   "quality_score": 63.1,
+   "quality_score": 54.1,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -729,27 +683,27 @@
   {
    "card_id": "CP3-20261101-009",
    "status": "pending_review",
-   "theme": "消费/零售",
+   "theme": "军工/航天",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「网红营销与透明度要求」的影响与传导是什么？",
-   "a": "所有网红营销传播活动必须能被立即识别为商业内容，需清晰披露赞助性质，且证言或背书必须是真实、可核实且相关的，不得鼓励过度消费或美化醉酒状态。 依据：所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚表明证言或背书的赞助性质。testimonials and influencer endorsements shall not encourage excessive consumption, glamorize intoxication...",
-   "concept": "网红营销与透明度要求",
+   "q": "「航空煤油价格风险」的影响与传导是什么？",
+   "a": "受原油价格震荡攀升影响，预计 2026 年 10 月航空煤油价格将进一步上行，推升航空运输成本，对板块形成短期压制。 依据：9 月 1 日中国航空煤油（出厂价 (含税)）为 8170.00 元/吨，较 8 月 1 日上涨 7.8%。由于近期油价持续震荡盘升，预计 10 月航空煤油价格进一步抬升。",
+   "concept": "航空煤油价格风险",
    "unit_id": "u009",
    "unit_key": {
-    "book": "rp_AP202609301830015420",
-    "chapter": "引言",
-    "p1": 4,
-    "p2": 16
+    "book": "rp_AP202609301830022766",
+    "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
+    "p1": 1,
+    "p2": 3
    },
-   "book": "rp_AP202609301830015420",
-   "chapter": "引言",
-   "page_start": 4,
-   "page_end": 16,
-   "evidence": "所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚表明证言或背书的赞助性质。testimonials and influencer endorsements shall not encourage excessive consumption, glamorize intoxication...",
-   "claim": "所有网红营销传播活动必须能被立即识别为商业内容，需清晰披露赞助性质，且证言或背书必须是真实、可核实且相关的，不得鼓励过度消费或美化醉酒状态。",
+   "book": "rp_AP202609301830022766",
+   "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
+   "page_start": 1,
+   "page_end": 3,
+   "evidence": "9 月 1 日中国航空煤油（出厂价 (含税)）为 8170.00 元/吨，较 8 月 1 日上涨 7.8%。由于近期油价持续震荡盘升，预计 10 月航空煤油价格进一步抬升。",
+   "claim": "受原油价格震荡攀升影响，预计 2026 年 10 月航空煤油价格将进一步上行，推升航空运输成本，对板块形成短期压制。",
    "source_tag": "研报",
-   "quality_score": 75.5,
+   "quality_score": 53.8,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -767,24 +721,24 @@
    "theme": "消费/零售",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「广州零售市场策略」？",
-   "a": "截至2026年年中，广州优质购物中心空置率微升至1.8%，最优层平均租金降至622元/月/平方米。业主方普遍推行租金转扣点、长免租期等让利措施以应对供应放量压力。",
-   "concept": "广州零售市场策略",
+   "q": "什么是「海外监管与关税政策风险」？",
+   "a": "欧美多国在2026年加码监管与关税，如欧盟取消150欧元以下免关税、美国实施新一轮301关税及高额罚金，企业需调整定价、布局海外仓或转型高客单品牌以应对。",
+   "concept": "海外监管与关税政策风险",
    "unit_id": "u010",
    "unit_key": {
-    "book": "rp_AP202609301830015453",
-    "chapter": "06",
-    "p1": 2,
-    "p2": 14
+    "book": "rp_AP202610021830111804",
+    "chapter": "行业研究 · 行业专题",
+    "p1": 1,
+    "p2": 13
    },
-   "book": "rp_AP202609301830015453",
-   "chapter": "06",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "全市优质购物中心空置率保持平稳...较2025年同期仅微升1.8个百分点至1.8%...业主方为保持竞争优势，提供了更优惠的出租策略，包括租金转扣点、长免租期...让利措施的普遍推行给租金带来下行压力，录得每月每平方米622元。",
-   "claim": "截至2026年年中，广州优质购物中心空置率微升至1.8%，最优层平均租金降至622元/月/平方米。业主方普遍推行租金转扣点、长免租期等让利措施以应对供应放量压力。",
+   "book": "rp_AP202610021830111804",
+   "chapter": "行业研究 · 行业专题",
+   "page_start": 1,
+   "page_end": 13,
+   "evidence": "表2显示：欧盟2026年7月取消150欧元以下小额包裹免关税；美国2026年8月实施新一轮301关税；法国自2026年9月起实施反超快时尚法征收生态罚金。企业应对措施包括调整定价、设立海外仓及转型品牌化。",
+   "claim": "欧美多国在2026年加码监管与关税，如欧盟取消150欧元以下免关税、美国实施新一轮301关税及高额罚金，企业需调整定价、布局海外仓或转型高客单品牌以应对。",
    "source_tag": "研报",
-   "quality_score": 64.2,
+   "quality_score": 61.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -802,24 +756,24 @@
    "theme": "消费/零售",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「深圳零售市场特征」有哪些关键事实或数据？",
-   "a": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米693元。",
-   "concept": "深圳零售市场特征",
+   "q": "「房地产投资建议」有哪些关键事实或数据？",
+   "a": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
+   "concept": "房地产投资建议",
    "unit_id": "u011",
    "unit_key": {
-    "book": "rp_AP202609301830015453",
-    "chapter": "06",
-    "p1": 2,
-    "p2": 14
+    "book": "rp_AP202609301830023754",
+    "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+    "p1": 1,
+    "p2": 2
    },
-   "book": "rp_AP202609301830015453",
-   "chapter": "06",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米693元。",
-   "claim": "截至2026年年中，深圳优质购物中心空置率微升至1.5%，最优层平均租金同比下降至693元/月/平方米。成熟项目租金持稳，培育期项目多选择以价换量。",
+   "book": "rp_AP202609301830023754",
+   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+   "page_start": 1,
+   "page_end": 2,
+   "evidence": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
+   "claim": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优的企业，如华润置地、招商蛇口、贝壳-W 等。",
    "source_tag": "研报",
-   "quality_score": 64.2,
+   "quality_score": 60.6,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -834,27 +788,27 @@
   {
    "card_id": "CP3-20261101-012",
    "status": "pending_review",
-   "theme": "军工/航天",
+   "theme": "消费/零售",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「个股涨跌幅排名」的影响与传导是什么？",
-   "a": "上周国防军工行业 138 家上市公司中，51 家上涨、87 家下跌；涨幅前三名为航发科技、合众思壮和火炬电子，跌幅前三名为纵横股份、ST 亚光和兴图新科。 依据：国防军工行业 138 家上市公司中，上周 51 家公司上涨，87 家公司下跌，涨幅前 3 名分别为航发科技、合众思壮和火炬电子，跌幅前 3 名分别为纵横股份、ST 亚光和兴图新科。",
-   "concept": "个股涨跌幅排名",
+   "q": "「二手手机市场承接中低端需求」的影响与传导是什么？",
+   "a": "在新机市场整体激活量下滑及3K以下新机市场大幅下滑的背景下，重点流通价位二手机市场仍实现增长，规模已接近3K以下新机市场，正在承接部分中低端用户需求迁移。 依据：在新机市场整体激活量同比下滑 6%、3K 以下市场下滑 15% 的背景下，重点流通价位二手机市场仍实现+3% 增长，规模达到 5500 万台，已接近 3K 以下新机市场。",
+   "concept": "二手手机市场承接中低端需求",
    "unit_id": "u012",
    "unit_key": {
-    "book": "rp_AP202610021830105332",
-    "chapter": "看好",
-    "p1": 1,
-    "p2": 9
+    "book": "rp_AP202609301830015422",
+    "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
+    "p1": 2,
+    "p2": 11
    },
-   "book": "rp_AP202610021830105332",
-   "chapter": "看好",
-   "page_start": 1,
-   "page_end": 9,
-   "evidence": "国防军工行业 138 家上市公司中，上周 51 家公司上涨，87 家公司下跌，涨幅前 3 名分别为航发科技、合众思壮和火炬电子，跌幅前 3 名分别为纵横股份、ST 亚光和兴图新科。",
-   "claim": "上周国防军工行业 138 家上市公司中，51 家上涨、87 家下跌；涨幅前三名为航发科技、合众思壮和火炬电子，跌幅前三名为纵横股份、ST 亚光和兴图新科。",
+   "book": "rp_AP202609301830015422",
+   "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
+   "page_start": 2,
+   "page_end": 11,
+   "evidence": "在新机市场整体激活量同比下滑 6%、3K 以下市场下滑 15% 的背景下，重点流通价位二手机市场仍实现+3% 增长，规模达到 5500 万台，已接近 3K 以下新机市场。",
+   "claim": "在新机市场整体激活量下滑及3K以下新机市场大幅下滑的背景下，重点流通价位二手机市场仍实现增长，规模已接近3K以下新机市场，正在承接部分中低端用户需求迁移。",
    "source_tag": "研报",
-   "quality_score": 59.2,
+   "quality_score": 58.4,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -869,27 +823,27 @@
   {
    "card_id": "CP3-20261101-013",
    "status": "pending_review",
-   "theme": "军工/航天",
+   "theme": "有色/金属",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「无人驾驶航空器贸易分类」？",
-   "a": "报告将无人驾驶航空器分为三类：设计用于旅客运输、仅使用遥控飞行、以及其他类别，其中“仅使用遥控飞行”是贸易额占比最高的类别。",
-   "concept": "无人驾驶航空器贸易分类",
+   "q": "什么是「黄金线」？",
+   "a": "利用‘黄金线’作为标杆，可以量化标准地筛选出有实力、会赚钱的庄家，从而指导投资者进行安全的跟庄操作。",
+   "concept": "黄金线",
    "unit_id": "u013",
    "unit_key": {
-    "book": "rp_AP202610061830165864",
-    "chapter": "一、贸易总体情况",
-    "p1": 2,
-    "p2": 12
+    "book": "伏击涨停(2)",
+    "chapter": "序言1量学理论的七大贡献",
+    "p1": 7,
+    "p2": 10
    },
-   "book": "rp_AP202610061830165864",
-   "chapter": "一、贸易总体情况",
-   "page_start": 2,
-   "page_end": 12,
-   "evidence": "1 本报告定义的无人驾驶航空器对应的产品分类及 HS2024 代码为：无人驾驶航空器（88.06），其中包括设计用于旅客运 输的无人驾驶航空器、仅使用遥控飞行的无人驾驶航空器、其他。",
-   "claim": "报告将无人驾驶航空器分为三类：设计用于旅客运输、仅使用遥控飞行、以及其他类别，其中“仅使用遥控飞行”是贸易额占比最高的类别。",
-   "source_tag": "研报",
-   "quality_score": 55.7,
+   "book": "伏击涨停(2)",
+   "chapter": "序言1量学理论的七大贡献",
+   "page_start": 7,
+   "page_end": 10,
+   "evidence": "对各种庄的分类标准就是王子老师首创的“黄金线”。他用黄金线作为标杆，将庄家回踩黄金线的位置精细地切割...",
+   "claim": "利用‘黄金线’作为标杆，可以量化标准地筛选出有实力、会赚钱的庄家，从而指导投资者进行安全的跟庄操作。",
+   "source_tag": "书籍",
+   "quality_score": 46.3,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -904,27 +858,27 @@
   {
    "card_id": "CP3-20261101-014",
    "status": "pending_review",
-   "theme": "军工/航天",
+   "theme": "机械/制造",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「客座率水平」有哪些关键事实或数据？",
-   "a": "1-8 月我国民航客座率为 86.30%，同比提升 1.6pct，较 1-7 月上升 0.5pct。六家上市航空公司 1-8 月整体客座率水平为 86.19%。",
-   "concept": "客座率水平",
+   "q": "「EMB+SBW 技术架构」有哪些关键事实或数据？",
+   "a": "伯特利以'XYZ+智驾辅助’智能底盘全系解决方案为核心，率先实现 EMB 大批量商业化交付，推动全干式纯电控制动方案从技术探索走向规模化应用，也为一体化底盘提供了更高精度的制动执行能力。",
+   "concept": "EMB+SBW 技术架构",
    "unit_id": "u014",
    "unit_key": {
-    "book": "rp_AP202609301830022766",
-    "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
+    "book": "rp_AP202610021830111904",
+    "chapter": "从特斯拉Cybercab看EMB+SBW",
     "p1": 1,
-    "p2": 3
+    "p2": 13
    },
-   "book": "rp_AP202609301830022766",
-   "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
+   "book": "rp_AP202610021830111904",
+   "chapter": "从特斯拉Cybercab看EMB+SBW",
    "page_start": 1,
-   "page_end": 3,
-   "evidence": "1-8 月我国民航客座率为 86.30%，同比提升 1.6pct，较 1-7 月上升 0.5pct。六家上市航空公司 1-8 月整体客座率水平为 86.19%。",
-   "claim": "2026 年 1-8 月我国民航整体客座率为 86.30%，环比 1-7 月上升 0.5pct，其中春秋航空客座率最高达 92.99%。",
+   "page_end": 13,
+   "evidence": "伯特利以'XYZ+智驾辅助’智能底盘全系解决方案为核心，率先实现 EMB 大批量商业化交付，推动全干式纯电控制动方案从技术探索走向规模化应用，也为一体化底盘提供了更高精度的制动执行能力。",
+   "claim": "EMB（电子机械制动）与 SBW（线控转向）结合是 L3 级自动驾驶的终极底盘方案，能够直接兼容 L4 级自动驾驶需求。",
    "source_tag": "研报",
-   "quality_score": 55.3,
+   "quality_score": 55.5,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -942,24 +896,24 @@
    "theme": "机械/制造",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「工业机器人产品分类」的影响与传导是什么？",
-   "a": "根据 GB/T 39405-2020 标准，工业机器人分为普通工业机器人、未列名工业机器人（含其他多功能、协作机器人等）及其他专用机器人。 依据：参考《GB∕T 39405-2020 机器人分类》及对应的海关 HS2023 代码，本报告工业机器人具体界定包括普通工业机器人、未列名工业机器人及其他专用机器人如焊接、喷涂等。",
-   "concept": "工业机器人产品分类",
+   "q": "「工业领域电气化转型」的影响与传导是什么？",
+   "a": "2025年中国工业领域电气化率约28.0%，其中高技术及装备制造行业合计电气化率达68.0%，传统四大高载能行业合计为18.2%。 依据：2025年，中国工业领域电气化率约28.0%...从典型行业看，传统四大高载能行业合计电气化率约18.2%...高技术及装备制造合计电气化率约68.0%...",
+   "concept": "工业领域电气化转型",
    "unit_id": "u015",
    "unit_key": {
-    "book": "rp_AP202610061830165858",
-    "chapter": "一、贸易总体情况",
+    "book": "rp_AP202609301830015411",
+    "chapter": "前言",
     "p1": 2,
-    "p2": 9
+    "p2": 14
    },
-   "book": "rp_AP202610061830165858",
-   "chapter": "一、贸易总体情况",
+   "book": "rp_AP202609301830015411",
+   "chapter": "前言",
    "page_start": 2,
-   "page_end": 9,
-   "evidence": "参考《GB∕T 39405-2020 机器人分类》及对应的海关 HS2023 代码，本报告工业机器人具体界定包括普通工业机器人、未列名工业机器人及其他专用机器人如焊接、喷涂等。",
-   "claim": "根据 GB/T 39405-2020 标准，工业机器人分为普通工业机器人、未列名工业机器人（含其他多功能、协作机器人等）及其他专用机器人。",
+   "page_end": 14,
+   "evidence": "2025年，中国工业领域电气化率约28.0%...从典型行业看，传统四大高载能行业合计电气化率约18.2%...高技术及装备制造合计电气化率约68.0%...",
+   "claim": "2025年中国工业领域电气化率约28.0%，其中高技术及装备制造行业合计电气化率达68.0%，传统四大高载能行业合计为18.2%。",
    "source_tag": "研报",
-   "quality_score": 56.9,
+   "quality_score": 54.4,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -977,197 +931,22 @@
    "theme": "机械/制造",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「中国工业机器人贸易总额」？",
-   "a": "2026 年 8 月当月，中国工业机器人进出口总额为 326.8 百万美元，同比增长 21.1%；1-8 月累计进出口总额为 2302.6 百万美元，同比增长 15.3%。",
-   "concept": "中国工业机器人贸易总额",
+   "q": "什么是「具身智能场景应用」？",
+   "a": "人形机器人的近期重点在于处理高价值、低重复的非标任务，而非替代成熟的高重复或专用结构任务。",
+   "concept": "具身智能场景应用",
    "unit_id": "u016",
    "unit_key": {
-    "book": "rp_AP202610061830165858",
-    "chapter": "一、贸易总体情况",
+    "book": "rp_AP202610061830165137",
+    "chapter": "图表目录",
     "p1": 2,
-    "p2": 9
+    "p2": 14
    },
-   "book": "rp_AP202610061830165858",
-   "chapter": "一、贸易总体情况",
+   "book": "rp_AP202610061830165137",
+   "chapter": "图表目录",
    "page_start": 2,
-   "page_end": 9,
-   "evidence": "8 月当月进出口总额 326.8（同比变化 21.1），1 至 8 月累计进出口总额 2302.6（同比变化 15.3）。",
-   "claim": "2026 年 8 月当月，中国工业机器人进出口总额为 326.8 百万美元，同比增长 21.1%；1-8 月累计进出口总额为 2302.6 百万美元，同比增长 15.3%。",
-   "source_tag": "研报",
-   "quality_score": 56.7,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-017",
-   "status": "pending_review",
-   "theme": "机械/制造",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「出口区域分布」有哪些关键事实或数据？",
-   "a": "8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。",
-   "concept": "出口区域分布",
-   "unit_id": "u017",
-   "unit_key": {
-    "book": "rp_AP202610061830165858",
-    "chapter": "一、贸易总体情况",
-    "p1": 2,
-    "p2": 9
-   },
-   "book": "rp_AP202610061830165858",
-   "chapter": "一、贸易总体情况",
-   "page_start": 2,
-   "page_end": 9,
-   "evidence": "8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。",
-   "claim": "2026 年 8 月当月，东盟是中国工业机器人出口的重点区域，出口额为 31.4 百万美元，占出口总额的 17.0%；美国是出口额最大的单一国家（非重点区域），为 16.8 百万美元。",
-   "source_tag": "研报",
-   "quality_score": 56.5,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-018",
-   "status": "pending_review",
-   "theme": "交运/物流",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「航运市场运价与租金」的影响与传导是什么？",
-   "a": "上周中国出口集装箱运价指数环比上涨 34.97 点，Fearnleys 一年期油船（VLCC）租金为 16 万美元/天，环比上涨 1.5 万美元/天。 依据：上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160000 美元/天，环比上涨 15000 美元/天。",
-   "concept": "航运市场运价与租金",
-   "unit_id": "u018",
-   "unit_key": {
-    "book": "rp_AP202610021830105332",
-    "chapter": "看好",
-    "p1": 1,
-    "p2": 9
-   },
-   "book": "rp_AP202610021830105332",
-   "chapter": "看好",
-   "page_start": 1,
-   "page_end": 9,
-   "evidence": "上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160000 美元/天，环比上涨 15000 美元/天。",
-   "claim": "上周中国出口集装箱运价指数环比上涨 34.97 点，Fearnleys 一年期油船（VLCC）租金为 16 万美元/天，环比上涨 1.5 万美元/天。",
-   "source_tag": "研报",
-   "quality_score": 59.8,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-019",
-   "status": "pending_review",
-   "theme": "交运/物流",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「主要快递公司单票收入增速排名（1-8 月）」？",
-   "a": "2026 年 1-8 月累计单票收入同比增速排序为：申通快递 (10.02%) > 韵达股份 (10.00%) > 顺丰控股 (4.3%) > 圆通速递 (-1.4%)。",
-   "concept": "主要快递公司单票收入增速排名（1-8 月）",
-   "unit_id": "u019",
-   "unit_key": {
-    "book": "rp_AP202609301830034661",
-    "chapter": "8 月快递行业月度数据跟踪报告 强于大市(维持)",
-    "p1": 1,
-    "p2": 3
-   },
-   "book": "rp_AP202609301830034661",
-   "chapter": "8 月快递行业月度数据跟踪报告 强于大市(维持)",
-   "page_start": 1,
-   "page_end": 3,
-   "evidence": "1-8 月单票收入同比增速排序：申通快递（10.02%）>韵达股份（10.00%）>顺丰控股（4.3%）>圆通速递（-1.4%）。",
-   "claim": "2026 年 1-8 月累计单票收入同比增速排序为：申通快递 (10.02%) > 韵达股份 (10.00%) > 顺丰控股 (4.3%) > 圆通速递 (-1.4%)。",
-   "source_tag": "研报",
-   "quality_score": 57.1,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-020",
-   "status": "pending_review",
-   "theme": "交运/物流",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「铁路客流预测」有哪些关键事实或数据？",
-   "a": "国新办9月24日发布会信息显示，铁路方面，中秋国庆假期运输自9月23日启动至10月8日结束，为期16天，全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
-   "concept": "铁路客流预测",
-   "unit_id": "u020",
-   "unit_key": {
-    "book": "rp_AP202609301830037744",
-    "chapter": "社会服务行业双周报 双节出行热度提升，长线及跨境需求延续释放",
-    "p1": 1,
-    "p2": 12
-   },
-   "book": "rp_AP202609301830037744",
-   "chapter": "社会服务行业双周报 双节出行热度提升，长线及跨境需求延续释放",
-   "page_start": 1,
-   "page_end": 12,
-   "evidence": "国新办9月24日发布会信息显示，铁路方面，中秋国庆假期运输自9月23日启动至10月8日结束，为期16天，全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
-   "claim": "中秋国庆假期全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
-   "source_tag": "研报",
-   "quality_score": 49.8,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-021",
-   "status": "pending_review",
-   "theme": "网络安全/信创",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「监管原则」的影响与传导是什么？",
-   "a": "在保留必要安全保障（如频谱、安全、网络安全）的同时，应尽量减少不必要的监管摩擦，避免过早锁定僵化的技术要求。 依据：这些建议反映了一个普遍原则：在保留必要的安全保障以进行安全实验的同时，尽量减少不必要的监管摩擦...目标并非补贴轨道数据中心使其出现...而是要确保监管框架避免对测试造成不必要的障碍...",
-   "concept": "监管原则",
-   "unit_id": "u021",
-   "unit_key": {
-    "book": "rp_AP202609301830015406",
-    "chapter": "供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。",
-    "p1": 6,
-    "p2": 12
-   },
-   "book": "rp_AP202609301830015406",
-   "chapter": "供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。",
-   "page_start": 6,
-   "page_end": 12,
-   "evidence": "这些建议反映了一个普遍原则：在保留必要的安全保障以进行安全实验的同时，尽量减少不必要的监管摩擦...目标并非补贴轨道数据中心使其出现...而是要确保监管框架避免对测试造成不必要的障碍...",
-   "claim": "在保留必要安全保障（如频谱、安全、网络安全）的同时，应尽量减少不必要的监管摩擦，避免过早锁定僵化的技术要求。",
+   "page_end": 14,
+   "evidence": "高重复任务已有成熟设备...此类场景强调节拍、稳定性和单位成本，人形机器人短期替代优势有限，机会主要存在于产线仍按人体工学设计、任务频繁切换或专用改造成本较高的环节。人形机器人的近期重点落在高价值、低重复的非标任务。",
+   "claim": "人形机器人的近期重点在于处理高价值、低重复的非标任务，而非替代成熟的高重复或专用结构任务。",
    "source_tag": "研报",
    "quality_score": 54.2,
    "traceable": true,
@@ -1182,29 +961,204 @@
    }
   },
   {
-   "card_id": "CP3-20261101-022",
+   "card_id": "CP3-20261101-017",
    "status": "pending_review",
-   "theme": "网络安全/信创",
+   "theme": "金融/地产",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「北京房地产新政」有哪些关键事实或数据？",
+   "a": "2026 年 9 月 24 日，北京发布《关于完善商品住房销售制度的通知》的实施意见，明确全面加强预售管理、有序实施现房销售、推行主办银行制度等六方面政策措施。新出让住宅用地首付不低于 50%，余款两年内缴清，不计利息。",
+   "concept": "北京房地产新政",
+   "unit_id": "u017",
+   "unit_key": {
+    "book": "rp_AP202609301830054738",
+    "chapter": "中性",
+    "p1": 1,
+    "p2": 12
+   },
+   "book": "rp_AP202609301830054738",
+   "chapter": "中性",
+   "page_start": 1,
+   "page_end": 12,
+   "evidence": "2026 年 9 月 24 日，北京发布《关于完善商品住房销售制度的通知》的实施意见，明确全面加强预售管理、有序实施现房销售、推行主办银行制度等六方面政策措施。新出让住宅用地首付不低于 50%，余款两年内缴清，不计利息。",
+   "claim": "北京自 2026 年 9 月 24 日起实施与上海类似的完善商品住房销售制度，包括提高预售门槛、优先现房销售及土地款分期缴纳政策。",
+   "source_tag": "研报",
+   "quality_score": 59.6,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-018",
+   "status": "pending_review",
+   "theme": "金融/地产",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「上海房地产新政」的影响与传导是什么？",
+   "a": "上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高（主体结构封顶）、房贷延后发放及土地款分期免息等政策。 依据：上海市四部门联合印发《关于贯彻落实〈关于完善商品住房销售制度的通知〉的实施意见》，主要包括加强预售管理、实施现房销售、推行主办银行制度等 6 个方面政策措施。新公告出让土地的商品住房项目优先现房销售，预售门槛提高，房贷发放延后。",
+   "concept": "上海房地产新政",
+   "unit_id": "u018",
+   "unit_key": {
+    "book": "rp_AP202609301830054738",
+    "chapter": "中性",
+    "p1": 1,
+    "p2": 12
+   },
+   "book": "rp_AP202609301830054738",
+   "chapter": "中性",
+   "page_start": 1,
+   "page_end": 12,
+   "evidence": "上海市四部门联合印发《关于贯彻落实〈关于完善商品住房销售制度的通知〉的实施意见》，主要包括加强预售管理、实施现房销售、推行主办银行制度等 6 个方面政策措施。新公告出让土地的商品住房项目优先现房销售，预售门槛提高，房贷发放延后。",
+   "claim": "上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高（主体结构封顶）、房贷延后发放及土地款分期免息等政策。",
+   "source_tag": "研报",
+   "quality_score": 59.5,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-019",
+   "status": "pending_review",
+   "theme": "金融/地产",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「网络安全职位招聘周期」？",
-   "a": "填补初级网络安全职位空缺通常需要三至六个月，而填补非初级职位空缺则需要更长时间（约40%需三至六个月，24%需六个月以上）。",
-   "concept": "网络安全职位招聘周期",
+   "q": "什么是「购房成本节约测算」？",
+   "a": "以 100 万元商业贷款期限 30 年、贷款利率 3.05% 计算，享受贴息政策后，累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
+   "concept": "购房成本节约测算",
+   "unit_id": "u019",
+   "unit_key": {
+    "book": "rp_AP202609301830023754",
+    "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+    "p1": 1,
+    "p2": 2
+   },
+   "book": "rp_AP202609301830023754",
+   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+   "page_start": 1,
+   "page_end": 2,
+   "evidence": "对购房者来说，以 100 万元商业贷款期限 30 年、贷款利率 3.05%、等额本息计算，贴息 5 年累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
+   "claim": "以 100 万元商业贷款期限 30 年、贷款利率 3.05% 计算，享受贴息政策后，累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
+   "source_tag": "研报",
+   "quality_score": 57.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-020",
+   "status": "pending_review",
+   "theme": "新能源/电力",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「光伏产业链价格」有哪些关键事实或数据？",
+   "a": "根据 datayes，9 月 23 日硅料成交价为 42 元/kg，环比 +2 元/kg；电池成交价 0.32 元/W，环比 +1 分/W；组件成交价为 0.73 元/W，环比持平。3.2mm、2mm 光伏玻璃价格分别为 17、10 元/平米，银浆价格为 15890 元/kg，均环比持平。",
+   "concept": "光伏产业链价格",
+   "unit_id": "u020",
+   "unit_key": {
+    "book": "rp_AP202610021830105370",
+    "chapter": "市场研究部 2026 年9 月30 日",
+    "p1": 1,
+    "p2": 9
+   },
+   "book": "rp_AP202610021830105370",
+   "chapter": "市场研究部 2026 年9 月30 日",
+   "page_start": 1,
+   "page_end": 9,
+   "evidence": "根据 datayes，9 月 23 日硅料成交价为 42 元/kg，环比 +2 元/kg；电池成交价 0.32 元/W，环比 +1 分/W；组件成交价为 0.73 元/W，环比持平。3.2mm、2mm 光伏玻璃价格分别为 17、10 元/平米，银浆价格为 15890 元/kg，均环比持平。",
+   "claim": "截至 2026 年 9 月 23 日，硅料、电池片及组件成交价环比持平或微涨，而光伏玻璃和银浆价格维持稳定。",
+   "source_tag": "研报",
+   "quality_score": 62.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-021",
+   "status": "pending_review",
+   "theme": "新能源/电力",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「电力设备行业周度表现」的影响与传导是什么？",
+   "a": "2026 年 9 月 21 日至 25 日，申万电力设备指数下跌 2.50%，跑输沪深 300 指数 0.99 个百分点，在 31 个行业中排名第 29 位。 依据：本周（2026/09/21-2026/09/25）沪深 300 指数 -1.51%，申万 31 个行业指数 9 个上涨，电力设备（申万）指数本周 -2.50%，排在第 29 位，跑输指数 0.99pct。",
+   "concept": "电力设备行业周度表现",
+   "unit_id": "u021",
+   "unit_key": {
+    "book": "rp_AP202610021830105372",
+    "chapter": "市场研究部 2026 年9 月30 日",
+    "p1": 1,
+    "p2": 9
+   },
+   "book": "rp_AP202610021830105372",
+   "chapter": "市场研究部 2026 年9 月30 日",
+   "page_start": 1,
+   "page_end": 9,
+   "evidence": "本周（2026/09/21-2026/09/25）沪深 300 指数 -1.51%，申万 31 个行业指数 9 个上涨，电力设备（申万）指数本周 -2.50%，排在第 29 位，跑输指数 0.99pct。",
+   "claim": "2026 年 9 月 21 日至 25 日，申万电力设备指数下跌 2.50%，跑输沪深 300 指数 0.99 个百分点，在 31 个行业中排名第 29 位。",
+   "source_tag": "研报",
+   "quality_score": 61.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-022",
+   "status": "pending_review",
+   "theme": "新能源/电力",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「乘用车高端化趋势」？",
+   "a": "三季度 140-160Wh/kg 能量密度的电池占比达 51%，乘用车 B 级车型销售增长，显示高端化正在拉动高密度电池需求。",
+   "concept": "乘用车高端化趋势",
    "unit_id": "u022",
    "unit_key": {
-    "book": "rp_AP202609301830015404",
-    "chapter": "全球劳动力、资源与网络安全运营更新报告",
+    "book": "rp_AP202609301830049884",
+    "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
     "p1": 1,
-    "p2": 13
+    "p2": 4
    },
-   "book": "rp_AP202609301830015404",
-   "chapter": "全球劳动力、资源与网络安全运营更新报告",
+   "book": "rp_AP202609301830049884",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
    "page_start": 1,
-   "page_end": 13,
-   "evidence": "对于初级职位，38%的受访者表示，通常需要三至六个月才能招聘到合格人才；12%的受访者表示，招聘过程平均需要六个月以上。非初级职位的招聘周期略长。",
-   "claim": "填补初级网络安全职位空缺通常需要三至六个月，而填补非初级职位空缺则需要更长时间（约40%需三至六个月，24%需六个月以上）。",
+   "page_end": 4,
+   "evidence": "分析：从产业链维度看...2026 年 1-8 月新能源乘用车 B 级车型累计销售 276.8 万辆、同比增长 14.8%；三季度 140-160Wh/kg 能量密度的电池占比达 51%、同比提升 14 个百分点，乘用车高端化拉动高密度电池需求增长。",
+   "claim": "三季度 140-160Wh/kg 能量密度的电池占比达 51%，乘用车 B 级车型销售增长，显示高端化正在拉动高密度电池需求。",
    "source_tag": "研报",
-   "quality_score": 52.7,
+   "quality_score": 61.6,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1219,27 +1173,27 @@
   {
    "card_id": "CP3-20261101-023",
    "status": "pending_review",
-   "theme": "网络安全/信创",
+   "theme": "宏观/政策",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「网络安全人员工作压力」有哪些关键事实或数据？",
-   "a": "网络安全人才队伍的工作压力依然居高不下。68%的调查受访者表示，过去五年来，其工作压力有所增加。将其列为压力来源的受访者比例从2025年的63%上升至2026年的71%。",
-   "concept": "网络安全人员工作压力",
+   "q": "「财富来源审查转型」有哪些关键事实或数据？",
+   "a": "目标运营模式将财富来源审查从文件核对工作转变为以合理性为主导的情报能力。机构仍应收集并保留财富来源声明的证据，但核心问题应转变为：在综合考虑所有权结构、经济逻辑、交易行为、时间节点及现有外部证据的情况下，客户的财富轨迹是否连贯一致。",
+   "concept": "财富来源审查转型",
    "unit_id": "u023",
    "unit_key": {
-    "book": "rp_AP202609301830015404",
-    "chapter": "全球劳动力、资源与网络安全运营更新报告",
+    "book": "rp_AP202609301830015454",
+    "chapter": "通过人工智能采 纳实现财富来源转型",
     "p1": 1,
     "p2": 13
    },
-   "book": "rp_AP202609301830015404",
-   "chapter": "全球劳动力、资源与网络安全运营更新报告",
+   "book": "rp_AP202609301830015454",
+   "chapter": "通过人工智能采 纳实现财富来源转型",
    "page_start": 1,
    "page_end": 13,
-   "evidence": "网络安全人才队伍的工作压力依然居高不下。68%的调查受访者表示，过去五年来，其工作压力有所增加。将其列为压力来源的受访者比例从2025年的63%上升至2026年的71%。",
-   "claim": "68%的受访者表示过去五年内工作压力增加，其中71%的人认为日益复杂的威胁形势是压力增加的首要原因。",
+   "evidence": "目标运营模式将财富来源审查从文件核对工作转变为以合理性为主导的情报能力。机构仍应收集并保留财富来源声明的证据，但核心问题应转变为：在综合考虑所有权结构、经济逻辑、交易行为、时间节点及现有外部证据的情况下，客户的财富轨迹是否连贯一致。",
+   "claim": "财富来源审查应从静态的文件核对工作转变为以合理性为主导的情报能力，核心在于评估财富轨迹在经济逻辑、所有权结构和交易行为上是否连贯一致。",
    "source_tag": "研报",
-   "quality_score": 51.7,
+   "quality_score": 61.1,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1254,27 +1208,27 @@
   {
    "card_id": "CP3-20261101-024",
    "status": "pending_review",
-   "theme": "有色/金属",
+   "theme": "宏观/政策",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「稀土价格分化」的影响与传导是什么？",
-   "a": "2026年9月下旬，轻稀土（镨钕、氧化镧）价格相对坚挺并上涨，而中重稀土（氧化镝、氧化铽）报价偏弱下跌，市场呈现品种间行情分化特征。 依据：截至9月27日，中国稀土价格指数263.50。镨钕氧化物均价738,000元/吨，近两周上涨0.96%；氧化镧均价5,750元/吨，近两周上涨4.55%。相反，氧化镝均价1,435元/千克，近两周下跌0.69%；氧化铽均价6,575元/千克，近两周下跌1.50%。",
-   "concept": "稀土价格分化",
+   "q": "「迈威尔 2027 财年第三财季业绩指引」的影响与传导是什么？",
+   "a": "公司预计 2027 财年第三财季单季度营业收入区间为 29.93-33.08 亿美元，Non-GAAP 毛利率维持在 57.5%-58.5% 区间。 依据：季度指引持续环比增长。2027 财年第三财季，公司给出业绩指引，预计单季度营业收入区间 29.93‑33.08 亿美元；预计 Non‑GAAP 毛利率维持 57.5%‑58.5% 区间。",
+   "concept": "迈威尔 2027 财年第三财季业绩指引",
    "unit_id": "u024",
    "unit_key": {
-    "book": "rp_AP202610021830112399",
-    "chapter": "材料Ⅱ行业双周报 2026 年09 月30 日",
+    "book": "rp_AP202609301830015836",
+    "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
     "p1": 1,
-    "p2": 13
+    "p2": 3
    },
-   "book": "rp_AP202610021830112399",
-   "chapter": "材料Ⅱ行业双周报 2026 年09 月30 日",
+   "book": "rp_AP202609301830015836",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
    "page_start": 1,
-   "page_end": 13,
-   "evidence": "截至9月27日，中国稀土价格指数263.50。镨钕氧化物均价738,000元/吨，近两周上涨0.96%；氧化镧均价5,750元/吨，近两周上涨4.55%。相反，氧化镝均价1,435元/千克，近两周下跌0.69%；氧化铽均价6,575元/千克，近两周下跌1.50%。",
-   "claim": "2026年9月下旬，轻稀土（镨钕、氧化镧）价格相对坚挺并上涨，而中重稀土（氧化镝、氧化铽）报价偏弱下跌，市场呈现品种间行情分化特征。",
+   "page_end": 3,
+   "evidence": "季度指引持续环比增长。2027 财年第三财季，公司给出业绩指引，预计单季度营业收入区间 29.93‑33.08 亿美元；预计 Non‑GAAP 毛利率维持 57.5%‑58.5% 区间。",
+   "claim": "公司预计 2027 财年第三财季单季度营业收入区间为 29.93-33.08 亿美元，Non-GAAP 毛利率维持在 57.5%-58.5% 区间。",
    "source_tag": "研报",
-   "quality_score": 63.5,
+   "quality_score": 59.0,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1289,27 +1243,27 @@
   {
    "card_id": "CP3-20261101-025",
    "status": "pending_review",
-   "theme": "有色/金属",
+   "theme": "宏观/政策",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「贵金属板块领涨」？",
-   "a": "2026年9月下旬，贵金属板块表现强势，COMEX黄金和白银价格虽短期回调但年初至今仍保持上涨态势。",
-   "concept": "贵金属板块领涨",
+   "q": "什么是「《供水条例》政策影响」？",
+   "a": "《供水条例》施行后，省级、市级水务集团迎来业务扩张窗口，而乡镇与农村项目实施主体面临资本开支和运维责任加重的压力。",
+   "concept": "《供水条例》政策影响",
    "unit_id": "u025",
    "unit_key": {
-    "book": "rp_AP202610021830112399",
-    "chapter": "材料Ⅱ行业双周报 2026 年09 月30 日",
+    "book": "rp_AP202609301830042069",
+    "chapter": "中诚信国际 中国水务行业",
     "p1": 1,
-    "p2": 13
+    "p2": 9
    },
-   "book": "rp_AP202610021830112399",
-   "chapter": "材料Ⅱ行业双周报 2026 年09 月30 日",
+   "book": "rp_AP202609301830042069",
+   "chapter": "中诚信国际 中国水务行业",
    "page_start": 1,
-   "page_end": 13,
-   "evidence": "COMEX黄金价格为4,320.50美元/盎司，年初至今上涨0.27%；COMEX银价格为64.71美元/盎司，年初至今下跌8.83%。尽管近两周金、银价格分别下跌1.58%和0.48%，但整体趋势相对工业金属更为稳健。",
-   "claim": "2026年9月下旬，贵金属板块表现强势，COMEX黄金和白银价格虽短期回调但年初至今仍保持上涨态势。",
+   "page_end": 9,
+   "evidence": "重点政策解读：《供水条例》施行后，城乡供水一体化将加速，省级、市级水务集团迎来业务扩张的政策窗口，而乡镇与农村项目实施主体则面临资本开支和运维责任加重的压力；供水成本传导和政府补偿机制法治化，有利于改善供水企业收支结构、稳定经营预期。",
+   "claim": "《供水条例》施行后，省级、市级水务集团迎来业务扩张窗口，而乡镇与农村项目实施主体面临资本开支和运维责任加重的压力。",
    "source_tag": "研报",
-   "quality_score": 55.8,
+   "quality_score": 58.8,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1324,27 +1278,27 @@
   {
    "card_id": "CP3-20261101-026",
    "status": "pending_review",
-   "theme": "有色/金属",
+   "theme": "量学/交易",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「小金属价格波动」有哪些关键事实或数据？",
-   "a": "中国平均价：锗锭(50Ω·cm)价格为27,250元/千克，近两周上涨2.83%，年初至今大涨101.85%。相比之下，黑钨精矿(≥65%)价格下跌3.86%，锑锭(99.65%,国产)价格持平（近两周涨跌幅0.00%）。",
-   "concept": "小金属价格波动",
+   "q": "「伏击涨停第三定律」有哪些关键事实或数据？",
+   "a": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "concept": "伏击涨停第三定律",
    "unit_id": "u026",
    "unit_key": {
-    "book": "rp_AP202610021830112399",
-    "chapter": "材料Ⅱ行业双周报 2026 年09 月30 日",
-    "p1": 1,
-    "p2": 13
+    "book": "伏击涨停(2)",
+    "chapter": "第一节",
+    "p1": 13,
+    "p2": 25
    },
-   "book": "rp_AP202610021830112399",
-   "chapter": "材料Ⅱ行业双周报 2026 年09 月30 日",
-   "page_start": 1,
-   "page_end": 13,
-   "evidence": "中国平均价：锗锭(50Ω·cm)价格为27,250元/千克，近两周上涨2.83%，年初至今大涨101.85%。相比之下，黑钨精矿(≥65%)价格下跌3.86%，锑锭(99.65%,国产)价格持平（近两周涨跌幅0.00%）。",
-   "claim": "2026年9月下旬，小金属中锗锭价格显著上涨，而黑钨精矿和锑锭价格出现下跌。",
-   "source_tag": "研报",
-   "quality_score": 53.0,
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "evidence": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "claim": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
+   "source_tag": "书籍",
+   "quality_score": 54.3,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1359,27 +1313,27 @@
   {
    "card_id": "CP3-20261101-027",
    "status": "pending_review",
-   "theme": "农业",
+   "theme": "量学/交易",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「中国畜禽肉产品主要出口市场」的影响与传导是什么？",
-   "a": "东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。 依据：重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
-   "concept": "中国畜禽肉产品主要出口市场",
+   "q": "「量学核心逻辑」的影响与传导是什么？",
+   "a": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。 依据：第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "concept": "量学核心逻辑",
    "unit_id": "u027",
    "unit_key": {
-    "book": "rp_AP202610061830165954",
-    "chapter": "一、贸易总体情况",
-    "p1": 2,
-    "p2": 14
+    "book": "伏击涨停(2)",
+    "chapter": "第一节",
+    "p1": 13,
+    "p2": 25
    },
-   "book": "rp_AP202610061830165954",
-   "chapter": "一、贸易总体情况",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
-   "claim": "东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。",
-   "source_tag": "研报",
-   "quality_score": 47.2,
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "evidence": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "claim": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。",
+   "source_tag": "书籍",
+   "quality_score": 54.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1394,27 +1348,27 @@
   {
    "card_id": "CP3-20261101-028",
    "status": "pending_review",
-   "theme": "农业",
+   "theme": "量学/交易",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「中国畜禽肉产品主要进口来源国」？",
-   "a": "巴西是中国禽肉产品的最大供应国，2026 年 8 月当月其向中国出口额占中国总进口额的比重接近 55%。",
-   "concept": "中国畜禽肉产品主要进口来源国",
+   "q": "什么是「拐点形成规律」？",
+   "a": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
+   "concept": "拐点形成规律",
    "unit_id": "u028",
    "unit_key": {
-    "book": "rp_AP202610061830165954",
-    "chapter": "一、贸易总体情况",
-    "p1": 2,
-    "p2": 14
+    "book": "伏击涨停(2)",
+    "chapter": "序言1",
+    "p1": 5,
+    "p2": 6
    },
-   "book": "rp_AP202610061830165954",
-   "chapter": "一、贸易总体情况",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "区域...巴西 1073.3（百万美元），份额 54.5%；注：排名前 10 地区按照进口额大小由上向下排列。",
-   "claim": "巴西是中国禽肉产品的最大供应国，2026 年 8 月当月其向中国出口额占中国总进口额的比重接近 55%。",
-   "source_tag": "研报",
-   "quality_score": 47.2,
+   "book": "伏击涨停(2)",
+   "chapter": "序言1",
+   "page_start": 5,
+   "page_end": 6,
+   "evidence": "但是，A 点、B 点（拐点）的形成并不是随机的，某些位置是它们出现的大概率位置，这些位置经常出现在重 要的量柱上！如果说股价走势的历史对当下有什么影响的话，那就体现在量线上。",
+   "claim": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
+   "source_tag": "书籍",
+   "quality_score": 52.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1429,27 +1383,27 @@
   {
    "card_id": "CP3-20261101-029",
    "status": "pending_review",
-   "theme": "半导体/电子",
+   "theme": "AI算力/硬件",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「高端 ABF 载板产能瓶颈」有哪些关键事实或数据？",
-   "a": "真正决定基板需求的是单颗芯片对应的基板面积、叠层层数以及制造良率。CPU 侧下一代平台基板尺寸明显扩大；Rubin 叠层层数较 Blackwell 进一步增加；采用 EMIB 类先进封装的产品基板尺寸达 120×120 毫米量级且叠层达 24 层。多层核心结构制造良率呈台阶式下降，任一核心层缺陷可能导致全部报废。",
-   "concept": "高端 ABF 载板产能瓶颈",
+   "q": "「CoWoP封装方案」有哪些关键事实或数据？",
+   "a": "CoWoP（Chip-on-Wafer-on-PCB）...核心思路简洁却极具革命性：在传统CoWoS方案中，芯片需依次经过硅中介层、ABF封装基板与BGA焊球三级结构才能安装到主板上；而CoWoP方案直接去掉ABF封装基板与BGA焊球，将硅中介层（Si Interposer）与GPU/HBM组合直接安装在强化型基板级PCB（Platform PCB）上。",
+   "concept": "CoWoP封装方案",
    "unit_id": "u029",
    "unit_key": {
-    "book": "rp_AP202610071830188839",
-    "chapter": "电子行业跟踪周报 海外算力周跟踪：AI 硬件产业链持续高景 气，看好Q4 业绩高增",
-    "p1": 1,
-    "p2": 3
+    "book": "rp_AP202610071830180005",
+    "chapter": "图表目录",
+    "p1": 2,
+    "p2": 14
    },
-   "book": "rp_AP202610071830188839",
-   "chapter": "电子行业跟踪周报 海外算力周跟踪：AI 硬件产业链持续高景 气，看好Q4 业绩高增",
-   "page_start": 1,
-   "page_end": 3,
-   "evidence": "真正决定基板需求的是单颗芯片对应的基板面积、叠层层数以及制造良率。CPU 侧下一代平台基板尺寸明显扩大；Rubin 叠层层数较 Blackwell 进一步增加；采用 EMIB 类先进封装的产品基板尺寸达 120×120 毫米量级且叠层达 24 层。多层核心结构制造良率呈台阶式下降，任一核心层缺陷可能导致全部报废。",
-   "claim": "高端 ABF 载板交期拉长至接近一年，主要受芯片基板面积扩大、叠层层数增加以及多层核心结构制造良率显著下降的共同影响。",
+   "book": "rp_AP202610071830180005",
+   "chapter": "图表目录",
+   "page_start": 2,
+   "page_end": 14,
+   "evidence": "CoWoP（Chip-on-Wafer-on-PCB）...核心思路简洁却极具革命性：在传统CoWoS方案中，芯片需依次经过硅中介层、ABF封装基板与BGA焊球三级结构才能安装到主板上；而CoWoP方案直接去掉ABF封装基板与BGA焊球，将硅中介层（Si Interposer）与GPU/HBM组合直接安装在强化型基板级PCB（Platform PCB）上。",
+   "claim": "CoWoP（Chip-on-Wafer-on-PCB）方案去除了ABF封装基板与BGA焊球，由强化型PCB直接承担原本封装基板的信号完整性、电源管理及热管理功能，单颗GPU配套PCB价值量可达600美元，是传统方案的三倍。",
    "source_tag": "研报",
-   "quality_score": 65.9,
+   "quality_score": 82.6,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1464,27 +1418,27 @@
   {
    "card_id": "CP3-20261101-030",
    "status": "pending_review",
-   "theme": "半导体/电子",
+   "theme": "AI算力/硬件",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「高景气细分赛道」的影响与传导是什么？",
-   "a": "建议关注装配式建筑、城市更新、洁净室、钢结构等高景气方向，其中半导体洁净室与城市更新是重点布局方向。 依据：政策引导下行业正从规模扩张转向存量提质增效与效率驱动，装配式建筑、城市更新、洁净室、钢结构等高景气方向加速兑现...建议聚焦洁净室工程、城市更新业务布局充分的优质标的。",
-   "concept": "高景气细分赛道",
+   "q": "「M9 材料体系」的影响与传导是什么？",
+   "a": "M9 级覆铜板通过升级增强骨架（第三代Low DK 石英布）、导电层（HVLP4/5 超低轮廓铜箔）及树脂粘结剂（碳氢或苊烯树脂），将介电损耗压低至0.0015以下，支持224Gbps超高速信号传输与78层超高密度PCB量产。 依据：M9级覆铜板体系的代际升级，本质上是树脂、增强材料、导电层与填料四个维度的系统性跃迁...英伟达Rubin/Rubin Ultra全面采用M9体系：增强骨架材料由传统玻纤布升级为第三代Low DK石英布（Q布），导电层铜箔升级为HVLP4/5超低轮廓铜箔，树脂粘结剂体系升级为碳氢树脂（PCH）或苊烯树脂（EX）。",
+   "concept": "M9 材料体系",
    "unit_id": "u030",
    "unit_key": {
-    "book": "rp_AP202609301830023858",
-    "chapter": "行业评级：看好",
-    "p1": 1,
-    "p2": 13
+    "book": "rp_AP202610071830180005",
+    "chapter": "图表目录",
+    "p1": 2,
+    "p2": 14
    },
-   "book": "rp_AP202609301830023858",
-   "chapter": "行业评级：看好",
-   "page_start": 1,
-   "page_end": 13,
-   "evidence": "政策引导下行业正从规模扩张转向存量提质增效与效率驱动，装配式建筑、城市更新、洁净室、钢结构等高景气方向加速兑现...建议聚焦洁净室工程、城市更新业务布局充分的优质标的。",
-   "claim": "建议关注装配式建筑、城市更新、洁净室、钢结构等高景气方向，其中半导体洁净室与城市更新是重点布局方向。",
+   "book": "rp_AP202610071830180005",
+   "chapter": "图表目录",
+   "page_start": 2,
+   "page_end": 14,
+   "evidence": "M9级覆铜板体系的代际升级，本质上是树脂、增强材料、导电层与填料四个维度的系统性跃迁...英伟达Rubin/Rubin Ultra全面采用M9体系：增强骨架材料由传统玻纤布升级为第三代Low DK石英布（Q布），导电层铜箔升级为HVLP4/5超低轮廓铜箔，树脂粘结剂体系升级为碳氢树脂（PCH）或苊烯树脂（EX）。",
+   "claim": "M9 级覆铜板通过升级增强骨架（第三代Low DK 石英布）、导电层（HVLP4/5 超低轮廓铜箔）及树脂粘结剂（碳氢或苊烯树脂），将介电损耗压低至0.0015以下，支持224Gbps超高速信号传输与78层超高密度PCB量产。",
    "source_tag": "研报",
-   "quality_score": 51.5,
+   "quality_score": 79.4,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1499,27 +1453,27 @@
   {
    "card_id": "CP3-20261101-031",
    "status": "pending_review",
-   "theme": "建筑/建材",
+   "theme": "AI算力/硬件",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「建筑领域电气化与低碳转型」？",
-   "a": "2025年中国建筑领域电气化率约58.0%，低碳电气化率达30.3%，清洁供暖、全电厨炊等改造取得进展。",
-   "concept": "建筑领域电气化与低碳转型",
+   "q": "什么是「Meta Ray-Ban Meta Audio」？",
+   "a": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
+   "concept": "Meta Ray-Ban Meta Audio",
    "unit_id": "u031",
    "unit_key": {
-    "book": "rp_AP202609301830015411",
-    "chapter": "前言",
-    "p1": 2,
-    "p2": 14
+    "book": "rp_AP202610031830126605",
+    "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
+    "p1": 1,
+    "p2": 3
    },
-   "book": "rp_AP202609301830015411",
-   "chapter": "前言",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "2025年，中国建筑领域电气化率约58.0%...全年建筑领域用电量同比增长7.7%...清洁供暖、全电厨炊、冷热双蓄、地源热泵、建筑光伏一体化等热点领域电气化设备更新改造取得积极进展。",
-   "claim": "2025年中国建筑领域电气化率约58.0%，低碳电气化率达30.3%，清洁供暖、全电厨炊等改造取得进展。",
+   "book": "rp_AP202610031830126605",
+   "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
+   "page_start": 1,
+   "page_end": 3,
+   "evidence": "当地时间9 月23 日，Meta 在Connect 大会上发布了不带摄像头的音频智能眼镜Ray-Ban Meta Audio，并推出了新一代雷朋（Ray- Ban ）眼镜Ray-Ban Meta （Gen 3）和全新VR 设备Meta VR Glasses。同时，Meta 宣布将个人智能体Muse 引入AI 眼镜，用户无须拿出手机即可通过语音等方式使用相关功能。",
+   "claim": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
    "source_tag": "研报",
-   "quality_score": 53.5,
+   "quality_score": 73.8,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1534,27 +1488,27 @@
   {
    "card_id": "CP3-20261101-032",
    "status": "pending_review",
-   "theme": "通信/互联网",
+   "theme": "其他",
    "angle": "key_fact",
    "angle_cn": "关键事实",
-   "q": "「国防军工行业投资建议」有哪些关键事实或数据？",
-   "a": "全球军费投入持续扩张...十五五规划为我国国防和军队现代化的高质量推进做出了总部署...建议重点关注航空航天、卫星互联网产业链公司，包括主机、航空发动机和军工电子信息化领域的龙头企业。",
-   "concept": "国防军工行业投资建议",
+   "q": "「Trend Template 退出规则」有哪些关键事实或数据？",
+   "a": "MarketInOut TSX 25 年回测（2001–2026）：收盘破 200 日线 9.6%/38% DD/921 笔/胜率41%/平均持有129天；20%移动止损 8.3%；破50日线 8.6%；50日线+10%止损 7.1%；含股息/拆股调整与退市股。",
+   "concept": "Trend Template 退出规则",
    "unit_id": "u032",
    "unit_key": {
-    "book": "rp_AP202610021830105332",
-    "chapter": "看好",
-    "p1": 1,
-    "p2": 9
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "十、回测证据：退出规则比入场更重要（TSX 25 年）",
+    "p1": 10,
+    "p2": 10
    },
-   "book": "rp_AP202610021830105332",
-   "chapter": "看好",
-   "page_start": 1,
-   "page_end": 9,
-   "evidence": "全球军费投入持续扩张...十五五规划为我国国防和军队现代化的高质量推进做出了总部署...建议重点关注航空航天、卫星互联网产业链公司，包括主机、航空发动机和军工电子信息化领域的龙头企业。",
-   "claim": "建议重点关注航空航天、卫星互联网产业链公司，特别是主机、航空发动机和军工电子信息化领域的龙头企业，因十五五规划推动新质生产力发展。",
-   "source_tag": "研报",
-   "quality_score": 56.6,
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "十、回测证据：退出规则比入场更重要（TSX 25 年）",
+   "page_start": 10,
+   "page_end": 10,
+   "evidence": "MarketInOut TSX 25 年回测（2001–2026）：收盘破 200 日线 9.6%/38% DD/921 笔/胜率41%/平均持有129天；20%移动止损 8.3%；破50日线 8.6%；50日线+10%止损 7.1%；含股息/拆股调整与退市股。",
+   "claim": "同一批 Trend Template 入场，退出规则决定收益：收盘跌破 200 日线退出年化 9.6%（回撤 38%），紧的 10% 止损版仅 7.1%；买入持有指数基金 8.3%。作者强调该测试只测模板入场，不测完整 SEPA（VCP+紧风控）。",
+   "source_tag": "策略经典",
+   "quality_score": 76.8,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1569,27 +1523,27 @@
   {
    "card_id": "CP3-20261101-033",
    "status": "pending_review",
-   "theme": "量学/交易",
+   "theme": "其他",
    "angle": "impact",
    "angle_cn": "影响传导",
-   "q": "「精准线伏击」的影响与传导是什么？",
-   "a": "通过识别主力绘制的8条精准线（虚实双重精准线）及三次精准回踩形成的平衡点，可判断主力控盘稳健且即将发动攻击，适合进行伏击操作。 依据：图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作”后面必有“真意图”。",
-   "concept": "精准线伏击",
+   "q": "「VCP 波动收缩」的影响与传导是什么？",
+   "a": "突破前先安静：回调幅度逐次收缩（如20%→10%→5%），通常2–4次收缩；右侧缩量说明卖盘枯竭；买点=枢轴点（最后最紧区间顶部）且放量突破；止损放最后收缩低点之下；只在上升趋势中找。 依据：VCP（波动收缩形态）：像越弹越低的球——每次回调都比上一次小（如 20%、10%、5%），通常 2–4 次收缩。右侧成交量：价格越收越紧、成交量萎缩，说明卖盘正在枯竭。买点叫枢轴点（最后最紧区间的顶部），突破时成交量要明显放大。止损放在最后收缩低点之下。只在上升趋势的股票里找，等它安静下来再买突破。",
+   "concept": "VCP 波动收缩",
    "unit_id": "u033",
    "unit_key": {
-    "book": "涨停密码(2)",
-    "chapter": "第三章",
-    "p1": 15,
-    "p2": 27
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "八、波动收缩形态 VCP（03:59–04:26）",
+    "p1": 8,
+    "p2": 8
    },
-   "book": "涨停密码(2)",
-   "chapter": "第三章",
-   "page_start": 15,
-   "page_end": 27,
-   "evidence": "图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作”后面必有“真意图”。",
-   "claim": "通过识别主力绘制的8条精准线（虚实双重精准线）及三次精准回踩形成的平衡点，可判断主力控盘稳健且即将发动攻击，适合进行伏击操作。",
-   "source_tag": "书籍",
-   "quality_score": 56.4,
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "八、波动收缩形态 VCP（03:59–04:26）",
+   "page_start": 8,
+   "page_end": 8,
+   "evidence": "VCP（波动收缩形态）：像越弹越低的球——每次回调都比上一次小（如 20%、10%、5%），通常 2–4 次收缩。右侧成交量：价格越收越紧、成交量萎缩，说明卖盘正在枯竭。买点叫枢轴点（最后最紧区间的顶部），突破时成交量要明显放大。止损放在最后收缩低点之下。只在上升趋势的股票里找，等它安静下来再买突破。",
+   "claim": "突破前先安静：回调幅度逐次收缩（如20%→10%→5%），通常2–4次收缩；右侧缩量说明卖盘枯竭；买点=枢轴点（最后最紧区间顶部）且放量突破；止损放最后收缩低点之下；只在上升趋势中找。",
+   "source_tag": "策略经典",
+   "quality_score": 73.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1604,237 +1558,27 @@
   {
    "card_id": "CP3-20261101-034",
    "status": "pending_review",
-   "theme": "量学/交易",
+   "theme": "其他",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「量柱完全分类」？",
-   "a": "王子老师对量柱进行了“完全分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，为量柱结构研究指明了方向。",
-   "concept": "量柱完全分类",
+   "q": "什么是「Trend Template 股票池效应」？",
+   "a": "同一套 8 条规则，在大盘指数成分内可跑赢基准（Nasdaq-100 +3.9pp/年、TSX +2.9、FTSE100 +2.1），但在全交易所（尤其小盘）失效：全流动性美股 26 年年化 0%、跑输基准 8.2pp；Russell 2000 -4.3pp。",
+   "concept": "Trend Template 股票池效应",
    "unit_id": "u034",
    "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "序言1",
-    "p1": 5,
-    "p2": 6
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "九、回测证据：股票池决定成败（14 市场）",
+    "p1": 9,
+    "p2": 9
    },
-   "book": "伏击涨停(2)",
-   "chapter": "序言1",
-   "page_start": 5,
-   "page_end": 6,
-   "evidence": "只有王子老师对量柱进行了“完全 分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，这可称之为重大 发现！熟悉数学原理的股友们应该知道“完全分类”的意义，事实上对量柱的分 类为量柱结构的研究指明了方向。",
-   "claim": "王子老师对量柱进行了“完全分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，为量柱结构研究指明了方向。",
-   "source_tag": "书籍",
-   "quality_score": 56.1,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-035",
-   "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「量学理论」有哪些关键事实或数据？",
-   "a": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
-   "concept": "量学理论",
-   "unit_id": "u035",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "序言1",
-    "p1": 5,
-    "p2": 6
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "序言1",
-   "page_start": 5,
-   "page_end": 6,
-   "evidence": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
-   "claim": "量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。",
-   "source_tag": "书籍",
-   "quality_score": 54.7,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-036",
-   "status": "pending_review",
-   "theme": "新能源/电力",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「光伏成本核算新规」的影响与传导是什么？",
-   "a": "针对重要工业品（如光伏）的低价无序竞争，国家发改委明确成本核算原则上以经营者个别成本为基础，无法核算时参考行业平均成本并考虑下浮幅度，对产能利用率低的经营者予以适当考量。 依据：《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别成本时参考行业平均成本并考虑一定下浮幅度；对实际产能利用率大幅低于行业平均的经营者，适当考虑产能利用率影响。",
-   "concept": "光伏成本核算新规",
-   "unit_id": "u036",
-   "unit_key": {
-    "book": "rp_AP202610021830111912",
-    "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
-    "p1": 1,
-    "p2": 4
-   },
-   "book": "rp_AP202610021830111912",
-   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
-   "page_start": 1,
-   "page_end": 4,
-   "evidence": "《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别成本时参考行业平均成本并考虑一定下浮幅度；对实际产能利用率大幅低于行业平均的经营者，适当考虑产能利用率影响。",
-   "claim": "针对重要工业品（如光伏）的低价无序竞争，国家发改委明确成本核算原则上以经营者个别成本为基础，无法核算时参考行业平均成本并考虑下浮幅度，对产能利用率低的经营者予以适当考量。",
-   "source_tag": "研报",
-   "quality_score": 65.4,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-037",
-   "status": "pending_review",
-   "theme": "新能源/电力",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「亿纬锂能与 Fluence 战略合作」？",
-   "a": "亿纬锂能与全球储能系统集成商 Fluence 签署协议，约定在 2027 年至 2031 年围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh。",
-   "concept": "亿纬锂能与 Fluence 战略合作",
-   "unit_id": "u037",
-   "unit_key": {
-    "book": "rp_AP202610021830111958",
-    "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
-    "p1": 1,
-    "p2": 4
-   },
-   "book": "rp_AP202610021830111958",
-   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
-   "page_start": 1,
-   "page_end": 4,
-   "evidence": "亿纬锂能子公司湖北亿纬动力与 Fluence 签署供货框架协议，约定 2027 年至 2031 年双方围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh，2028 年至 2031 年预留容量合计 190GWh。",
-   "claim": "亿纬锂能与全球储能系统集成商 Fluence 签署协议，约定在 2027 年至 2031 年围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh。",
-   "source_tag": "研报",
-   "quality_score": 65.1,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-038",
-   "status": "pending_review",
-   "theme": "新能源/电力",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「光伏行业供给出清」有哪些关键事实或数据？",
-   "a": "按新版能耗标准（6.3kgce/kg）测算，行业留存产能约170-180 万吨，考虑技改潜力也难以超过200 万吨，约50%产能面临淘汰或技改压力。自2027 年起强制实施的能耗强标将起到加速落后产能出清、行业集中度提升的作用。",
-   "concept": "光伏行业供给出清",
-   "unit_id": "u038",
-   "unit_key": {
-    "book": "rp_AP202610021830111912",
-    "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
-    "p1": 1,
-    "p2": 4
-   },
-   "book": "rp_AP202610021830111912",
-   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
-   "page_start": 1,
-   "page_end": 4,
-   "evidence": "按新版能耗标准（6.3kgce/kg）测算，行业留存产能约170-180 万吨，考虑技改潜力也难以超过200 万吨，约50%产能面临淘汰或技改压力。自2027 年起强制实施的能耗强标将起到加速落后产能出清、行业集中度提升的作用。",
-   "claim": "受新版能耗标准及强制淘汰政策影响，光伏行业约50%的存量产能面临淘汰或技改压力，预计自2027年起强制实施的能耗强标将加速落后产能出清并提升行业集中度。",
-   "source_tag": "研报",
-   "quality_score": 63.0,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-039",
-   "status": "pending_review",
-   "theme": "其他",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「多层级安全评估体系（ARIA）」的影响与传导是什么？",
-   "a": "NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链。 依据：安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming 尝试诱发违规结果并识别风险发生条件；Field Testing 观察用户在常规使用环境中接触何种信息...",
-   "concept": "多层级安全评估体系（ARIA）",
-   "unit_id": "u039",
-   "unit_key": {
-    "book": "rp_AP202610061830170460",
-    "chapter": "图表目录",
-    "p1": 2,
-    "p2": 14
-   },
-   "book": "rp_AP202610061830170460",
-   "chapter": "图表目录",
-   "page_start": 2,
-   "page_end": 14,
-   "evidence": "安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming 尝试诱发违规结果并识别风险发生条件；Field Testing 观察用户在常规使用环境中接触何种信息...",
-   "claim": "NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链。",
-   "source_tag": "研报",
-   "quality_score": 78.1,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-040",
-   "status": "pending_review",
-   "theme": "其他",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「中小行配债中枢趋势下移」？",
-   "a": "受三重约束影响，中小行无法有效增加债券配置，配债增速难回此前双位数高增，从‘交易 + 配置双轮驱动’退化为票息锁定与流动性管理的被动配置。",
-   "concept": "中小行配债中枢趋势下移",
-   "unit_id": "u040",
-   "unit_key": {
-    "book": "rp_AP202609301830035477",
-    "chapter": "中小行配债走弱：成因与趋势判断",
-    "p1": 1,
-    "p2": 13
-   },
-   "book": "rp_AP202609301830035477",
-   "chapter": "中小行配债走弱：成因与趋势判断",
-   "page_start": 1,
-   "page_end": 13,
-   "evidence": "负债端收缩叠加监管约束，中小行配债中枢趋势性下移。三重约束致使中小行无法有效增加债券配置：（1）负债端存款利差收窄，核心存款增长面临压力；（2）监管约束中小行债券投资的利率风险及集中度；（3）收益考核角度 FTP 年初锁价且缺乏调整。这些结构性因素将决定中小行配债增速难回此前双位数高增，从‘交易 + 配置双轮驱动、主动加久期博收益’退化为票息锁定与流动性管理的被动配置。",
-   "claim": "受三重约束影响，中小行无法有效增加债券配置，配债增速难回此前双位数高增，从‘交易 + 配置双轮驱动’退化为票息锁定与流动性管理的被动配置。",
-   "source_tag": "研报",
-   "quality_score": 73.2,
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "九、回测证据：股票池决定成败（14 市场）",
+   "page_start": 9,
+   "page_end": 9,
+   "evidence": "MarketInOut 14 股票池回测（2000–2026）：进入条件为八条模板，20×5% 仓位、0.1% 成本、含退市股；结论原文：最大变量不是国家，而是允许买什么股票——大盘成分内有效，全交易所尤其小盘失效。",
+   "claim": "同一套 8 条规则，在大盘指数成分内可跑赢基准（Nasdaq-100 +3.9pp/年、TSX +2.9、FTSE100 +2.1），但在全交易所（尤其小盘）失效：全流动性美股 26 年年化 0%、跑输基准 8.2pp；Russell 2000 -4.3pp。",
+   "source_tag": "策略经典",
+   "quality_score": 73.0,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1854,13 +1598,13 @@
  "sources": {
   "units": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
-   "sha256_before": "b241de371129e0a9c66c9897a287d73711a542f6360e8c1518db597a1ef0fdf2",
-   "sha256_after": "b241de371129e0a9c66c9897a287d73711a542f6360e8c1518db597a1ef0fdf2"
+   "sha256_before": "5de0ac84bdef5caa75a8753bec3d3422193658b17fa8d9efa9153a7f8d9387a4",
+   "sha256_after": "5de0ac84bdef5caa75a8753bec3d3422193658b17fa8d9efa9153a7f8d9387a4"
   },
   "cards": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
-   "sha256_before": "f002969dcecbd5a69671b6efa98aee1a48e601f6c5aea70ac94ca54bb26fb0fd",
-   "sha256_after": "f002969dcecbd5a69671b6efa98aee1a48e601f6c5aea70ac94ca54bb26fb0fd"
+   "sha256_before": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081",
+   "sha256_after": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081"
   },
   "checklist": {
    "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json",

@@ -84,6 +84,8 @@ SECTIONS = [
 DOMAIN_NAV_GROUPS = {
     "stock": (
         ("📊 分析工作台", (
+            ("🧪 新版工作台", "/sa/workbench", "sa-workbench"),
+            ("🛰️ 批量监控", "/sa/monitor", "sa-monitor"),
             ("🔍 单股分析", "/sa", "sa"),
             ("🧾 事件复核", "/sa#review", "sareview"),
             ("📚 方法说明", "/sa#method", "samethod"),
@@ -103,7 +105,7 @@ DOMAIN_NAV_GROUPS = {
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "/hermes/", "hermes"),
-            ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
+            ("🐴 CowAgent 🚧", "#cowagent-off", "cowagent"),  # 未启用：CowAgent 后端未启动（端口无监听）+ nginx 反代未应用（L2 未批）。href 以 # 开头 → nav 渲染为灰色不可点
             ("🧠 智策 OS", "/quant/", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
             ("🛒 算法市场", "/algo", "algo"),
@@ -113,6 +115,7 @@ DOMAIN_NAV_GROUPS = {
             ("🌊 青萍之末 🚧", "/bt-qpzm", "qpzm"),
             ("🔔 订阅推送", "/bt/subscribe", "subscribe"),
             ("🧭 缠论", "/bt-chanlun", "chanlun"),
+            ("🛒 买点实战台", "/bt-buy", "chanlun-buy"),
             ("🧪 TBE 分层", "/bt-tbe", "tbe"),
             ("⚔ 量子双刀", "/qd/", "qd"),
             ("🛟 预警池", "/bt-chanlun-pool", "chanlun-pool"),
@@ -146,7 +149,15 @@ DOMAIN_NAV_GROUPS = {
             ("📰 新闻证据流", "/intel/stream", "intelstream"),
             ("🤖 AI 晨报", "/bt-brief", "brief"),
             ("⚖️ JEV 判断", "/bt-jev", "jev"),
-            ("🩺 四件套观测", "/stack", "jevstack"))),
+            ("🩺 四件套观测", "/stack", "jevstack"),
+            ("🔭 JEV 全景舱", "/jev_pano.html", "jevpano"),
+            ("🛰 JEV 中台", "/jev_platform.html", "jevplatform"),
+            ("🔗 JEV 对接台", "/jev_integration.html", "jevintegration"),
+            ("☁ JEV 词云", "/jev_wordcloud.html", "jevwordcloud"),
+            ("📡 JEV 能力目录", "/jev_api.html", "jevapi"),
+            ("🎯 标的下钻", "/jev_target.html", "jevtarget"),
+            ("🧪 消息举证", "/jev_evidence.html", "jevevidence"),
+            ("📖 个股叙事线", "/jev_story.html", "jevstory"))),
         ("🧪 雪球舆情", (
             ("📰 情报日报", "/xq_intel.html", "xqintel"),
             ("📊 数据日报", "/data_daily.html", "dailydata"),
@@ -214,7 +225,8 @@ DOMAIN_NAV_GROUPS = {
             ("📊 数据仪表盘", "/dashboard", "dashboard"),
             ("🎛 OS 控制台", "/ops", "opshome"),
             ("⚡ 动作流中心", "/flow", "flow"),
-            ("🖥 系统自检", "/sys-health", "sys"),)),
+            ("🖥 系统自检", "/sys-health", "sys"),
+            ("🛡 看护驾驶舱", "/guard_deck.html", "guarddeck"),)),
     ),
 }
 
@@ -228,6 +240,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "flow": "ops",
                 "strategies": "quant", "screen": "quant",
                 "qpzm": "quant", "9dim": "quant", "chanlun": "quant",
+                "chanlun-buy": "quant",
                 "subscribe": "quant",
                 "chanlun-pool": "quant", "cross": "quant",
                 "data-health": "quant", "nl": "quant",
@@ -240,7 +253,14 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "intel": "intel", "intelstream": "intel", "lineage": "intel",
                 "pushhub": "intel",
                 "jev": "intel", "brief": "intel", "kg": "intel",
-                "jevstack": "intel",
+                "jevstack": "intel", "jevintegration": "intel",
+                "jevplatform": "intel",
+                "jevpano": "intel",
+                "jevwordcloud": "intel",
+                "jevapi": "intel",
+                "jevtarget": "intel",
+                "jevevidence": "intel",
+                "jevstory": "intel",
                 "kgcanvas": "intel", "kgask": "intel",
                 "kgmap": "intel", "kgshadow": "intel",
                 "kgbattle": "intel",
@@ -319,6 +339,9 @@ def pill_nav(page=None):
         links = "".join(
             "<span style='color:#e6edf3;font-weight:600'>%s</span>" % lb
             if key == page else
+            "<span title='未启用' style='color:#6e7681;opacity:.6;"
+            "cursor:not-allowed'>%s</span>" % lb
+            if href.startswith("#") else
             "<a href='%s' style='color:#58a6ff;text-decoration:none'>%s</a>"
             % (href, lb) for lb, href, key in items)
         head = ("<div style='color:#8b949e;font-size:10px;"

@@ -1,0 +1,262 @@
+[
+  {
+    "as_of": "2026-11-02",
+    "result": {
+      "ok": true,
+      "run_id": null,
+      "pool": "watchlist",
+      "as_of": "2026-11-02",
+      "scanned": 3,
+      "alerts": 8,
+      "new_alerts": 8,
+      "by_severity": {
+        "high": 3,
+        "medium": 2,
+        "low": 3
+      },
+      "items": [
+        {
+          "code": "605258.SH",
+          "rule": "limit_move",
+          "severity": "high",
+          "title": "触及跌停（-10.00%）",
+          "detail": "2026-11-02 收盘 37.07，涨跌幅 -10.00%，触及跌停幅度阈值 9.5%",
+          "trade_date": "2026-11-02",
+          "dedupe_key": "605258.SH|limit_move|2026-11-02"
+        },
+        {
+          "code": "605258.SH",
+          "rule": "new_event",
+          "severity": "high",
+          "title": "新增事件 2 条（含风险类 2 条）",
+          "detail": "近 3 个自然日新增事件 2 条：关于控股股东筹划控制权变更事项进展暨股票复牌的公告；关于控股股东及其他股东协议转让公司股份暨控制权拟发生变更的提示性公告",
+          "trade_date": "2026-10-31",
+          "dedupe_key": "605258.SH|new_event|2026-10-31"
+        },
+        {
+          "code": "605258.SH",
+          "rule": "price_move",
+          "severity": "high",
+          "title": "单日下跌 10.00%",
+          "detail": "2026-11-02 收盘 37.07，涨跌幅 -10.00%（异动阈值 ±5%）",
+          "trade_date": "2026-11-02",
+          "dedupe_key": "605258.SH|price_move|2026-11-02"
+        },
+        {
+          "code": "600337.SH",
+          "rule": "new_event",
+          "severity": "medium",
+          "title": "新增事件 1 条",
+          "detail": "近 3 个自然日新增事件 1 条：美克国际家居用品股份有限公司2026年第三季度报告",
+          "trade_date": "2026-10-31",
+          "dedupe_key": "600337.SH|new_event|2026-10-31"
+        },
+        {
+          "code": "688023.SH",
+          "rule": "price_move",
+          "severity": "medium",
+          "title": "单日上涨 6.77%",
+          "detail": "2026-11-02 收盘 42.92，涨跌幅 +6.77%（异动阈值 ±5%）",
+          "trade_date": "2026-11-02",
+          "dedupe_key": "688023.SH|price_move|2026-11-02"
+        },
+        {
+          "code": "600337.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-02，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "600337.SH|data_stale|2026-11-05"
+        },
+        {
+          "code": "605258.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-02，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "605258.SH|data_stale|2026-11-05"
+        },
+        {
+          "code": "688023.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-02，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "688023.SH|data_stale|2026-11-05"
+        }
+      ],
+      "dry_run": true
+    }
+  },
+  {
+    "as_of": "2026-11-03",
+    "result": {
+      "ok": true,
+      "run_id": null,
+      "pool": "watchlist",
+      "as_of": "2026-11-03",
+      "scanned": 3,
+      "alerts": 5,
+      "new_alerts": 5,
+      "by_severity": {
+        "high": 1,
+        "medium": 1,
+        "low": 3
+      },
+      "items": [
+        {
+          "code": "605258.SH",
+          "rule": "new_event",
+          "severity": "high",
+          "title": "新增事件 2 条（含风险类 2 条）",
+          "detail": "近 3 个自然日新增事件 2 条：关于控股股东筹划控制权变更事项进展暨股票复牌的公告；关于控股股东及其他股东协议转让公司股份暨控制权拟发生变更的提示性公告",
+          "trade_date": "2026-10-31",
+          "dedupe_key": "605258.SH|new_event|2026-10-31"
+        },
+        {
+          "code": "600337.SH",
+          "rule": "new_event",
+          "severity": "medium",
+          "title": "新增事件 2 条",
+          "detail": "近 3 个自然日新增事件 2 条：美克国际家居用品股份有限公司关于股份回购进展公告；美克国际家居用品股份有限公司2026年第三季度报告",
+          "trade_date": "2026-11-03",
+          "dedupe_key": "600337.SH|new_event|2026-11-03"
+        },
+        {
+          "code": "600337.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-03，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "600337.SH|data_stale|2026-11-05"
+        },
+        {
+          "code": "605258.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-03，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "605258.SH|data_stale|2026-11-05"
+        },
+        {
+          "code": "688023.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-03，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "688023.SH|data_stale|2026-11-05"
+        }
+      ],
+      "dry_run": true
+    }
+  },
+  {
+    "as_of": "2026-11-04",
+    "result": {
+      "ok": true,
+      "run_id": null,
+      "pool": "watchlist",
+      "as_of": "2026-11-04",
+      "scanned": 3,
+      "alerts": 5,
+      "new_alerts": 5,
+      "by_severity": {
+        "high": 0,
+        "medium": 2,
+        "low": 3
+      },
+      "items": [
+        {
+          "code": "600337.SH",
+          "rule": "new_event",
+          "severity": "medium",
+          "title": "新增事件 1 条",
+          "detail": "近 3 个自然日新增事件 1 条：美克国际家居用品股份有限公司关于股份回购进展公告",
+          "trade_date": "2026-11-03",
+          "dedupe_key": "600337.SH|new_event|2026-11-03"
+        },
+        {
+          "code": "605258.SH",
+          "rule": "price_move",
+          "severity": "medium",
+          "title": "单日上涨 6.53%",
+          "detail": "2026-11-04 收盘 37.52，涨跌幅 +6.53%（异动阈值 ±5%）",
+          "trade_date": "2026-11-04",
+          "dedupe_key": "605258.SH|price_move|2026-11-04"
+        },
+        {
+          "code": "600337.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-04，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "600337.SH|data_stale|2026-11-05"
+        },
+        {
+          "code": "605258.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-04，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "605258.SH|data_stale|2026-11-05"
+        },
+        {
+          "code": "688023.SH",
+          "rule": "data_stale",
+          "severity": "low",
+          "title": "数据滞后",
+          "detail": "个股最新行情 2026-11-04，市场最新交易日 2026-11-05（行情未更新到最新交易日）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "688023.SH|data_stale|2026-11-05"
+        }
+      ],
+      "dry_run": true
+    }
+  },
+  {
+    "as_of": "2026-11-05",
+    "result": {
+      "ok": true,
+      "run_id": null,
+      "pool": "watchlist",
+      "as_of": "2026-11-05",
+      "scanned": 3,
+      "alerts": 2,
+      "new_alerts": 2,
+      "by_severity": {
+        "high": 0,
+        "medium": 2,
+        "low": 0
+      },
+      "items": [
+        {
+          "code": "600337.SH",
+          "rule": "new_event",
+          "severity": "medium",
+          "title": "新增事件 1 条",
+          "detail": "近 3 个自然日新增事件 1 条：美克国际家居用品股份有限公司关于股份回购进展公告",
+          "trade_date": "2026-11-03",
+          "dedupe_key": "600337.SH|new_event|2026-11-03"
+        },
+        {
+          "code": "688023.SH",
+          "rule": "price_move",
+          "severity": "medium",
+          "title": "单日上涨 6.21%",
+          "detail": "2026-11-05 收盘 44.78，涨跌幅 +6.21%（异动阈值 ±5%）",
+          "trade_date": "2026-11-05",
+          "dedupe_key": "688023.SH|price_move|2026-11-05"
+        }
+      ],
+      "dry_run": true
+    }
+  }
+]

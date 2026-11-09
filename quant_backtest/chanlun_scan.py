@@ -1,12 +1,75 @@
 # -*- coding: utf-8 -*-
-"""缠论全A股扫描 → 预警池 → 模拟交易（影子观察：不推送、不拦截）。
+"""缠论全A股结构标注 → 标注池 → 模拟交易账本（结构标注工具，非入场依据）。
+
+═══ 系统定位（2026-11-05 定档，成本模型证伪后）═══════════════════
+
+本模块的定位是**结构标注工具**，不是自动入场/离场依据：
+
+  1. 画图     在 K 线上标注分型/笔/中枢/买卖点，供人工看图
+  2. 研判辅助 提供结构位置（第几类买卖点、中枢内外、背驰与否）作为人工
+              决策的**输入之一**，不单独构成交易理由
+  3. 回测对照 作为「结构条件」的对照组，用于检验某个真实策略的条件是否
+              只是缠论结构的代理变量
+
+不做的：不推送「该买/该卖」，不作为仓位建议，不自动下单，
+**也不作为机器学习模型的特征输入**（v5 检验：结构 IC t=3.75 真实存在，
+但在负期望池子里换不到钱，见下文）。
+
+判据（三年 PIT 扩样本 n=26,208，次日开盘入场，FM 月度聚类）：
+  - 六类信号毛 alpha 的 FM t 全部 |t|<1.96（最大 1买10日 t=1.07）
+  - 扣真实成本后净 alpha 的 FM t 全部落到 0 附近或转负：
+    1买10日 毛+0.57% → standard 10万 净+0.24%(FM t=-0.11)
+  - 1买10日 要让净 alpha 统计显著，往返成本须 ≤ -0.24%（负成本，不可能）
+  - 成本年化拖累 8.3%（10日持期满仓），A股全A长期年化亦不过 5~8%
+详见 deliverables/2026-11-05_缠论交易成本模型_v4_终局判定.md
+
+特征化判据（n=60,334 × 36 特征，chanlun_struct_ml*.py）：
+  - 绝对 alpha 标签：训练 IC 0.2427(t=15.4) → 测试 IC -0.0058(t=-0.33)，
+    随机切分 IC 0.107(t=8.1) 说明信息存在，但时间前向外推归零（regime 漂移）
+  - 日内分位标签：IC 转正且显著（仅结构 t=3.75），但 TOP20 净 alpha -0.17%
+    (TOP10 更差 -0.54%)，1买 TOP20 +0.49% 的 FM_t 仅 0.04 且由单半年撑起
+  - 结论：IC 显著 ≠ 能赚钱。池子全体净 alpha -0.45%、成本 0.33%，
+    任何排序的改善上限（+0.28pp）都不足以翻转符号
+详见 deliverables/2026-11-05_缠论结构当特征_v5_判定.md
+
+闸门判据（v6，2026-11-05 三线并行审计与跨市场判定）：
+  - 六类信号在三闸判定下有 18 格全部卡在 G1（毛 alpha 的 FM t 全部 <1.96），
+    未经闸门的新信号一律不得进入产线，必须先过 chanlun_gate.py
+  - 两套信号口径整体一致率仅 5.4%（chanlun_bi vs chanlun_signal，1卖最差
+    0.8%），chanlun_bi 的 signals 已在源码标注废弃（SIGNALS_DEPRECATED），
+    权威口径统一为 chanlun_signal
+  - 跨市场检验符号相反（A 股 st_pv_pos −0.047 vs 美股 +0.033，同窗口同口径），
+    说明该结构是 A 股反转特性的投影，不是普适规律，禁止跨市场照搬
+详见 deliverables/2026-11-05_三线并行_v6_口径审计与跨市场判定.md
+
+沪金特例判据（v7，2026-11-05，chanlun_gold_b3_{verify,bench}.py）：
+  ★ 本条**不适用于 A 股**，勿据此外推到本模块的 A 股扫描。
+  - 沪金 18.8 年 4,572 根连续日线，b3 仅 33 个（1.76 个/年），逐日截断重放
+    100% 实时可见（滞后中位 1 日），与 A 股 A 口径 44% 消失形成对照——
+    因 b3 定义（回踩不破中枢上沿）在中枢确定后不依赖笔终点修正
+  - 事后 +2.64% → 实时 +1.85%（前视虚增 0.80pp）→ 扣局部基准 +0.61% (t=0.84)
+  - 短持期有边际证据：d3 超额 +0.76% (t=3.16)、d5 +0.90% (t=2.96)、
+    d1 +0.48% (t=2.31)，三相邻持期同向；但 60 格 Bonferroni 临界 |t|=3.50，
+    d3 严格检验不过，d20 完全归零
+  - 91%（29/32）样本落在入场前 250 日已上涨区间 → 主要是牛市 beta
+  - K227 影子实验验收标准数学不可达：检测该效应需 155 样本 = 88 年
+  - 结论：唯一未被完全否掉的观察，但只够进研究记录，不支撑任何仓位
+详见 deliverables/2026-11-05_沪金b3信号_实时可见性_v7_边际证据判定.md
+
+── 以下为历史说明（成交口径等仍然有效）────────────────────────
 
 数据: data/ashare/*.parquet（每日 23:35 计划任务 AI量化RPS共振 经
 rps_resonance 增量同步，tushare daily 不复权口径）。扫描输入=截至最后一
-根收盘的 bars，信号「检出日」= 最后一根 K 线日期，可成交价 = 检出日收盘
-——逐日扫描天然含确认滞后，无未来函数。
+根收盘的 bars，信号「检出日」= 最后一根 K 线日期。逐日扫描天然含确认滞后，
+无未来函数。
 
-模拟交易: 检出日收盘入场，持有 HOLD_DAYS 个交易日按当日收盘离场，或期间
+成交口径（2026-11-05 改）: ENTRY_MODE=next_open 时，检出日只确认信号，
+实际成交价 =「检出日之后第一个交易日的开盘价」。原因：扫描在 15:35 跑，
+而当日 bar 要到 23:35 才落库，按检出日收盘成交在现实里无法实现（审计 P1）。
+仓位先挂 entry_pending，等次日 bar 到位再撮合，超 PENDING_MAX_WAIT 轮作废。
+ENTRY_MODE=close 为旧口径，仅供历史对照，产线不得使用。
+
+模拟交易: 次日开盘入场，持有 HOLD_DAYS 个交易日按当日收盘离场，或期间
 同票出现反向类别信号（按其检出日收盘）提前离场；方向收益口径与
 chanlun_backtest._dir_ret 一致（买点涨为胜 / 卖点跌为胜，卖点为方向
 统计非做空损益）。
@@ -39,6 +102,26 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 
 import pandas as pd
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 封存标记（2026-11-06，v9 终局）
+# ═══════════════════════════════════════════════════════════════════════════
+# 缠论线已封存：不再加功能、不再调参、不再换标的。代码保留以支持标注工具
+# 用途与结果可复现，但任何新增功能都属沉没成本。
+#
+# 终局判定的核心不是"统计不显著"，而是盈亏平衡要求负交易成本：
+# 18 格（6 信号 × 3 持期）反解的允许往返成本全为负，最优格 1买10日 = -0.240%。
+# 意味着即使零成本也无法拒绝"无 edge"——再优化参数、换标的、加过滤条件
+# 全部无效，因为被优化的对象在零成本下都不成立。
+#
+# 完整结论、已证伪假设清单、未验证空白、重启条件见：
+#   deliverables/2026-11-06_缠论线终局封存_v9.md
+#
+# 重启前必读该文档第 1 节（决定性证据）与第 5 节（四条重启条件）。
+# ═══════════════════════════════════════════════════════════════════════════
+CHANLUN_FROZEN = True
+CHANLUN_FROZEN_SINCE = "2026-11-06"
+CHANLUN_FROZEN_DOC = "deliverables/2026-11-06_缠论线终局封存_v9.md"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -86,13 +169,61 @@ def set_market(market):
     CODE_RESTORE = cfg["restore_code"]
 
 
-BACKFILL_DAYS = 120  # 初始回填窗口（交易日，按各股自身bar序列计）
+BACKFILL_DAYS = int(
+    os.environ.get("CHANLUN_BACKFILL_DAYS") or 120
+)  # 初始回填窗口（交易日，按各股自身bar序列计）；env/--backfill-days 可覆盖
 MAX_LAG = 60  # 回填重放最大确认滞后（同 eval_samples）
-HOLD_DAYS = 20  # 模拟交易持有交易日数
+HOLD_DAYS = int(
+    os.environ.get("CHANLUN_HOLD") or 20
+)  # 模拟交易持有交易日数（env 可覆盖；持期敏感性见 chanlun_hold_sensitivity.py）
+
+# 按信号类型分设持期（2026-11-05 实证，见 deliverables v3）
+# 【重要】本节所有 t 值必须先看 Fama-MacBeth 月度聚类口径（FM t）。
+# 横截面相关（同期股票共享市场冲击）会让名义 t 膨胀 3~6 倍：
+#   1买 10日 名义 t=4.86 → FM t=0.86；3卖 flat 组 名义 t=23.7 → FM t=-0.30。
+# 结论：没有任何信号达到 FM t>1.96，因此**持期选择不构成统计显著的改进**，
+# 只是点估计更优 + 交易成本更低，证据强度=弱。据此只保留 1买 的 10 日：
+#   1买  5日 +0.36(FM 0.28) / 10日 +0.50(FM 0.86) / 20日 +0.44(FM 0.25) / 30日 -0.03
+#   3买  整体无 edge（FM t 最高 1.75@5日），特殊持期无依据 → 维持 20
+#   2买  去重后全持期不显著 → 维持 20
+#   卖点 不用于离场（配对 Δalpha≈0），持期只影响方向统计
+# env CHANLUN_HOLD_BY_TYPE="1买=20" 精确覆盖；"off" 回到全部 20。
+_HBT_ENV = os.environ.get("CHANLUN_HOLD_BY_TYPE", "").strip()
+if _HBT_ENV.lower() in ("off", "none", "0"):
+    HOLD_BY_TYPE = {}
+elif _HBT_ENV:
+    HOLD_BY_TYPE = {}
+    for _kv in _HBT_ENV.split(","):
+        _k, _, _v = _kv.partition("=")
+        if _k.strip() and _v.strip().isdigit():
+            HOLD_BY_TYPE[_k.strip()] = int(_v.strip())
+else:
+    HOLD_BY_TYPE = {"1买": 10}
+
+
+def hold_of(sig_type):
+    """该信号类型的持期（未配置则回落 HOLD_DAYS）。"""
+    return HOLD_BY_TYPE.get(sig_type, HOLD_DAYS)
+
+
+# 3买 高位排除：检出前 20 日涨幅 > 此值 → 不建仓。
+# 依据：去重样本按 pre20 三分组，high 组 20 日 alpha -0.98(t=-3.30)、10 日 -0.35，
+# low/mid 组为正；3买 的失效机制就是「确认时已离 ZG 一段，等于追高」。
+# 分布参考：3买 的 pre20 中位 +2.0%、2/3 分位 +6.6%、>10% 占 25%。
+BLOCK_3BUY_PRE20 = float(os.environ.get("CHANLUN_BLOCK_3BUY_PRE20") or 0.10)
+_PRE20_CACHE = {}
 MIN_BARS = 120  # 少于此根数的次新股不参与（结构噪声大）
 LIMIT_BARS = 500  # 每日扫描喂给 analyze 的 bar 数（对齐样本口径）
 FRESH_LAG = 2  # 本地数据落后开市日数 ≥ 此值视为不同步
-CLOSED_CAP = 5000  # 账本 closed 截留上限
+CLOSED_CAP = 5000  # 账本 closed 截留上限（超出部分按月归档，见 _archive_closed）
+ALPHA_ON = os.environ.get("CHANLUN_ALPHA", "1") != "0"  # 结算是否附 alpha 归因
+# 入场时机（2026-11-05 三年样本实证，见 deliverables 审计报告 v1）
+#   next_open: 检出日只作信号确认，成交价取「检出日之后第一个交易日开盘」。
+#     实证 alpha：1买 -0.02% → +0.43%（t=3.24），且解决 15:35 扫描时当日
+#     bar 尚未落库（23:35 才落）导致「按检出日收盘成交」不可实现的问题。
+#   close: 旧口径，仅为兼容历史对比保留，产线不应使用。
+ENTRY_MODE = os.environ.get("CHANLUN_ENTRY", "next_open")
+PENDING_MAX_WAIT = 5  # 待成交仓位最长等待轮次，超时作废（防停牌/数据断链卡死）
 SIDES = ("mbei", "bei", "bei2", "vv", "tbe")  # True 子集型侧面
 
 # TDX 兜底（ashare 滞后时由 _check_fresh 填充：缺失交易日 → {ts_code: OHLCV}）
@@ -396,6 +527,74 @@ def _write_json(path, obj):
     os.replace(tmp, path)
 
 
+# ── alpha 归因（P0-1：门户口径从 raw 改为 alpha） ──────────
+def _alpha_annotate(code, raw, entry_date, exit_date):
+    """结算时附 beta / idx_ret / alpha（基准=等权全A，见 chanlun_alpha）。
+
+    失败一律返回空 dict：alpha 是**统计口径**而非交易判据，缺失不得阻断
+    结算（产线可用性优先于归因完整性）。基准缓存过期时 chanlun_alpha 自建。
+    """
+    if not ALPHA_ON or raw is None:
+        return {}
+    try:
+        import chanlun_alpha
+
+        return chanlun_alpha.annotate(
+            code, raw, entry_date, exit_date, asof_date=entry_date
+        )
+    except Exception as exc:
+        print("alpha skip %s: %s" % (code, str(exc)[:100]))
+        return {}
+
+
+ARCHIVE_DIR = os.path.join(HERE, "data", "chanlun_paper_archive")
+
+
+def _archive_closed(rows):
+    """超出 CLOSED_CAP 的结算记录按 exit 月份归档（append-only + 去重）。
+
+    为什么不直接丢弃：CLOSED_CAP=5000 的截留让历史胜率永远只反映最近一段
+    （审计时 11,441 行池只剩 5,000 笔结算）。归档保留全量证据，又不让
+    chanlun_paper.json 无限膨胀。
+
+    **本函数是 `data/chanlun_paper_archive/` 的唯一写入者**（2026-11-08 起）。
+    该目录只存产线实际入场（paper 风格，带 sig_dt）。回填结算集
+    （`chanlun_ledger_maint.rebuild` 的重算）写在 `data/chanlun_paper_backfill/`，
+    两者混在同一文件会让读方把模拟当真实入场。返回本次新写入条数。
+    """
+    if not rows:
+        return 0
+    os.makedirs(ARCHIVE_DIR, exist_ok=True)
+    by = {}
+    for r in rows:
+        # 坑：exit_date 形如 "2026-10-27"，直接 [:6] 得 "2026-1"，10~12 月会被
+        # 并进同一个月。先剥非数字再取 6 位。
+        raw = "".join(ch for ch in str(r.get("exit_date") or r.get("entry_date") or "")
+                      if ch.isdigit())[:6]
+        by.setdefault(raw or "unknown", []).append(r)
+    n = 0
+    for mo, lst in sorted(by.items()):
+        path = os.path.join(ARCHIVE_DIR, "closed_%s_%s.jsonl" % (_CUR_MKT, mo))
+        have = set()
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        d = json.loads(line)
+                    except Exception:
+                        continue
+                    have.add((d.get("code"), d.get("type"), d.get("sig_dt")))
+        with open(path, "a", encoding="utf-8") as f:
+            for r in lst:
+                k = (r.get("code"), r.get("type"), r.get("sig_dt"))
+                if k in have:
+                    continue
+                have.add(k)
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+                n += 1
+    return n
+
+
 # ── 池行 / 仓位构造 ───────────────────────────────────────
 def _npv_of(st, sig):
     """P10 结构时序标注（影子）：窗口内已完成中枢数（≤2/3+ 分层）。
@@ -503,39 +702,166 @@ def _make_row(
     }
 
 
+def _pre20_of(code):
+    """检出前 20 个交易日的涨幅（3买 高位排除用）；不可算返回 None。"""
+    if code in _PRE20_CACHE:
+        return _PRE20_CACHE[code]
+    try:
+        bars = _bars_from_parquet(_code_path(code))
+    except Exception:
+        bars = None
+    v = None
+    if bars and len(bars) >= 21 and bars[-21].get("c"):
+        v = round(bars[-1]["c"] / bars[-21]["c"] - 1.0, 4)
+    _PRE20_CACHE[code] = v
+    return v
+
+
 def _open_positions(rows, led):
-    """新入池行 → 开模拟仓位（检出日收盘入场，days_held=0）。
-    按 (code,type,sig_dt) 幂等：已在账本（含 closed）的不重复开。"""
+    """新入池行 → 开模拟仓位。按 (code,type,sig_dt) 幂等。
+
+    成交口径由 ENTRY_MODE 决定：
+      · next_open（默认）：检出日只确认信号，真正成交在「检出日之后第一个
+        交易日开盘」。因此这里先挂 entry_pending=True、entry_date/px 留空，
+        由 update_paper 拿到次日 bar 后撮合。为什么不在扫描时直接取价：
+        本地行情由 23:35 的同步任务落库，15:35 扫描那一刻次日 bar 根本不存在，
+        这正是审计 P1「成交假设未验证」的根因。
+      · close：沿用检出日收盘价（旧口径，仅供历史对比）。
+
+    持期由 hold_of(type) 决定并写入 pos["hold"]，历史仓位无该字段时回落
+    HOLD_DAYS，账本序列不断档。
+
+    回填行（source=backfill）的 entry_date/entry_px 已由 PIT 重放实算，
+    无论 ENTRY_MODE 为何都原样沿用，避免口径二次平移。
+    """
     have = {
         (p.get("code"), p.get("type"), p.get("sig_dt"))
         for p in led.get("open", []) + led.get("closed", [])
     }
+    n_defer = n_block = 0
     for r in rows:
         key = (r["code"], r["type"], r["dt"])
         if key in have:
             continue
+        # 3买 高位排除（可 env 关闭）：追高型失效，不是入场时点问题
+        if r["type"] == "3买" and BLOCK_3BUY_PRE20 > 0:
+            p20 = r.get("pre20")
+            if p20 is None:
+                p20 = _pre20_of(r["code"])
+            if p20 is not None and p20 > BLOCK_3BUY_PRE20:
+                have.add(key)
+                n_block += 1
+                led.setdefault("entry_blocked", []).append(
+                    {"code": r["code"], "type": r["type"], "sig_dt": r["dt"],
+                     "detect_date": r["detect_date"], "pre20": p20,
+                     "reason": "3buy_pre20>%.2f" % BLOCK_3BUY_PRE20}
+                )
+                led["entry_blocked"] = led["entry_blocked"][-2000:]
+                continue
         have.add(key)
-        led["open"].append(
-            {
-                "code": r["code"],
-                "name": r.get("name", ""),
-                "type": r["type"],
-                "sig_dt": r["dt"],
-                "detect_date": r["detect_date"],
-                "entry_date": r["detect_date"],
-                "entry_px": r["entry_px"],
-                "days_held": 0,
-                "last_px": r["entry_px"],
-                "pnl": 0.0,
-                "tags": dict(
-                    {
-                        s: r.get(s)
-                        for s in ("mbei", "bei", "bei2", "vv", "reg", "tbe", "tradable")
-                    },
-                    npv=r.get("npv"),
-                ),
-            }
+        hold = int(r.get("hold") or hold_of(r["type"]))
+        base = {
+            "code": r["code"],
+            "name": r.get("name", ""),
+            "type": r["type"],
+            "sig_dt": r["dt"],
+            "detect_date": r["detect_date"],
+            "hold": hold,
+            "tags": dict(
+                {
+                    s: r.get(s)
+                    for s in ("mbei", "bei", "bei2", "vv", "reg", "tbe", "tradable")
+                },
+                npv=r.get("npv"), pre20=r.get("pre20"),
+            ),
+        }
+        legacy = (
+            ENTRY_MODE == "close"
+            or r.get("source") == "backfill"
+            or r.get("entry_date")
         )
+        if legacy:
+            base.update(
+                entry_mode=r.get("entry_mode") or "close",
+                entry_date=r.get("entry_date") or r["detect_date"],
+                entry_px=r.get("entry_px"),
+                days_held=0,
+                last_px=r.get("entry_px"),
+                pnl=0.0,
+            )
+        else:  # 待次日开盘撮合
+            base.update(
+                entry_mode="next_open",
+                entry_pending=True,
+                entry_date=None,
+                entry_px=None,
+                days_held=None,
+                last_px=None,
+                pnl=None,
+                wait_bars=0,
+            )
+            n_defer += 1
+        led["open"].append(base)
+    if n_defer or n_block:
+        print(
+            "paper: %d 笔挂单待次日开盘撮合，%d 笔 3买 高位排除（ENTRY_MODE=%s）"
+            % (n_defer, n_block, ENTRY_MODE)
+        )
+    return n_defer
+
+
+
+
+def _fill_pending(pos, bars, idx, dropped):
+    """待成交仓位撮合：取检出日之后第一根 bar 的开盘价成交。
+
+    返回 True 表示已成交（pos 被就地更新）或已判定作废；False 表示本轮
+    仍拿不到次日 bar，继续等待（调用方原样放回 open）。
+    """
+    i0 = idx.get(pos.get("detect_date"))
+    if i0 is None:
+        # 检出日已不在 bars 窗口内（历史窗口滚动 / 退市），无法撮合
+        pos["entry_dropped"] = "detect_date_missing"
+        dropped.append(pos)
+        return True
+    if i0 + 1 >= len(bars):
+        n = int(pos.get("wait_bars") or 0) + 1
+        if n > PENDING_MAX_WAIT:
+            pos["entry_dropped"] = "no_next_bar"
+            pos["wait_bars"] = n
+            dropped.append(pos)
+            return True
+        pos["wait_bars"] = n
+        return False
+    nb = bars[i0 + 1]
+    px = nb.get("o")
+    if not px or px <= 0:
+        n = int(pos.get("wait_bars") or 0) + 1
+        if n > PENDING_MAX_WAIT:
+            pos["entry_dropped"] = "bad_open"
+            dropped.append(pos)
+            return True
+        pos["wait_bars"] = n
+        return False
+    prev_c = bars[i0].get("c") or 0
+    o, h, low = nb.get("o"), nb.get("h"), nb.get("l")
+    # 一字涨停（开=高=低且涨幅近上限）：理论上买不进，仅标注不改成交价，
+    # 供后续做「可成交性敏感性」检验；主板10%/双创20%/ST5% 取最保守 9.5%。
+    unfillable = bool(
+        prev_c and o == h == low and (o / prev_c - 1.0) >= 0.095
+    )
+    pos.update(
+        entry_pending=False,
+        entry_date=nb["dt"],
+        entry_px=px,
+        days_held=0,
+        last_px=px,
+        pnl=0.0,
+        entry_gap=round(px / prev_c - 1.0, 4) if prev_c else None,
+        entry_unfillable=unfillable,
+    )
+    pos.pop("wait_bars", None)
+    return True
 
 
 # ── 新鲜度检查（数据由 23:35 同步任务负责，缺数不静默补） ──
@@ -1228,15 +1554,26 @@ def _exdiv_between(bars, ei, xi):
 
 def update_paper():
     """逐票盯市：满 HOLD_DAYS 按当日收盘离场(hold20)；反向信号检出日收盘
-    提前离场(reverse)；未到期按最后收盘浮动。回填的历史仓位一次性结算。"""
+    提前离场(reverse)；未到期按最后收盘浮动。回填的历史仓位一次性结算。
+
+    ENTRY_MODE=next_open 的仓位在真正进场前以 entry_pending=True 挂在
+    open 里（pnl=None，不进 pool_eval 统计），本函数先撮合再盯市。"""
     pool = _load_pool()
-    rev = {}  # code → {detect_date: 是否买类信号}
+    # code → {detect_date: {方向标记}}，标记 True=买类。必须用 set 而非单值：
+    # 实测 10.02% 的 (code, detect_date) 点位有多条信号，其中 84.2% 是买卖混合
+    # （如同日既有 1买 又有 3卖），单值赋值会让后写的吞掉先写的，导致
+    # 「反向离场」漏判（受影响信号 6,495 条）。set 保留当日全部方向。
+    rev = {}
     for r in pool:
-        rev.setdefault(r["code"], {})[r["detect_date"]] = r["type"].endswith("买")
+        rev.setdefault(r["code"], {}).setdefault(r["detect_date"], set()).add(
+            r["type"].endswith("买"))
     led = _load_paper()
     cache = {}
     still = []
+    dropped = []
     n_closed = 0
+    n_filled = 0
+    n_alt = 0
     for pos in led.get("open", []):
         code = pos["code"]
         if code not in cache:
@@ -1245,16 +1582,26 @@ def update_paper():
             )
         bars = cache[code]
         idx = {b["dt"]: i for i, b in enumerate(bars)}
+        if pos.get("entry_pending"):
+            if not _fill_pending(pos, bars, idx, dropped):
+                still.append(pos)
+                continue
+            if pos.get("entry_pending"):  # 超时作废，已记入 dropped
+                continue
+            n_filled += 1
         ei = idx.get(pos["entry_date"])
         if ei is None:  # 数据缺失（退市等），原样保留待下轮
             still.append(pos)
             continue
         exit_i, reason = None, None
-        if ei + HOLD_DAYS < len(bars):
-            exit_i, reason = ei + HOLD_DAYS, "hold20"
+        hold = int(pos.get("hold") or HOLD_DAYS)
+        if ei + hold < len(bars):
+            exit_i = ei + hold
+            reason = "hold20" if hold == 20 else "hold%d" % hold
         my_buy = pos["type"].endswith("买")
-        for dd, is_buy in rev.get(code, {}).items():
-            if is_buy != my_buy and dd > pos["entry_date"]:
+        want_rev = not my_buy  # 持仓方向的反向标记
+        for dd, dirs in rev.get(code, {}).items():
+            if want_rev in dirs and dd > pos["entry_date"]:
                 ii = idx.get(dd)
                 if ii is not None and ii > ei and (exit_i is None or ii < exit_i):
                     exit_i, reason = ii, "reverse"
@@ -1262,13 +1609,16 @@ def update_paper():
             last = bars[-1]
             pos["days_held"] = len(bars) - 1 - ei
             pos["last_px"] = last["c"]
-            pos["pnl"] = round(
-                _dir_ret(pos["type"], pos["entry_px"], last["c"]) or 0.0, 4
-            )
+            mv = _dir_ret(pos["type"], pos["entry_px"], last["c"])
+            pos["pnl"] = None if mv is None else round(mv, 4)
             still.append(pos)
             continue
         xb = bars[exit_i]
-        ret = round(_dir_ret(pos["type"], pos["entry_px"], xb["c"]) or 0.0, 4)
+        # 坑（审计 P1）：旧版 `or 0.0` 把「不可算」写成 0.0，缺失被当成
+        # 「不赚不亏」计入均值分母。改为保留 None + ret_na 标记；
+        # pool_eval 已按 `ret is not None` 过滤，统计不再被污染。
+        mv = _dir_ret(pos["type"], pos["entry_px"], xb["c"])
+        ret = None if mv is None else round(mv, 4)
         pos.update(
             days_held=exit_i - ei,
             last_px=xb["c"],
@@ -1276,33 +1626,79 @@ def update_paper():
             exit_date=xb["dt"],
             exit_px=xb["c"],
             ret=ret,
+            ret_na=ret is None,
             exit_reason=reason,
             adj_flag=_exdiv_between(bars, ei, exit_i),
         )
+        if ret is not None:  # P0-1：结算即附 beta/alpha，门户可双口径展示
+            pos.update(_alpha_annotate(pos["code"], ret, pos["entry_date"], xb["dt"]))
+        # 双轨：分类型持期生效时，同时记 20 日口径结果，保证历史序列不断档
+        if hold != HOLD_DAYS and not pos.get("adj_flag"):
+            alt_i = ei + HOLD_DAYS
+            if alt_i < len(bars) and alt_i != exit_i:
+                mv2 = _dir_ret(pos["type"], pos["entry_px"], bars[alt_i]["c"])
+                if mv2 is not None:
+                    r2 = round(mv2, 4)
+                    pos["ret_alt"] = r2
+                    pos["exit_date_alt"] = bars[alt_i]["dt"]
+                    a2 = _alpha_annotate(
+                        pos["code"], r2, pos["entry_date"], bars[alt_i]["dt"]
+                    )
+                    pos["alpha_alt"] = a2.get("alpha")
+                    n_alt += 1
         led.setdefault("closed", []).append(pos)
         n_closed += 1
     led["open"] = still
+    if dropped:  # 作废凭据留存（不静默丢弃），只留最近 2000 条
+        led.setdefault("entry_dropped", []).extend(
+            {
+                k: p.get(k)
+                for k in ("code", "type", "sig_dt", "detect_date",
+                          "entry_dropped", "wait_bars")
+            }
+            for p in dropped
+        )
+        led["entry_dropped"] = led["entry_dropped"][-2000:]
+    n_arch = 0
     if len(led.get("closed", [])) > CLOSED_CAP:
+        spilled = led["closed"][:-CLOSED_CAP]
+        n_arch = _archive_closed(spilled)  # 先归档再截留，顺序不可颠倒
         led["closed"] = led["closed"][-CLOSED_CAP:]
+        led["archived_total"] = int(led.get("archived_total") or 0) + n_arch
     led["updated_at"] = _now_iso()
     _write_json(PAPER, led)
+    n_pend = sum(1 for p in led["open"] if p.get("entry_pending"))
     print(
-        "paper: open=%d closed=%d (+%d this round)"
-        % (len(led["open"]), len(led["closed"]), n_closed)
+        "paper: open=%d (pending %d) closed=%d (+%d this round, filled %d, "
+        "dropped %d, alt20 %d, archived %d)"
+        % (len(led["open"]), n_pend, len(led["closed"]), n_closed,
+           n_filled, len(dropped), n_alt, n_arch)
     )
     return led
 
 
 # ── 侧面战绩统计（门户直读缓存） ──────────────────────────
 def _stats(rets):
+    """样本统计。保留 n/win/avg 三个门户口径键，新增 med/t 为附加字段。
+
+    t = 均值/标准误（单样本），用来区分「真有 edge」与「右尾撑出来的均值」。
+    alpha 口径下 n 很小（<30）时 t 值只能当方向参考，不能当显著性结论。
+    """
     if not rets:
         return None
     n = len(rets)
     win = sum(1 for x in rets if x > 0)
+    s = sorted(rets)
+    med = s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2.0
+    mu = sum(rets) / n
+    var = sum((x - mu) ** 2 for x in rets) / (n - 1) if n > 1 else 0.0
+    t = round(mu / (var ** 0.5 / (n ** 0.5)), 2) if var > 0 else None
     return {
         "n": n,
         "win": round(win * 100.0 / n, 1),
-        "avg": round(sum(rets) * 100.0 / n, 2),
+        "avg": round(mu * 100.0, 2),
+        "med": round(med * 100.0, 2),
+        "t": t,
     }
 
 
@@ -1312,22 +1708,38 @@ def pool_eval():
     口径：closed 取已实现 ret、open 取盯市 pnl；跨除权事件（adj_flag）
     的仓位不计入（不复权数据收益失真）。n<10 不构成结论，影子观察。"""
     led = _load_paper()
-    items = []  # (type, ret, tags, closed?)
+    items = []  # (type, ret, alpha, beta, tags, closed?)
+    alts = {}  # type → [20日口径 ret]，双轨对照
+    by_hold = {}  # (type, hold) → [ret]
     for pos in led.get("closed", []):
         if pos.get("adj_flag"):
             continue
         if pos.get("ret") is not None:
-            items.append((pos["type"], pos["ret"], pos.get("tags", {}), 1))
+            items.append(
+                (pos["type"], pos["ret"], pos.get("alpha"), pos.get("beta"),
+                 pos.get("tags", {}), 1)
+            )
+            if pos.get("ret_alt") is not None:
+                alts.setdefault(pos["type"], []).append(pos["ret_alt"])
+            by_hold.setdefault((pos["type"], int(pos.get("hold") or HOLD_DAYS)),
+                               []).append(pos["ret"])
     for pos in led.get("open", []):
+        # 未结算仓位只进 raw 盯市（alpha 需实现收益，混入会稀释口径）
         if pos.get("pnl") is not None:
-            items.append((pos["type"], pos["pnl"], pos.get("tags", {}), 0))
+            items.append((pos["type"], pos["pnl"], None, pos.get("beta"),
+                          pos.get("tags", {}), 0))
     types = {}
-    for t, ret, tags, closed in items:
+    for t, ret, alpha, beta, tags, closed in items:
         a = types.setdefault(
             t,
-            {"all": [], "closed_n": 0, **{s: [] for s in SIDES}, "reg": [], "comp": {}},
+            {"all": [], "alpha": [], "beta": [], "closed_n": 0,
+             **{s: [] for s in SIDES}, "reg": [], "comp": {}},
         )
         a["all"].append(ret)
+        if alpha is not None:
+            a["alpha"].append(alpha)
+        if beta is not None:
+            a["beta"].append(beta)
         a["closed_n"] += closed
         for s in SIDES:
             if tags.get(s) is True:
@@ -1365,6 +1777,16 @@ def pool_eval():
             )
         out_types[t] = {
             "all": _stats(a["all"]),
+            "alpha": _stats(a["alpha"]),
+            "alt20": _stats(alts.get(t) or []),  # 双轨：20 日口径对照
+            "hold": hold_of(t),
+            "by_hold": {
+                str(h): _stats(v)
+                for (tt, h), v in sorted(by_hold.items()) if tt == t
+            },
+            "beta_mean": (
+                round(sum(a["beta"]) / len(a["beta"]), 3) if a["beta"] else None
+            ),
             "closed_n": a["closed_n"],
             "sides": {s: _stats(a[s]) for s in list(SIDES) + ["reg"]},
             "comp": comp_out,
@@ -1377,17 +1799,68 @@ def pool_eval():
             mode += "·降级不复权%d只" % len(HFQ_FALLBACK)
     else:
         mode = "不复权口径（跨除权剔除）"
+    # 权威口径并列：产线账本受 CLOSED_CAP 截留 + 只覆盖近期一段行情，
+    # 其 alpha 与三年 PIT 扩样本（data/chanlun_ext_eval_daily_full.json）
+    # 可以符号相反。门户必须以权威口径判断信号有效性，账本只作运行监控。
+    ext_ref = None
+    ext_path = os.path.join(HERE, "data", "chanlun_ext_eval_daily_full.json")
+    if os.path.exists(ext_path):
+        try:
+            with open(ext_path, encoding="utf-8") as f:
+                ev = json.load(f)
+            ext_ref = {
+                "source": "chanlun_ext_eval_daily_full.json",
+                "range": ev.get("range"),
+                "n_closed": ev.get("n_closed"),
+                "types": {
+                    k: {
+                        "raw": (v.get("raw") or {}).get("avg"),
+                        "raw_t": (v.get("raw") or {}).get("t"),
+                        "alpha": (v.get("alpha") or {}).get("avg"),
+                        "alpha_t": (v.get("alpha") or {}).get("t"),
+                        "n": (v.get("raw") or {}).get("n"),
+                    }
+                    for k, v in (ev.get("types") or {}).items()
+                },
+            }
+        except Exception as exc:  # 权威口径缺失不该阻断门户刷新
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "pool_eval.ext_ref", exc
+            )
     cache = {
         "generated_at": _now_iso(),
         "hold_days": HOLD_DAYS,
         "n_pool": len(_load_pool()),
         "n_open": len(led.get("open", [])),
+        "n_pending": sum(1 for p in led.get("open", []) if p.get("entry_pending")),
         "n_closed": len(led.get("closed", [])),
+        "n_archived": int(led.get("archived_total") or 0),
+        "entry_mode": ENTRY_MODE,
+        "ext_ref": ext_ref,
         "types": out_types,
-        "note": "检出日收盘入场·%d交易日持有·%s·"
+        "alpha_basis": (
+            "EW-allA rolling250 OLS beta; alpha=raw-beta*bench(entry..exit]"
+            if ALPHA_ON else "off"
+        ),
+        "positioning": "structure-annotation-only",  # 2026-11-05 定档
+        "note": "%s入场·%d交易日持有·%s·"
+        "**本系统为结构标注工具（画图/人工研判辅助/回测对照组），"
+        "不作为自动入场依据**——三年 PIT 样本 n=26,208 六类信号毛 alpha "
+        "FM |t| 全 <1.96，扣真实成本后净 alpha FM t 落到 0 附近或转负"
+        "（1买10日 毛+0.57%%→standard 10万 净+0.24%% t=-0.11；盈亏平衡需"
+        "往返成本 ≤-0.24%%，物理不可能）·"
         "卖点为方向统计非做空损益·影子观察 n<10 不构成结论·"
+        "**双口径**：all=raw 绝对收益（含 beta），alpha=剔除 beta 后超额，"
+        "判断信号是否有效只看 alpha·"
+        "**判有效性请用 ext_ref（三年 PIT 扩样本），本账本受 CLOSED_CAP 截留"
+        "且只覆盖近期行情，types 区仅供运行监控**·"
         "复合叠加=全部因子同时成立，任一不可判记 None 不计"
-        "可判数（comp 区，只评估不拦截）" % (HOLD_DAYS, mode),
+        "可判数（comp 区，只评估不拦截）"
+        % (
+            "次日开盘" if ENTRY_MODE == "next_open" else "检出日收盘",
+            HOLD_DAYS,
+            mode,
+        ),
     }
     _write_json(POOL_EVAL, cache)
     print("pool_eval refreshed: %s" % cache["generated_at"])
@@ -1635,7 +2108,7 @@ def push_1sell_tbe_alert(new_rows):
         return 0
     detect = fresh[0].get("detect_date") or _now_iso()[:10]
     lines = [
-        "🚨 缠论强预警 · 1卖+趋✓",
+        "缠论观察信号 · 1卖+趋✓",
         "检出日：%s" % detect,
         "新信号：%d 条" % len(fresh),
         "",
@@ -1653,7 +2126,14 @@ def push_1sell_tbe_alert(new_rows):
             )
         )
     lines.append("")
-    lines.append("回测基线：n=10 win=90% avg=+18.88%")
+    # 统计口径提示（2026-11-05 三年 PIT 扩样本 + FM 月度聚类）：
+    # 1卖 名义 t=-5.19 在按月聚类后降到 t=-0.50，即「卖点后标的跑输」的
+    # 证据主要来自同期股票共同波动，而非信号本身。文案必须降级，
+    # 否则用户会把它当减仓依据（实测反向离场对持仓 Δalpha≈0）。
+    lines.append(
+        "统计口径：三年 PIT 扩样本 n=3,846，FM 月度聚类 t=0.50（<1.96，无显著 edge）"
+    )
+    lines.append("回测基线 n=10 win=90% avg=+18.88%（n=10 不构成结论，勿作参照）")
     # 实盘扫描当前战绩（从影子日志读 closed 统计）
     try:
         shadow = []
@@ -1711,7 +2191,9 @@ def push_1sell_tbe_alert(new_rows):
         print("push_1sell_tbe: event_graph skip: %s" % str(e)[:80])
     portal = (cfg.get("report") or {}).get("portal_url") or ""
     lines.append("")
-    lines.append("影子观察期·偏差未收敛·不构成做空或拦截依据")
+    lines.append(
+        "结构标注·非入场/减仓依据·三年 PIT 样本扣成本后净 alpha FM t 均 <1.96"
+    )
     if portal:
         lines.append("详情：%sbt-chanlun-pool" % portal)
     text = "\n".join(lines)
@@ -1897,6 +2379,13 @@ def main():
         "--backfill", action="store_true", help="one-shot history backfill with replay"
     )
     ap.add_argument(
+        "--backfill-days",
+        type=int,
+        default=0,
+        help="回填窗口交易日数（0=用 BACKFILL_DAYS / env CHANLUN_BACKFILL_DAYS）。"
+        "扩样本用 750 覆盖 3 年；单票重放成本随时长线性上升，勿在盘中跑",
+    )
+    ap.add_argument(
         "--scan", action="store_true", help="daily full-market scan (default mode)"
     )
     ap.add_argument(
@@ -1909,14 +2398,24 @@ def main():
         action="store_true",
         help="K72: plot 1d chanlun charts for today's signals",
     )
+    ap.add_argument(
+        "--entry-mode",
+        default="",
+        choices=("", "next_open", "close"),
+        help="成交口径覆盖（空=用 ENTRY_MODE / env CHANLUN_ENTRY）。"
+        "next_open=次日开盘（默认，可成交）；close=检出日收盘（不可成交，仅对照）",
+    )
     args = ap.parse_args()
+    if args.entry_mode:  # 必须在建仓前生效
+        globals()["ENTRY_MODE"] = args.entry_mode
+        print("ENTRY_MODE -> %s" % ENTRY_MODE)
     if args.market != "CN":
         set_market(args.market)  # 数据目录+池/纸面/影子/推送文件链切换
     if args.fill_pool_trend and not args.scan and not args.plot:
         fill_pool_trend()  # 兼容旧 CLI：单独只补 trend
         return
     if args.backfill:
-        pool = backfill()
+        pool = backfill(args.backfill_days or BACKFILL_DAYS)
         led = _load_paper()
         _open_positions([r for r in pool if r.get("source") == "backfill"], led)
         _write_json(PAPER, led)

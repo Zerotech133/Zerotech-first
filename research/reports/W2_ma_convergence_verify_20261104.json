@@ -1,0 +1,75 @@
+{
+  "factor": "ma_convergence",
+  "implementation_match": {
+    "max_abs_diff": 0.0,
+    "n": 2734746
+  },
+  "ic": {
+    "n": 433,
+    "mean_pct": 1.781,
+    "t": 2.24,
+    "positive_rate": 0.5589
+  },
+  "groups": {
+    "Q1": {
+      "n": 433,
+      "mean_pct": -1.331,
+      "t": -8.36,
+      "positive_rate": 0.2956
+    },
+    "Q2": {
+      "n": 433,
+      "mean_pct": -1.6386,
+      "t": -25.97,
+      "positive_rate": 0.0762
+    },
+    "Q3": {
+      "n": 433,
+      "mean_pct": -1.8605,
+      "t": -35.63,
+      "positive_rate": 0.037
+    },
+    "Q4": {
+      "n": 433,
+      "mean_pct": -2.096,
+      "t": -27.82,
+      "positive_rate": 0.0577
+    },
+    "Q5": {
+      "n": 433,
+      "mean_pct": -2.348,
+      "t": -19.95,
+      "positive_rate": 0.1455
+    }
+  },
+  "q5_minus_q1": {
+    "n": 433,
+    "mean_pct": -1.017,
+    "t": -3.92,
+    "positive_rate": 0.448
+  },
+  "q5_minus_q1_nonoverlap": {
+    "n": 22,
+    "mean_pct": -0.4465,
+    "t": -0.45,
+    "positive_rate": 0.5909
+  },
+  "pit": [
+    {
+      "date": "20251208",
+      "max_abs_diff": 0.0,
+      "n": 5427
+    },
+    {
+      "date": "20260716",
+      "max_abs_diff": 0.0,
+      "n": 5503
+    }
+  ],
+  "n_days": 433,
+  "factor_distribution": {
+    "p01": 0.5908002150674472,
+    "p50": 0.9275094947659678,
+    "p99": 0.9909019557978104
+  }
+}

@@ -51,6 +51,9 @@ REGISTRY = {
     8030: "llamacpp 35b(手动)",
     8787: "Hermes WebUI",
     8888: "QuantDinger前端(Docker)",
+    # 2026-11-08 P2-01：因子挖掘控制台，绑 127.0.0.1:8870；正式启停脚本见
+    # zerobound-kg/factor_proto/factor_console/start_factor_console.ps1 / stop_factor_console.ps1。
+    8870: "因子挖掘控制台(factor_console/server.py,K-SEC-20261108-PORT-8870)",
     8899: "本地 Ollama Web 聊天(AI/111111/web_chat.py)",
     15000: "QuantDinger API(Docker)",
     15432: "QuantDinger DB(Docker)",
@@ -60,8 +63,10 @@ REGISTRY = {
     9103: "QD桥(jev_qd_bridge)",
     9104: "飞书卡片回调(lark_card)",
     9105: "agent_platform ack-serve",  # K-ORG-191 收编：2026-10-18 实证活监听（agent_platform.cli ack-serve）
+    9106: "JEV卡片本地HTTP ack(card-handler,lark_card_handler.py；FB-A 2026-11-05 并轨，9104 为同进程 /metrics)",
+    8001: "alerts_shadow 告警影子服务(tools/alerts_shadow.py --port 8001)",  # 2026-11-08 补注册：13:03 由并行线拉起、未登记，check_ports --strict 判「我方服务未上注册表」；owner=告警线。此前 8001 在 check_ports 与 ports_allocated.json 均无登记，不涉重分配
     8105: "智策OS v2 API(zhice_os_v2.api.main:app,uvicorn,2026-10-31 他线起)",  # P136 补注册：13:53 未登记监听触发合并门红；owner=智策OS线
-    8110: "intel-kg 情报知识图谱API(intel-kg/services/api.py:app,uvicorn,2026-11-04 L2 批准)",  # L2-B 注册：12 只读接口+health+meta；只绑 127.0.0.1；owner=DSH-Lead/intel-kg
+    8110: "intel-kg 情报知识图谱API(intel-kg/services/api.py:app,uvicorn,2026-11-04 L2 批准)",  # P7-D 登记：18 只读路径（14 核心含 /v1/meta + 4 消费端 knowledge/conclusions/issues/watch）+ /health；只绑 127.0.0.1；owner=DSH-Lead/intel-kg
     8098: "模型管理台(api_model_admin.py)",  # K-ORG-191 收编：2026-10-18 实证活监听（并行线 model_admin）
     9899: "CowAgent console",
     11434: "Ollama",

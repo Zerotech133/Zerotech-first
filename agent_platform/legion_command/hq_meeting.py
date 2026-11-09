@@ -27,6 +27,10 @@ SEATS = COMMAND_SEATS | DEPT_LEADS | OBSERVER_SEATS | ACADEMY_TEAM
 MAX_ATTENDEES = 6
 KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 MID_RE = re.compile(r"hq-\d{8}-\d{6}")
+# 编码损坏特征：连续问号。控制台/命令行代码页在把非 ASCII 交给 UTF-8 写入端之前
+# 已把字符替换成 0x3F，落盘后不可逆（2026-10-29 / 11-03 两档即此症状）。
+# 入口拒收是从根上止血——写入端编码本来就是对的，坏在入参。
+GARBLED_RE = re.compile(r"\?{2,}")
 
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -91,12 +95,30 @@ def _load(dirpath, mid: str):
     return d if isinstance(d, dict) else None
 
 
+def looks_garbled(text) -> bool:
+    """连续两个以上问号视为编码损坏（正常中文文本不会出现）。"""
+    return bool(GARBLED_RE.search(str(text or "")))
+
+
 def validate(req) -> tuple[dict | None, str | None]:
     if not isinstance(req, dict):
         return None, "bad_request"
     mtype = _r(req.get("type") or "morning", 16)
     if mtype not in TYPES:
         return None, "bad_type"
+    # 编码拒收（R12 D6）：先于一切字段裁剪，避免截断后再判导致漏检
+    for a in (req.get("agenda") or [])[:20]:
+        if isinstance(a, dict) and looks_garbled(a.get("item")):
+            return None, "bad_encoding"
+    for d in (req.get("decisions") or [])[:50]:
+        if isinstance(d, dict) and looks_garbled(d.get("decision")):
+            return None, "bad_encoding"
+    for o in (req.get("orders") or [])[:50]:
+        if isinstance(o, dict) and looks_garbled(o.get("title")):
+            return None, "bad_encoding"
+    for m in (req.get("transcript") or [])[:200]:
+        if isinstance(m, dict) and looks_garbled(m.get("text")):
+            return None, "bad_encoding"
     attendees = [_r(x, 24) for x in (req.get("attendees") or [])][:MAX_ATTENDEES]
     if not attendees or any(x not in SEATS for x in attendees):
         return None, "bad_attendee"

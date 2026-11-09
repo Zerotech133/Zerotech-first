@@ -80,6 +80,8 @@ def fake_result(
     accuracy: float = 0.99,
     by_type: dict | None = None,
     repeats: int = 3,
+    error_rate: float = 0.0,
+    total_tokens: int = 30000,
 ) -> Path:
     rdir.mkdir(parents=True, exist_ok=True)
     p = rdir / f"result-{run_at:%Y%m%d-%H%M%S}.json"
@@ -91,7 +93,8 @@ def fake_result(
                     "repeats": repeats,
                     "accuracy": accuracy,
                     "self_consistency": 0.95,
-                    "error_rate": 0.0,
+                    "error_rate": error_rate,
+                    "total_tokens": total_tokens,
                     "latency_ms_median": 500,
                     "by_type_accuracy": (
                         {"noul": 0.99, "choice": 0.99} if by_type is None else by_type
@@ -448,3 +451,35 @@ def test_guard_orders_by_run_at_not_filename(tmp_path):
     assert r["age_days"] == 2, r
     assert r["code"] == 0, r["problems"]
 
+
+
+# ── eval_guard：接口故障不判漂移（2026-11-05，typesafe 451 实测） ──
+def test_guard_infra_failure_not_drift(tmp_path):
+    """30 题全 451 → 准确率 0%，但这是接口不可达，不能判「基线漂移」。"""
+    rdir = tmp_path / "rinfra"
+    fake_result(
+        rdir, NOW - timedelta(days=1), accuracy=0.0,
+        by_type={"noul": 0.0, "choice": 0.0, "score": 0.0},
+        error_rate=1.0, total_tokens=0,
+    )
+    r = eg.check(rdir, "monthly", now=NOW)
+    assert r["code"] == 1
+    joined = " ".join(r["problems"])
+    assert "评测未能完成" in joined, r["problems"]
+    assert "总准确率 0.0% < 90%" not in joined
+    assert "noul 题型 0.0% < 95%" not in joined
+    # 提示里必须给出定位手段
+    assert "--probe-endpoint" in joined
+
+
+def test_guard_partial_failures_still_judged(tmp_path):
+    """失败率不高（10%）时仍按准确率判定 —— 不能因为偶发失败就放过真漂移。"""
+    rdir = tmp_path / "rpartial"
+    fake_result(
+        rdir, NOW - timedelta(days=1), accuracy=0.5,
+        by_type={"noul": 0.5, "choice": 0.5}, error_rate=0.1,
+    )
+    r = eg.check(rdir, "monthly", now=NOW)
+    joined = " ".join(r["problems"])
+    assert "总准确率 50.0% < 90%" in joined, r["problems"]
+    assert "评测未能完成" not in joined

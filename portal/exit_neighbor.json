@@ -1,0 +1,489 @@
+{
+ "meta": {
+  "since": "20231009",
+  "n": 160,
+  "rows": 15342
+ },
+ "rules": {
+  "hold_5": {
+   "day_avg": 0.448,
+   "days_mean": 5.0,
+   "account": {
+    "cagr": 22.55,
+    "mdd": -12.65,
+    "sharpe": 1.648,
+    "trades": 12229,
+    "skipped": 3113,
+    "avg_exposure": 38.7,
+    "final_nav": 1904328.0,
+    "by_year": {
+     "2023": {
+      "ret": 8.27,
+      "mdd": -2.5
+     },
+     "2024": {
+      "ret": 20.24,
+      "mdd": -12.14
+     },
+     "2025": {
+      "ret": 31.92,
+      "mdd": -3.7
+     },
+     "2026": {
+      "ret": 9.76,
+      "mdd": -10.67
+     }
+    }
+   },
+   "per_hold_day": 0.0896
+  },
+  "hold_7": {
+   "day_avg": 0.8,
+   "days_mean": 7.0,
+   "account": {
+    "cagr": 27.86,
+    "mdd": -12.33,
+    "sharpe": 1.543,
+    "trades": 10882,
+    "skipped": 4460,
+    "avg_exposure": 51.6,
+    "final_nav": 2178594.0,
+    "by_year": {
+     "2023": {
+      "ret": 9.59,
+      "mdd": -2.18
+     },
+     "2024": {
+      "ret": 35.04,
+      "mdd": -10.51
+     },
+     "2025": {
+      "ret": 33.27,
+      "mdd": -5.99
+     },
+     "2026": {
+      "ret": 8.97,
+      "mdd": -12.33
+     }
+    }
+   },
+   "per_hold_day": 0.1143
+  },
+  "hold_8": {
+   "day_avg": 0.935,
+   "days_mean": 8.0,
+   "account": {
+    "cagr": 28.46,
+    "mdd": -12.2,
+    "sharpe": 1.524,
+    "trades": 10201,
+    "skipped": 5141,
+    "avg_exposure": 56.5,
+    "final_nav": 2210751.0,
+    "by_year": {
+     "2023": {
+      "ret": 8.7,
+      "mdd": -2.4
+     },
+     "2024": {
+      "ret": 32.31,
+      "mdd": -10.66
+     },
+     "2025": {
+      "ret": 37.37,
+      "mdd": -7.87
+     },
+     "2026": {
+      "ret": 10.32,
+      "mdd": -12.2
+     }
+    }
+   },
+   "per_hold_day": 0.1169
+  },
+  "hold_9": {
+   "day_avg": 0.962,
+   "days_mean": 9.0,
+   "account": {
+    "cagr": 28.4,
+    "mdd": -11.75,
+    "sharpe": 1.466,
+    "trades": 9579,
+    "skipped": 5763,
+    "avg_exposure": 60.6,
+    "final_nav": 2207783.0,
+    "by_year": {
+     "2023": {
+      "ret": 10.26,
+      "mdd": -2.64
+     },
+     "2024": {
+      "ret": 29.97,
+      "mdd": -11.75
+     },
+     "2025": {
+      "ret": 42.31,
+      "mdd": -8.55
+     },
+     "2026": {
+      "ret": 6.58,
+      "mdd": -11.7
+     }
+    }
+   },
+   "per_hold_day": 0.1069
+  },
+  "hold_10": {
+   "day_avg": 1.062,
+   "days_mean": 10.0,
+   "account": {
+    "cagr": 29.45,
+    "mdd": -14.81,
+    "sharpe": 1.459,
+    "trades": 9014,
+    "skipped": 6328,
+    "avg_exposure": 64.1,
+    "final_nav": 2265589.0,
+    "by_year": {
+     "2023": {
+      "ret": 8.81,
+      "mdd": -3.0
+     },
+     "2024": {
+      "ret": 26.41,
+      "mdd": -14.38
+     },
+     "2025": {
+      "ret": 47.26,
+      "mdd": -9.23
+     },
+     "2026": {
+      "ret": 10.36,
+      "mdd": -11.82
+     }
+    }
+   },
+   "per_hold_day": 0.1062
+  },
+  "hold_11": {
+   "day_avg": 1.179,
+   "days_mean": 11.0,
+   "account": {
+    "cagr": 29.25,
+    "mdd": -17.37,
+    "sharpe": 1.409,
+    "trades": 8472,
+    "skipped": 6870,
+    "avg_exposure": 67.0,
+    "final_nav": 2254163.0,
+    "by_year": {
+     "2023": {
+      "ret": 10.74,
+      "mdd": -2.8
+     },
+     "2024": {
+      "ret": 24.06,
+      "mdd": -17.37
+     },
+     "2025": {
+      "ret": 51.27,
+      "mdd": -10.04
+     },
+     "2026": {
+      "ret": 7.25,
+      "mdd": -13.07
+     }
+    }
+   },
+   "per_hold_day": 0.1072
+  },
+  "hold_12": {
+   "day_avg": 1.202,
+   "days_mean": 12.0,
+   "account": {
+    "cagr": 27.31,
+    "mdd": -17.92,
+    "sharpe": 1.282,
+    "trades": 7996,
+    "skipped": 7346,
+    "avg_exposure": 69.6,
+    "final_nav": 2148625.0,
+    "by_year": {
+     "2023": {
+      "ret": 9.13,
+      "mdd": -2.8
+     },
+     "2024": {
+      "ret": 28.17,
+      "mdd": -17.92
+     },
+     "2025": {
+      "ret": 49.38,
+      "mdd": -10.55
+     },
+     "2026": {
+      "ret": 1.78,
+      "mdd": -13.02
+     }
+    }
+   },
+   "per_hold_day": 0.1002
+  },
+  "hold_15": {
+   "day_avg": 1.282,
+   "days_mean": 15.0,
+   "account": {
+    "cagr": 25.94,
+    "mdd": -18.13,
+    "sharpe": 1.162,
+    "trades": 6918,
+    "skipped": 8424,
+    "avg_exposure": 76.6,
+    "final_nav": 2076404.0,
+    "by_year": {
+     "2023": {
+      "ret": 11.0,
+      "mdd": -2.8
+     },
+     "2024": {
+      "ret": 20.42,
+      "mdd": -18.13
+     },
+     "2025": {
+      "ret": 46.92,
+      "mdd": -13.18
+     },
+     "2026": {
+      "ret": 4.15,
+      "mdd": -14.21
+     }
+    }
+   },
+   "per_hold_day": 0.0855
+  },
+  "hold_20": {
+   "day_avg": 1.492,
+   "days_mean": 19.99,
+   "account": {
+    "cagr": 18.41,
+    "mdd": -25.46,
+    "sharpe": 0.832,
+    "trades": 5523,
+    "skipped": 9819,
+    "avg_exposure": 83.0,
+    "final_nav": 1707892.0,
+    "by_year": {
+     "2023": {
+      "ret": 9.09,
+      "mdd": -2.84
+     },
+     "2024": {
+      "ret": 10.49,
+      "mdd": -25.46
+     },
+     "2025": {
+      "ret": 47.36,
+      "mdd": -14.42
+     },
+     "2026": {
+      "ret": -4.78,
+      "mdd": -19.1
+     }
+    }
+   },
+   "per_hold_day": 0.0746
+  },
+  "trail_06": {
+   "day_avg": 0.573,
+   "days_mean": 7.93,
+   "account": {
+    "cagr": 24.65,
+    "mdd": -13.92,
+    "sharpe": 1.477,
+    "trades": 9871,
+    "skipped": 5471,
+    "avg_exposure": 52.8,
+    "final_nav": 2009816.0,
+    "by_year": {
+     "2023": {
+      "ret": 6.6,
+      "mdd": -3.09
+     },
+     "2024": {
+      "ret": 27.67,
+      "mdd": -10.13
+     },
+     "2025": {
+      "ret": 35.47,
+      "mdd": -5.32
+     },
+     "2026": {
+      "ret": 7.39,
+      "mdd": -13.92
+     }
+    }
+   },
+   "per_hold_day": 0.0723
+  },
+  "trail_08": {
+   "day_avg": 0.857,
+   "days_mean": 10.72,
+   "account": {
+    "cagr": 26.39,
+    "mdd": -13.02,
+    "sharpe": 1.43,
+    "trades": 8378,
+    "skipped": 6964,
+    "avg_exposure": 62.4,
+    "final_nav": 2100226.0,
+    "by_year": {
+     "2023": {
+      "ret": 5.79,
+      "mdd": -3.94
+     },
+     "2024": {
+      "ret": 24.39,
+      "mdd": -12.36
+     },
+     "2025": {
+      "ret": 43.72,
+      "mdd": -7.62
+     },
+     "2026": {
+      "ret": 9.73,
+      "mdd": -13.02
+     }
+    }
+   },
+   "per_hold_day": 0.0799
+  },
+  "trail_10": {
+   "day_avg": 1.1,
+   "days_mean": 13.12,
+   "account": {
+    "cagr": 25.93,
+    "mdd": -15.36,
+    "sharpe": 1.311,
+    "trades": 7392,
+    "skipped": 7950,
+    "avg_exposure": 68.7,
+    "final_nav": 2076034.0,
+    "by_year": {
+     "2023": {
+      "ret": 6.44,
+      "mdd": -3.82
+     },
+     "2024": {
+      "ret": 24.12,
+      "mdd": -15.36
+     },
+     "2025": {
+      "ret": 44.86,
+      "mdd": -9.27
+     },
+     "2026": {
+      "ret": 7.46,
+      "mdd": -12.18
+     }
+    }
+   },
+   "per_hold_day": 0.0838
+  },
+  "trail_12": {
+   "day_avg": 1.26,
+   "days_mean": 15.04,
+   "account": {
+    "cagr": 26.25,
+    "mdd": -17.05,
+    "sharpe": 1.261,
+    "trades": 6785,
+    "skipped": 8557,
+    "avg_exposure": 73.0,
+    "final_nav": 2092689.0,
+    "by_year": {
+     "2023": {
+      "ret": 6.02,
+      "mdd": -5.06
+     },
+     "2024": {
+      "ret": 25.32,
+      "mdd": -16.2
+     },
+     "2025": {
+      "ret": 43.52,
+      "mdd": -10.99
+     },
+     "2026": {
+      "ret": 8.7,
+      "mdd": -12.55
+     }
+    }
+   },
+   "per_hold_day": 0.0838
+  }
+ },
+ "vs_hold20": [
+  {
+   "rule": "hold_5",
+   "d_sharpe": 0.816,
+   "d_cagr": 4.14,
+   "d_mdd": 12.81,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_7",
+   "d_sharpe": 0.711,
+   "d_cagr": 9.45,
+   "d_mdd": 13.13,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_8",
+   "d_sharpe": 0.692,
+   "d_cagr": 10.05,
+   "d_mdd": 13.26,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_9",
+   "d_sharpe": 0.634,
+   "d_cagr": 9.99,
+   "d_mdd": 13.71,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_10",
+   "d_sharpe": 0.627,
+   "d_cagr": 11.04,
+   "d_mdd": 10.65,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_11",
+   "d_sharpe": 0.577,
+   "d_cagr": 10.84,
+   "d_mdd": 8.09,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_12",
+   "d_sharpe": 0.45,
+   "d_cagr": 8.9,
+   "d_mdd": 7.54,
+   "better_sharpe": true
+  },
+  {
+   "rule": "hold_15",
+   "d_sharpe": 0.33,
+   "d_cagr": 7.53,
+   "d_mdd": 7.33,
+   "better_sharpe": true
+  }
+ ],
+ "verdict": {
+  "hold_plateau": true,
+  "best_run": 8,
+  "peak": "hold_5",
+  "verdict": "平台（左右邻域均优于 hold20）→ 结论稳健"
+ }
+}

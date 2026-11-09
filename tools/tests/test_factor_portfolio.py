@@ -1,0 +1,267 @@
+"""组合回测（中性化 book_to_market）测试。"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools" / "research"))
+
+from factor_lib import Panel  # noqa: E402
+from factor_portfolio import (  # noqa: E402
+    PortfolioConfig,
+    _target_weights,
+    _target_weights_constrained,
+    investable_masks,
+    rebalance_indices,
+    simulate,
+)
+
+
+def _panel(n_days: int = 80, n_codes: int = 60, seed: int = 7) -> tuple[Panel, dict]:
+    rng = np.random.default_rng(seed)
+    dates = [f"2025-{1 + i // 28:02d}-{1 + i % 28:02d}" for i in range(n_days)]
+    codes = [f"{i:06d}.SZ" for i in range(n_codes)]
+    rets = rng.normal(0, 0.01, (n_days, n_codes))
+    close = pd.DataFrame(np.cumprod(1 + rets, axis=0) * 10, index=dates, columns=codes)
+    adj = close.copy()
+    pct = close.pct_change().fillna(0) * 100
+    vol = pd.DataFrame(1e6, index=dates, columns=codes)
+    amount = pd.DataFrame(2e6, index=dates, columns=codes)  # 千元，20 亿元
+    turnover = pd.DataFrame(2.5, index=dates, columns=codes)  # 2.5%
+    total_mv = pd.DataFrame(1e6, index=dates, columns=codes)
+    pd.DataFrame(
+        np.tile(np.arange(n_codes, dtype=float), (n_days, 1)), index=dates, columns=codes
+    )
+    fields = {"close": close, "adj_close": adj, "pct_chg": pct, "vol": vol,
+              "amount": amount, "turnover_rate": turnover, "total_mv": total_mv}
+    panel = Panel(fields, eligible=pd.DataFrame(True, index=dates, columns=codes),
+                  meta={"industry": pd.Series("ind0", index=codes)})
+    return panel, {c: "正常股份" for c in codes}
+
+
+def test_rebalance_indices():
+    panel, _ = _panel(n_days=50)
+    idx = rebalance_indices(panel, None, None, 20)
+    assert idx == [0, 20, 40]
+
+
+def test_rebalance_indices_end_on_non_trading_day_does_not_spill_forward():
+    """end 落在两个交易日之间时，信号日只能 <= end，不能顺延到下一个交易日。"""
+    panel, _ = _panel(n_days=5)
+    dates = [str(d) for d in panel.dates]
+    idx = rebalance_indices(panel, None, f"{dates[2]} 12:00", every=1)
+    assert idx == [0, 1, 2]
+    assert rebalance_indices(panel, None, "2000-01-01", every=1) == []
+
+
+def test_investable_masks_excludes_st_limit_suspend_low_amount_low_turnover():
+    panel, names = _panel(n_days=5, n_codes=10)
+    names[panel.codes[0]] = "ST测试"
+    panel.fields["pct_chg"].iloc[1, 1] = 9.9
+    panel.fields["vol"].iloc[1, 2] = 0
+    panel.fields["amount"].iloc[1, 3] = 1e3
+    panel.fields["turnover_rate"].iloc[1, 4] = 0.01
+    sel, trade = investable_masks(panel, names, PortfolioConfig())
+    assert not sel.iloc[1, 0]
+    assert not sel.iloc[1, 1]
+    assert not sel.iloc[1, 2]
+    assert not sel.iloc[1, 3]
+    assert not sel.iloc[1, 4]
+    assert bool(trade.iloc[1, 2]) is False
+
+
+def test_simulate_stops_at_end():
+    panel, names = _panel(n_days=80, n_codes=60)
+    cfg = PortfolioConfig(rebalance_days=20, quantile=0.2, max_one_way_turnover=0.10,
+                          cost_bp=30.0)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    end = panel.dates[50]
+    out = simulate(panel, factor, cfg, names=names, end=end)
+    assert out["nav"].index[-1] <= end
+    assert all(str(t["entry_date"]) <= str(end) for t in out["trades"])
+
+
+
+def test_simulate_respects_turnover_cap_and_costs():
+    panel, names = _panel(n_days=80, n_codes=60)
+    cfg = PortfolioConfig(rebalance_days=20, quantile=0.2, max_one_way_turnover=0.10,
+                          cost_bp=30.0)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(panel, factor, cfg, names=names)
+    assert out["metrics"]["rebalances"] >= 2
+    # 首次建仓不受单边换手上限约束（否则只能建出 10% gross），后续调仓才受 cap。
+    assert out["trades"]
+    assert out["trades"][0]["actual_turnover"] > 0.10
+    assert all(t["actual_turnover"] <= 0.10 + 1e-12 for t in out["trades"][1:])
+    assert out["metrics"]["total_cost"] > 0
+    assert len(out["nav"]) > 0
+    assert np.isfinite(out["nav"]).all()
+    assert out["metrics"]["sharpe"] is not None
+
+
+def test_simulate_no_lookahead_first_trade_uses_first_signal():
+    panel, names = _panel(n_days=80)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(panel, factor, PortfolioConfig(rebalance_days=20), names=names)
+    first = out["trades"][0]
+    assert first["signal_date"] == panel.dates[0]
+    assert first["entry_date"] == panel.dates[1]
+    assert first["n_long"] > 0 and first["n_short"] > 0
+
+
+def test_weights_gross_and_target_quantiles():
+    panel, names = _panel(n_days=80)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(panel, factor, PortfolioConfig(rebalance_days=20), names=names)
+    first = out["trades"][0]
+    assert first["n_long"] == first["n_short"] == 12
+    assert abs(first["target_turnover"] - 0.5) < 1e-9  # 首次建仓 0.5 单边
+
+
+def test_buffer_keeps_existing_positions_within_extended_quantile():
+    codes = pd.Index([f"{i:06d}.SZ" for i in range(100)])
+    factor = pd.Series(np.arange(100, 0, -1, dtype=float), index=codes)  # code0 最高
+    mask = pd.Series(True, index=codes)
+    prior = pd.Series(0.0, index=codes)
+    prior.iloc[24] = 0.025   # rank 25，处于 top 20%~30% 之间
+    prior.iloc[75] = -0.025  # rank 76，处于 bottom 20%~30% 之间
+    target = _target_weights(factor, mask, PortfolioConfig(buffer_quantile=0.3), prior=prior)
+    assert target.iloc[24] > 0          # 原多头保留
+    assert target.iloc[75] < 0          # 原空头保留
+    assert target.iloc[22] == 0         # 新标的仍只允许 top 20%
+    assert abs(float(target.abs().sum()) - 1.0) < 1e-9
+
+
+def test_turnover_penalty_reduces_turnover_and_keeps_gross():
+    panel, names = _panel(n_days=80)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    plain = simulate(panel, factor, PortfolioConfig(rebalance_days=20, turnover_penalty=0.0),
+                     names=names)
+    penalized = simulate(panel, factor, PortfolioConfig(rebalance_days=20, turnover_penalty=0.6),
+                         names=names)
+    plain_turn = sum(t["actual_turnover"] for t in plain["trades"])
+    pen_turn = sum(t["actual_turnover"] for t in penalized["trades"])
+    assert pen_turn <= plain_turn + 1e-9
+    assert all(abs(t["gross"] - 1.0) < 1e-6 for t in penalized["trades"])
+
+
+def test_60_day_rebalance_indices_and_simulation():
+    panel, names = _panel(n_days=80)
+    assert rebalance_indices(panel, None, None, 60) == [0, 60]
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(panel, factor, PortfolioConfig(rebalance_days=60), names=names)
+    assert out["metrics"]["rebalances"] == 2
+    assert out["metrics"]["rebalance_days"] == 60
+
+
+def test_simulate_capture_weights_returns_daily_positions():
+    panel, names = _panel(n_days=80)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(
+        panel, factor, PortfolioConfig(rebalance_days=60, industry_neutral=True,
+                                       size_neutral=True, buffer_quantile=0.3,
+                                       turnover_penalty=0.5),
+        names=names, capture_weights=True,
+    )
+    assert len(out["daily_weights"]) == len(out["daily_returns"]) > 0
+    first = out["daily_weights"][0]
+    assert first["date"] == out["daily_returns"].index[0]
+    assert first["weights"]
+    assert abs(sum(abs(v) for v in first["weights"].values()) - 1.0) < 1e-6
+    # 默认不记录持仓，避免给常规回测增加开销
+    default = simulate(panel, factor, PortfolioConfig(rebalance_days=60), names=names)
+    assert default["daily_weights"] == []
+
+
+def test_industry_and_size_constrained_weights_are_neutral():
+    panel, _ = _panel(n_days=80, n_codes=60)
+    industries = pd.Series(
+        {c: ["A", "B", "C"][i % 3] for i, c in enumerate(panel.codes)}, name="industry"
+    )
+    panel.load_meta["industry"] = industries
+    size_values = pd.Series(np.arange(1, len(panel.codes) + 1, dtype=float) * 1e6,
+                            index=panel.codes)
+    factor = pd.Series(np.arange(len(panel.codes), 0, -1, dtype=float), index=panel.codes)
+    mask = pd.Series(True, index=panel.codes)
+    cfg = PortfolioConfig(quantile=0.2, industry_neutral=True, size_neutral=True,
+                          size_buckets=3, buffer_quantile=0.3, turnover_penalty=0.5)
+    target = _target_weights_constrained(factor, mask, cfg, prior=None,
+                                         industry=industries, size_values=size_values)
+    assert abs(float(target.abs().sum()) - 1.0) < 1e-9
+    ind_net = target.groupby(industries.reindex(target.index)).sum()
+    assert float(ind_net.abs().max()) < 1e-9
+    # 按市值分组也应多空匹配
+    ranks = size_values.rank(method="first")
+    buckets = pd.qcut(ranks, 3, labels=False, duplicates="drop")
+    bucket_net = target.groupby(pd.Series(buckets, index=target.index)).sum()
+    assert float(bucket_net.abs().max()) < 1e-9
+
+
+def test_constrained_simulation_records_low_exposures():
+    panel, names = _panel(n_days=80)
+    industries = pd.Series("ind0", index=panel.codes)
+    panel.load_meta["industry"] = industries
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    cfg = PortfolioConfig(rebalance_days=60, max_one_way_turnover=0.3,
+                          buffer_quantile=0.3, turnover_penalty=0.5,
+                          industry_neutral=True, size_neutral=True)
+    out = simulate(panel, factor, cfg, names=names)
+    assert out["metrics"]["avg_max_industry_net"] is not None
+    assert out["metrics"]["avg_max_industry_net"] < 0.01
+    assert out["metrics"]["avg_abs_size_net"] is not None
+
+
+class _FakePITMap:
+    """按日期返回不同行业，并记录 simulate 实际查询的日期。"""
+
+    def __init__(self, panel: Panel):
+        self.panel = panel
+        self.calls: list[str] = []
+
+    def at(self, date):
+        self.calls.append(str(date))
+        # 前半段与后半段行业互换，确保信号日/建仓日取到不同映射
+        half = len(self.panel.dates) // 2
+        pos = list(self.panel.dates).index(str(date)) if str(date) in list(self.panel.dates) else 0
+        labels = ["A", "B"] if pos < half else ["B", "A"]
+        return pd.Series(
+            [labels[i % 2] for i in range(len(self.panel.codes))],
+            index=self.panel.codes,
+            name="industry",
+        )
+
+
+def test_simulate_uses_pit_industry_map_at_signal_and_entry():
+    panel, names = _panel(n_days=80)
+    pit = _FakePITMap(panel)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    cfg = PortfolioConfig(rebalance_days=60, industry_neutral=True)
+    out = simulate(panel, factor, cfg, names=names, industry_map=pit)
+    assert out["industry_source"] == "pit_sw_l1"
+    assert pit.calls[0] == panel.dates[0]   # 信号日
+    assert pit.calls[1] == panel.dates[1]   # 建仓日
+    assert out["metrics"]["avg_max_industry_net"] is not None
+

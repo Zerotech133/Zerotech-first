@@ -14,6 +14,15 @@
     "SELL": 0.0,
     "STRONG_SELL": 0.0
   },
+  "stop_loss": {
+    "rule": "last_price <= stop_price 时按 last_price 全部 paper 平仓；stop_price 以建仓确认单为准，缺失时默认 entry_price*(1-default_pct)。",
+    "default_pct": 0.05,
+    "positions": {
+      "sz002463": {
+        "stop_price": 78.0
+      }
+    }
+  },
   "industries": {
     "600519": "白酒",
     "000858": "白酒",

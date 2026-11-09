@@ -19,7 +19,6 @@
 
 import json
 import urllib.parse
-import urllib.request
 from datetime import datetime
 
 import pytest
@@ -27,6 +26,8 @@ import pytest
 import kg_events_portal as KE
 
 PORTAL = "http://127.0.0.1:8091"
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 
 # ── 环境探测（不可达即 skip）────────────────────────────────
@@ -45,7 +46,7 @@ def live():
 def http():
     """运行中的 portal 前置（打最轻的 situ 端点探测）。"""
     try:
-        with urllib.request.urlopen(PORTAL + "/kg/events/situ", timeout=5) as r:
+        with safe_urlopen(PORTAL + "/kg/events/situ", timeout=5) as r:
             assert json.loads(r.read().decode("utf-8")).get("ok")
     except Exception as ex:  # 探测阶段任何失败都退化为 skip
         pytest.skip("portal(8091) 不可用：%s" % ex)
@@ -53,7 +54,7 @@ def http():
 
 
 def _get(path, timeout=15):
-    with urllib.request.urlopen(PORTAL + path, timeout=timeout) as r:
+    with safe_urlopen(PORTAL + path, timeout=timeout) as r:
         return r.status, r.read().decode("utf-8")
 
 

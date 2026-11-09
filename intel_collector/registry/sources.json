@@ -1,174 +1,643 @@
 {
-  "res_downloader_py": {
-    "source_id": "res_downloader_py",
-    "name": "res-downloader-py（通用下载器）",
-    "category": "interface",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "media",
-      "meta"
-    ],
-    "sla": {
-      "freshness_minutes": 1440,
-      "max_failures": 5
-    },
-    "enabled": true,
-    "health": {},
-    "note": "老田 2026-11-01 override 田丰归口登记"
+ "res_downloader_py": {
+  "source_id": "res_downloader_py",
+  "name": "res-downloader-py（通用下载器）",
+  "category": "interface",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "xueqiu": {
-    "source_id": "xueqiu",
-    "name": "雪球公开舆情（首条深度专线）",
-    "category": "open_source_intel",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "post",
-      "comment"
-    ],
-    "sla": {
-      "freshness_minutes": 30,
-      "max_failures": 3
-    },
-    "enabled": true,
-    "health": {},
-    "note": "老田 2026-11-01 override 田丰归口登记"
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-002",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-003",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-004",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-006",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-007",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-008",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-001",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-005",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
   },
-  "guba": {
-    "source_id": "guba",
-    "name": "股吧舆情",
-    "category": "open_source_intel",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "post",
-      "comment"
-    ],
-    "sla": {
-      "freshness_minutes": 60,
-      "max_failures": 5
-    },
-    "enabled": true,
-    "health": {},
-    "note": "老田 2026-11-01 override 田丰归口登记"
+  "content_types": [
+   "media",
+   "meta"
+  ],
+  "sla": {
+   "freshness_minutes": 1440,
+   "max_failures": 5
   },
-  "news": {
-    "source_id": "news",
-    "name": "新闻聚合",
-    "category": "open_source_intel",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "post"
-    ],
-    "sla": {
-      "freshness_minutes": 30,
-      "max_failures": 5
-    },
-    "enabled": true,
-    "health": {},
-    "note": "老田 2026-11-01 override 田丰归口登记"
+  "enabled": true,
+  "health": {},
+  "note": "老田 2026-11-01 override 田丰归口登记"
+ },
+ "xueqiu": {
+  "source_id": "xueqiu",
+  "name": "雪球公开舆情（首条深度专线）",
+  "category": "open_source_intel",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "youtube_envelope": {
-    "source_id": "youtube_envelope",
-    "name": "YouTube 系统外元信息包（仅 envelope，不碰原包）",
-    "category": "interface",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "meta"
-    ],
-    "sla": {
-      "freshness_minutes": 4320,
-      "max_failures": 5
-    },
-    "enabled": true,
-    "health": {},
-    "note": "老田 2026-11-01 override 田丰归口登记"
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-010",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-011",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-012",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-014",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-015",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-016",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-009",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-013",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
   },
-  "youtube_corpus": {
-    "source_id": "youtube_corpus",
-    "name": "YouTube 学习语料（规范化层批式，只读桥）",
-    "category": "open_source_intel",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "video_meta",
-      "comment"
-    ],
-    "sla": {
-      "freshness_minutes": 10080,
-      "max_failures": 5
-    },
-    "enabled": true,
-    "health": {},
-    "note": "P1.5 老田定性纳入开源情报；评/点/赞字段俱全；只读不反写知识库"
+  "content_types": [
+   "post",
+   "comment"
+  ],
+  "sla": {
+   "freshness_minutes": 30,
+   "max_failures": 3
   },
-  "pdf_methodology": {
-    "source_id": "pdf_methodology",
-    "name": "PDF 方法论/研报蒸馏（kb_corpus 管线产出快照）",
-    "category": "open_source_intel",
-    "owner": "intel(军情司·INTEL0)",
-    "contact": "",
-    "schema_version": "1.0",
-    "rights": {
-      "internal_retention": true,
-      "cleaning": true,
-      "controlled_query": true
-    },
-    "rights_meta": {},
-    "content_types": [
-      "knowledge_unit"
-    ],
-    "sla": {
-      "freshness_minutes": 10080,
-      "max_failures": 5
-    },
-    "enabled": true,
-    "health": {},
-    "note": "P1.5 老田定性纳入开源情报；100 研报+方法论书+笔记，11,200 蒸馏单元"
-  }
+  "enabled": true,
+  "health": {},
+  "note": "老田 2026-11-01 override 田丰归口登记"
+ },
+ "guba": {
+  "source_id": "guba",
+  "name": "股吧舆情",
+  "category": "open_source_intel",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
+  },
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-018",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-019",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-020",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-022",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-023",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-024",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-017",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-021",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
+  },
+  "content_types": [
+   "post",
+   "comment"
+  ],
+  "sla": {
+   "freshness_minutes": 60,
+   "max_failures": 5
+  },
+  "enabled": true,
+  "health": {},
+  "note": "老田 2026-11-01 override 田丰归口登记"
+ },
+ "news": {
+  "source_id": "news",
+  "name": "新闻聚合",
+  "category": "open_source_intel",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
+  },
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-026",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-027",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-028",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-030",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-031",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-032",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-025",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-029",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
+  },
+  "content_types": [
+   "post"
+  ],
+  "sla": {
+   "freshness_minutes": 30,
+   "max_failures": 5
+  },
+  "enabled": true,
+  "health": {
+   "consecutive_failures": 0,
+   "last_success_at": "2026-11-03T19:46:53Z"
+  },
+  "note": "老田 2026-11-01 override 田丰归口登记"
+ },
+ "youtube_envelope": {
+  "source_id": "youtube_envelope",
+  "name": "YouTube 系统外元信息包（仅 envelope，不碰原包）",
+  "category": "interface",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
+  },
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-034",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-035",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-036",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-038",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-039",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-040",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-033",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-037",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
+  },
+  "content_types": [
+   "meta"
+  ],
+  "sla": {
+   "freshness_minutes": 4320,
+   "max_failures": 5
+  },
+  "enabled": true,
+  "health": {},
+  "note": "老田 2026-11-01 override 田丰归口登记"
+ },
+ "youtube_corpus": {
+  "source_id": "youtube_corpus",
+  "name": "YouTube 学习语料（规范化层批式，只读桥）",
+  "category": "open_source_intel",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
+  },
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-042",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-043",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-044",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-046",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-047",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-048",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-041",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-045",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
+  },
+  "content_types": [
+   "video_meta",
+   "comment"
+  ],
+  "sla": {
+   "freshness_minutes": 10080,
+   "max_failures": 5
+  },
+  "enabled": true,
+  "health": {},
+  "note": "P1.5 老田定性纳入开源情报；评/点/赞字段俱全；只读不反写知识库"
+ },
+ "pdf_methodology": {
+  "source_id": "pdf_methodology",
+  "name": "PDF 方法论/研报蒸馏（kb_corpus 管线产出快照）",
+  "category": "open_source_intel",
+  "owner": "intel(军情司·INTEL0)",
+  "contact": "",
+  "schema_version": "1.0",
+  "rights": {
+   "internal_retention": true,
+   "cleaning": true,
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
+  },
+  "rights_meta": {
+   "cleaning": {
+    "receipt": "C9A-YI-050",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-051",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-052",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-054",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-055",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-056",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "internal_retention": {
+    "receipt": "C9A-YI-049",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "controlled_query": {
+    "receipt": "C9A-YI-053",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   }
+  },
+  "content_types": [
+   "knowledge_unit"
+  ],
+  "sla": {
+   "freshness_minutes": 10080,
+   "max_failures": 5
+  },
+  "enabled": true,
+  "health": {},
+  "note": "P1.5 老田定性纳入开源情报；100 研报+方法论书+笔记，11,200 蒸馏单元"
+ },
+ "_governance": {
+  "owner": "intel(军情司·INTEL0)",
+  "adr": "ADR-026（ARCH1 待补编号）",
+  "signed": "田峰代签（INTEL0+ARCH1 双席，点选生效 2026-11-08 06:41）",
+  "decision_ref": "reports/c9a_reg_sign_draft_20261107.md §2 全案六项",
+  "authoritative": true,
+  "supersedes": [
+   "agent_platform/data/intel/sources.json"
+  ],
+  "registered_at": "2026-11-08"
+ }
 }

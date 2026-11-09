@@ -16,9 +16,22 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[3]
 SCRIPT = REPO / "agent_platform" / "tools" / "kb_corpus_mcp.py"
 YT_DB = Path(r"C:/项目/知识库/00_数据仓/yt_learning.db")
+
+# 2026-11-08（K-CI-20261108-KBSKIP）：本文件 6 例全部围绕 yt_learning.db 展开
+# （kb_status/kb_search/yt_tables/yt_query/只读实证/selftest）。该库是本地知识库
+# 数据资产（C:/项目/知识库/... 走 .gitignore 之外的绝对路径），干净 runner 上
+# 必然不存在——不 skip 就是 6 条「云端必红」。与 pyarrow 缺库时 importorskip 同口径：
+# 缺资产 → 明确 skip 并留原因，不静默、也不冒充通过。本机有库时照常真跑。
+if not YT_DB.exists():
+    pytest.skip(
+        "yt_learning.db 不在本机（%s 属本地知识库数据资产，未入库）" % YT_DB,
+        allow_module_level=True,
+    )
 
 
 def _call(msgs, env=None, timeout=120):

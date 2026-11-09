@@ -658,14 +658,25 @@ def jev_reason(title, bias_cn, scope_cn, timeout=LLM_TIMEOUT_S):
 _CLOUD_FAIL_UNTIL = 0.0  # 云失败后此 epoch 前直接走本地，防 451 期每条空打探测
 
 
-def jev_judge_one_local(title, stocks, timeout=60):
+def jev_judge_one_local(title, stocks, timeout=None):
     """本地回落判定（qwen3.5:9b + format json，v2 资产价格口径）。
 
     K-ORG-159（M1/M8）：在盲测 v2 口径之上扩展输出 event_type + companies
     （事件维度是分布监控最强载体）；解析失败带错重发 1 次（借鉴
     Instructor 重试哲学），schema 校验不过走降级链（C2批2：链路不断只退化）。
     失败返回 None（与云路径同契约，绝不抛出）。
+
+    2026-11-06 缓解②（老田批准）：默认超时 60→180s，可 env
+    JEV_JUDGE_LOCAL_TIMEOUT_S 覆盖。依据：当日 08:53-12:45 本地 Ollama
+    队列被 M3 长批请求间歇占槽（16k ctx），60s 不够排队+推理，judge 成批
+    parse FAIL 酿成 146 积压；M3 侧已加闸门3 让位（k266_services.ps1），
+    此处放宽超时兜底残余争用。失败语义不变：仍走"带错重发 1 次→降级链"。
     """
+    if timeout is None:
+        try:
+            timeout = int(os.environ.get("JEV_JUDGE_LOCAL_TIMEOUT_S") or 180)
+        except ValueError:
+            timeout = 180
     if not title:
         return None
     _t0 = time.time()  # K-ORG-176：meter 计量（与云路径同契约）

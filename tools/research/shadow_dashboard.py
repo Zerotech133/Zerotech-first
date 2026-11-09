@@ -2,7 +2,6 @@
 """影子盘统一看板：汇总 S08/S11/H14 状态 → portal/static/shadow_dashboard.json。"""
 from __future__ import annotations
 
-import glob
 import json
 import sys
 from datetime import datetime

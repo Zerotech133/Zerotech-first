@@ -1,0 +1,775 @@
+﻿{
+ "schema": "acad1_freeze_ready/v1",
+ "kind": "acad1_freeze_ready",
+ "generated_at": "2026-11-08T08:32:00+08:00",
+ "readonly": true,
+ "network": false,
+ "freeze_node": "2026-11-08 ACAD1 冻结",
+ "criterion": "13/13 review 卡 reconciled + 池数一致（配额 30 vs 官方池 30）+ 无 blockers",
+ "sources": {
+  "manifest": {
+   "path": "C:\\Temp\\acad1-freeze-20261108-0831\\compositions\\acad1-legion\\manifest.yaml",
+   "ok": true,
+   "error": null,
+   "expected_review_cards": 13,
+   "quota": {
+    "CN": 12,
+    "HK": 10,
+    "US": 6,
+    "CRYPTO": 2
+   },
+   "pool_max": 30,
+   "lifecycle": "draft",
+   "validated": false
+  },
+  "cards": {
+   "path": "C:\\项目\\deliverables\\acad1\\2026-11-01\\cards_v2_reconciled.json",
+   "ok": true,
+   "error": null,
+   "pool_date": "2026-10-31",
+   "file_counts": {
+    "ok": 14,
+    "review": 13,
+    "missing_data": 1,
+    "unsupported": 2,
+    "no_source_price": 0
+   },
+   "computed_counts": {
+    "reconciled": 14,
+    "unresolved": 13,
+    "missing": 1,
+    "unsupported": 2
+   }
+  },
+  "pool_json": {
+   "path": "C:\\aios\\agent_platform\\data\\recommendation_pool\\latest.json",
+   "ok": true,
+   "error": null,
+   "pool_id": "ACAD1-REC-20261106",
+   "generated_at": "2026-11-06 17:24:54",
+   "total": 45,
+   "by_market": {
+    "T2": 45
+   },
+   "official": false
+  },
+  "pool_audit_doc": {
+   "path": "C:\\Temp\\acad1-freeze-20261108-0831\\docs\\plans\\2026-11-04_ACAD1池12vs30偏差审计_v1.md",
+   "ok": true,
+   "error": null,
+   "documented_single_view": 12,
+   "documented_full_aggregate": 30
+  },
+  "reviewed": {
+   "path": null,
+   "loaded": false,
+   "ok": false,
+   "error": null,
+   "reconciled_markers": 0
+  }
+ },
+ "expected_review_cards": 13,
+ "cards": [
+  {
+   "code": "00268",
+   "market": "HK",
+   "name": "00268",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -1.1163,
+   "source_close": 8.51,
+   "warehouse_close": 8.415,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "00700",
+   "market": "HK",
+   "name": "00700",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -1.5641,
+   "source_close": 383.6,
+   "warehouse_close": 377.6,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "00857",
+   "market": "HK",
+   "name": "00857",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -5.3604,
+   "source_close": 10.82,
+   "warehouse_close": 10.24,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "01024",
+   "market": "HK",
+   "name": "01024",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -1.1312,
+   "source_close": 26.52,
+   "warehouse_close": 26.22,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "01211",
+   "market": "HK",
+   "name": "01211",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": 0.5861,
+   "source_close": 68.25,
+   "warehouse_close": 68.65,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "02583",
+   "market": "HK",
+   "name": "02583",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -15.1429,
+   "source_close": 56.0,
+   "warehouse_close": 47.52,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "06681",
+   "market": "HK",
+   "name": "06681",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -6.7485,
+   "source_close": 1.63,
+   "warehouse_close": 1.52,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "06810",
+   "market": "HK",
+   "name": "06810",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": 14.2857,
+   "source_close": 66.5,
+   "warehouse_close": 76.0,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "09987",
+   "market": "HK",
+   "name": "09987",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -3.9517,
+   "source_close": 364.4,
+   "warehouse_close": 350.0,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "CART",
+   "market": "US",
+   "name": "CART",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -1.1557,
+   "source_close": 57.11,
+   "warehouse_close": 56.45,
+   "asof": "2026-10-29",
+   "reason": null
+  },
+  {
+   "code": "CRL",
+   "market": "US",
+   "name": "CRL",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": -4.4376,
+   "source_close": 376.1,
+   "warehouse_close": 359.41,
+   "asof": "2026-10-29",
+   "reason": null
+  },
+  {
+   "code": "EFX",
+   "market": "US",
+   "name": "EFX",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": 2.9043,
+   "source_close": 179.39,
+   "warehouse_close": 184.6,
+   "asof": "2026-10-29",
+   "reason": null
+  },
+  {
+   "code": "RRC",
+   "market": "US",
+   "name": "RRC",
+   "in_review_scope": true,
+   "registration_status": "review",
+   "state": "unresolved",
+   "human_reconciled": false,
+   "diff_pct": 1.3732,
+   "source_close": 53.89,
+   "warehouse_close": 54.63,
+   "asof": "2026-10-29",
+   "reason": null
+  },
+  {
+   "code": "000301.SZ",
+   "market": "CN",
+   "name": "000301.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 10.58,
+   "warehouse_close": 10.58,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "000938.SZ",
+   "market": "CN",
+   "name": "000938.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 23.03,
+   "warehouse_close": 23.03,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "000977.SZ",
+   "market": "CN",
+   "name": "000977.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 54.18,
+   "warehouse_close": 54.18,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "001216.SZ",
+   "market": "CN",
+   "name": "001216.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 16.98,
+   "warehouse_close": 16.98,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "001368.SZ",
+   "market": "CN",
+   "name": "001368.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 22.87,
+   "warehouse_close": 22.87,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "002371.SZ",
+   "market": "CN",
+   "name": "002371.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 478.74,
+   "warehouse_close": 478.74,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "002409.SZ",
+   "market": "CN",
+   "name": "002409.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 77.42,
+   "warehouse_close": 77.42,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "002445.SZ",
+   "market": "CN",
+   "name": "002445.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 3.02,
+   "warehouse_close": 3.02,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "002745.SZ",
+   "market": "CN",
+   "name": "002745.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 10.1,
+   "warehouse_close": 10.1,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "003043.SZ",
+   "market": "CN",
+   "name": "003043.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 44.37,
+   "warehouse_close": 44.37,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "300209.SZ",
+   "market": "CN",
+   "name": "300209.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 21.62,
+   "warehouse_close": 21.62,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "300765.SZ",
+   "market": "CN",
+   "name": "300765.SZ",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.0,
+   "source_close": 32.35,
+   "warehouse_close": 32.35,
+   "asof": "2026-10-30",
+   "reason": null
+  },
+  {
+   "code": "ETH/USDT",
+   "market": "CRYPTO",
+   "name": "ETH/USDT",
+   "in_review_scope": false,
+   "registration_status": "unsupported",
+   "state": "unsupported",
+   "human_reconciled": false,
+   "diff_pct": null,
+   "source_close": 2246.0,
+   "warehouse_close": 2246.0,
+   "asof": "2026-10-31",
+   "reason": "crypto_unsupported"
+  },
+  {
+   "code": "PROM/USDT",
+   "market": "CRYPTO",
+   "name": "PROM/USDT",
+   "in_review_scope": false,
+   "registration_status": "unsupported",
+   "state": "unsupported",
+   "human_reconciled": false,
+   "diff_pct": null,
+   "source_close": 5.71,
+   "warehouse_close": 5.71,
+   "asof": "2026-10-31",
+   "reason": "crypto_unsupported"
+  },
+  {
+   "code": "07552",
+   "market": "HK",
+   "name": "07552",
+   "in_review_scope": false,
+   "registration_status": "missing_data",
+   "state": "missing",
+   "human_reconciled": false,
+   "diff_pct": null,
+   "source_close": 2.52,
+   "warehouse_close": 2.52,
+   "asof": "2026-10-30",
+   "reason": "daily_missing+basic_missing"
+  },
+  {
+   "code": "CCI",
+   "market": "US",
+   "name": "CCI",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": -0.1576,
+   "source_close": 88.83,
+   "warehouse_close": 88.69,
+   "asof": "2026-10-29",
+   "reason": null
+  },
+  {
+   "code": "PTC",
+   "market": "US",
+   "name": "PTC",
+   "in_review_scope": false,
+   "registration_status": "ok",
+   "state": "reconciled",
+   "human_reconciled": false,
+   "diff_pct": 0.3799,
+   "source_close": 194.8,
+   "warehouse_close": 195.54,
+   "asof": "2026-10-29",
+   "reason": null
+  }
+ ],
+ "summary": {
+  "expected_review_cards": 13,
+  "registered_cards": 30,
+  "review_scope": 13,
+  "reconciled": 0,
+  "unresolved": 13,
+  "missing": 0,
+  "other_ok": 14,
+  "other_missing_evidence": 1,
+  "other_unsupported": 2,
+  "cards_by_market": {
+   "CN": 12,
+   "HK": 10,
+   "US": 6,
+   "CRYPTO": 2
+  },
+  "pool": {
+   "quota_total": 30,
+   "quota_by_market": {
+    "CN": 12,
+    "HK": 10,
+    "US": 6,
+    "CRYPTO": 2
+   },
+   "cards_total": 30,
+   "cards_match_quota": true,
+   "offline_shadow_total": 45,
+   "offline_shadow_match": false,
+   "documented_single_view": 12,
+   "documented_full_aggregate": 30,
+   "single_view_match": false,
+   "consistent": false
+  },
+  "blockers": 20,
+  "errors": 0,
+  "warnings": 1,
+  "ready": false
+ },
+ "blockers": [
+  {
+   "kind": "review_signoff_registry_missing",
+   "detail": "无 D1/ACAD1 逐张复核登记文件；本次不建第二真源、不代签，13 卡按未 reconciled 计",
+   "source": "reviewed",
+   "code": "",
+   "market": "",
+   "evidence": null
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=8.51 vs 数据仓 close=8.415（diff -1.1163%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "00268",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -1.1163,
+    "source_close": 8.51,
+    "warehouse_close": 8.415,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=383.6 vs 数据仓 close=377.6（diff -1.5641%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "00700",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -1.5641,
+    "source_close": 383.6,
+    "warehouse_close": 377.6,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=10.82 vs 数据仓 close=10.24（diff -5.3604%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "00857",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -5.3604,
+    "source_close": 10.82,
+    "warehouse_close": 10.24,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=26.52 vs 数据仓 close=26.22（diff -1.1312%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "01024",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -1.1312,
+    "source_close": 26.52,
+    "warehouse_close": 26.22,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=68.25 vs 数据仓 close=68.65（diff 0.5861%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "01211",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": 0.5861,
+    "source_close": 68.25,
+    "warehouse_close": 68.65,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=56.0 vs 数据仓 close=47.52（diff -15.1429%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "02583",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -15.1429,
+    "source_close": 56.0,
+    "warehouse_close": 47.52,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=1.63 vs 数据仓 close=1.52（diff -6.7485%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "06681",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -6.7485,
+    "source_close": 1.63,
+    "warehouse_close": 1.52,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=66.5 vs 数据仓 close=76.0（diff 14.2857%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "06810",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": 14.2857,
+    "source_close": 66.5,
+    "warehouse_close": 76.0,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=364.4 vs 数据仓 close=350.0（diff -3.9517%，asof 2026-10-30）",
+   "source": "cards",
+   "code": "09987",
+   "market": "HK",
+   "evidence": {
+    "diff_pct": -3.9517,
+    "source_close": 364.4,
+    "warehouse_close": 350.0,
+    "asof": "2026-10-30"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=57.11 vs 数据仓 close=56.45（diff -1.1557%，asof 2026-10-29）",
+   "source": "cards",
+   "code": "CART",
+   "market": "US",
+   "evidence": {
+    "diff_pct": -1.1557,
+    "source_close": 57.11,
+    "warehouse_close": 56.45,
+    "asof": "2026-10-29"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=376.1 vs 数据仓 close=359.41（diff -4.4376%，asof 2026-10-29）",
+   "source": "cards",
+   "code": "CRL",
+   "market": "US",
+   "evidence": {
+    "diff_pct": -4.4376,
+    "source_close": 376.1,
+    "warehouse_close": 359.41,
+    "asof": "2026-10-29"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=179.39 vs 数据仓 close=184.6（diff 2.9043%，asof 2026-10-29）",
+   "source": "cards",
+   "code": "EFX",
+   "market": "US",
+   "evidence": {
+    "diff_pct": 2.9043,
+    "source_close": 179.39,
+    "warehouse_close": 184.6,
+    "asof": "2026-10-29"
+   }
+  },
+  {
+   "kind": "review_card_unreconciled",
+   "detail": "未 reconciled（登记 reconciliation_status=review）；卡源 close=53.89 vs 数据仓 close=54.63（diff 1.3732%，asof 2026-10-29）",
+   "source": "cards",
+   "code": "RRC",
+   "market": "US",
+   "evidence": {
+    "diff_pct": 1.3732,
+    "source_close": 53.89,
+    "warehouse_close": 54.63,
+    "asof": "2026-10-29"
+   }
+  },
+  {
+   "kind": "evidence_gap",
+   "detail": "市场不支持（unsupported，如 CRYPTO 无本仓表）",
+   "source": "cards",
+   "code": "ETH/USDT",
+   "market": "CRYPTO",
+   "evidence": null
+  },
+  {
+   "kind": "evidence_gap",
+   "detail": "市场不支持（unsupported，如 CRYPTO 无本仓表）",
+   "source": "cards",
+   "code": "PROM/USDT",
+   "market": "CRYPTO",
+   "evidence": null
+  },
+  {
+   "kind": "evidence_gap",
+   "detail": "数据缺失（missing_data），不可分析/不可冻结",
+   "source": "cards",
+   "code": "07552",
+   "market": "HK",
+   "evidence": null
+  },
+  {
+   "kind": "pool_shadow_mismatch",
+   "detail": "离线 shadow 池 total=45 ≠ 冻结配额 30（官方真源=PG，JSON 池为 shadow 非官方）",
+   "source": "pool_json",
+   "code": "",
+   "market": "",
+   "evidence": {
+    "pool_id": "ACAD1-REC-20261106",
+    "generated_at": "2026-11-06 17:24:54"
+   }
+  },
+  {
+   "kind": "pool_single_view_mismatch",
+   "detail": "官方池单日视图 count=12 ≠ 冻结配额 30（PG 按 max(pool_date) 单日读；每市场最新聚合=30，跨 4 个 pool_date）",
+   "source": "pool_audit_doc",
+   "code": "",
+   "market": "",
+   "evidence": {
+    "documented_full_aggregate": 30,
+    "doc": "C:\\Temp\\acad1-freeze-20261108-0831\\docs\\plans\\2026-11-04_ACAD1池12vs30偏差审计_v1.md"
+   }
+  },
+  {
+   "kind": "manifest_not_validated",
+   "detail": "manifest status.validated=False（lifecycle=draft）",
+   "source": "manifest",
+   "code": "",
+   "market": "",
+   "evidence": null
+  }
+ ],
+ "errors": [],
+ "warnings": [
+  "review_signoff_registry_missing:未提供人工复核登记文件（--reviewed 可注入）；13 张 review 卡按登记 status=review 计为未 reconciled，不代签"
+ ],
+ "ready": false,
+ "freeze": {
+  "node": "2026-11-08",
+  "ready": false,
+  "reconciled_ratio": "0/13"
+ }
+}

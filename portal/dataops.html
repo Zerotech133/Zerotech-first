@@ -79,11 +79,58 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 .b-unavailable{background:#2a1512;color:#ffa198}
 .dot-stale{fill:var(--bad)}
 .b-stale{background:#2a1512;color:#ffa198}
+/* R3-C CATALOG BEGIN · CSS（catalog 逻辑表口径卡片；默认收起，404 时仅多一行 summary，不破坏既有渲染） */
+.r3c-box{background:var(--panel);border:1px solid var(--bd);border-radius:8px;margin:14px 0}
+.r3c-box>summary{cursor:pointer;padding:10px 14px;font-size:14px;font-weight:600;list-style:none}
+.r3c-box>summary::-webkit-details-marker{display:none}
+.r3c-box>summary::before{content:'▸ ';color:var(--acc)}
+.r3c-box[open]>summary::before{content:'▾ '}
+.r3c-flag{font:600 11px Consolas,monospace;color:var(--warn);margin-left:12px}
+.r3c-body{padding:0 14px 14px}
+.r3c-caliber{font-size:12px;color:var(--dim);background:var(--panel2);border-radius:6px;padding:8px 10px;margin-bottom:10px}
+.r3c-note{border:1px dashed var(--bd);border-radius:6px;padding:10px 12px;color:var(--dim);font-size:12.5px;margin-bottom:10px}
+.r3c-err{background:#2a1512;border:1px solid #67221c;color:#ffa198;border-radius:6px;padding:8px 10px;font-size:12.5px}
+.r3c-dist{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;align-items:center}
+.r3c-chip{background:var(--panel2);border:1px solid var(--bd);border-radius:999px;padding:2px 10px;font-size:12px}
+.r3c-chip b{color:var(--acc)}
+.r3c-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.r3c-bar input,.r3c-bar select{background:#0a0e14;border:1px solid var(--bd);border-radius:6px;color:var(--fg);padding:6px 10px;font-size:13px}
+.r3c-hidden{display:none}
+.r3c-wrap{overflow:auto}
+.r3c-row{cursor:pointer}
+.r3c-detail{margin-top:12px;border-top:1px solid var(--bd);padding-top:10px}
+.r3c-kv th{white-space:nowrap;width:130px}
+.r3c-scroll{overflow:auto;max-height:320px}
+/* R3-C CATALOG END */
 </style>
 <script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
 <body>
 <h1>🎛 数据运营指挥台 <small>采集动线 · 数据池 · 管道调度</small></h1>
 <div class="sub">Hermes 与调度系统消费入口：<code>GET /api/dataops/overview</code>（全量）· <code>?view=summary</code>（轻量）· 只读 · 60s 自动刷新 <span id="gen"></span></div>
+
+<!-- R3-C CATALOG BEGIN · 只读「catalog 逻辑表口径」卡片：实时优先 + 失败静默回落；端点 404 显示未就绪提示，不报错不空白 -->
+<details class="r3c-box" id="r3cCatalog">
+  <summary>catalog 逻辑表口径（只读）<span class="r3c-flag" id="r3cCatState">检测中…</span></summary>
+  <div class="r3c-body">
+    <div class="r3c-caliber">逻辑表唯一口径 = catalog.json 258 表；拓扑「行情仓」节点只标 catalog 池、不标表数（R5 已去掉原「233 表」硬编码），全表数以本卡片为准。</div>
+    <div class="r3c-note" id="r3cCatNotice">实时通道未就绪（待 8091 自然重启）</div>
+    <div class="r3c-hidden" id="r3cCatWrap">
+      <div id="r3cCatMeta" class="muted" style="font-size:12.5px;margin-bottom:8px"></div>
+      <div class="r3c-dist" id="r3cBySource"></div>
+      <div class="r3c-dist" id="r3cByFreq"></div>
+      <div class="r3c-bar">
+        <input type="search" id="r3cSearch" placeholder="按表名 / 说明检索…" autocomplete="off">
+        <select id="r3cSource"><option value="">全部源</option></select>
+        <span class="muted" id="r3cCount"></span>
+      </div>
+      <div class="r3c-wrap">
+        <table><thead><tr><th>表名</th><th>源</th><th>频率</th><th>新鲜度</th><th>行数</th><th>状态</th></tr></thead><tbody id="r3cCatBody"></tbody></table>
+      </div>
+      <div class="r3c-detail r3c-hidden" id="r3cCatDetail"></div>
+    </div>
+  </div>
+</details>
+<!-- R3-C CATALOG END -->
 
 <div class="tabs">
   <button id="tb-map" class="on" onclick="switchTab('map')">🗺 全局拓扑（一笔看明白 · 点节点下钻）</button>
@@ -443,6 +490,149 @@ async function openDrawer(nid){
 }
 function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+/* R3-C CATALOG BEGIN · 双通道状态机 + 逻辑表口径目录（照 portal/dw.html:377-535 的 T2 模板；失败静默回落） */
+var CATALOG_LIVE=null;
+var CATALOG_STATE='unknown';
+function timeoutSignal(){
+  if(typeof AbortSignal!=='undefined' && typeof AbortSignal.timeout==='function') return AbortSignal.timeout(3000);
+  if(typeof AbortController!=='undefined'){var ac=new AbortController();setTimeout(function(){ac.abort();},3000);return ac.signal;}
+  return undefined;
+}
+function r3cSetState(t){var el=document.getElementById('r3cCatState');if(el)el.textContent=t;}
+async function probeCatalog(){
+  CATALOG_STATE='unknown'; CATALOG_LIVE=null;
+  try{
+    var r=await fetch('/api/data/catalog/tables?detail=brief',{cache:'no-store',signal:timeoutSignal()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var live=await r.json();
+    if(!live || live.ok!==true || !(live.total>0)) throw new Error('bad payload');
+    CATALOG_LIVE=live; CATALOG_STATE='live';
+    r3cSetState('catalog 实时');
+  }catch(e){
+    /* 静默失败：不写错误日志、不弹窗、不抛未捕获异常；404/401/超时/网络/JSON 错一律回落 */
+  }
+  if(CATALOG_STATE!=='live'){
+    CATALOG_STATE='snapshot'; CATALOG_LIVE=null;
+    r3cSetState('catalog 静态快照');
+  }
+  renderTableList();
+  return CATALOG_STATE==='live';
+}
+/* 可折叠目录：version/total/updated + by_source/by_freq 分布 + 关键词搜索 + 由 by_source 动态生成的源下拉；404 显示未就绪提示 */
+function renderTableList(){
+  var wrap=document.getElementById('r3cCatWrap'),body=document.getElementById('r3cCatBody'),
+      notice=document.getElementById('r3cCatNotice'),sel=document.getElementById('r3cSource');
+  if(!wrap||!body||!notice||!sel) return;
+  var live=CATALOG_LIVE;
+  if(!live || !Array.isArray(live.items) || !live.items.length){
+    wrap.classList.add('r3c-hidden');
+    notice.classList.remove('r3c-hidden');
+    notice.textContent='实时通道未就绪（待 8091 自然重启）';
+    return;
+  }
+  notice.classList.add('r3c-hidden');
+  wrap.classList.remove('r3c-hidden');
+  var meta=document.getElementById('r3cCatMeta');
+  if(meta) meta.innerHTML='catalog v'+esc(live.version==null?'?':live.version)+' · 逻辑表 '+esc(live.total)+' 表 · 更新于 '+esc(live.updated||'—');
+  var chip=function(o){return Object.keys(o||{}).sort().map(function(k){return '<span class="r3c-chip">'+esc(k)+' <b>'+esc(o[k])+'</b></span>';}).join('');};
+  var bs=document.getElementById('r3cBySource'),bf=document.getElementById('r3cByFreq');
+  if(bs) bs.innerHTML='<span class="muted" style="align-self:center">按源</span>'+chip(live.by_source);
+  if(bf) bf.innerHTML='<span class="muted" style="align-self:center">按频</span>'+chip(live.by_freq);
+  var sources=Object.keys(live.by_source||{}).sort();
+  var cur=sel.value, stamp=String(live.version)+':'+sources.length;
+  if(sel.getAttribute('data-built')!==stamp){
+    sel.innerHTML='<option value="">全部源</option>'+
+      sources.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+' ('+Number(live.by_source[s]||0)+')</option>';}).join('');
+    sel.setAttribute('data-built',stamp);
+    if(sources.indexOf(cur)>=0) sel.value=cur;
+  }
+  applyCatFilter();
+}
+function applyCatFilter(){
+  var live=CATALOG_LIVE,body=document.getElementById('r3cCatBody'),count=document.getElementById('r3cCount');
+  if(!live||!body) return;
+  var q=String((document.getElementById('r3cSearch')||{}).value||'').trim().toLowerCase();
+  var src=String((document.getElementById('r3cSource')||{}).value||'');
+  var items=Array.isArray(live.items)?live.items:[];
+  var rows=items.filter(function(it){
+    if(src && it.source!==src) return false;
+    if(q && !(String(it.name||'').toLowerCase().indexOf(q)>=0||String(it.desc||'').toLowerCase().indexOf(q)>=0)) return false;
+    return true;
+  });
+  if(count) count.textContent='共 '+rows.length+' / '+items.length+' 表';
+  body.innerHTML=rows.map(function(it){
+    var name=String(it.name||'');
+    var st=it.deprecated?'已废弃':(it.verification_status||it.lifecycle||'—');
+    return '<tr class="r3c-row" data-tname="'+esc(name)+'">'+
+      '<td><b>'+esc(name)+'</b></td>'+
+      '<td>'+esc(it.source||'—')+'</td>'+
+      '<td>'+esc(it.freq||'—')+'</td>'+
+      '<td>'+esc(it.freshness==null?'—':it.freshness)+'</td>'+
+      '<td>'+esc(it.rows==null?'—':it.rows)+'</td>'+
+      '<td>'+esc(st)+'</td></tr>';
+  }).join('');
+  Array.prototype.forEach.call(body.querySelectorAll('tr[data-tname]'),function(tr){
+    tr.onclick=function(){openTableDetail(tr.getAttribute('data-tname'));};
+  });
+}
+/* 点击目录行 → 单表端点 → 卡片内详情区展示 schema / 主键 / 前 20 行样本；表未登记 / 404 静默收起，不弹错 */
+async function openTableDetail(name){
+  var box=document.getElementById('r3cCatDetail');
+  if(!box) return;
+  box.classList.remove('r3c-hidden');
+  box.innerHTML='<div class="muted">加载中… '+esc(name)+'</div>';
+  try{
+    var r=await fetch('/api/data/catalog/table?name='+encodeURIComponent(name)+'&limit=20',{cache:'no-store',signal:timeoutSignal()});
+    var d=null; try{ d=await r.json(); }catch(e){ d=null; }
+    if(!r.ok || !d || d.ok!==true){
+      box.classList.add('r3c-hidden');
+      return;
+    }
+    box.innerHTML=tableDetailHtml(d);
+  }catch(e){
+    box.classList.add('r3c-hidden');
+  }
+}
+/* 详情正文：meta.schema[] / primary_key / sample_note / meta.freshness / clamped / limit_applied / 前 20 行，全部经 esc() */
+function tableDetailHtml(d){
+  var meta=d.meta||{},cols=Array.isArray(d.columns)?d.columns:[],rows=Array.isArray(d.rows)?d.rows:[];
+  var pk=meta.primary_key==null?'—':(Array.isArray(meta.primary_key)?meta.primary_key.join(', '):meta.primary_key);
+  var h='<div class="muted" style="font-size:12px;margin-bottom:6px">catalog v'+esc(CATALOG_LIVE?CATALOG_LIVE.version:'?')+
+    ' · '+esc(d.name)+' → '+esc(d.resolved||d.name)+' · 返回 '+esc(d.row_count==null?rows.length:d.row_count)+' 行'+
+    (d.truncated?'（已截断）':'')+(d.clamped?' · limit 已截断至 '+esc(d.limit_applied)+' 行':'')+'</div>';
+  h+='<table class="r3c-kv"><tbody>'+
+    '<tr><th>源</th><td>'+esc(meta.source||'—')+'</td></tr>'+
+    '<tr><th>频率</th><td>'+esc(meta.freq||'—')+'</td></tr>'+
+    '<tr><th>新鲜度</th><td>'+esc(meta.freshness==null?'—':meta.freshness)+'</td></tr>'+
+    '<tr><th>行数</th><td>'+esc(meta.rows==null?'—':meta.rows)+'</td></tr>'+
+    '<tr><th>主键 primary_key</th><td>'+esc(pk)+'</td></tr>'+
+    '<tr><th>可用</th><td>'+(d.available===false?'否':'是')+'</td></tr></tbody></table>';
+  var schema=Array.isArray(meta.schema)?meta.schema:[];
+  h+='<h3 style="font-size:13px;color:var(--acc);margin:10px 0 6px">Schema（'+schema.length+' 列）</h3>';
+  h+=schema.length?('<table><thead><tr><th>#</th><th>列名</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
+    schema.map(function(c,i){return typeof c==='string'
+      ? '<tr><td>'+i+'</td><td>'+esc(c)+'</td><td class="muted">—</td><td class="muted">—</td></tr>'
+      : '<tr><td>'+i+'</td><td>'+esc(c.name||c.column||'')+'</td><td class="muted">'+esc(c.type||c.dtype||'—')+'</td><td class="muted">'+esc(c.desc||c.comment||'—')+'</td></tr>';}).join('')+
+    '</tbody></table>'):'<div class="muted">schema 未返回</div>';
+  h+='<h3 style="font-size:13px;color:var(--acc);margin:10px 0 6px">样本数据（前 '+Math.min(20,rows.length)+' 行）</h3>';
+  /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
+  if(d.sample_note){h+='<div class="r3c-note">'+esc(d.sample_note)+'（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
+  /* clamped / limit_applied 一并披露，不静默截断 */
+  if(d.clamped||d.limit_applied){h+='<div class="r3c-note">样本说明：'+(d.clamped?'请求的 limit 超过上限，已夹至 '+esc(d.limit_applied==null?'—':d.limit_applied)+' 行；':'')+'limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+' · clamped='+esc(!!d.clamped)+'。仅返回样本行，不代表全表数据。</div>';}
+  if(d.available===false){h+='<div class="r3c-err">'+esc(d.reason||'该表当前不可读')+'</div>';}
+  else if(!rows.length){h+='<div class="muted">无样本数据</div>';}
+  else{
+    var headCols=cols.length?cols:Object.keys(rows[0]||{});
+    h+='<div class="r3c-scroll"><table><thead><tr>'+headCols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+      rows.slice(0,20).map(function(rr){return '<tr>'+headCols.map(function(c,i){return '<td>'+esc(Array.isArray(rr)?(rr[i]==null?'':rr[i]):(rr&&rr[c]!=null?rr[c]:''))+'</td>';}).join('')+'</tr>';}).join('')+
+      '</tbody></table></div>';
+  }
+  return h;
+}
+/* R3-C：实时 catalog 探测与原有 load()/setInterval 链并行，不 await、不阻塞；404 静默回落 */
+try{ ['r3cSearch','r3cSource'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener(el.tagName==='INPUT'?'input':'change',applyCatFilter);}); }catch(e){}
+try{ probeCatalog(); }catch(e){}
+/* R3-C CATALOG END */
 </script>
 <!-- OS-UI-UNIFY:theme -->
 <link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">

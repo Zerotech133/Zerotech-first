@@ -1,0 +1,151 @@
+{
+  "policy": "C:\\项目\\老田的AI助手\\agent_platform\\registry\\model_policy.yaml",
+  "apply": false,
+  "stamp": "20261104T061429",
+  "changes": [
+    {
+      "file": "org.json",
+      "agent_id": "ACAD1",
+      "old": "glm/glm-5.3",
+      "new": "glm/glm-5.3",
+      "fallback": "deepseek/deepseek-v4-pro",
+      "grade": "E3"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "STRAT1",
+      "old": "ollama/qwen3.5:9b",
+      "new": "glm/glm-5.3",
+      "fallback": "deepseek/deepseek-v4-pro",
+      "grade": "E2"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "DEV2",
+      "old": "ollama/qwen3.6:35b-a3b",
+      "new": "glm/glm-5.3",
+      "fallback": "deepseek/deepseek-v4-pro",
+      "grade": "E2"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "DEV3",
+      "old": "glm/glm-5.3",
+      "new": "deepseek/deepseek-v4-pro",
+      "fallback": "glm/glm-5.3",
+      "grade": "E2"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "DEV4",
+      "old": "ollama/qwen3.5:9b",
+      "new": "deepseek/deepseek-flash",
+      "fallback": "glm/glm-5.3",
+      "grade": "E2"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "BACK1",
+      "old": "ollama/qwen3.5:9b",
+      "new": "glm/glm-5.3",
+      "fallback": "deepseek/deepseek-v4-pro",
+      "grade": "E2"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "PROD1",
+      "old": "ollama/qwen3.5:9b",
+      "new": "glm/glm-5.3-flash",
+      "fallback": "deepseek/deepseek-flash",
+      "grade": "E2"
+    },
+    {
+      "file": "org.json",
+      "agent_id": "DATA1",
+      "old": "glm/glm-5.3",
+      "new": "glm/glm-5.3-flash",
+      "fallback": "deepseek/deepseek-flash",
+      "grade": "E3"
+    },
+    {
+      "file": "team_dev.json",
+      "agent_id": "DEV2",
+      "old": "ollama/qwen3.6:35b-a3b",
+      "new": "glm/glm-5.3",
+      "fallback": "deepseek/deepseek-v4-pro"
+    },
+    {
+      "file": "team_dev.json",
+      "agent_id": "DEV3",
+      "old": "ollama/qwen3.5:9b",
+      "new": "deepseek/deepseek-v4-pro",
+      "fallback": "glm/glm-5.3"
+    },
+    {
+      "file": "team_dev.json",
+      "agent_id": "DEV4",
+      "old": "ollama/qwen3.5:9b",
+      "new": "deepseek/deepseek-flash",
+      "fallback": "glm/glm-5.3"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "ACAD1",
+      "old": "glm/glm-5.3",
+      "new": "glm-5.3"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "STRAT1",
+      "old": "ollama/qwen3.5:9b",
+      "new": "glm-5.3"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "DEV2",
+      "old": "glm-4.6",
+      "new": "glm-5.3"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "DEV3",
+      "old": "glm-4.6",
+      "new": "deepseek-v4-pro"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "DEV4",
+      "old": "glm-4.6",
+      "new": "deepseek-flash"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "BACK1",
+      "old": "ollama/qwen3.5:9b",
+      "new": "glm-5.3"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "PROD1",
+      "old": "glm-4.5-flash",
+      "new": "glm-5.3-flash"
+    },
+    {
+      "file": "claude_agents.json",
+      "agent_id": "DATA1",
+      "old": "glm-4.5-flash",
+      "new": "glm-5.3-flash"
+    }
+  ],
+  "problems": [
+    "ACAD1: primary glm/glm-5.3 不在 model_tiers",
+    "STRAT1: primary glm/glm-5.3 不在 model_tiers",
+    "DEV2: primary glm/glm-5.3 不在 model_tiers",
+    "DEV3: primary deepseek/deepseek-v4-pro 不在 model_tiers",
+    "DEV4: primary deepseek/deepseek-flash 不在 model_tiers",
+    "BACK1: primary glm/glm-5.3 不在 model_tiers",
+    "PROD1: primary glm/glm-5.3-flash 不在 model_tiers",
+    "DATA1: primary glm/glm-5.3-flash 不在 model_tiers"
+  ],
+  "backup_dir": null
+}

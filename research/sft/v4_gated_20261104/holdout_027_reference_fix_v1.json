@@ -1,0 +1,18 @@
+{
+  "status": "REFERENCE_REPAIRED_AND_EXCLUDED",
+  "id": "holdout-027",
+  "old_reference": "上证指数在突破 3930 点后进入止跌向上预判阶段，需等待回踩确认是否守住 3850 点。30 分钟上涨延续且强于预期，下午回调仅用 1 分钟横盘完成以盘代跌，未出现理想低吸点，操",
+  "old_reference_length": 90,
+  "new_reference": "均线是使用最广泛的指标。很多人喜欢用均线粘合。作为信号，那均线粘合是什么?简单来说就是，不同周期均线非常接近。成本集中，属于形态信号。那均线粘合指标怎么编呢?",
+  "new_reference_length": 79,
+  "source_file": "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_指标公式入门(1).md",
+  "source_sha256": "3E3F3E06C994BBBB3DA61177633983FB5383EC9E665D87E26759606F5BA3F0D3",
+  "source_line": 271,
+  "source_section": "20260912_2003 均线粘合",
+  "root_cause": "跨行串行错配：027 的 reference 实际是另一行上证指数行情描述，与问题『均线粘合』不匹配。",
+  "resolution": "按同源知识库原文重建 reference；027 不重新判定 base/RAG，不计入准确率。",
+  "excluded_from_accuracy": true,
+  "exclusion_reason": "REFERENCE_MISMATCH_NO_VALID_GROUND_TRUTH",
+  "rejudged": false,
+  "created_at": "2026-11-05T03:06:44"
+}

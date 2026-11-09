@@ -7,7 +7,6 @@ markdown 渲染、落盘文件名、CLI 退出码 0/1/2 与 --no-write。
 """
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest

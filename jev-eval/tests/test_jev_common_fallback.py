@@ -219,7 +219,7 @@ def test_f2_direct_failure_log_has_masked_provenance(
     assert rec["op"] == "db_rows"
     assert rec["exc_type"] == "_FakeOperationalError"
     assert rec["host"] and rec["port"] and rec["dbname"] and rec["user"]
-    assert rec["pw_source"] in ("env", "file", "default")
+    assert rec["pw_source"] in ("env", "file", "missing")
     # 口令既不是字段也不是值
     assert "password" not in rec
     dumped = json.dumps(rec, ensure_ascii=False)
@@ -232,7 +232,7 @@ def test_f2_db_run_failure_log_op_name(monkeypatch, captured_logs):
 
     assert jc.db_run("UPDATE t SET x = 1") is None
     assert captured_logs[-1]["op"] == "db_run"
-    assert captured_logs[-1]["pw_source"] in ("env", "file", "default")
+    assert captured_logs[-1]["pw_source"] in ("env", "file", "missing")
 
 
 # ── F4：dsn_provenance 脱敏 ─────────────────────────────────
@@ -252,11 +252,34 @@ def test_f4_dsn_provenance_masked():
     ):
         assert key in prov, "缺少 provenance 字段: %s" % key
     assert "password" not in prov
-    assert prov["password_set"] is True
-    assert prov["password_source"] in ("env", "file", "default")
-    assert isinstance(prov["password_len"], int)
-    assert jc.DB_DSN["password"] not in json.dumps(prov, ensure_ascii=False)
+    assert prov["password_source"] in ("env", "file", "missing")
+    if prov["password_source"] == "missing":
+        assert prov["password_set"] is False
+        assert prov["password_len"] == 0
+    else:
+        assert prov["password_set"] is True
+        assert isinstance(prov["password_len"], int)
+    if jc.DB_DSN["password"]:
+        assert jc.DB_DSN["password"] not in json.dumps(prov, ensure_ascii=False)
     assert prov["env_overrides"] == sorted(prov["env_overrides"])
+
+
+def test_p102_missing_password_fails_closed(monkeypatch, tmp_path):
+    """P1-02：env/file 都无凭据时返回空口令 + missing，不得回落默认口令。"""
+    monkeypatch.delenv("ZHICE_PG_PASSWORD", raising=False)
+    monkeypatch.setattr(jc, "_PG_FALLBACK_ENV_FILE", str(tmp_path / "absent.env"))
+    password, source = jc._resolve_pg_password()
+    assert password == ""
+    assert source == "missing"
+
+
+def test_p102_no_hardcoded_default_password():
+    """P1-02 回归：源码不得再出现共享默认口令字面量 / 旧常量。"""
+    import jev_common
+
+    src = Path(jev_common.__file__).read_text(encoding="utf-8")
+    assert "zhice_pass" not in src
+    assert "_PG_DEFAULT_PASSWORD" not in src
 
 
 # ── F6：probe_connectivity 三段 ────────────────────────────

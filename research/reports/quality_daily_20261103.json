@@ -1,0 +1,62 @@
+{
+ "generated_at": "2026-11-03T07:00:06+08:00",
+ "date": "20261103",
+ "checks": {
+  "catalog_snapshot": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "issues": [],
+   "issue_count": 0
+  },
+  "metadata_consistency": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "stdout_tail": "元数据一致性：catalog v35 / 256 表 / registry 256 物理\nresult: PASS",
+   "stderr_tail": ""
+  },
+  "freshness_report": {
+   "rc": 1,
+   "status": "warn",
+   "ok": false,
+   "issues": [
+    "quant.db 停摆：chanlun_pool.detect_date 滞后 4 天"
+   ],
+   "issue_count": 1
+  },
+  "manifest_check": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "issues": [],
+   "issue_count": 0
+  },
+  "quality_test": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "issues": [],
+   "issue_count": 0
+  }
+ },
+ "registry": {
+  "physical_count": 256,
+  "display_count": 258,
+  "qualification": {
+   "evidence_partial": 38,
+   "evidence_ok": 187,
+   "deprecated": 8,
+   "planned": 9,
+   "unknown": 14
+  },
+  "catalog_sha256_match": null
+ },
+ "summary": {
+  "checks_total": 5,
+  "checks_ok": 4,
+  "checks_warn": 1,
+  "checks_error": 0,
+  "hard_ok": true
+ }
+}

@@ -1,0 +1,99 @@
+{
+  "review_status": "MAIN40_AI_BASELINE_PLUS_4_HUMAN_CORRECTIONS",
+  "source_ai_summary": "C:\\项目\\老田的AI助手\\research\\reports\\SFT_206_main40_AI_draft_summary_v1.json",
+  "source_ai_sha256": "6043D41B4B262E52E3B3B74D25DA394FC2892A15839EC829A52FA92EAEF5E99F",
+  "source_corrected18_summary": "C:\\项目\\老田的AI助手\\research\\reports\\SFT_206_main40_disagreements_18_corrected_summary_v1.json",
+  "source_corrected18_sha256": "C90309F7004552DCEE4000E2697502ED1EC91E37399DFACF33DE8904E297FC2F",
+  "n": 40,
+  "ai_baseline": {
+    "base_correct": 31,
+    "rag_correct": 29,
+    "citation_ok": 30,
+    "winner": {
+      "rag": 21,
+      "base": 14,
+      "tie": 5
+    },
+    "cross": {
+      "both_correct": 22,
+      "base_only": 9,
+      "rag_only": 7,
+      "both_wrong": 2
+    },
+    "review_status": "AI_DRAFT_ONLY"
+  },
+  "adjustment": {
+    "n_changed": 4,
+    "ids": [
+      "holdout-017",
+      "holdout-019",
+      "holdout-020",
+      "holdout-122"
+    ],
+    "changes": [
+      {
+        "id": "holdout-017",
+        "ai_base": 1,
+        "ai_rag": 0,
+        "backup_base": 0,
+        "backup_rag": 2,
+        "human_base": "错",
+        "human_rag": "错",
+        "human_winner": "tie"
+      },
+      {
+        "id": "holdout-019",
+        "ai_base": 1,
+        "ai_rag": 0,
+        "backup_base": 2,
+        "backup_rag": 0,
+        "human_base": "错",
+        "human_rag": "错",
+        "human_winner": "tie"
+      },
+      {
+        "id": "holdout-020",
+        "ai_base": 1,
+        "ai_rag": 0,
+        "backup_base": 2,
+        "backup_rag": 1,
+        "human_base": "错",
+        "human_rag": "对",
+        "human_winner": "rag"
+      },
+      {
+        "id": "holdout-122",
+        "ai_base": 1,
+        "ai_rag": 0,
+        "backup_base": 0,
+        "backup_rag": 1,
+        "human_base": "错",
+        "human_rag": "对",
+        "human_winner": "rag"
+      }
+    ],
+    "rule": "用户确认 2=错；其余 14 条沿用 AI 判定。"
+  },
+  "adjusted": {
+    "base_correct": 27,
+    "rag_correct": 31,
+    "citation_ok": 30,
+    "winner": {
+      "base": 10,
+      "rag": 23,
+      "tie": 7
+    },
+    "cross": {
+      "both_correct": 22,
+      "base_only": 5,
+      "rag_only": 9,
+      "both_wrong": 4
+    }
+  },
+  "warnings": [
+    "主审 40 只有 4 条是人工修正；其余 36 条沿用 AI 判定，不是完整人工审阅。",
+    "4 条修正来自 18 条 AI 分歧样本，存在选择偏差；不能外推 206，也不能据此切 canonical 或上线。",
+    "citation_ok 未逐条人工复核，仍是 AI 判定。",
+    "winner 是质量偏好，不是正确性判定；tie 包括双方都对/都错等情况。"
+  ]
+}

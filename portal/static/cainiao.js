@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
  * cainiao.js — 悬浮 AI「菜鸟蛋」全站共享组件（8080 工作站）
  * 自包含：宿主页面零改动，<script src="/static/cainiao.js" defer> 即用。
- * 自注入 CSS + DOM；对话先试同源 /cai/api/chat，失败回退 127.0.0.1:8094。
+ * 自注入 CSS + DOM；对话走同源 /cai/api/chat，失败同源重试一次；原直连端口已退役。
  * 带路导航全部用相对路径（./paper 等），不假设宿主页所在目录。
  * ═══════════════════════════════════════════════════════════════ */
 (function () {
@@ -80,7 +80,7 @@
 
   /* ── 3. 元素引用与常量 ── */
   var CAI_API_PRIMARY = '/cai/api/chat';                 // 同源优先（nginx 反代）
-  var CAI_API_FALLBACK = 'http://127.0.0.1:8094/api/chat'; // 8094 home_server（CORS 已配）
+  var CAI_API_FALLBACK = '/cai/api/chat'; // 同源重试（原直连已退役，避免跨域）
   var ORB_SIZE = 64, EDGE = 6;
 
   var orb = document.getElementById('ai-orb');
@@ -213,7 +213,7 @@
       try {
         var r1 = await fetch(CAI_API_PRIMARY, body);
         if (r1.ok) j = await r1.json();
-      } catch (e) { j = null; }               // 同源失败（网络/非 ok）→ 回退 8094
+      } catch (e) { j = null; }               // 同源失败（网络/非 ok）→ 同源重试一次
       if (!j) {
         var r2 = await fetch(CAI_API_FALLBACK, body);
         j = await r2.json();

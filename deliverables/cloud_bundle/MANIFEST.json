@@ -1,0 +1,17 @@
+{
+ "generated_at": "2026-11-04T04:45:18+08:00",
+ "files": {
+  "configs/dpo_14b_v2.yaml": "087242e173c7f0491071510234fbad7c784283f1b946a380b1a9427468dcddc0",
+  "configs/sft_14b_v2.yaml": "0b15c3b0656bb8b477f4f08e8fcee5c4fe06620c75d975f75570022ac15f81c3",
+  "configs/sft_7b_4090_v2.yaml": "64fd7cfc8746d4c99f977003b15485a7c545974e2e2a5a3175431a7704501371",
+  "dataset_info.json": "e2e3ed3bc02e7ee6f2fd3cedd5ab45ab8af743bfd52906cf1f94b199afa0b252",
+  "dpo/quant_kb_dpo_v2.jsonl": "3d96097bb707a3936d7e377bc6d23eb45ba0ad874284eebe5ef87c9b573d7127",
+  "README.md": "9236821e01a25f432dc3ee74ddd730b7869a87ef7d819c0cbd91ae29a9ec35e8",
+  "run_dpo_14b.sh": "690fb9234ca20a88e022a78b288ba3e89c50d082a775adedbb19061befbdbe6e",
+  "run_sft_14b.sh": "f5d39b6260259bb1f4f4d2b1beaaec3fac487f0d861b6b6d4193da6f04a0d605",
+  "run_smoke_7b.sh": "55e63c10ba6f66f93034f343432c96fdd978f7b1aaa5c381b8b4d5f532b0ae9f",
+  "sft/quant_kb_sft_v2_train.jsonl": "05fcfd35c87321a16828989e928c55ae9157bf4810a4f789857daf6c22034bca",
+  "sft/quant_kb_sft_v2_val.jsonl": "51d11e36fae908527ee73e9d484606e10beb7f3a96039400c6381399df86b150",
+  "sft/smoke_7b.jsonl": "c5940a7787eb5dc2138c9eb23a9279f3049d99615bfe5408f375c3c94e6d68aa"
+ }
+}

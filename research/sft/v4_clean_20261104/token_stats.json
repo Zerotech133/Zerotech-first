@@ -1,0 +1,81 @@
+{
+  "tokenizer": "tiktoken/cl100k_base (proxy, not Qwen tokenizer)",
+  "splits": {
+    "train": {
+      "rows": 3169,
+      "chars": {
+        "sum": 862390,
+        "mean": 272.1,
+        "p50": 183,
+        "p90": 285,
+        "max": 2991
+      },
+      "proxy_tokens": {
+        "sum": 933143,
+        "mean": 294.5,
+        "p50": 203,
+        "p90": 319,
+        "max": 3459
+      },
+      "user_chars": {
+        "mean": 104.1,
+        "max": 2724
+      },
+      "assistant_chars": {
+        "mean": 111.1,
+        "max": 301
+      }
+    },
+    "val": {
+      "rows": 394,
+      "chars": {
+        "sum": 98027,
+        "mean": 248.8,
+        "p50": 179,
+        "p90": 269,
+        "max": 2711
+      },
+      "proxy_tokens": {
+        "sum": 106691,
+        "mean": 270.8,
+        "p50": 204,
+        "p90": 298,
+        "max": 2889
+      },
+      "user_chars": {
+        "mean": 81.0,
+        "max": 2464
+      },
+      "assistant_chars": {
+        "mean": 110.8,
+        "max": 244
+      }
+    },
+    "holdout": {
+      "rows": 206,
+      "chars": {
+        "sum": 57977,
+        "mean": 281.4,
+        "p50": 175,
+        "p90": 273,
+        "max": 2601
+      },
+      "proxy_tokens": {
+        "sum": 63332,
+        "mean": 307.4,
+        "p50": 201,
+        "p90": 322,
+        "max": 2965
+      },
+      "user_chars": {
+        "mean": 116.8,
+        "max": 2368
+      },
+      "assistant_chars": {
+        "mean": 107.6,
+        "max": 243
+      }
+    }
+  },
+  "total_proxy_tokens": 1103166
+}

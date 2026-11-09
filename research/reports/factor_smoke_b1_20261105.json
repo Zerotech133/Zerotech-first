@@ -1,0 +1,2218 @@
+{
+ "meta": {
+  "lib": "factor_lib",
+  "version": "1.1.0",
+  "generated_at": "2026-11-05T07:29:43+08:00",
+  "python": "3.12.10",
+  "pandas": "3.0.5",
+  "numpy": "2.5.2",
+  "requested": {
+   "start": "20251001",
+   "end": "20261104",
+   "factors": [
+    "ma_20d",
+    "return_21d",
+    "return_63d",
+    "rsi",
+    "size",
+    "float_size",
+    "amount_ma_20d",
+    "avg_turnover_20d",
+    "std_turnover_21d",
+    "beta_60d_000300",
+    "rsrs",
+    "return_std_21d",
+    "high_low_21d",
+    "log_price"
+   ],
+   "horizon": 20,
+   "cost": 0.003,
+   "universe": "all",
+   "is_end": null,
+   "seed": 42,
+   "min_cross_section": 50,
+   "n_boot": 300
+  },
+  "horizon": 20,
+  "cost": 0.003,
+  "entry": "T+1 收盘入场",
+  "exit": "T+21 收盘卖出",
+  "market": "equal_weight_daily_rebalanced（等权市场日收益复利，与 H24/H26/H29 同口径）",
+  "seed": 42,
+  "min_cross_section": 50,
+  "block": 5,
+  "data": {
+   "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+   "universe": "all",
+   "load_dates": [
+    "20250806",
+    "20261104"
+   ],
+   "load_days": 301,
+   "warmup_days": 40,
+   "horizon": 20,
+   "panel_dates": 301,
+   "codes": 5637,
+   "eligible_avg_per_day": null,
+   "eligible_share": null,
+   "load_sec": 43.64,
+   "index_returns": {
+    "n": 2,
+    "keys": [
+     "000001.SH",
+     "000300.SH"
+    ]
+   },
+   "index_volume": {
+    "n": 2,
+    "keys": [
+     "000001.SH",
+     "000300.SH"
+    ]
+   },
+   "industry": {
+    "len": 5637,
+    "nunique": 110,
+    "head": [
+     [
+      "000001.SZ",
+      "银行"
+     ],
+     [
+      "000002.SZ",
+      "全国地产"
+     ],
+     [
+      "000004.SZ",
+      null
+     ],
+     [
+      "000006.SZ",
+      "区域地产"
+     ],
+     [
+      "000007.SZ",
+      "其他商业"
+     ]
+    ]
+   }
+  },
+  "notes": [
+   "PIT：因子只用 T 日及以前数据；golden_pillar 等确认型形态信号索引=确认完成日，T+1 入场。",
+   "CAR = 个股 T+1→T+1+h 复权买入持有收益 - 等权市场同期复利收益 - 30bp。",
+   "等权市场为日频再平衡，与个股买入持有存在再平衡差，故全样本无条件 CAR 均值不等于 -cost，见 baseline。",
+   "连续因子按日横截面五分组（同值时按 ts_code 顺序破并列）；0/1 事件因子二值分组：Q5=信号组、Q1=非信号组、Q2~Q4 无定义（事件组明细另见 event_split）。",
+   "年化 = h 日平均 CAR × 252/h（重叠窗口近似，仅用于量级比较；显著性看 t 与 block bootstrap）。",
+   "可复现：bootstrap 固定 seed；除 generated_at / runtime_sec / data.load_sec 等耗时字段外，同数据同参数两次运行因子数值完全一致（已验证）。"
+  ],
+  "runtime_sec": 34.134,
+  "is_end": "20260408",
+  "is_end_source": "auto_midpoint",
+  "effective": {
+   "start": "20251009",
+   "end": "20260929",
+   "signal_days": 240,
+   "panel_dates": 301,
+   "codes": 5637,
+   "panel_first": "20250806",
+   "panel_last": "20261104",
+   "requested_start": "20251001",
+   "requested_end": "20261104"
+  },
+  "baseline": {
+   "n_obs": 1314292,
+   "mean_pct": -0.886,
+   "median_pct": -2.844,
+   "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+  },
+  "factors_evaluated": 14
+ },
+ "factors": {
+  "ma_20d": {
+   "name": "ma_20d",
+   "family": "Tushare-动量",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-动量（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1312604,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.041712,
+    "std": 0.159145,
+    "ir": -0.2621,
+    "t": -4.06,
+    "positive_rate": 0.4292
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": -0.041712,
+    "std": 0.159145,
+    "ir": -0.2621,
+    "t": -4.06,
+    "positive_rate": 0.4292
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.014287,
+     "std": 0.16579,
+     "ir": 0.0862,
+     "t": 0.667,
+     "positive_rate": 0.6
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": -0.060379,
+     "std": 0.152824,
+     "ir": -0.3951,
+     "t": -5.301,
+     "positive_rate": 0.3722
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": -0.010182,
+     "std": 0.14752,
+     "ir": -0.069,
+     "t": -0.759,
+     "positive_rate": 0.4711
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": -0.073772,
+     "std": 0.164654,
+     "ir": -0.448,
+     "t": -4.888,
+     "positive_rate": 0.3866
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -3.809,
+     "p_le_0": 0.9367
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.341,
+     "p_le_0": 0.65
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.7153,
+      "std_car_pct": 3.0349,
+      "t": -3.651,
+      "positive_rate": 0.4417,
+      "ann_pct": -9.01,
+      "n_obs": 262421,
+      "avg_members_per_day": 1093.4
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.7011,
+      "std_car_pct": 1.7237,
+      "t": -6.301,
+      "positive_rate": 0.375,
+      "ann_pct": -8.83,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.6966,
+      "std_car_pct": 0.5874,
+      "t": -18.372,
+      "positive_rate": 0.1375,
+      "ann_pct": -8.78,
+      "n_obs": 262519,
+      "avg_members_per_day": 1093.8
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -1.0878,
+      "std_car_pct": 1.425,
+      "t": -11.826,
+      "positive_rate": 0.2542,
+      "ann_pct": -13.71,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.1948,
+      "std_car_pct": 3.5146,
+      "t": -5.267,
+      "positive_rate": 0.4,
+      "ann_pct": -15.06,
+      "n_obs": 262612,
+      "avg_members_per_day": 1094.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.4796,
+     "std_car_pct": 6.3474,
+     "t": -1.171,
+     "positive_rate": 0.4542,
+     "ann_pct": -6.04,
+     "directed_ann_pct": -6.04
+    },
+    "n_obs": 1312604
+   },
+   "event_split": null
+  },
+  "return_21d": {
+   "name": "return_21d",
+   "family": "Tushare-动量",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-动量（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1308240,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.060017,
+    "std": 0.161109,
+    "ir": -0.3725,
+    "t": -5.771,
+    "positive_rate": 0.425
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": -0.060017,
+    "std": 0.161109,
+    "ir": -0.3725,
+    "t": -5.771,
+    "positive_rate": 0.425
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": -0.075978,
+     "std": 0.093093,
+     "ir": -0.8162,
+     "t": -6.322,
+     "positive_rate": 0.3
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": -0.054696,
+     "std": 0.178006,
+     "ir": -0.3073,
+     "t": -4.122,
+     "positive_rate": 0.4667
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": -0.049018,
+     "std": 0.094331,
+     "ir": -0.5196,
+     "t": -5.716,
+     "positive_rate": 0.3471
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": -0.0712,
+     "std": 0.208021,
+     "ir": -0.3423,
+     "t": -3.734,
+     "positive_rate": 0.5042
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -5.998,
+     "p_le_0": 0.9967
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.494,
+     "p_le_0": 0.6533
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.8205,
+      "std_car_pct": 2.7072,
+      "t": -4.695,
+      "positive_rate": 0.3042,
+      "ann_pct": -10.34,
+      "n_obs": 261559,
+      "avg_members_per_day": 1089.8
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.7221,
+      "std_car_pct": 2.2265,
+      "t": -5.025,
+      "positive_rate": 0.2458,
+      "ann_pct": -9.1,
+      "n_obs": 261644,
+      "avg_members_per_day": 1090.2
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.6569,
+      "std_car_pct": 1.834,
+      "t": -5.549,
+      "positive_rate": 0.2583,
+      "ann_pct": -8.28,
+      "n_obs": 261644,
+      "avg_members_per_day": 1090.2
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.8505,
+      "std_car_pct": 1.3522,
+      "t": -9.745,
+      "positive_rate": 0.2208,
+      "ann_pct": -10.72,
+      "n_obs": 261644,
+      "avg_members_per_day": 1090.2
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.3285,
+      "std_car_pct": 5.5162,
+      "t": -3.731,
+      "positive_rate": 0.3833,
+      "ann_pct": -16.74,
+      "n_obs": 261749,
+      "avg_members_per_day": 1090.6
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.5079,
+     "std_car_pct": 7.7286,
+     "t": -1.018,
+     "positive_rate": 0.5458,
+     "ann_pct": -6.4,
+     "directed_ann_pct": -6.4
+    },
+    "n_obs": 1308240
+   },
+   "event_split": null
+  },
+  "return_63d": {
+   "name": "return_63d",
+   "family": "Tushare-动量",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-动量（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1178408,
+   "n_days": 217,
+   "signal": null,
+   "ic": {
+    "n_days": 217,
+    "mean": -0.037636,
+    "std": 0.200048,
+    "ir": -0.1881,
+    "t": -2.771,
+    "positive_rate": 0.5392
+   },
+   "ic_directed": {
+    "n_days": 217,
+    "mean": -0.037636,
+    "std": 0.200048,
+    "ir": -0.1881,
+    "t": -2.771,
+    "positive_rate": 0.5392
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 37,
+     "mean": -0.016169,
+     "std": 0.047683,
+     "ir": -0.3391,
+     "t": -2.063,
+     "positive_rate": 0.4865
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": -0.042048,
+     "std": 0.218447,
+     "ir": -0.1925,
+     "t": -2.582,
+     "positive_rate": 0.55
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 98,
+     "mean": -0.017227,
+     "std": 0.085088,
+     "ir": -0.2025,
+     "t": -2.004,
+     "positive_rate": 0.5306
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": -0.054443,
+     "std": 0.258212,
+     "ir": -0.2108,
+     "t": -2.3,
+     "positive_rate": 0.5462
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -3.912,
+     "p_le_0": 0.9267
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.335,
+     "p_le_0": 0.4033
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 217,
+      "mean_car_pct": -1.2025,
+      "std_car_pct": 3.4336,
+      "t": -5.159,
+      "positive_rate": 0.2396,
+      "ann_pct": -15.15,
+      "n_obs": 235590,
+      "avg_members_per_day": 981.6
+     },
+     "Q2": {
+      "n_days": 217,
+      "mean_car_pct": -0.8112,
+      "std_car_pct": 2.7051,
+      "t": -4.417,
+      "positive_rate": 0.2488,
+      "ann_pct": -10.22,
+      "n_obs": 235685,
+      "avg_members_per_day": 982.0
+     },
+     "Q3": {
+      "n_days": 217,
+      "mean_car_pct": -0.6469,
+      "std_car_pct": 2.0925,
+      "t": -4.554,
+      "positive_rate": 0.2765,
+      "ann_pct": -8.15,
+      "n_obs": 235688,
+      "avg_members_per_day": 982.0
+     },
+     "Q4": {
+      "n_days": 217,
+      "mean_car_pct": -0.7499,
+      "std_car_pct": 1.392,
+      "t": -7.936,
+      "positive_rate": 0.2258,
+      "ann_pct": -9.45,
+      "n_obs": 235685,
+      "avg_members_per_day": 982.0
+     },
+     "Q5": {
+      "n_days": 217,
+      "mean_car_pct": -0.8718,
+      "std_car_pct": 6.5052,
+      "t": -1.974,
+      "positive_rate": 0.4839,
+      "ann_pct": -10.98,
+      "n_obs": 235760,
+      "avg_members_per_day": 982.3
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 217,
+     "mean_car_pct": 0.3307,
+     "std_car_pct": 9.5897,
+     "t": 0.508,
+     "positive_rate": 0.6175,
+     "ann_pct": 4.17,
+     "directed_ann_pct": 4.17
+    },
+    "n_obs": 1178408
+   },
+   "event_split": null
+  },
+  "rsi": {
+   "name": "rsi",
+   "family": "Tushare-反转",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "Tushare-反转（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1311897,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.06959,
+    "std": 0.189856,
+    "ir": -0.3665,
+    "t": -5.678,
+    "positive_rate": 0.4042
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.06959,
+    "std": 0.189856,
+    "ir": 0.3665,
+    "t": 5.678,
+    "positive_rate": 0.5958
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.059516,
+     "std": 0.091948,
+     "ir": 0.6473,
+     "t": 5.014,
+     "positive_rate": 0.6833
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.072948,
+     "std": 0.212827,
+     "ir": 0.3428,
+     "t": 4.599,
+     "positive_rate": 0.5667
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.029063,
+     "std": 0.093586,
+     "ir": 0.3106,
+     "t": 3.416,
+     "positive_rate": 0.6198
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.110798,
+     "std": 0.24638,
+     "ir": 0.4497,
+     "t": 4.906,
+     "positive_rate": 0.5714
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 6.702,
+     "p_le_0": 0.01
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.644,
+     "p_le_0": 0.6533
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.5015,
+      "std_car_pct": 3.5,
+      "t": -2.22,
+      "positive_rate": 0.2667,
+      "ann_pct": -6.32,
+      "n_obs": 262286,
+      "avg_members_per_day": 1092.9
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.789,
+      "std_car_pct": 2.3711,
+      "t": -5.155,
+      "positive_rate": 0.2333,
+      "ann_pct": -9.94,
+      "n_obs": 262381,
+      "avg_members_per_day": 1093.3
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.9328,
+      "std_car_pct": 1.264,
+      "t": -11.433,
+      "positive_rate": 0.1125,
+      "ann_pct": -11.75,
+      "n_obs": 262379,
+      "avg_members_per_day": 1093.2
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.9395,
+      "std_car_pct": 1.5141,
+      "t": -9.613,
+      "positive_rate": 0.2333,
+      "ann_pct": -11.84,
+      "n_obs": 262381,
+      "avg_members_per_day": 1093.3
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.234,
+      "std_car_pct": 5.2042,
+      "t": -3.673,
+      "positive_rate": 0.4,
+      "ann_pct": -15.55,
+      "n_obs": 262470,
+      "avg_members_per_day": 1093.6
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.7325,
+     "std_car_pct": 8.5559,
+     "t": -1.326,
+     "positive_rate": 0.6083,
+     "ann_pct": -9.23,
+     "directed_ann_pct": 9.23
+    },
+    "n_obs": 1311897
+   },
+   "event_split": null
+  },
+  "size": {
+   "name": "size",
+   "family": "Tushare-规模",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-规模（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1313589,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": 0.035583,
+    "std": 0.165645,
+    "ir": 0.2148,
+    "t": 3.328,
+    "positive_rate": 0.575
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.035583,
+    "std": 0.165645,
+    "ir": 0.2148,
+    "t": 3.328,
+    "positive_rate": 0.575
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.006354,
+     "std": 0.155863,
+     "ir": 0.0408,
+     "t": 0.316,
+     "positive_rate": 0.5
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.045326,
+     "std": 0.168066,
+     "ir": 0.2697,
+     "t": 3.618,
+     "positive_rate": 0.6
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.009582,
+     "std": 0.123519,
+     "ir": 0.0776,
+     "t": 0.853,
+     "positive_rate": 0.5289
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.062021,
+     "std": 0.196622,
+     "ir": 0.3154,
+     "t": 3.441,
+     "positive_rate": 0.6218
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 3.387,
+     "p_le_0": 0.0833
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.268,
+     "p_le_0": 0.3367
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -1.0364,
+      "std_car_pct": 3.0191,
+      "t": -5.318,
+      "positive_rate": 0.4,
+      "ann_pct": -13.06,
+      "n_obs": 262626,
+      "avg_members_per_day": 1094.3
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -1.1519,
+      "std_car_pct": 1.5806,
+      "t": -11.29,
+      "positive_rate": 0.2333,
+      "ann_pct": -14.51,
+      "n_obs": 262714,
+      "avg_members_per_day": 1094.6
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.9681,
+      "std_car_pct": 0.4992,
+      "t": -30.042,
+      "positive_rate": 0.0,
+      "ann_pct": -12.2,
+      "n_obs": 262715,
+      "avg_members_per_day": 1094.6
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.5365,
+      "std_car_pct": 1.4058,
+      "t": -5.913,
+      "positive_rate": 0.4333,
+      "ann_pct": -6.76,
+      "n_obs": 262714,
+      "avg_members_per_day": 1094.6
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -0.7219,
+      "std_car_pct": 2.8931,
+      "t": -3.866,
+      "positive_rate": 0.375,
+      "ann_pct": -9.1,
+      "n_obs": 262820,
+      "avg_members_per_day": 1095.1
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": 0.3145,
+     "std_car_pct": 5.7503,
+     "t": 0.847,
+     "positive_rate": 0.5,
+     "ann_pct": 3.96,
+     "directed_ann_pct": 3.96
+    },
+    "n_obs": 1313589
+   },
+   "event_split": null
+  },
+  "float_size": {
+   "name": "float_size",
+   "family": "Tushare-规模",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-规模（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1313589,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": 0.025073,
+    "std": 0.148776,
+    "ir": 0.1685,
+    "t": 2.611,
+    "positive_rate": 0.575
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.025073,
+    "std": 0.148776,
+    "ir": 0.1685,
+    "t": 2.611,
+    "positive_rate": 0.575
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": -0.001574,
+     "std": 0.130691,
+     "ir": -0.012,
+     "t": -0.093,
+     "positive_rate": 0.5167
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.033956,
+     "std": 0.153644,
+     "ir": 0.221,
+     "t": 2.965,
+     "positive_rate": 0.5944
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.002654,
+     "std": 0.105357,
+     "ir": 0.0252,
+     "t": 0.277,
+     "positive_rate": 0.5289
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.04787,
+     "std": 0.180288,
+     "ir": 0.2655,
+     "t": 2.896,
+     "positive_rate": 0.6218
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 2.39,
+     "p_le_0": 0.1233
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.052,
+     "p_le_0": 0.4933
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -1.0174,
+      "std_car_pct": 2.8895,
+      "t": -5.455,
+      "positive_rate": 0.3792,
+      "ann_pct": -12.82,
+      "n_obs": 262626,
+      "avg_members_per_day": 1094.3
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -1.1766,
+      "std_car_pct": 1.3823,
+      "t": -13.186,
+      "positive_rate": 0.2042,
+      "ann_pct": -14.83,
+      "n_obs": 262714,
+      "avg_members_per_day": 1094.6
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.7603,
+      "std_car_pct": 0.5943,
+      "t": -19.821,
+      "positive_rate": 0.125,
+      "ann_pct": -9.58,
+      "n_obs": 262715,
+      "avg_members_per_day": 1094.6
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.4252,
+      "std_car_pct": 1.4422,
+      "t": -4.568,
+      "positive_rate": 0.4333,
+      "ann_pct": -5.36,
+      "n_obs": 262714,
+      "avg_members_per_day": 1094.6
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.0351,
+      "std_car_pct": 2.2965,
+      "t": -6.982,
+      "positive_rate": 0.2917,
+      "ann_pct": -13.04,
+      "n_obs": 262820,
+      "avg_members_per_day": 1095.1
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.0177,
+     "std_car_pct": 5.0149,
+     "t": -0.055,
+     "positive_rate": 0.4833,
+     "ann_pct": -0.22,
+     "directed_ann_pct": -0.22
+    },
+    "n_obs": 1313589
+   },
+   "event_split": null
+  },
+  "amount_ma_20d": {
+   "name": "amount_ma_20d",
+   "family": "Tushare-流动性",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-流动性（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1312604,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.085558,
+    "std": 0.178005,
+    "ir": -0.4807,
+    "t": -7.446,
+    "positive_rate": 0.3917
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": -0.085558,
+    "std": 0.178005,
+    "ir": -0.4807,
+    "t": -7.446,
+    "positive_rate": 0.3917
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": -0.032538,
+     "std": 0.164085,
+     "ir": -0.1983,
+     "t": -1.536,
+     "positive_rate": 0.5167
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": -0.103232,
+     "std": 0.179377,
+     "ir": -0.5755,
+     "t": -7.721,
+     "positive_rate": 0.35
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": -0.048428,
+     "std": 0.138039,
+     "ir": -0.3508,
+     "t": -3.859,
+     "positive_rate": 0.405
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": -0.123313,
+     "std": 0.204813,
+     "ir": -0.6021,
+     "t": -6.568,
+     "positive_rate": 0.3782
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -8.121,
+     "p_le_0": 1.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.559,
+     "p_le_0": 0.7033
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.6239,
+      "std_car_pct": 2.9212,
+      "t": -3.309,
+      "positive_rate": 0.3792,
+      "ann_pct": -7.86,
+      "n_obs": 262421,
+      "avg_members_per_day": 1093.4
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.2934,
+      "std_car_pct": 2.1086,
+      "t": -2.156,
+      "positive_rate": 0.3958,
+      "ann_pct": -3.7,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.8724,
+      "std_car_pct": 1.2954,
+      "t": -10.434,
+      "positive_rate": 0.2125,
+      "ann_pct": -10.99,
+      "n_obs": 262519,
+      "avg_members_per_day": 1093.8
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -1.2765,
+      "std_car_pct": 1.2106,
+      "t": -16.335,
+      "positive_rate": 0.15,
+      "ann_pct": -16.08,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.3293,
+      "std_car_pct": 4.9547,
+      "t": -4.156,
+      "positive_rate": 0.4292,
+      "ann_pct": -16.75,
+      "n_obs": 262612,
+      "avg_members_per_day": 1094.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.7054,
+     "std_car_pct": 7.7653,
+     "t": -1.407,
+     "positive_rate": 0.4875,
+     "ann_pct": -8.89,
+     "directed_ann_pct": -8.89
+    },
+    "n_obs": 1312604
+   },
+   "event_split": null
+  },
+  "avg_turnover_20d": {
+   "name": "avg_turnover_20d",
+   "family": "Tushare-流动性",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "Tushare-流动性（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1312604,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.104649,
+    "std": 0.211864,
+    "ir": -0.4939,
+    "t": -7.652,
+    "positive_rate": 0.325
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.104649,
+    "std": 0.211864,
+    "ir": 0.4939,
+    "t": 7.652,
+    "positive_rate": 0.675
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.052598,
+     "std": 0.113812,
+     "ir": 0.4621,
+     "t": 3.58,
+     "positive_rate": 0.6833
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.122,
+     "std": 0.233348,
+     "ir": 0.5228,
+     "t": 7.014,
+     "positive_rate": 0.6722
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.065753,
+     "std": 0.123122,
+     "ir": 0.534,
+     "t": 5.875,
+     "positive_rate": 0.7107
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.144199,
+     "std": 0.269014,
+     "ir": 0.536,
+     "t": 5.847,
+     "positive_rate": 0.6387
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 9.959,
+     "p_le_0": 0.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.176,
+     "p_le_0": 0.8333
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.502,
+      "std_car_pct": 4.1397,
+      "t": -1.879,
+      "positive_rate": 0.35,
+      "ann_pct": -6.33,
+      "n_obs": 262421,
+      "avg_members_per_day": 1093.4
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.5582,
+      "std_car_pct": 2.3144,
+      "t": -3.736,
+      "positive_rate": 0.2708,
+      "ann_pct": -7.03,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.5758,
+      "std_car_pct": 1.0826,
+      "t": -8.239,
+      "positive_rate": 0.1708,
+      "ann_pct": -7.25,
+      "n_obs": 262519,
+      "avg_members_per_day": 1093.8
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.9284,
+      "std_car_pct": 1.6892,
+      "t": -8.515,
+      "positive_rate": 0.2875,
+      "ann_pct": -11.7,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.831,
+      "std_car_pct": 4.9736,
+      "t": -5.703,
+      "positive_rate": 0.3167,
+      "ann_pct": -23.07,
+      "n_obs": 262612,
+      "avg_members_per_day": 1094.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -1.329,
+     "std_car_pct": 8.8477,
+     "t": -2.327,
+     "positive_rate": 0.5042,
+     "ann_pct": -16.75,
+     "directed_ann_pct": 16.75
+    },
+    "n_obs": 1312604
+   },
+   "event_split": null
+  },
+  "std_turnover_21d": {
+   "name": "std_turnover_21d",
+   "family": "Tushare-流动性",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "Tushare-流动性（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1312604,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.114507,
+    "std": 0.182911,
+    "ir": -0.626,
+    "t": -9.698,
+    "positive_rate": 0.2833
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.114507,
+    "std": 0.182911,
+    "ir": 0.626,
+    "t": 9.698,
+    "positive_rate": 0.7167
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.064123,
+     "std": 0.099742,
+     "ir": 0.6429,
+     "t": 4.98,
+     "positive_rate": 0.7167
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.131302,
+     "std": 0.200642,
+     "ir": 0.6544,
+     "t": 8.78,
+     "positive_rate": 0.7167
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.084547,
+     "std": 0.108307,
+     "ir": 0.7806,
+     "t": 8.587,
+     "positive_rate": 0.7603
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.144971,
+     "std": 0.232332,
+     "ir": 0.624,
+     "t": 6.807,
+     "positive_rate": 0.6723
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 11.087,
+     "p_le_0": 0.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.66,
+     "p_le_0": 0.9367
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.3946,
+      "std_car_pct": 4.0003,
+      "t": -1.528,
+      "positive_rate": 0.3708,
+      "ann_pct": -4.97,
+      "n_obs": 262421,
+      "avg_members_per_day": 1093.4
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.4037,
+      "std_car_pct": 2.0944,
+      "t": -2.986,
+      "positive_rate": 0.2958,
+      "ann_pct": -5.09,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.5516,
+      "std_car_pct": 0.7818,
+      "t": -10.931,
+      "positive_rate": 0.2542,
+      "ann_pct": -6.95,
+      "n_obs": 262519,
+      "avg_members_per_day": 1093.8
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.8821,
+      "std_car_pct": 2.0121,
+      "t": -6.791,
+      "positive_rate": 0.3833,
+      "ann_pct": -11.11,
+      "n_obs": 262526,
+      "avg_members_per_day": 1093.9
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -2.1632,
+      "std_car_pct": 3.5255,
+      "t": -9.506,
+      "positive_rate": 0.2042,
+      "ann_pct": -27.26,
+      "n_obs": 262612,
+      "avg_members_per_day": 1094.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -1.7686,
+     "std_car_pct": 7.3843,
+     "t": -3.71,
+     "positive_rate": 0.4333,
+     "ann_pct": -22.28,
+     "directed_ann_pct": 22.28
+    },
+    "n_obs": 1312604
+   },
+   "event_split": null
+  },
+  "beta_60d_000300": {
+   "name": "beta_60d_000300",
+   "family": "Tushare-风险",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "Tushare-风险（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1309368,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.018491,
+    "std": 0.246963,
+    "ir": -0.0749,
+    "t": -1.16,
+    "positive_rate": 0.5125
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.018491,
+    "std": 0.246963,
+    "ir": 0.0749,
+    "t": 1.16,
+    "positive_rate": 0.4875
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": -0.09542,
+     "std": 0.261436,
+     "ir": -0.365,
+     "t": -2.827,
+     "positive_rate": 0.35
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.056461,
+     "std": 0.230449,
+     "ir": 0.245,
+     "t": 3.287,
+     "positive_rate": 0.5333
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": -0.06244,
+     "std": 0.213272,
+     "ir": -0.2928,
+     "t": -3.221,
+     "positive_rate": 0.4215
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.100782,
+     "std": 0.252448,
+     "ir": 0.3992,
+     "t": 4.355,
+     "positive_rate": 0.5546
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.869,
+     "p_le_0": 0.4133
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 1.432,
+     "p_le_0": 0.1267
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -1.0878,
+      "std_car_pct": 3.5241,
+      "t": -4.782,
+      "positive_rate": 0.35,
+      "ann_pct": -13.71,
+      "n_obs": 261788,
+      "avg_members_per_day": 1090.8
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -1.1031,
+      "std_car_pct": 2.5271,
+      "t": -6.762,
+      "positive_rate": 0.2875,
+      "ann_pct": -13.9,
+      "n_obs": 261864,
+      "avg_members_per_day": 1091.1
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -1.0988,
+      "std_car_pct": 1.475,
+      "t": -11.541,
+      "positive_rate": 0.1667,
+      "ann_pct": -13.85,
+      "n_obs": 261878,
+      "avg_members_per_day": 1091.2
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -1.0869,
+      "std_car_pct": 1.2631,
+      "t": -13.331,
+      "positive_rate": 0.1417,
+      "ann_pct": -13.7,
+      "n_obs": 261864,
+      "avg_members_per_day": 1091.1
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": 0.0083,
+      "std_car_pct": 6.257,
+      "t": 0.02,
+      "positive_rate": 0.5625,
+      "ann_pct": 0.1,
+      "n_obs": 261974,
+      "avg_members_per_day": 1091.6
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": 1.0961,
+     "std_car_pct": 9.5551,
+     "t": 1.777,
+     "positive_rate": 0.6083,
+     "ann_pct": 13.81,
+     "directed_ann_pct": -13.81
+    },
+    "n_obs": 1309368
+   },
+   "event_split": null
+  },
+  "rsrs": {
+   "name": "rsrs",
+   "family": "Tushare-动量",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-动量（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 937707,
+   "n_days": 173,
+   "signal": null,
+   "ic": {
+    "n_days": 173,
+    "mean": -0.001658,
+    "std": 0.067304,
+    "ir": -0.0246,
+    "t": -0.324,
+    "positive_rate": 0.5318
+   },
+   "ic_directed": {
+    "n_days": 173,
+    "mean": -0.001658,
+    "std": 0.067304,
+    "ir": -0.0246,
+    "t": -0.324,
+    "positive_rate": 0.5318
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 0,
+     "mean": null,
+     "std": null,
+     "ir": null,
+     "t": null,
+     "positive_rate": null
+    },
+    "2026": {
+     "n_days": 173,
+     "mean": -0.001658,
+     "std": 0.067304,
+     "ir": -0.0246,
+     "t": -0.324,
+     "positive_rate": 0.5318
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 54,
+     "mean": -0.03649,
+     "std": 0.051795,
+     "ir": -0.7045,
+     "t": -5.177,
+     "positive_rate": 0.2407
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.014148,
+     "std": 0.067755,
+     "ir": 0.2088,
+     "t": 2.278,
+     "positive_rate": 0.6639
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.255,
+     "p_le_0": 0.61
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.313,
+     "p_le_0": 0.2433
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 173,
+      "mean_car_pct": -1.3178,
+      "std_car_pct": 1.4019,
+      "t": -12.364,
+      "positive_rate": 0.1792,
+      "ann_pct": -16.6,
+      "n_obs": 187468,
+      "avg_members_per_day": 781.1
+     },
+     "Q2": {
+      "n_days": 173,
+      "mean_car_pct": -0.795,
+      "std_car_pct": 0.9906,
+      "t": -10.556,
+      "positive_rate": 0.1272,
+      "ann_pct": -10.02,
+      "n_obs": 187542,
+      "avg_members_per_day": 781.4
+     },
+     "Q3": {
+      "n_days": 173,
+      "mean_car_pct": -0.5174,
+      "std_car_pct": 0.7688,
+      "t": -8.852,
+      "positive_rate": 0.1965,
+      "ann_pct": -6.52,
+      "n_obs": 187541,
+      "avg_members_per_day": 781.4
+     },
+     "Q4": {
+      "n_days": 173,
+      "mean_car_pct": -0.5243,
+      "std_car_pct": 0.8077,
+      "t": -8.538,
+      "positive_rate": 0.2543,
+      "ann_pct": -6.61,
+      "n_obs": 187542,
+      "avg_members_per_day": 781.4
+     },
+     "Q5": {
+      "n_days": 173,
+      "mean_car_pct": -0.9922,
+      "std_car_pct": 1.8147,
+      "t": -7.192,
+      "positive_rate": 0.1734,
+      "ann_pct": -12.5,
+      "n_obs": 187614,
+      "avg_members_per_day": 781.7
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 173,
+     "mean_car_pct": 0.3256,
+     "std_car_pct": 2.7326,
+     "t": 1.567,
+     "positive_rate": 0.5549,
+     "ann_pct": 4.1,
+     "directed_ann_pct": 4.1
+    },
+    "n_obs": 937707
+   },
+   "event_split": null
+  },
+  "return_std_21d": {
+   "name": "return_std_21d",
+   "family": "Tushare-风险",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "Tushare-风险（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1312430,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.110602,
+    "std": 0.236165,
+    "ir": -0.4683,
+    "t": -7.255,
+    "positive_rate": 0.3667
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.110602,
+    "std": 0.236165,
+    "ir": 0.4683,
+    "t": 7.255,
+    "positive_rate": 0.6333
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.058187,
+     "std": 0.15529,
+     "ir": 0.3747,
+     "t": 2.902,
+     "positive_rate": 0.55
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.128074,
+     "std": 0.255525,
+     "ir": 0.5012,
+     "t": 6.725,
+     "positive_rate": 0.6611
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.067744,
+     "std": 0.159405,
+     "ir": 0.425,
+     "t": 4.675,
+     "positive_rate": 0.6281
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.154181,
+     "std": 0.288664,
+     "ir": 0.5341,
+     "t": 5.827,
+     "positive_rate": 0.6387
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 10.399,
+     "p_le_0": 0.0033
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.853,
+     "p_le_0": 0.73
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.5687,
+      "std_car_pct": 4.4948,
+      "t": -1.96,
+      "positive_rate": 0.3958,
+      "ann_pct": -7.17,
+      "n_obs": 262390,
+      "avg_members_per_day": 1093.3
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.4536,
+      "std_car_pct": 2.5557,
+      "t": -2.75,
+      "positive_rate": 0.325,
+      "ann_pct": -5.72,
+      "n_obs": 262485,
+      "avg_members_per_day": 1093.7
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.7255,
+      "std_car_pct": 1.2051,
+      "t": -9.327,
+      "positive_rate": 0.175,
+      "ann_pct": -9.14,
+      "n_obs": 262488,
+      "avg_members_per_day": 1093.7
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -1.0076,
+      "std_car_pct": 1.7798,
+      "t": -8.77,
+      "positive_rate": 0.3,
+      "ann_pct": -12.7,
+      "n_obs": 262485,
+      "avg_members_per_day": 1093.7
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.6391,
+      "std_car_pct": 5.7333,
+      "t": -4.429,
+      "positive_rate": 0.3792,
+      "ann_pct": -20.65,
+      "n_obs": 262582,
+      "avg_members_per_day": 1094.1
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -1.0704,
+     "std_car_pct": 9.9585,
+     "t": -1.665,
+     "positive_rate": 0.5208,
+     "ann_pct": -13.49,
+     "directed_ann_pct": 13.49
+    },
+    "n_obs": 1312430
+   },
+   "event_split": null
+  },
+  "high_low_21d": {
+   "name": "high_low_21d",
+   "family": "Tushare-风险",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "Tushare-风险（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1312430,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.068917,
+    "std": 0.203773,
+    "ir": -0.3382,
+    "t": -5.239,
+    "positive_rate": 0.4333
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": 0.068917,
+    "std": 0.203773,
+    "ir": 0.3382,
+    "t": 5.239,
+    "positive_rate": 0.5667
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.032135,
+     "std": 0.134882,
+     "ir": 0.2382,
+     "t": 1.845,
+     "positive_rate": 0.4667
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": 0.081178,
+     "std": 0.220999,
+     "ir": 0.3673,
+     "t": 4.928,
+     "positive_rate": 0.6
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": 0.047782,
+     "std": 0.141844,
+     "ir": 0.3369,
+     "t": 3.705,
+     "positive_rate": 0.5785
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": 0.090407,
+     "std": 0.250436,
+     "ir": 0.361,
+     "t": 3.938,
+     "positive_rate": 0.5546
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 6.242,
+     "p_le_0": 0.01
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.134,
+     "p_le_0": 0.4667
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.8203,
+      "std_car_pct": 3.6455,
+      "t": -3.486,
+      "positive_rate": 0.3583,
+      "ann_pct": -10.34,
+      "n_obs": 262390,
+      "avg_members_per_day": 1093.3
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.7651,
+      "std_car_pct": 2.0799,
+      "t": -5.699,
+      "positive_rate": 0.2958,
+      "ann_pct": -9.64,
+      "n_obs": 262485,
+      "avg_members_per_day": 1093.7
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.9354,
+      "std_car_pct": 0.9938,
+      "t": -14.582,
+      "positive_rate": 0.1042,
+      "ann_pct": -11.79,
+      "n_obs": 262488,
+      "avg_members_per_day": 1093.7
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -0.9775,
+      "std_car_pct": 1.3361,
+      "t": -11.334,
+      "positive_rate": 0.2583,
+      "ann_pct": -12.32,
+      "n_obs": 262485,
+      "avg_members_per_day": 1093.7
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -0.8967,
+      "std_car_pct": 4.7687,
+      "t": -2.913,
+      "positive_rate": 0.4375,
+      "ann_pct": -11.3,
+      "n_obs": 262582,
+      "avg_members_per_day": 1094.1
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.0764,
+     "std_car_pct": 8.1757,
+     "t": -0.145,
+     "positive_rate": 0.5333,
+     "ann_pct": -0.96,
+     "directed_ann_pct": 0.96
+    },
+    "n_obs": 1312430
+   },
+   "event_split": null
+  },
+  "log_price": {
+   "name": "log_price",
+   "family": "Tushare-风险",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "Tushare-风险（Tushare factor_list）",
+   "source": "tushare.factor_list",
+   "n_obs": 1313589,
+   "n_days": 240,
+   "signal": null,
+   "ic": {
+    "n_days": 240,
+    "mean": -0.047124,
+    "std": 0.162123,
+    "ir": -0.2907,
+    "t": -4.503,
+    "positive_rate": 0.4292
+   },
+   "ic_directed": {
+    "n_days": 240,
+    "mean": -0.047124,
+    "std": 0.162123,
+    "ir": -0.2907,
+    "t": -4.503,
+    "positive_rate": 0.4292
+   },
+   "by_year": {
+    "2025": {
+     "n_days": 60,
+     "mean": 0.009541,
+     "std": 0.163054,
+     "ir": 0.0585,
+     "t": 0.453,
+     "positive_rate": 0.6
+    },
+    "2026": {
+     "n_days": 180,
+     "mean": -0.066012,
+     "std": 0.157784,
+     "ir": -0.4184,
+     "t": -5.613,
+     "positive_rate": 0.3722
+    }
+   },
+   "is_oos": {
+    "split_date": "20260408",
+    "source": "auto_midpoint",
+    "IS": {
+     "n_days": 121,
+     "mean": -0.013752,
+     "std": 0.1448,
+     "ir": -0.095,
+     "t": -1.045,
+     "positive_rate": 0.4711
+    },
+    "OOS": {
+     "n_days": 119,
+     "mean": -0.081057,
+     "std": 0.172077,
+     "ir": -0.4711,
+     "t": -5.139,
+     "positive_rate": 0.3866
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -4.343,
+     "p_le_0": 0.96
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.402,
+     "p_le_0": 0.6567
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 240,
+      "mean_car_pct": -0.7027,
+      "std_car_pct": 3.0613,
+      "t": -3.556,
+      "positive_rate": 0.4292,
+      "ann_pct": -8.85,
+      "n_obs": 262626,
+      "avg_members_per_day": 1094.3
+     },
+     "Q2": {
+      "n_days": 240,
+      "mean_car_pct": -0.6971,
+      "std_car_pct": 1.8606,
+      "t": -5.805,
+      "positive_rate": 0.3833,
+      "ann_pct": -8.78,
+      "n_obs": 262714,
+      "avg_members_per_day": 1094.6
+     },
+     "Q3": {
+      "n_days": 240,
+      "mean_car_pct": -0.689,
+      "std_car_pct": 0.5356,
+      "t": -19.928,
+      "positive_rate": 0.0833,
+      "ann_pct": -8.68,
+      "n_obs": 262715,
+      "avg_members_per_day": 1094.6
+     },
+     "Q4": {
+      "n_days": 240,
+      "mean_car_pct": -1.0813,
+      "std_car_pct": 1.4218,
+      "t": -11.782,
+      "positive_rate": 0.2458,
+      "ann_pct": -13.62,
+      "n_obs": 262714,
+      "avg_members_per_day": 1094.6
+     },
+     "Q5": {
+      "n_days": 240,
+      "mean_car_pct": -1.2441,
+      "std_car_pct": 3.7251,
+      "t": -5.174,
+      "positive_rate": 0.4042,
+      "ann_pct": -15.68,
+      "n_obs": 262820,
+      "avg_members_per_day": 1095.1
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 240,
+     "mean_car_pct": -0.5414,
+     "std_car_pct": 6.614,
+     "t": -1.268,
+     "positive_rate": 0.4542,
+     "ann_pct": -6.82,
+     "directed_ann_pct": -6.82
+    },
+    "n_obs": 1313589
+   },
+   "event_split": null
+  }
+ }
+}

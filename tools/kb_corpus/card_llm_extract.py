@@ -11,6 +11,18 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
+# 回环禁代理：Ollama 在 127.0.0.1:11434，系统代理会接管回环请求（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if (_p / "safe_urlopen.py").exists():
+        _sys.path.insert(0, str(_p))
+        break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(__file__).resolve().parents[2]
 KB = Path(r"C:\项目\知识库")
 R = REPO / "research/reports"
@@ -31,7 +43,7 @@ def chat(text: str, timeout: int = 300) -> str:
                             {"role": "user", "content": text[:800]}]}
     req = urllib.request.Request(OLLAMA, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         d = json.loads(r.read().decode("utf-8"))
     return (d.get("message") or {}).get("content", "")
 

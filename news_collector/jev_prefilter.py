@@ -20,6 +20,7 @@ JEV 判读当前每条都要跑 2 次 LLM（9B 判读 + reason），夜间实测
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
 
@@ -85,6 +86,49 @@ SAFE_NEUTRAL_PATTERNS = [
     r"(休市|假期|交易日)安排",
 ]
 _SAFE_RE = [re.compile(p) for p in SAFE_NEUTRAL_PATTERNS]
+
+# ── 2026-11-07 RFC-20261107 方案 A：公告类例行模板白名单 ──────────────────
+# 逐模板精度抽检（近 30 日已判公告，生产守门条件 = 无方向词 / 无 6 位代码 /
+# 未命中既有 safe 模板）：四模板并集 812 命中、0 误杀（0.00%）。
+# 【必须按 source 限定】实证：「投资者关系活动记录表」在其他源 23 命中 13 误杀
+# （56.5%）、「制度内控报告」4 命中 2 误杀（50%）——新闻源里这类标题多为调研
+# 纪要，模型会判出方向性。故仅对 xd_notice / announcement 生效。
+NOTICE_SOURCES = ("xd_notice", "announcement")
+NOTICE_ENV = "JEV_PREFILTER_NOTICE"
+NOTICE_REASON = "例行公告"
+ROUTINE_NOTICE_PATTERNS = (
+    r"投资者关系活动记录表",
+    r"(业绩说明会|投资者说明会).{0,8}(公告|通知|召开)",
+    r"(内部控制|内控|审计).{0,10}(制度|报告|评价)",
+    r"关于召开.{0,24}(股东会|股东大会).{0,6}(通知|提示)",
+)
+_NOTICE_RE = [re.compile(p) for p in ROUTINE_NOTICE_PATTERNS]
+
+
+def _env_on(name, default="1"):
+    return str(os.environ.get(name, default)).strip().lower() not in (
+        "0", "off", "false", "no", "",
+    )
+
+
+def notice_enabled(source="", mode="safe"):
+    """新模板仅在 safe 模式 + 公告类 source + 开关开启时生效。"""
+    return (
+        mode == "safe"
+        and str(source or "").strip().lower() in NOTICE_SOURCES
+        and _env_on(NOTICE_ENV)
+    )
+
+
+def notice_hit(title, source="", mode="safe"):
+    """返回命中的公告例行模板文本；未命中或不适用返回 None。"""
+    if not notice_enabled(source, mode):
+        return None
+    for rx in _NOTICE_RE:
+        m = rx.search(title or "")
+        if m:
+            return m.group(0)
+    return None
 
 
 def safe_neutral_hit(title: str) -> str | None:
@@ -162,20 +206,25 @@ def decide(title: str, source: str = "", stocks: list | None = None,
     has_stock_code = bool(re.search(r"(?<!\d)\d{6}(?!\d)", text))
     hit_fn = safe_neutral_hit if mode == "safe" else neutral_hit
     n = hit_fn(text)
-    if n and has_stock_code:
+    # 2026-11-07 RFC-20261107 方案 A：旧模板未命中时再试公告例行模板，
+    # 并用独立 reason 标记，便于 §7 的 SQL 精确回退。
+    n_notice = notice_hit(text, source, mode) if n is None else None
+    matched = n or n_notice
+    reason = NOTICE_REASON if (n is None and n_notice) else "例行/行情"
+    if matched and has_stock_code:
         return {
             "decision": "keep",
             "reason": "含个股代码（保守保留，防误杀）",
             "bias_hint": None,
-            "matched": n,
+            "matched": matched,
             "source": source,
         }
-    if n:
+    if matched:
         return {
             "decision": "skip",
-            "reason": "例行/行情",
+            "reason": reason,
             "bias_hint": "neutral",
-            "matched": n,
+            "matched": matched,
             "source": source,
         }
     return {

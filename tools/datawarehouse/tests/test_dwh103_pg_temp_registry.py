@@ -160,12 +160,25 @@ def test_contract_artifact_missing_and_sha_mismatch_fail_visible(tmp_path):
     with pytest.raises(ContractArtifactUnavailable):
         reg.sample("tmp_missing_art")
 
+    # R12 D4：定时产物（produced_by_job 非空）字节变动 = drift（info，仍可采样），不是篡改
     drifted = _artifact(tmp_path, name="drifted_art", content=b'{"v": 1}', sha="0" * 64)
     reg2 = _reg(tmp_path, temp_root=_temp_root(tmp_path), temp_whitelist=[drifted])
-    assert reg2.get("tmp_drifted_art")["status"] == "sha256_mismatch"
-    assert reg2.stats_v2()["contract_artifacts"]["mismatch"] == 1
+    row2 = reg2.get("tmp_drifted_art")
+    assert row2["status"] == "drift" and row2["available"] is True
+    assert row2["sha256_actual"] != row2["sha256_expected"]
+    assert reg2.stats_v2()["contract_artifacts"]["drift"] == 1
+    assert reg2.stats_v2()["contract_artifacts"]["mismatch"] == 0
+    sampled = reg2.sample("tmp_drifted_art")
+    assert sampled["status"] == "drift" and sampled["drift"]["sha256_actual"]
+
+    # 静态契约产物（无 produced_by_job）字节不符仍须 fail-visible
+    static = _artifact(tmp_path, name="static_art", content=b'{"v": 2}', sha="1" * 64)
+    static["produced_by_job"] = None
+    reg3 = _reg(tmp_path, temp_root=_temp_root(tmp_path), temp_whitelist=[static])
+    assert reg3.get("tmp_static_art")["status"] == "sha256_mismatch"
+    assert reg3.stats_v2()["contract_artifacts"]["mismatch"] == 1
     with pytest.raises(ContractArtifactUnavailable):
-        reg2.sample("tmp_drifted_art")
+        reg3.sample("tmp_static_art")
 
 
 def test_contract_artifact_directory_rejected_without_recursion(tmp_path):
@@ -229,3 +242,59 @@ def test_cli_json_contract(tmp_path, monkeypatch, capsys):
 
     assert cli.main(["--json", "get", "--id", "no_such_id"]) == 2
     assert json.loads(capsys.readouterr().out)["error"]
+
+
+# ---------- R12 D4：sha256 基线外置（出厂常量 → 运维基线） ----------
+
+def test_load_contract_baseline_file_and_invalid_entries(tmp_path):
+    import dataset_registry as dr
+    p = tmp_path / "contract_baseline.json"
+    p.write_text(json.dumps({"schema": "contract_baseline/v1", "baselines": {
+        "good_art": {"sha256": "A" * 64, "confirmed_at": "2026-11-06T10:40:00",
+                     "confirmed_by": "DATA1"},
+        "short_sha": {"sha256": "abc"},
+        "non_hex": {"sha256": "z" * 64},
+        "not_a_dict": "oops",
+    }}), encoding="utf-8")
+    out = dr.load_contract_baseline(p)
+    assert out["loaded"] is True
+    assert list(out["baselines"]) == ["good_art"]      # 非法基线必须被丢弃
+    assert out["baselines"]["good_art"]["sha256"] == "a" * 64  # 统一小写
+
+
+def test_load_contract_baseline_missing_returns_empty(tmp_path):
+    import dataset_registry as dr
+    out = dr.load_contract_baseline(tmp_path / "nope.json")
+    assert out["loaded"] is False and out["baselines"] == {}
+
+
+def test_apply_baseline_overrides_factory_sha(tmp_path):
+    reg = _reg(tmp_path, temp_root=_temp_root(tmp_path),
+               temp_whitelist=[_artifact(tmp_path)])
+    reg.contract_baseline = {"loaded": True, "baselines": {
+        "acad1_evidence_bundle": {"sha256": "a" * 64,
+                                  "confirmed_at": "2026-11-06T10:40:00",
+                                  "confirmed_by": "DATA1"}}}
+    spec = reg._apply_baseline({"artifact_id": "acad1_evidence_bundle", "sha256": "b" * 64})
+    assert spec["sha256"] == "a" * 64
+    assert spec["sha256_factory"] == "b" * 64
+    assert spec["baseline_confirmed_at"] == "2026-11-06T10:40:00"
+    # 未登记基线的 artifact 保持出厂常量
+    untouched = reg._apply_baseline({"artifact_id": "other", "sha256": "c" * 64})
+    assert untouched["sha256"] == "c" * 64 and "sha256_factory" not in untouched
+
+
+def test_contract_baseline_merges_into_default_whitelist(tmp_path, monkeypatch):
+    """出厂常量过期 + 基线已确认 → 不得再报红（这正是 R12 D4 的原始症状）。"""
+    import dataset_registry as dr
+    factory = "2" * 64
+    spec = _artifact(tmp_path, name="baselined_art", content=b'{"v": 3}', sha=factory)
+    actual = hashlib.sha256(b'{"v": 3}').hexdigest()
+    monkeypatch.setattr(dr, "TEMP_CONTRACT_WHITELIST", (spec,))
+    baseline = {"loaded": True, "baselines": {"baselined_art": {
+        "sha256": actual, "confirmed_at": "2026-11-06T10:40:00", "confirmed_by": "DATA1"}}}
+    reg = _reg(tmp_path, temp_root=_temp_root(tmp_path), contract_baseline=baseline)
+    row = reg.get("tmp_baselined_art")
+    assert row["status"] == "active"
+    assert row["sha256"] == actual
+    assert reg.temp_whitelist[0]["sha256_factory"] == factory

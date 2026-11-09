@@ -1,0 +1,168 @@
+{
+  "source_file": "C:\\Users\\t\\Desktop\\206人工抽检_40条_审阅表_v1_旧模板备份_20261104.xlsx",
+  "source_sha256": "7D0C08D07902FC5D53C49D5961617BA2031657AD042686AD734816D61C543508",
+  "source_mtime": "2026-11-04T22:28:49.580051",
+  "review_status": "AI_DRAFT_ONLY",
+  "reviewer_values": [
+    "AI-draft"
+  ],
+  "n": 40,
+  "base_correct": 31,
+  "rag_correct": 29,
+  "citation_ok": 30,
+  "winner": {
+    "rag": 21,
+    "base": 14,
+    "tie": 5
+  },
+  "cross": {
+    "both_correct": 22,
+    "base_only": 9,
+    "rag_only": 7,
+    "both_wrong": 2
+  },
+  "by_category": {
+    "A_concept_qa": {
+      "n": 12,
+      "base": 8,
+      "rag": 9,
+      "base_only": 2,
+      "rag_only": 3,
+      "both_wrong": 1
+    },
+    "B_conclusion_rewrite": {
+      "n": 3,
+      "base": 2,
+      "rag": 2,
+      "base_only": 0,
+      "rag_only": 0,
+      "both_wrong": 1
+    },
+    "C_reading_comprehension": {
+      "n": 3,
+      "base": 1,
+      "rag": 3,
+      "base_only": 0,
+      "rag_only": 2,
+      "both_wrong": 0
+    },
+    "D_multi_source": {
+      "n": 1,
+      "base": 0,
+      "rag": 1,
+      "base_only": 0,
+      "rag_only": 1,
+      "both_wrong": 0
+    },
+    "E_variant": {
+      "n": 18,
+      "base": 17,
+      "rag": 13,
+      "base_only": 5,
+      "rag_only": 1,
+      "both_wrong": 0
+    },
+    "unknown": {
+      "n": 3,
+      "base": 3,
+      "rag": 1,
+      "base_only": 2,
+      "rag_only": 0,
+      "both_wrong": 0
+    }
+  },
+  "base_only_ids": [
+    "holdout-014",
+    "holdout-017",
+    "holdout-018",
+    "holdout-019",
+    "holdout-020",
+    "holdout-100",
+    "holdout-122",
+    "holdout-143",
+    "holdout-153"
+  ],
+  "rag_only_ids": [
+    "holdout-021",
+    "holdout-023",
+    "holdout-024",
+    "holdout-049",
+    "holdout-066",
+    "holdout-071",
+    "holdout-078"
+  ],
+  "both_correct_ids": [
+    "holdout-000",
+    "holdout-001",
+    "holdout-002",
+    "holdout-003",
+    "holdout-004",
+    "holdout-005",
+    "holdout-006",
+    "holdout-007",
+    "holdout-008",
+    "holdout-009",
+    "holdout-010",
+    "holdout-011",
+    "holdout-012",
+    "holdout-013",
+    "holdout-015",
+    "holdout-016",
+    "holdout-027",
+    "holdout-032",
+    "holdout-051",
+    "holdout-080",
+    "holdout-117",
+    "holdout-155"
+  ],
+  "both_wrong_ids": [
+    "holdout-022",
+    "holdout-034"
+  ],
+  "citation_false_ids": [
+    "holdout-014",
+    "holdout-017",
+    "holdout-018",
+    "holdout-019",
+    "holdout-020",
+    "holdout-022",
+    "holdout-100",
+    "holdout-122",
+    "holdout-143",
+    "holdout-153"
+  ],
+  "rag_ok_but_citation_false_ids": [],
+  "rag_fail_but_citation_true_ids": [
+    "holdout-034"
+  ],
+  "winner_by_cross": {
+    "both_correct": {
+      "rag": 14,
+      "base": 5,
+      "tie": 3
+    },
+    "base_only": {
+      "base": 9
+    },
+    "rag_only": {
+      "rag": 7
+    },
+    "both_wrong": {
+      "tie": 2
+    }
+  },
+  "notes": "本汇总仅针对 WorkBuddy AI 草稿；reviewer=AI-draft；不是人工审阅，不能用于 canonical 切换或任何上线决策。winner 是质量偏好，不是正确性判定。",
+  "correction_20261105": {
+    "excluded_ids": [
+      "holdout-027"
+    ],
+    "reason": "REFERENCE_MISMATCH_NO_VALID_GROUND_TRUTH",
+    "note": "本文件是修正前 AI-draft 40 条历史口径，包含无效的 holdout-027；base31/RAG29 不得作为准确率。",
+    "corrected_ai_draft_counts": {
+      "base_correct": 30,
+      "rag_correct": 28,
+      "denominator": 39
+    },
+    "authoritative_report": "SFT_206_main40_independent_ai_plus4_v1.md"
+  }
+}

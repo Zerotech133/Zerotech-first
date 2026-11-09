@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 标的下钻 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px}
+    .crumb .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none}
+    .crumb .c:hover{border-color:var(--accent);color:var(--link)}
+    .crumb .c.here{border-color:var(--accent);color:var(--text);background:var(--bg-raised);cursor:default}
+    .crumb .sep{color:var(--gray-5);font-size:11px}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:14px 0}
+    .kpi{padding:12px 14px}
+    .kpi .k-label{font-size:11.5px;color:var(--gray-5)}
+    .kpi b{display:block;font:700 22px var(--font-mono);font-variant-numeric:tabular-nums;margin-top:4px}
+    .up{color:var(--color-up)} .dn{color:var(--color-dn)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:960px){.grid2{grid-template-columns:1fr}}
+    .mini{font-size:12px;color:var(--gray-6)}
+    .bars{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0}
+    .bars .b-bull{background:var(--color-up)} .bars .b-bear{background:var(--color-dn)} .bars .b-neutral{background:var(--gray-5)}
+    .spark{display:flex;align-items:flex-end;gap:2px;height:90px;padding:4px 0 0}
+    .spark i{flex:1;min-width:2px;border-radius:1px 1px 0 0;background:var(--blu-500)}
+    .spark i.dn{background:var(--color-dn)}
+    .bias-chip{font-size:10.5px;border:1px solid var(--border);border-radius:999px;padding:1px 7px;white-space:nowrap}
+    .bias-chip.bull{color:var(--color-up);border-color:var(--color-up)}
+    .bias-chip.bear{color:var(--color-dn);border-color:var(--color-dn)}
+    .bias-chip.neutral{color:var(--gray-5)}
+    .src-tag{font-size:9.5px;color:var(--gray-5);border:1px dashed var(--border-weak);border-radius:4px;padding:0 4px;margin-left:6px}
+    .search{display:flex;gap:8px;align-items:center;margin:10px 0}
+    .search input{background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;font-family:var(--font-mono);width:140px}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 标的下钻</span>
+        <h1>一只股票，四面依据一页出</h1>
+        <p>数据源 <code>/api/jev/target/{code}</code>：基本面快照 × 行情走势与形态量价 × 情绪面（全部相关消息的热度/来源/事件/极性）× 判定明细与后验战绩——下游尽调一只票的依据链视图。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_api.html">📡 能力目录</a>
+        <a class="ui-btn" href="/jev_platform.html">🛰 中台总览</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <!-- JEV 族动线条 -->
+    <div class="ui-card crumb">
+      <a class="c" href="/jev_platform.html">🛰 01 总览</a><span class="sep">→</span>
+      <a class="c" href="/bt-jev">⚖ 02 判断</a><span class="sep">→</span>
+      <a class="c" href="/jev_wordcloud.html">☁ 03 词云</a><span class="sep">→</span>
+      <a class="c" href="/static/jev_review.html">🧾 04 复核</a><span class="sep">→</span>
+      <a class="c" href="/jev_integration.html">🔗 05 对接台</a><span class="sep">→</span>
+      <a class="c" href="/jev_api.html">📡 06 能力目录</a><span class="sep">→</span>
+      <span class="c here">🎯 标的下钻</span>
+      <span style="margin-left:auto;color:var(--gray-5);font-size:11px">依据链视图：判定 → 标的 → 四面依据（基本面·行情形态·情绪·判定后验）</span>
+    </div>
+
+    <div class="ui-card search">
+      <span class="mini">代码</span>
+      <input id="code" placeholder="600519" maxlength="9">
+      <span class="mini">窗口</span>
+      <select id="days" style="background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px">
+        <option value="7">7 天</option><option value="30" selected>30 天</option><option value="90">90 天</option><option value="180">180 天</option>
+      </select>
+      <button class="ui-btn ui-btn--sm ui-btn--primary" id="go">下钻</button>
+      <span id="meta" class="mini" style="margin-left:auto">输入代码开始</span>
+    </div>
+    <div id="err" class="ui-error" hidden></div>
+
+    <div id="body" hidden>
+      <div class="kpis" id="kpis">
+        <div class="ui-card kpi"><div class="k-label" id="k-name-label">标的</div><b id="k-name" style="font-size:16px">—</b><div class="mini" id="k-ind"></div></div>
+        <div class="ui-card kpi"><div class="k-label">区间涨跌</div><b id="k-cum">—</b><div class="mini" id="k-close"></div></div>
+        <div class="ui-card kpi"><div class="k-label">判定净倾向</div><b id="k-net">—</b><div class="mini" id="k-dist-t"></div></div>
+        <div class="ui-card kpi"><div class="k-label">后验命中率</div><b id="k-hit">—</b><div class="mini" id="k-veri"></div></div>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 8px;font-size:13.5px">行情走势（收盘）</h3>
+            <div class="spark" id="spark"></div>
+            <div class="mini" style="display:flex;justify-content:space-between;margin-top:4px"><span id="sp-from"></span><span id="sp-to"></span></div>
+            <div class="mini" id="sp-form" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">—</div>
+          </div>
+          <div class="ui-card">
+            <h3 style="margin:0 0 8px;font-size:13.5px">判定明细（<span id="jn">—</span>）</h3>
+            <div style="max-height:300px;overflow:auto">
+              <table class="ui-table"><thead><tr><th>时间</th><th>方向</th><th>conf</th><th>标题</th><th>来源</th><th style="white-space:nowrap">证据</th></tr></thead><tbody id="j-body"></tbody></table>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="ui-card" style="margin-bottom:12px">
+            <h3 style="margin:0 0 8px;font-size:13.5px">情绪面（全部相关消息）</h3>
+            <div class="bars" id="bars"></div>
+            <div class="mini" id="bars-t" style="display:flex;justify-content:space-between"></div>
+            <div class="mini" id="sent-stat" style="margin-top:10px">—</div>
+            <div class="mini" id="sent-mix" style="margin-top:6px"></div>
+            <p class="mini" style="margin-top:10px">口径：<b>全部</b>相关消息（含未判定），与左侧「判定明细」不同——后者只含有判定的行。极性来自 JEV 判定 bias，非独立情感模型；净倾向 net_bias = (多−空)/已判定数，区间 [−1, +1]。</p>
+          </div>
+          <div class="ui-card">
+            <h3 style="margin:0 0 8px;font-size:13.5px">后验战绩</h3>
+            <div id="post" class="mini">—</div>
+            <p class="mini" style="margin-top:8px">带标的判定按 T+1 回填真实收益/超额/命中——判定准不准，市场说了算。<b>后验战绩为全历史累计</b>（不限当前窗口）；上方判定明细才是窗口内。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 只读页面 · /api/jev/target/{code}（jev_target.v2）· 60s 缓存</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    var $=function(id){return document.getElementById(id)};
+    var BIAS_CN={bull:"利多",bear:"利空",neutral:"中性"};
+    function fail(m){$("err").hidden=false;$("err").innerHTML=m}
+    function pct(v){return v==null?"—":(v>0?"+":"")+v.toFixed?((v>0?"+":"")+v.toFixed(2)):v+"%"}
+    function load(code, days){
+      $("err").hidden=true;
+      $("meta").textContent="加载中… "+code;
+      fetch("/api/jev/target/"+encodeURIComponent(code)+"?days="+days+"&limit=50").then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(d){
+        // v2 起新增 sentiment/form 块；v1 仍可渲染（只少两块），不因升版白屏
+        if(!/^jev_target\.v[12]$/.test(String(d.schema||"")))throw new Error("schema 不符："+d.schema);
+        render(d);$("meta").textContent=d.ts_code+" · 生成于 "+d.generated_at;
+        location.hash=code;
+      }).catch(function(e){fail("下钻失败："+esc(e.message)+"——若 401：<a href='/login?next=/jev_target.html' style='color:var(--link)'>→ 去登录（回跳本页）</a>")});
+    }
+    function render(d){
+      var p=d.profile||{}, q=d.quotes||{}, j=d.judgments||{}, s=d.sentiment||{}, f=q.form||{};
+      $("k-name-label").textContent="标的 "+d.code;
+      $("k-name").textContent=p.available?(p.name||"—"):"—";
+      $("k-ind").textContent=p.available?[(p.industry||"")+ " · " +(p.area||"")+ " · 上市"+(p.list_date||"?")].join(""):("不可用："+p.reason);
+      var cum=q.cum_chg_pct;
+      $("k-cum").textContent=cum==null?"—":((cum>0?"+":"")+cum+"%");
+      $("k-cum").className=cum==null?"":(cum>0?"up":"dn");
+      $("k-close").textContent=q.available?("最新收 "+q.last_close+" · "+q.n_bars+" bar"):"行情不可用";
+      var net=j.net_bias;
+      $("k-net").textContent=net==null?"—":((net>0?"+":"")+net);
+      $("k-net").className=net==null?"":(net>0?"up":(net<0?"dn":""));
+      $("k-dist-t").textContent="多"+(j.dist||{}).bull+" · 空"+(j.dist||{}).bear+" · 中"+(j.dist||{}).neutral;
+      var post=j.posterior||{};
+      $("k-hit").textContent=post.hit_rate==null?"—":(post.hit_rate*100).toFixed(1)+"%";
+      $("k-veri").textContent=post.available?(post.verified+" / "+post.judged_total+" 已验证"):"—";
+
+      if(q.available&&q.bars&&q.bars.length){
+        var mx=0; q.bars.forEach(function(b){mx=Math.max(mx,Math.abs(b.close))});
+        $("spark").innerHTML=q.bars.map(function(b){
+          var h=Math.max(3,b.close/mx*88);
+          return "<i class='"+(b.pct_chg!=null&&b.pct_chg<0?"dn":"")+"' style='height:"+h+"px' title='"+b.date+" 收"+b.close+" "+(b.pct_chg!=null?((b.pct_chg>0?"+":"")+b.pct_chg+"%"):"")+"'></i>";
+        }).join("");
+        $("sp-from").textContent=q.bars[0].date; $("sp-to").textContent=q.bars[q.bars.length-1].date;
+      } else {$("spark").innerHTML='<p class="mini">行情不可用</p>'}
+
+      // 形态量价：label 是人话，右侧括号给复算依据（pos/量比/连涨跌）
+      if(f.available){
+        var bits=[];
+        if(f.pos_in_range!=null)bits.push("区间位置 "+(f.pos_in_range*100).toFixed(0)+"%");
+        if(f.ma20!=null)bits.push("MA20 "+f.ma20+(f.above_ma20?"（上方）":"（下方）"));
+        if(f.vol_ratio_5_20!=null)bits.push("5/20日量比 "+f.vol_ratio_5_20);
+        if(f.streak)bits.push("连续"+(f.streak_dir==="up"?"上涨":"下跌")+f.streak+"日");
+        if(f.amplitude_avg!=null)bits.push("平均振幅 "+f.amplitude_avg+"%");
+        if(f.volatility_daily!=null)bits.push("日波动率 "+f.volatility_daily+"%");
+        $("sp-form").innerHTML="<b>形态：</b>"+esc(f.label||"—")+"<span style='color:var(--gray-5)'> · "+esc(bits.join(" · "))+"</span>";
+      } else {
+        $("sp-form").textContent="形态不可用："+(f.reason||"数据不足");
+      }
+
+      // 情绪面 = 全部相关消息（含未判定），与左侧判定明细口径不同
+      var sdist=s.dist||{bull:0,bear:0,neutral:0}, st=(s.judged||0);
+      if(s.available&&s.total){
+        if(st){
+          var sw={bull:sdist.bull/st*100,bear:sdist.bear/st*100,neutral:sdist.neutral/st*100};
+          $("bars").innerHTML='<div class="b-bull" style="width:'+sw.bull+'%"></div><div class="b-neutral" style="width:'+sw.neutral+'%"></div><div class="b-bear" style="width:'+sw.bear+'%"></div>';
+          $("bars-t").innerHTML="<span class='up'>多 "+sdist.bull+"</span><span>中 "+sdist.neutral+"</span><span class='dn'>空 "+sdist.bear+"</span>";
+        } else {
+          $("bars").innerHTML=""; $("bars-t").textContent="窗口内消息均未判定";
+        }
+        var stat=s.total+" 条相关消息（已判定 "+st+" · 未判定 "+(s.unjudged||0)+" 条）";
+        if(s.peak_day)stat+=" · 峰值 "+s.peak_day.date+"（"+s.peak_day.n+" 条）";
+        if(s.conf_avg!=null)stat+=" · 均置信 "+s.conf_avg;
+        if(s.net_bias!=null)stat+=" · 净倾向 "+((s.net_bias>0?"+":"")+s.net_bias);
+        $("sent-stat").textContent=stat;
+        var mx=[];
+        if((s.source_mix||[]).length)mx.push("来源 "+s.source_mix.slice(0,3).map(function(x){return x.k+"×"+x.n}).join(" / "));
+        if((s.event_mix||[]).length)mx.push("事件 "+s.event_mix.slice(0,3).map(function(x){return x.k+"×"+x.n}).join(" / "));
+        $("sent-mix").textContent=mx.join(" · ")||"—";
+      } else {
+        $("bars").innerHTML=""; $("bars-t").textContent="情绪面不可用";
+        $("sent-stat").textContent=s.reason?("原因："+s.reason):"—";
+        $("sent-mix").textContent="";
+      }
+
+      $("post").textContent=post.available?("该股累计判定 "+post.judged_total+" 条，其中 "+post.verified+" 条已按 T+1 回填收益"+(post.hit_rate!=null?("，命中率 "+(post.hit_rate*100).toFixed(1)+"%"):"")):"后验库暂不可用";
+      var _jn=(j.items||[]).length, _jt=(j.total||0);
+      $("jn").textContent="最近 "+_jn+" / 共 "+_jt+" 条";
+      $("jn").title="列表按时间倒序只展示前 "+_jn+" 条；上方「判定净倾向」与「多/空/中」统计的是窗口内全部 "+_jt+" 条";
+      $("j-body").innerHTML=(j.items||[]).map(function(it){
+        return "<tr><td class='mini' style='white-space:nowrap'>"+esc(it.ts)+"</td>"
+          +"<td><span class='bias-chip "+esc(it.bias||"neutral")+"'>"+(BIAS_CN[it.bias]||it.bias||"—")+"</span></td>"
+          +"<td class='num'>"+(it.conf!=null?it.conf:"—")+"</td>"
+          +"<td class='mini'>"+esc(it.title||"")+"</td>"
+          +"<td><span class='src-tag'>"+esc(it.src||"")+"</span></td>"
+          +"<td style='white-space:nowrap'>"+(it.evidence_item?"<a class='mini' href='"+esc(it.evidence_item)+"' style='color:var(--link);white-space:nowrap'>溯源</a>":"—")+"</td></tr>";
+      }).join("")||'<tr><td colspan="6" class="mini" style="padding:20px;text-align:center">窗口内无相关判定</td></tr>';
+
+      $("body").hidden=false;
+    }
+    $("go").addEventListener("click",function(){var c=$("code").value.trim();if(c)load(c,$("days").value)});
+    $("code").addEventListener("keydown",function(e){if(e.key==="Enter")$("go").click()});
+    if(location.hash.length>1){var c=decodeURIComponent(location.hash.slice(1));$("code").value=c;load(c,$("days").value)}
+  })();
+  </script>
+</body>
+</html>

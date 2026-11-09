@@ -23,6 +23,10 @@
 边界：只读编排（本工具不写业务数据；review/go_no_go 子进程各自落报告）；
 所有外部命令经模块级 `_run(cmd, cwd, timeout)` 可 monkeypatch；所有输入
 缺失/坏行一律容错并如实标注（fail-visible，不编造）。
+
+目标日期参数化（HZ-FINAL-DATE-20261104）：默认目标时点 = 2026-11-04 10:00，行为与
+v1 完全一致；显式 `--target-date 2026-11-10`（或 ISO 日期时间）把 ④ 满窗判定、
+报告标题/文件名切到目标日期，`--now` 可固定当前时钟用于 11-10 复算/测试。
 """
 from __future__ import annotations
 
@@ -40,7 +44,9 @@ BASELINE_REL = Path("agent_platform") / "data" / "test_baseline" / "latest.json"
 REDTEAM_REL_DIR = Path("work") / "p1" / "redteam"
 REPORT_PREFIX = "2026-11-04_黄忠复核preflight"
 TZ_CN = dt.timezone(dt.timedelta(hours=8))
-TARGET_TIME = dt.datetime(2026, 11, 4, 10, 0, tzinfo=TZ_CN)  # 11-04 复盘会时点
+TARGET_TIME = dt.datetime(2026, 11, 4, 10, 0, tzinfo=TZ_CN)  # 11-04 复盘会时点（默认目标）
+DEFAULT_TARGET_DATE = "2026-11-04"   # 默认目标日期；显式 --target-date 可复算其他日期
+TARGET_HOUR = 10                     # 仅给日期时补的默认小时（复盘会 10:00）
 EVIDENCE_MAX_AGE_HOURS = 48.0   # 认证口径证据年龄门
 REVIEW_STALE_HOURS = 24.0       # review 报告超过 24h 需现场重跑
 MATURITY_DAYS = 7               # ④ 满窗窗口
@@ -93,6 +99,53 @@ def _parse_ts(raw) -> dt.datetime | None:
     if parsed.tzinfo is None:
         parsed = parsed.astimezone()
     return parsed
+
+
+def _parse_target_date(raw=None) -> dt.datetime:
+    """解析目标日期/时刻（默认 TARGET_TIME = 2026-11-04 10:00）。
+
+    支持：None/空串（默认）、'2026-11-10'（补 TARGET_HOUR 10:00）、ISO 日期时间。
+    非法输入抛 ValueError（CLI 捕获后按参数错误 rc=2 处理）。
+    """
+    if isinstance(raw, dt.datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=TZ_CN)
+    text = str(raw).strip() if raw is not None else ""
+    if not text:
+        return TARGET_TIME
+    try:
+        if "T" in text or " " in text:
+            parsed = dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
+        else:
+            day = dt.date.fromisoformat(text)
+            parsed = dt.datetime(day.year, day.month, day.day,
+                                 TARGET_HOUR, 0, tzinfo=TZ_CN)
+    except ValueError as exc:
+        raise ValueError(
+            "--target-date 无法解析：%r（支持 2026-11-10 或 ISO 日期时间）" % text
+        ) from exc
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=TZ_CN)
+
+
+def _target_label(target: dt.datetime) -> str:
+    """目标日期短标签：默认 '11-04'，显式 11-10 → '11-10'。"""
+    return target.strftime("%m-%d")
+
+
+def _target_label_hm(target: dt.datetime) -> str:
+    """目标日期+时刻标签：默认 '11-04 10:00'。"""
+    return "%s %s" % (target.strftime("%m-%d"), target.strftime("%H:%M"))
+
+
+def _target_label_from_iso(raw) -> str:
+    """从 rep/maturity 的 target_time（ISO）反推短标签；解析失败回退默认 '11-04'。"""
+    target = _parse_ts(raw)
+    return _target_label(target if isinstance(target, dt.datetime) else TARGET_TIME)
+
+
+def _target_hm_from_iso(raw) -> str:
+    """从 ISO target_time 反推 'MM-DD HH:MM'；解析失败回退默认 '11-04 10:00'。"""
+    target = _parse_ts(raw)
+    return _target_label_hm(target if isinstance(target, dt.datetime) else TARGET_TIME)
 
 
 def _read_text(path: Path) -> tuple[str | None, str | None]:
@@ -550,8 +603,9 @@ def compute_maturity(work: Path, now: dt.datetime,
                                   for r in tracking]),
         "invalid_files": _cap(invalid),
         "source": "acceptance_*.json 直扫（PASS 非演练；不依赖 review 明细 50 条截断）",
-        "note": ("now 满窗 %d 单 / 跟踪 %d 单；11-04 10:00 预计满窗 %d 单%s"
-                 % (len(mature), len(tracking), len(expected),
+        "note": ("now 满窗 %d 单 / 跟踪 %d 单；%s 预计满窗 %d 单%s"
+                 % (len(mature), len(tracking),
+                    _target_label_hm(target), len(expected),
                     "（0 → ④ 将仍为 tracking，属预期，不阻塞 preflight）"
                     if not expected else "")),
         "status": OK if rows else SKIP,
@@ -654,9 +708,10 @@ def _build_checks(sections: dict) -> list:
             gng.get("returncode"), dec.get("code") or "?",
             dec.get("label") or "")
     # ④ 满窗
-    mt_result = ("now 满窗 %d / 跟踪 %d；最早满窗 %s；11-04 10:00 预计满窗 %d"
+    mt_result = ("now 满窗 %d / 跟踪 %d；最早满窗 %s；%s 预计满窗 %d"
                  % (mt["mature_count"], mt["tracking_count"],
                     mt.get("earliest_window_end") or "—",
+                    _target_hm_from_iso(mt.get("target_time")),
                     mt.get("mature_at_1030", 0)))
     # ⑤ 事故
     if inc.get("exists"):
@@ -688,9 +743,13 @@ def _build_checks(sections: dict) -> list:
 
 
 def _render_md(rep: dict) -> str:
-    md = ["# 黄忠 11-04 复核 Preflight 报告", "",
+    target = _parse_ts(rep.get("target_time"))
+    target = target if isinstance(target, dt.datetime) else TARGET_TIME
+    tlabel = _target_label(target)
+    md = ["# 黄忠 %s 复核 Preflight 报告" % tlabel, "",
           "- 生成时间：%s（Asia/Shanghai）" % rep["generated_at"],
-          "- 目标时点：%s（11-04 复盘会 10:00）" % rep["target_time"],
+          "- 目标时点：%s（%s 复盘会 %s）"
+          % (rep["target_time"], tlabel, target.strftime("%H:%M")),
           "- 仓库根：`%s`；数据目录：`%s`" % (rep["repo_root"], rep["work_dir"]),
           "- 只读编排：本工具不写业务数据；review/go_no_go 子进程各自落报告",
           "- **结论：ready = %s｜blockers = %d｜warnings = %d**"
@@ -763,9 +822,11 @@ def _render_md(rep: dict) -> str:
     md += ["", "## 六、④ 满窗（maturity）", "",
            "- PASS 非演练样本：%d 单；now 满窗 **%d** 单 / 跟踪 %d 单"
            % (mt["pass_samples"], mt["mature_count"], mt["tracking_count"]),
-           "- 最早满窗：%s；下一满窗：%s；11-04 10:00 预计满窗：**%d** 单"
+           "- 最早满窗：%s；下一满窗：%s；%s 预计满窗：**%d** 单"
            % (mt.get("earliest_window_end") or "—",
-              mt.get("next_window_end") or "—", mt.get("mature_at_1030", 0)),
+              mt.get("next_window_end") or "—",
+              _target_hm_from_iso(mt.get("target_time")),
+              mt.get("mature_at_1030", 0)),
            "- 口径：%s" % mt.get("note", "")]
     if mt.get("mature_samples"):
         md.append("- now 已满窗样本：%s"
@@ -785,15 +846,19 @@ def _render_md(rep: dict) -> str:
            "- 路径：`%s`（exists=%s）" % (inc.get("path"), inc.get("exists")),
            "- %s" % (inc.get("note") or "")]
 
+    rerun = ("C:\\项目\\py312\\python.exe -X utf8 "
+             "tools\\huangzhong_1104_preflight.py --json")
+    if tlabel != _target_label(TARGET_TIME):
+        rerun += " --target-date %s" % target.date().isoformat()
     md += ["", "## 八、复跑命令", "",
            "```powershell",
            "cd C:\\项目\\老田的AI助手",
-           "C:\\项目\\py312\\python.exe -X utf8 "
-           "tools\\huangzhong_1104_preflight.py --json",
+           rerun,
            "```",
            "",
-           "> 本报告为 11-04 复核前置自检（只读编排），不替代 Go/No-Go 决策与"
-           "老田签字；ready=True 仅表示前置数据齐备，不等于认证/Go 通过。", ""]
+           ("> 本报告为 %s 复核前置自检（只读编排），不替代 Go/No-Go 决策与"
+            "老田签字；ready=True 仅表示前置数据齐备，不等于认证/Go 通过。") % tlabel,
+           ""]
     return "\n".join(md)
 
 
@@ -801,17 +866,20 @@ def _render_md(rep: dict) -> str:
 
 def run(work_dir: Path | str | None = None, out_dir: Path | str | None = None,
         repo_root: Path | str | None = None, now: dt.datetime | None = None,
-        write_report: bool = True) -> dict:
-    """执行 11-04 preflight（只读编排）并输出 MD 报告，返回完整 JSON 结构。
+        target=None, write_report: bool = True) -> dict:
+    """执行黄忠观察期复核 preflight（只读编排）并输出 MD 报告。
 
     work_dir 缺省 = repo_root/work/huangzhong；out_dir 缺省 = C:\\项目\\deliverables；
-    now 可注入（测试用）；write_report=False 时不落 MD（测试用）。
+    now 可注入（测试/复算用）；target 可注入目标日期/时刻（缺省 2026-11-04 10:00，
+    显式 2026-11-10 用于 11-10 复算）；write_report=False 时不落 MD（测试用）。
     """
     now = now or _now()
+    target = _parse_target_date(target)
+    label = _target_label(target)
     root = Path(repo_root) if repo_root else ROOT
     work = Path(work_dir) if work_dir else root / DEFAULT_WORK_SUBDIR
     out = Path(out_dir) if out_dir else DEFAULT_OUT_DIR
-    _log("开始 11-04 preflight：repo=%s work=%s" % (root, work))
+    _log("开始 %s preflight：repo=%s work=%s" % (label, root, work))
 
     evidence = load_evidence(root, now)
     _log("① 证据新鲜度：%s" % evidence["status"])
@@ -820,9 +888,9 @@ def run(work_dir: Path | str | None = None, out_dir: Path | str | None = None,
     go_no_go = check_go_no_go(root, work, out, now)
     _log("③ Go/No-Go：rc=%s status=%s"
          % (go_no_go.get("returncode"), go_no_go["status"]))
-    maturity = compute_maturity(work, now, TARGET_TIME)
-    _log("④ 满窗：now 满窗 %d / 跟踪 %d / 11-04 预计 %d"
-         % (maturity["mature_count"], maturity["tracking_count"],
+    maturity = compute_maturity(work, now, target)
+    _log("④ 满窗：now 满窗 %d / 跟踪 %d / %s 预计 %d"
+         % (maturity["mature_count"], maturity["tracking_count"], label,
             maturity["mature_at_1030"]))
     incidents = load_incidents(work, now)
     _log("⑤ 事故台账：exists=%s" % incidents["exists"])
@@ -833,15 +901,16 @@ def run(work_dir: Path | str | None = None, out_dir: Path | str | None = None,
     checks = _build_checks(sections)
     report_md = None
     if write_report:
+        # 默认（2026-11-04）与 v1 命名完全一致；显式目标日期只替换前缀日期
+        prefix = "%s_黄忠复核preflight" % target.date().isoformat()
         report_md = str(out / ("%s_%s.md"
-                               % (REPORT_PREFIX,
-                                  now.strftime("%Y%m%d_%H%M%S"))))
+                               % (prefix, now.strftime("%Y%m%d_%H%M%S"))))
     rep = {
         "ok": True,
         "tool": "huangzhong_1104_preflight.py",
         "version": "v1 (2026-10-31)",
         "generated_at": _iso(now),
-        "target_time": _iso(TARGET_TIME),
+        "target_time": _iso(target),
         "repo_root": str(root),
         "work_dir": str(work),
         "out_dir": str(out),
@@ -876,7 +945,8 @@ def run(work_dir: Path | str | None = None, out_dir: Path | str | None = None,
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
-        description="黄忠 11-04 复核 preflight 一键检查（只读编排）")
+        description="黄忠观察期复核 preflight 一键检查（只读编排；"
+                    "默认目标 2026-11-04 10:00）")
     ap.add_argument("--json", action="store_true", help="输出完整 preflight JSON")
     ap.add_argument("--work-dir", default="",
                     help="数据目录（默认 <repo-root>/work/huangzhong）")
@@ -884,16 +954,34 @@ def main(argv=None) -> int:
                     help="仓库根（默认工具所在仓库；worktree 内用主仓数据时显式指定）")
     ap.add_argument("--out-dir", default="",
                     help="MD 报告输出目录（默认 C:\\项目\\deliverables）")
+    ap.add_argument("--now", default="",
+                    help="固定当前时钟（ISO；默认当前时间，测试/11-10 复算用）")
+    ap.add_argument("--target-date", default="",
+                    help="显式目标日期/时刻（默认 2026-11-04 10:00；"
+                         "支持 2026-11-10 或 ISO 日期时间）")
     args = ap.parse_args(argv)
+    fixed_now = None
+    if args.now:
+        fixed_now = _parse_ts(args.now)
+        if fixed_now is None:
+            print("参数错误：--now 无法解析：%r" % args.now, file=sys.stderr)
+            return 2
+    try:
+        target = _parse_target_date(args.target_date)
+    except ValueError as exc:
+        print("参数错误：%s" % exc, file=sys.stderr)
+        return 2
     rep = run(work_dir=args.work_dir or None,
               out_dir=args.out_dir or None,
-              repo_root=args.repo_root or None)
+              repo_root=args.repo_root or None,
+              now=fixed_now,
+              target=target)
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     else:
-        print("11-04 preflight：ready=%s（blockers=%d，warnings=%d）→ %s"
-              % (rep["ready"], len(rep["blockers"]), len(rep["warnings"]),
-                 rep.get("report_md")))
+        print("%s preflight：ready=%s（blockers=%d，warnings=%d）→ %s"
+              % (_target_label(target), rep["ready"], len(rep["blockers"]),
+                 len(rep["warnings"]), rep.get("report_md")))
     return 0 if rep["ready"] else 1
 
 

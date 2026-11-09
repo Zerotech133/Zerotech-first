@@ -1,0 +1,493 @@
+{
+ "meta": {
+  "pool": "chanlun_pool_ext_v2.jsonl",
+  "since": "20231009",
+  "n": 15342,
+  "short": 5,
+  "long": 20,
+  "reverse_n": 896
+ },
+ "rules": {
+  "pool": {
+   "pick_avg": 3.408,
+   "day_avg": 1.825,
+   "per_hold_day": 0.0936,
+   "day_win": 56.4,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": 0.333,
+    "t": 3.77,
+    "p": 0.0002,
+    "win": 60.2
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.961,
+     "per_hold_day": 0.0487
+    },
+    "2024": {
+     "days": 236,
+     "avg": 2.394,
+     "per_hold_day": 0.1226
+    },
+    "2025": {
+     "days": 242,
+     "avg": 4.197,
+     "per_hold_day": 0.2142
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.612,
+     "per_hold_day": -0.0836
+    }
+   }
+  },
+  "hold20": {
+   "pick_avg": 3.338,
+   "day_avg": 1.492,
+   "per_hold_day": 0.0746,
+   "day_win": 55.1,
+   "paired_vs_hold20": null,
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.925,
+     "per_hold_day": 0.0463
+    },
+    "2024": {
+     "days": 236,
+     "avg": 1.802,
+     "per_hold_day": 0.0901
+    },
+    "2025": {
+     "days": 242,
+     "avg": 3.745,
+     "per_hold_day": 0.1873
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.568,
+     "per_hold_day": -0.0785
+    }
+   }
+  },
+  "hold5": {
+   "pick_avg": 1.407,
+   "day_avg": 0.448,
+   "per_hold_day": 0.0897,
+   "day_win": 56.1,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -1.044,
+    "t": -3.32,
+    "p": 0.0009,
+    "win": 45.5
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.634,
+     "per_hold_day": 0.1268
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.307,
+     "per_hold_day": 0.0614
+    },
+    "2025": {
+     "days": 242,
+     "avg": 0.947,
+     "per_hold_day": 0.1894
+    },
+    "2026": {
+     "days": 191,
+     "avg": -0.067,
+     "per_hold_day": -0.0134
+    }
+   }
+  },
+  "hold9": {
+   "pick_avg": 2.316,
+   "day_avg": 0.962,
+   "per_hold_day": 0.1069,
+   "day_win": 59.1,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.53,
+    "t": -1.98,
+    "p": 0.0479,
+    "win": 48.1
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 1.297,
+     "per_hold_day": 0.1441
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.886,
+     "per_hold_day": 0.0984
+    },
+    "2025": {
+     "days": 242,
+     "avg": 1.87,
+     "per_hold_day": 0.2078
+    },
+    "2026": {
+     "days": 191,
+     "avg": -0.2,
+     "per_hold_day": -0.0222
+    }
+   }
+  },
+  "trail08": {
+   "pick_avg": 2.095,
+   "day_avg": 0.857,
+   "per_hold_day": 0.0799,
+   "day_win": 47.5,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.635,
+    "t": -2.54,
+    "p": 0.0112,
+    "win": 44.4
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.27,
+     "per_hold_day": 0.0212
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.991,
+     "per_hold_day": 0.1018
+    },
+    "2025": {
+     "days": 242,
+     "avg": 1.99,
+     "per_hold_day": 0.1602
+    },
+    "2026": {
+     "days": 191,
+     "avg": -0.558,
+     "per_hold_day": -0.0569
+    }
+   }
+  },
+  "stop08": {
+   "pick_avg": 2.902,
+   "day_avg": 1.052,
+   "per_hold_day": 0.0649,
+   "day_win": 46.2,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.44,
+    "t": -2.74,
+    "p": 0.0061,
+    "win": 32.9
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.272,
+     "per_hold_day": 0.0155
+    },
+    "2024": {
+     "days": 236,
+     "avg": 1.679,
+     "per_hold_day": 0.1023
+    },
+    "2025": {
+     "days": 242,
+     "avg": 2.551,
+     "per_hold_day": 0.1478
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.377,
+     "per_hold_day": -0.0929
+    }
+   }
+  },
+  "hold20_rev": {
+   "pick_avg": 3.291,
+   "day_avg": 1.482,
+   "per_hold_day": 0.076,
+   "day_win": 55.3,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.01,
+    "t": -0.28,
+    "p": 0.7814,
+    "win": 26.6
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.958,
+     "per_hold_day": 0.0485
+    },
+    "2024": {
+     "days": 236,
+     "avg": 1.808,
+     "per_hold_day": 0.0926
+    },
+    "2025": {
+     "days": 242,
+     "avg": 3.738,
+     "per_hold_day": 0.1908
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.616,
+     "per_hold_day": -0.0838
+    }
+   }
+  },
+  "hold5_rev": {
+   "pick_avg": 1.408,
+   "day_avg": 0.457,
+   "per_hold_day": 0.0914,
+   "day_win": 56.1,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -1.035,
+    "t": -3.29,
+    "p": 0.001,
+    "win": 45.8
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.634,
+     "per_hold_day": 0.1268
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.318,
+     "per_hold_day": 0.0637
+    },
+    "2025": {
+     "days": 242,
+     "avg": 0.947,
+     "per_hold_day": 0.1896
+    },
+    "2026": {
+     "days": 191,
+     "avg": -0.049,
+     "per_hold_day": -0.0098
+    }
+   }
+  },
+  "hold9_rev": {
+   "pick_avg": 2.303,
+   "day_avg": 0.965,
+   "per_hold_day": 0.108,
+   "day_win": 58.7,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.527,
+    "t": -1.96,
+    "p": 0.0498,
+    "win": 48.4
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 1.287,
+     "per_hold_day": 0.1434
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.891,
+     "per_hold_day": 0.0996
+    },
+    "2025": {
+     "days": 242,
+     "avg": 1.866,
+     "per_hold_day": 0.2086
+    },
+    "2026": {
+     "days": 191,
+     "avg": -0.186,
+     "per_hold_day": -0.0209
+    }
+   }
+  },
+  "trail08_rev": {
+   "pick_avg": 2.066,
+   "day_avg": 0.837,
+   "per_hold_day": 0.0794,
+   "day_win": 48.1,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.655,
+    "t": -2.6,
+    "p": 0.0094,
+    "win": 44.9
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.313,
+     "per_hold_day": 0.0248
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.956,
+     "per_hold_day": 0.0998
+    },
+    "2025": {
+     "days": 242,
+     "avg": 1.949,
+     "per_hold_day": 0.1597
+    },
+    "2026": {
+     "days": 191,
+     "avg": -0.553,
+     "per_hold_day": -0.0575
+    }
+   }
+  }
+ },
+ "dynamic": {
+  "dyn": {
+   "day_avg": 0.552,
+   "per_hold_day": 0.0417,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.94,
+    "t": -3.95,
+    "p": 0.0001,
+    "win": 18.8
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.634,
+     "per_hold_day": 0.1268
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.411,
+     "per_hold_day": 0.0291
+    },
+    "2025": {
+     "days": 242,
+     "avg": 2.582,
+     "per_hold_day": 0.1668
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.871,
+     "per_hold_day": -0.1488
+    }
+   }
+  },
+  "dyn_rev": {
+   "day_avg": 0.587,
+   "per_hold_day": 0.0451,
+   "paired_vs_hold20": {
+    "days": 729,
+    "mean_pp": -0.905,
+    "t": -3.78,
+    "p": 0.0002,
+    "win": 34.0
+   },
+   "by_year": {
+    "2023": {
+     "days": 60,
+     "avg": 0.634,
+     "per_hold_day": 0.1268
+    },
+    "2024": {
+     "days": 236,
+     "avg": 0.459,
+     "per_hold_day": 0.0331
+    },
+    "2025": {
+     "days": 242,
+     "avg": 2.605,
+     "per_hold_day": 0.1707
+    },
+    "2026": {
+     "days": 191,
+     "avg": -1.826,
+     "per_hold_day": -0.1482
+    }
+   }
+  }
+ },
+ "rank_per_hold_day": [
+  [
+   0.108,
+   "hold9_rev"
+  ],
+  [
+   0.1069,
+   "hold9"
+  ],
+  [
+   0.0936,
+   "pool"
+  ],
+  [
+   0.0914,
+   "hold5_rev"
+  ],
+  [
+   0.0897,
+   "hold5"
+  ],
+  [
+   0.0799,
+   "trail08"
+  ],
+  [
+   0.0794,
+   "trail08_rev"
+  ],
+  [
+   0.076,
+   "hold20_rev"
+  ],
+  [
+   0.0746,
+   "hold20"
+  ],
+  [
+   0.0649,
+   "stop08"
+  ]
+ ],
+ "verdict": {
+  "reverse_value": "reverse 对 hold20 的贡献：-0.010pp（日批均），配对 p=0.7814",
+  "capital_efficiency_best": "hold9_rev",
+  "dynamic_rule": {
+   "day_avg": 0.587,
+   "per_hold_day": 0.0451,
+   "paired": {
+    "days": 729,
+    "mean_pp": -0.905,
+    "t": -3.78,
+    "p": 0.0002,
+    "win": 34.0
+   },
+   "neg_years": [
+    "2026"
+   ],
+   "beats_t": false,
+   "no_neg_year": false,
+   "beats_efficiency": false,
+   "verdict": "不可落地",
+   "why": [
+    "配对不显著或为负",
+    "存在负年份 ['2026']",
+    "资金效率不如 hold20"
+   ]
+  }
+ }
+}

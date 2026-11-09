@@ -131,7 +131,9 @@ let API = "/legion-api/api/legion/ops";
 let API2 = "/legion-api";
 let apiReady = (async ()=>{
   try{ const t = await fetch("/legion-api/api/legion/ops", {cache:"no-store"}); if(!t.ok) throw 0; }
-  catch(e){ API = "http://127.0.0.1:8096/api/legion/ops"; API2 = "http://127.0.0.1:8096"; }
+  // D3（2026-11-06 R5-C·T5）：原 127.0.0.1 跨端口直连兜底撤除，改同源 —— 本页已有
+  //     X-Portal-Token 注入（authHeaders()，nginx.conf:855-863 透传），/legion 本身已带 auth_request。
+  catch(e){ API = "/legion-api/api/legion/ops"; API2 = "/legion-api"; }
 })();
 async function tick(){
   try{

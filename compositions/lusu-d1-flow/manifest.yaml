@@ -11,7 +11,7 @@ metadata:
   description: ACAD1 选股池 → D1 投研/裁决/会议/交棒 → 盯盘 → 人工门 → TR1 paper 执行 → outcome/训练（IFS
     v1 F6 组合登记）
   created: '2026-11-02'
-  updated: '2026-11-04'
+  updated: '2026-11-07'
 spec:
   kernel: '>=0.9 <2.0'
   seats:
@@ -24,14 +24,14 @@ spec:
   - ref: agent/QS1
   - ref: agent/WA1
   - ref: agent/WA2
-    note: org 声明在册；hr 目录缺（审计在案）
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   - ref: agent/WA3
-    note: 同上
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   - ref: agent/TR1
   - ref: agent/TR2
-    note: org 声明在册；hr 目录缺（审计在案）
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   - ref: agent/TR3
-    note: 同上
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   skills:
   - ref: skill/events
   - ref: skill/paper_positions
@@ -65,7 +65,7 @@ spec:
       human_gate_external_only: true
       kill_switch: PAPER_KILL
       pool_scope: acad1_only
-      interface_envelope: IFS-03 统一 envelope/schema_version 待 task-26 落地
+      interface_envelope: IFS-03 统一 envelope/schema_version 已落地（2026-11-03 WIRE）；P0-04 2026-11-07 已把 9 接口关键契约测试纳入 fast gate（含受控负控）；G2 403 error/v1 仍为严格 xfail
   interfaces:
     exposes:
     - http: /api/d1/research
@@ -130,12 +130,12 @@ spec:
   slo:
     trading_permitted: false
     real_exchange_adapter: disabled
-    watch_runtime: contract_only
+    watch_runtime: watch_engine_running_paper_only
     review_cadence: daily
     q_level: Q1
-    health_probe: 已做只读探针 2026-11-04T02:25:51+08:00 8/8 GET 200（/api/health + /health + 6 D1 只读接口 + 8734 入口）；工具化（tools/q2_probe.py 暂无 d1 target）待接线
-    rollback: 四步回滚见 status.rollback；last_drilled=pending（静态前置已核，未真回滚生产）
-    test_entry: python -m pytest portal/tests/test_api_d1_*.py -q（21 passed，portal/tests 已入 fast gate）&& python -m pytest portal/tests/test_d1_training_page.py -q && python tools/composition.py validate --all
+    health_probe: 单次只读探针 2026-11-06T07:38:00+08:00 8/8 GET 200（tools/q2_probe.py --composition lusu-d1-flow）；持续窗口未测
+    rollback: 四步回滚见 status.rollback；last_drilled=2026-11-07T20:30:56+08:00（完整 8734 UI+/api/d1 入口摘除演练 PASS，66.9s；8091 内部 API 未摘）
+    test_entry: python -X utf8 tools/d1_q2_state_check.py --json && python -m pytest portal/tests/test_api_d1_*.py portal/tests/test_d1_training_page.py -q（45 passed，portal/tests 已入 fast gate）&& python tools/composition.py validate --all
   notes:
   - IFS v1 F6+WIRE 登记：9 API（9 active，含 F5 /api/d1/training/episodes 只读与 F1d /api/war-room/snapshot 聚合）、3 页面（3 active）、4 任务。
   - 数据：recommendation_pool/pool_review/team_exec/paper_ledger/shadow_ledger 已登记 active；d1_decisions
@@ -153,8 +153,23 @@ spec:
 status:
   phase: shadow
   health: unknown
+  health_basis: single_probe_pass
+  health_window: not_measured
   validated: false
+  q2_complete: false
   q_level: Q1
+  watch_runtime:
+    state: running_paper_only
+    enabled_live: true
+    engine: WATCH_TOWER
+    runner: agent_platform/watch_runner.py
+    loop: ops/watch_engine_loop.ps1
+    plan_count: 4
+    human_confirm_required: external_test
+    paper_execution: true
+    real_exchange: false
+    watchbot_project: offline_contract
+    observed_at: '2026-11-06T07:38:00+08:00'
   interfaces:
     active: 9
     planned: []
@@ -165,14 +180,16 @@ status:
     active: 4
     planned: []
   data_refs: 5 active + d1_decisions planned + training_episode planned
-  training_api: active（只读 /api/d1/training/episodes；缺数据 data_unavailable）
-  training_page: active（只读 /d1/training → portal/d1_training.html；2026-11-04 F6b；接线生效需维护窗口重启 portal_api 换血）
-  war_room_snapshot: active（只读 /api/war-room/snapshot；envelope war_room/v1；F1d 2026-11-04；registry 32 接口登记）
-  source: IFS v1 + WIRE 2026-11-03 集成 + schtasks + portal_api 实测 + Q2 证据 2026-11-04 + F5 training API 2026-11-04 + F6b training page 2026-11-04 + F1d war_room registry 2026-11-04
+  training_api: active（只读 /api/d1/training/episodes；缺数据 data_unavailable；2026-11-06 GET 200 复核）
+  training_page: active（只读 /d1/training → portal/d1_training.html；2026-11-04 F6b 落地；2026-11-06 未认证入口返回登录壳）
+  war_room_snapshot: active（只读 /api/war-room/snapshot；envelope war_room/v1；F1d 2026-11-04；interface registry 38 接口登记）
+  source: IFS v1 + WIRE 2026-11-03 集成 + schtasks + portal_api 实测 + Q2 证据 2026-11-04 + F5 training API 2026-11-04 + F6b training page 2026-11-04 + F1d war_room registry 2026-11-04 + P0-00 基线 2026-11-06
   gaps_doc: docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md
   q2_evidence: docs/plans/2026-11-04_D1_Q2验收证据_v1.md
   health_probe:
-    tool: manual-readonly-probe（tools/q2_probe.py 暂无 d1 target，接线请求 R1）
+    tool: tools/q2_probe.py --composition lusu-d1-flow --json
+    mode: single_probe
+    window: not_measured
     endpoints:
     - http://127.0.0.1:8091/api/health
     - http://127.0.0.1:8091/health
@@ -181,28 +198,110 @@ status:
     - http://127.0.0.1:8091/api/d1/handoffs
     - http://127.0.0.1:8091/api/d1/meeting
     - http://127.0.0.1:8091/api/d1/watch-plans
-    - http://127.0.0.1:8734/api/d1/research
-    last_checked: '2026-11-04T02:25:51+08:00'
+    - http://127.0.0.1:8091/api/d1/training/episodes
+    last_checked: '2026-11-06T07:38:00+08:00'
     last_result: ok_8_of_8
-    evidence: docs/plans/2026-11-04_D1_Q2探针原始结果_v1.json
+    evidence: deliverables/d1_q2/20261106/q2_probe_raw.json
   slo_alert:
-    tool: planned（tools/q2_slo_alert.py 暂无 d1 target；接线请求 R2）
+    tool: tools/q2_slo_alert.py --composition lusu-d1-flow --json
     owner: D1/ARCH1
     targets_ref: docs/standards/INTERFACE_REGISTRY_v1.yaml（D1 接口 SLO：p95 100–1500ms / error 0.001–0.02 / availability 0.99–1.0）
-    last_checked: null
+    window: '2026-11-07T00:00:00+08:00/2026-11-14T00:00:00+08:00'
+    last_checked: '2026-11-06T07:38:00+08:00'
     last_result: not_measured（仅 5 样本探针延迟，无窗口 p95/错误率/可用性）
+    evidence: deliverables/d1_q2/20261106/q2_slo_raw.json
+    report_planned: deliverables/d1_q2_slo_7d_20261114.json / .md
   rollback:
     steps:
     - 回退 manifest/registry 到上一版（git revert 本证据提交与 WO-IFS-WIRE/IFS-COMP 声明提交；registry 同批）
     - 摘除入口：暂停 8091 /api/d1/* 对 8734 的暴露（Lead 接线层操作，不自行停服务），保留只读审计
     - 恢复数据读取：D1 文件/账本只读快照为准，停止写；重跑 dataset resolve-ref 校验
-    - 验证：tools/q2_probe.py（待含 d1 target）+ composition.py validate --all --strict + D1 单测 21 passed
-    last_drilled: pending（2026-11-16 前需演练一次；本单未真回滚生产，仅静态前置核验）
+    - 验证：tools/q2_probe.py --composition lusu-d1-flow + composition.py validate --all --strict + D1 单测 45 passed
+    last_result: 'full drill pass（2026-11-07T20:30:56+08:00：8734 上 /d1 UI + /api/d1/* 全入口摘除；8091 直连 API 保持 200；66.9s 恢复；非生产故障演练，不重启服务）+ war-room 单接口补测 pass（2026-11-07T21:30:55+08:00，75.1s，9/9 active D1 接口入口矩阵补齐）'
+    last_dryrun: '2026-11-06T07:24:47+08:00'
+    last_drilled: '2026-11-07T20:30:56+08:00'
+    evidence: deliverables/d1_q2/20261107/P0-03_完整入口演练_回执.md + deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/drill_result.json + .../timeline.log + deliverables/d1_q2/20261107/P0-03_war_room补测_回执.md + .../P0-03_war_room_drill_20261107_2130/drill_result.json
     static_prechecks: 目标提交存在（4788b1527/e15cc824b/HEAD b11cda7c2）/变更文件清单可列/回滚前 validate rc=0
+    ui_drill:
+      window: '2026-11-07T19:00:12+08:00/2026-11-07T19:01:20+08:00'
+      scope: 'UI-only：/d1、/d1/、/d1/research、/d1/war-room、/d1/training、/d1/q2/signoff；/api/d1/* 未摘'
+      result: pass
+      elapsed_seconds: 68.5
+      restored: true
+      data_unchanged: true
+      api_untouched: true
+      evidence: deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/drill_result.json
+      console_log: deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/execute_console.log
+      approval: deliverables/d1_q2/20261107/P0-03_drill_approval_1900.md
+      approval_file_sha256: 72a11cf6fa2c675c6fdb547bb05b97f69ca9d92e1df4e702a276c7cdbbfe9f33
+    full_drill:
+      window: '2026-11-07T20:29:49+08:00/2026-11-07T20:30:56+08:00'
+      scope: '8734：/d1 UI 8 条 + /api/d1/* 8 条；8091 内部 API 不摘'
+      result: pass
+      elapsed_seconds: 66.9
+      restored: true
+      data_unchanged: true
+      api_untouched: true
+      nginx_sha256_after: 5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac
+      ui_routes_503: 8
+      api_routes_503: 8
+      direct_8091_api_200: true
+      health_200: true
+      evidence: deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/drill_result.json
+      baseline: deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/baseline_before.json
+      timeline: deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/timeline.log
+      approval: deliverables/d1_q2/20261107/P0-03_drill_approval_2030.md
+      approval_file_sha256: 1bb0faa83be775337d10b56a01a9ef623e70b5c9e4ad07840d953ef4bdd83aea
+      result_file_sha256: c5ecbe1bfb443d9dde2daa664e0d13802cc6705ced05c33d0f9e00f1d18f120e
+      note: '仅 8734 暴露摘除；未停 8091/8789/Watch，不写数据；完整 API 摘除验收以此窗口为准'
+    war_room_drill:
+      window: '2026-11-07T21:29:40+08:00/2026-11-07T21:30:55+08:00'
+      scope: '8734：/api/war-room/snapshot 单接口（含 query）；8091 直连不摘'
+      result: pass
+      elapsed_seconds: 75.1
+      restored: true
+      data_unchanged: true
+      target_503: true
+      query_503: true
+      direct_8091_200: true
+      d1_api_200: true
+      health_200: true
+      d1_status: 302
+      nginx_sha256_after: 5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac
+      evidence: deliverables/d1_q2/20261107/P0-03_war_room补测_回执.md
+      result_file: deliverables/d1_q2/20261107/P0-03_war_room_drill_20261107_2130/drill_result.json
+      baseline: deliverables/d1_q2/20261107/P0-03_war_room_drill_20261107_2130/baseline_before.json
+      timeline: deliverables/d1_q2/20261107/P0-03_war_room_drill_20261107_2130/timeline.log
+      approval: deliverables/d1_q2/20261107/P0-03_war_room_drill_20261107_2130/approval.md
+      approval_file_sha256: 9985e7c08ca227797ec472abc76a7a67ee63a752574fe472e40ac6e896c07de8
+      result_file_sha256: 381ef01d30e55b6d43c611db9c8950ed4b6a9c3af3c9025533c5b56e4488131c
+      note: 'P0-03 第 9 个 active 接口的单独补测；不改写完整 last_drilled，不冒充进程级故障演练'
   contract_test:
-    unit: portal/tests/test_api_d1_{research,decision,meeting,handoff}.py + 2 UI = 21 passed（2026-11-04）
-    fast_gate: portal/tests 目录在 fast 门内 → D1 单测与 portal/tests/test_ifs_wire_chain.py（1 passed）已入闸
-    ifs_registry: docs/standards/INTERFACE_REGISTRY_v1.yaml 31 interfaces（d1.* 9，owner D1 12）；契约测试 109 passed
-    gaps: envelope/schema_version/request_id/幂等/auth/e2e 未覆盖；agent_platform/tests/test_ifs_{handoff,paper_chain}.py 与 tools/tests/test_interface_* 当前不在 fast 门（df25b0c13 回钉后未复原）
-    evidence: docs/plans/2026-11-04_D1_Q2验收证据_v1.md §四
-  last_verified: '2026-11-04'
+    unit: 'portal/tests D1 契约/幂等/e2e/UI 共 15 文件 = 161 collected: 158 passed, 2 xfailed strict, 1 skipped（2026-11-07 P0-04 复跑；9 接口，含 war-room 契约测试）'
+    fast_gate: portal/tests 目录在 fast 门内 → D1 契约/幂等/e2e/UI 随 portal 套件入闸；P0-04 守卫 portal/tests/test_p0_04_contract_gate.py（5 用例，1 个受控负控正常 skip）；fast gate rc=0（2026-11-07T14:55:46+08:00，worktree HEAD 2c7f4a6de + 本单未提交变更；提交后以提交号绑定）
+    ifs_registry: docs/standards/INTERFACE_REGISTRY_v1.yaml 38 interfaces（d1.* 9，owner D1 12）；P0-04 纳入 war-room 契约测试 test_api_war_room_envelope.py（16 passed），15 文件 161 collected
+    gaps: 'G2 403 响应仍是 portal_api legacy dict（严格 xfail，F1c 前不冒充通过）；D1 写接口无 idempotency_key/idempotent_replay（同 decision_id 第二次提交 400 duplicate_decision，未按 IFS 返回 200 原记录+warning，严格 xfail）；agent_platform/tests/test_ifs_{handoff,paper_chain}.py 与 tools/tests/test_interface_* 仍不在 fast 门（df25b0c13 回钉后未复原）；G1 的 Idempotent-Key 重放/409/坏键由 test_ifs_idempotency.py 覆盖，但该 IFS 200 原记录语义仍是上一条严格 xfail 缺口'
+    evidence: deliverables/d1_q2/20261107/P0-04_契约测试入闸与负控.md + P0-04_fast_gate.txt + P0-04_test_count_baseline.json + P0-04_QA1复核签字页.html
+    p0_04:
+      status: pass
+      fast_gate_rc: 0
+      fast_gate_at: '2026-11-07T14:55:46+08:00'
+      fast_gate_log: deliverables/d1_q2/20261107/P0-04_fast_gate.txt
+      negative_control: pass
+      negative_control_rc: 1
+      negative_control_log: deliverables/d1_q2/20261107/P0-04_negative_control.txt
+      test_count: 161
+      test_passed: 158
+      test_xfailed: 2
+      test_skipped: 1
+      qa1_review: pass
+      qa1_reviewer: QA1 于禁（AI 复核位；非独立外部/真人签字）
+      qa1_reviewed_at: '2026-11-07T15:37:00+08:00'
+      qa1_review_note: 第一轮 B1/N1-N4 已关闭；独立外部 QA1 代理未返回，本结论为 AI QA1 复核位本地只读复核，不替代老田最终确认
+      evidence: deliverables/d1_q2/20261107/P0-04_契约测试入闸与负控.md + P0-04_fast_gate.txt + P0-04_negative_control.txt + P0-04_QA1复核签字页.html + P0-04_QA1复核记录.md
+  state_check:
+    tool: tools/d1_q2_state_check.py --json
+    status: pass
+    last_run: '2026-11-07T21:37:31+08:00'
+    acceptance: P0-01
+  last_verified: '2026-11-07'

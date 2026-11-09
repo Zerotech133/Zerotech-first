@@ -69,7 +69,12 @@ def last_hash(path=None):
     return h
 
 
-def existing_keys(path=None):
+def existing_keys(path=None, action=None):
+    """读取幂等键；action 非空时只返回该 action 的 (date, symbol)。
+
+    close 需要允许在当天已有 buy/hold 记录后再平仓，因此 close 的
+    幂等键按 action 过滤，避免把“同日已建仓”误判为“已平仓”。
+    """
     path = path or DEFAULT_LEDGER
     out = set()
     if not os.path.exists(path):
@@ -78,6 +83,8 @@ def existing_keys(path=None):
         for line in f:
             try:
                 r = json.loads(line)
+                if action is not None and r.get("action") != action:
+                    continue
                 out.add((r.get("date"), r.get("symbol")))
             except ValueError:
                 continue
@@ -106,16 +113,63 @@ def _nav(state):
     return round(nav, 6)
 
 
+def _marked_value(positions):
+    """按 last/entry 计算持仓市值（以初始 1.0 资金为单位）。"""
+    value = 0.0
+    for p in (positions or {}).values():
+        entry = float(p.get("entry_price") or 0.0)
+        last = float(p.get("last_price") or entry or 1.0)
+        value += float(p.get("weight") or 0.0) * ((last / entry) if entry > 0 else 1.0)
+    return value
+
+
+def mark_to_market(state, prices, date=None):
+    """每日 mark：只更新持仓 last_price/nav；空仓时 no-op。
+
+    空仓（positions 为空）直接返回、不改变 nav，避免把已实现盈亏
+    再按现金权重计一次（双重计价）。返回 {marked, flat, nav, state}。
+    """
+    positions = state.get("positions") or {}
+    if not positions:
+        return {"marked": 0, "flat": True, "nav": state.get("nav"), "state": state}
+    marked = 0
+    for symbol, price in (prices or {}).items():
+        pos = positions.get(symbol)
+        if not isinstance(pos, dict):
+            continue
+        try:
+            px = float(price)
+        except (TypeError, ValueError):
+            continue
+        if px <= 0:
+            continue
+        pos["last_price"] = px
+        pos["updated_at"] = date or datetime.now().strftime("%Y-%m-%d")
+        marked += 1
+    state["nav"] = _nav(state)
+    state["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return {"marked": marked, "flat": False, "nav": state["nav"], "state": state}
+
+
 def apply_decision(decision, gate, state, date, ledger_path=None, seen=None):
     """应用一条决策；返回 {record, duplicate, state}。不真实下单。"""
     symbol = str(decision.get("symbol") or "")
-    seen = seen if seen is not None else existing_keys(ledger_path)
+    action = gate.get("action")
     key = (date, symbol)
-    if key in seen:
-        return {"duplicate": True, "record": None, "state": state}
+    if action == "close":
+        seen = existing_keys(ledger_path, action="close")
+        if key in seen:
+            return {"duplicate": True, "record": None, "state": state}
+    else:
+        seen = seen if seen is not None else existing_keys(ledger_path)
+        if key in seen:
+            return {"duplicate": True, "record": None, "state": state}
     positions = state.setdefault("positions", {})
     before = float((positions.get(symbol) or {}).get("weight") or 0.0)
-    action = gate.get("action")
+    nav_before = _nav(state)
+    realized_pnl_pct = None
+    realized_pnl_nav = None
+    close_price = None
     if action == "buy":
         after = float(gate.get("target_weight") or 0.0)
         pos = positions.get(symbol) or {}
@@ -134,13 +188,39 @@ def apply_decision(decision, gate, state, date, ledger_path=None, seen=None):
         }
     elif action == "close":
         after = 0.0
-        positions.pop(symbol, None)
+        pos = positions.pop(symbol, None)
+        if pos:
+            close_price = float(decision.get("price_at_decision")
+                                or pos.get("last_price")
+                                or pos.get("entry_price") or 0.0)
+            entry = float(pos.get("entry_price") or 0.0)
+            if entry > 0 and close_price > 0:
+                realized_pnl_pct = round((close_price / entry - 1.0) * 100.0, 4)
+                realized_pnl_nav = round(before * (close_price / entry - 1.0), 6)
+            state["last_close"] = {
+                "symbol": symbol,
+                "price": close_price,
+                "entry_price": entry,
+                "weight": round(before, 6),
+                "realized_pnl_pct": realized_pnl_pct,
+                "realized_pnl_nav": realized_pnl_nav,
+                "closed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "reason": decision.get("reason") or gate.get("reason") or "close",
+            }
     else:
         after = before
         if symbol in positions and decision.get("price_at_decision"):
             positions[symbol]["last_price"] = float(decision["price_at_decision"])
-    state["cash_weight"] = round(max(0.0, 1.0 - sum(
-        float(p.get("weight") or 0.0) for p in positions.values())), 6)
+    if action == "close":
+        old_cash = float(state.get("cash_weight") or 0.0)
+        cash = old_cash
+        if close_price and close_price > 0:
+            entry = float((state.get("last_close") or {}).get("entry_price") or 0.0)
+            if entry > 0:
+                cash += before * (close_price / entry)
+        state["cash_weight"] = round(max(0.0, cash), 6)
+    else:
+        state["cash_weight"] = round(max(0.0, nav_before - _marked_value(positions)), 6)
     state["nav"] = _nav(state)
     state["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     rec = {
@@ -155,10 +235,13 @@ def apply_decision(decision, gate, state, date, ledger_path=None, seen=None):
         "target_weight": gate.get("target_weight"),
         "weight_before": round(before, 6),
         "weight_after": round(after, 6),
-        "price": decision.get("price_at_decision"),
+        "price": close_price if close_price is not None else decision.get("price_at_decision"),
         "industry": gate.get("industry"),
         "risk_level": gate.get("risk_level"),
         "reasons": gate.get("reasons") or [],
+        "realized_pnl_pct": realized_pnl_pct,
+        "realized_pnl_nav": realized_pnl_nav,
+        "close_reason": decision.get("reason") or gate.get("reason"),
         "nav": state["nav"],
         "mode": "paper",
         "trading_permitted": False,

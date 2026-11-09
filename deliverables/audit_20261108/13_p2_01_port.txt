@@ -1,0 +1,24 @@
+# 8870 监听/连通性证据（只读）
+captured_at: 2026-11-08 10:25:03 +08:00
+
+[netstat]
+TCP    127.0.0.1:8870    0.0.0.0:0    LISTENING    62340
+
+[Get-NetTCPConnection]
+LocalAddress=127.0.0.1  LocalPort=8870  State=Listen  OwningProcess=62340  RemoteAddress=0.0.0.0
+此外观察到本机回环 Established/TimeWait 连接，均来自 127.0.0.1 侧，无 0.0.0.0 对外监听。
+
+[TCP probe]
+Test-NetConnection 127.0.0.1 -Port 8870 -> TcpTestSucceeded=True
+
+[HTTP probe]
+GET http://127.0.0.1:8870/ -> 200 OK
+server: uvicorn
+content-type: text/html; charset=utf-8
+content-length: 74356
+GET http://127.0.0.1:8870/api/overview -> 200, 1531 bytes（未携带 X-Console-Token）
+
+[check_ports.py --strict]
+10:23 首次检查：8870 由 python.exe 监听，启动 28.5m < 30m，判瞬态（strict 告警放行）；8001/8897 未登记，STRICT FAIL。
+10:25 复查：8870 已越过 30m 瞬态阈值，转入“未登记监听”；与 8001、8897 合计未登记 3，冲突 0，STRICT FAIL。
+结论：8870 当前是真实的未登记常驻监听，不是一次短暂瞬态。

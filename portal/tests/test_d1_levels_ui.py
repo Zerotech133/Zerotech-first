@@ -11,7 +11,6 @@
 import importlib.util
 import json
 import sys
-import urllib.request
 from pathlib import Path
 
 import pytest
@@ -20,6 +19,8 @@ PORTAL = Path(__file__).resolve().parent.parent
 REPO = PORTAL.parent
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(PORTAL))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 DONE_CODES = ["002531", "001286", "001388", "002112", "002712"]
 PENDING_CODES = ["002840", "002841", "003007", "300017", "300251", "600011",
@@ -172,7 +173,7 @@ def test_pending_with_legacy_fallback_not_shown_as_technical(monkeypatch):
 def test_live_api_level_contract_or_skip():
     """portal 8091 在线时校验真实数据同一契约；不可达则 skip（不依赖真实行情）。"""
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8091/api/d1/research",
+        with safe_urlopen("http://127.0.0.1:8091/api/d1/research",
                                     timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except Exception:  # noqa: BLE001 端口未起/超时/非 JSON → 跳过，不阻断离线门

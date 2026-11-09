@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""IFS v1 端到端链路回归：handoff v2 → watch_plan → confirmation → paper receipt 四 ID。
+"""IFS v1 端到端链路回归：decision → handoff v2 → watch_plan → confirmation → paper receipt 四 ID。
 
-测试全程 tmp 目录，不读写生产账本/paper/pool。
+decision 先在 tmp 账本真实落一条，再把其 decision_id 带入 handoff；测试全程 tmp 目录，
+不读写生产账本/paper/pool。
 """
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from agent_platform import d1_decision as D  # noqa: E402
 from agent_platform import d1_handoff as H  # noqa: E402
 from agent_platform import watch_plan_consumer as C  # noqa: E402
 from agent_platform import trading_bot_flow as flow  # noqa: E402
@@ -31,10 +33,26 @@ def _hermetic_trigger_ledger(monkeypatch):
 
 
 EXPIRES = "2099-01-01T00:00:00+08:00"
-DECISION = "d1-20261103080000-abcdef"
 
 
-def _payload(plan_id="wp-e2e-001"):
+def _create_decision(tmp_path):
+    """真实落一条 D1 decision，返回其 decision_id；不碰生产账本。"""
+    row = D.append_decision(
+        {
+            "code": "600519.SH",
+            "name": "贵州茅台",
+            "tier": "BUY",
+            "confidence": 0.7,
+            "rationale": "IFS e2e：回抽不破中枢，paper-only 交盯盘观察",
+            "evidence": ["e2e"],
+            "paper_only": True,
+        },
+        ledger=tmp_path / "d1_decisions.jsonl",
+    )
+    return row["decision_id"]
+
+
+def _payload(plan_id="wp-e2e-001", decision_id=None):
     return {
         "schema": "d1_handoff/v2",
         "code": "600519.SH",
@@ -45,7 +63,7 @@ def _payload(plan_id="wp-e2e-001"):
         "buy_zone": [1480.0, 1520.0],
         "stop_loss": 1400.0,
         "trigger": "回踩 1480-1520 且缩量",
-        "decision_id": DECISION,
+        "decision_id": decision_id,
         "paper_only": True,
         "watch_plans": [
             {
@@ -72,14 +90,17 @@ def test_handoff_to_paper_receipt_has_four_ids(tmp_path):
     state = tmp_path / "paper_state.json"
     paper_ledger = tmp_path / "paper_ledger.jsonl"
 
-    row = H.append_handoff(_payload(), ledger=handoff_ledger)
+    decision_id = _create_decision(tmp_path)
+    row = H.append_handoff(_payload(decision_id=decision_id), ledger=handoff_ledger)
     consumed = C.consume_handoff(row, path=plan_ledger)
     assert consumed["armed"] == 1
     plan = consumed["plans"][0]
     assert plan["status"] == "armed"
 
+    trigger_ledger = tmp_path / "watch_triggers.jsonl"
     triggered = C.trigger_plan("wp-e2e-001", path=plan_ledger,
-                               data_dir=str(bot_dir))
+                               data_dir=str(bot_dir),
+                               trigger_ledger=str(trigger_ledger))
     confirmation = triggered["confirmation"]
     assert confirmation["status"] == "pending"
     cid = confirmation["confirmation_id"]
@@ -92,7 +113,7 @@ def test_handoff_to_paper_receipt_has_four_ids(tmp_path):
         receipts_path=str(tr.receipts_path(str(bot_dir))),
     )
     ids = executed["ids"]
-    assert ids["decision_id"] == DECISION
+    assert ids["decision_id"] == decision_id
     assert ids["handoff_id"] == row["receipt_id"]
     assert ids["watch_plan_id"] == "wp-e2e-001"
     assert ids["confirmation_id"] == cid
@@ -103,7 +124,7 @@ def test_handoff_to_paper_receipt_has_four_ids(tmp_path):
     receipts = tr.read_receipts(tr.receipts_path(str(bot_dir)))
     assert len(receipts) == 1
     rids = receipts[0]["ids"]
-    assert rids["decision_id"] == DECISION
+    assert rids["decision_id"] == decision_id
     assert rids["handoff_id"] == row["receipt_id"]
     assert rids["watch_plan_id"] == "wp-e2e-001"
     assert rids["confirmation_id"] == cid

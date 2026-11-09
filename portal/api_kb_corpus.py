@@ -18,6 +18,11 @@ from pathlib import Path
 
 import numpy as np
 
+try:  # 与 portal 其他模块一致的导入兜底（包内/脚本两种入口）
+    from safe_urlopen import safe_urlopen
+except ImportError:  # pragma: no cover
+    from portal.safe_urlopen import safe_urlopen
+
 PACKED = Path(r"C:\项目\知识库\50_RAG\packed")
 OLLAMA = "http://127.0.0.1:11434"
 EMBED_MODEL = "bge-m3:latest"
@@ -44,7 +49,7 @@ def _load() -> dict:
 def _post(path: str, payload: dict, timeout: int = 180) -> dict:
     req = urllib.request.Request(OLLAMA + path, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with safe_urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 

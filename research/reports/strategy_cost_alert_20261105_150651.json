@@ -1,0 +1,21 @@
+{
+ "schema_version": "strategy_cost_alert.v1",
+ "generated_at": "2026-11-05T15:06:51+08:00",
+ "strategy": "neutralized_book_to_market_60d",
+ "cost_source": "cli",
+ "cost_curve": "research/reports/portfolio_bm_pit_l2_cost200_covfix_20261105.json",
+ "action_required": true,
+ "period_days": 60,
+ "cost_bp": 120.0,
+ "threshold_bp": 100.0,
+ "breakeven_bp": 198.0,
+ "headroom_bp": 78.0,
+ "status": "warning",
+ "severity": "warning",
+ "capacity_review_required": true,
+ "estimated_ann_return": 0.009027,
+ "estimated_ann_return_note": "linear_interpolation",
+ "message": "实盘成本 120.0bp 超过 100bp 阈值，距 60 日盈亏平衡约 78.0bp；建议重评容量/换手/执行方式。",
+ "alert_text": "【60日策略成本阈值告警】WARNING\n实盘成本：120.0bp（来源：cli）\n阈值：100bp；盈亏平衡：198bp；剩余空间：78.0bp\n60d 历史成本曲线插值年化：0.90%\n结论：实盘成本 120.0bp 超过 100bp 阈值，距 60 日盈亏平衡约 78.0bp；建议重评容量/换手/执行方式。\n本告警仅研究口径，不构成投资建议，不自动暂停策略。",
+ "report_path": "C:\\项目\\老田的AI助手\\research\\reports\\strategy_cost_alert_20261105_150651.json"
+}

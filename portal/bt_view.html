@@ -412,6 +412,220 @@ function drawTrades(){
     }).join(''):'<tr><td colspan="6" class="dim">窗口内无离散交易</td></tr>')+'</tbody>';
 }
 boot();
+/* R4-C CATALOG BEGIN · 双通道状态机 + 258 表只读目录（照 static/dw.html:612-770 / dataops.html:493-630 统一模式） */
+/* 实时优先、失败静默回落；全部 r4c- 命名空间；同源相对路径；动态值经 esc() 防 XSS。 */
+var R4C_LIVE=null, R4C_STATE='unknown';
+function r4cTimeoutSignal(){
+  if(typeof AbortSignal!=='undefined' && typeof AbortSignal.timeout==='function') return AbortSignal.timeout(3000);
+  if(typeof AbortController!=='undefined'){var ac=new AbortController();setTimeout(function(){ac.abort();},3000);return ac.signal;}
+  return undefined;
+}
+/* 按状态设置标记，并隐藏/恢复「实时通道未就绪」提示（browser_review §3 缺陷 2，务必不重犯） */
+function r4cSetState(t){
+  var f=document.getElementById('r4c-flag'); if(f) f.textContent=t;
+  var n=document.getElementById('r4c-notice'); if(!n) return;
+  if(t==='catalog 实时'){ n.classList.add('r4c-hidden'); n.style.display='none'; }
+  else { n.classList.remove('r4c-hidden'); n.style.display=''; }
+}
+async function probeCatalog(){
+  R4C_STATE='unknown'; R4C_LIVE=null;
+  try{
+    var r=await fetch('/api/data/catalog/tables?detail=brief',{cache:'no-store',signal:r4cTimeoutSignal()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var live=await r.json();
+    if(!live || live.ok!==true || !(live.total>0)) throw new Error('bad payload');
+    R4C_LIVE=live; R4C_STATE='live';
+    r4cSetState('catalog 实时');
+  }catch(e){
+    /* 静默回落：404/401/502/超时/网络/JSON 错一律不 console.error、不 alert、不抛未捕获异常 */
+  }
+  if(R4C_STATE!=='live'){
+    R4C_STATE='snapshot'; R4C_LIVE=null;
+    r4cSetState('catalog 静态快照');
+  }
+  r4cRenderTableList();
+  return R4C_STATE==='live';
+}
+/* 轻量样式（仅 r4c- 命名空间，随脚本注入，不改页面既有 style） */
+function r4cInjectCss(){
+  var css='.r4c-box{border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:16px 0;background:var(--bg-raised);font-size:12px}'+
+    '.r4c-box>summary{cursor:pointer;list-style:none;font-weight:700;font-size:14px}'+
+    '.r4c-box>summary::-webkit-details-marker{display:none}'+
+    '.r4c-box>summary::before{content:"▸";color:var(--text-dim);margin-right:6px}'+
+    '.r4c-box[open]>summary::before{content:"▾"}'+
+    '.r4c-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}'+
+    '.r4c-bar input,.r4c-bar select{background:var(--bg-surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:12px}'+
+    '.r4c-flag{font-size:11px;border-radius:6px;padding:2px 8px;background:var(--gray-3);color:var(--text-dim);margin-left:8px}'+
+    '.r4c-note{font-size:11.5px;color:var(--color-warn);margin:8px 0}'+
+    '.r4c-muted{color:var(--text-dim);font-size:11.5px}'+
+    '.r4c-tbl,.r4c-kv{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums}'+
+    '.r4c-tbl th,.r4c-tbl td,.r4c-kv th,.r4c-kv td{border-bottom:1px solid var(--border-weak);padding:4px 6px;text-align:left}'+
+    '.r4c-tbl th,.r4c-kv th{color:var(--text-dim);background:var(--bg-surface)}'+
+    '.r4c-row{cursor:pointer}.r4c-row:hover{background:var(--bg-surface)}'+
+    '.r4c-scroll{max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:6px}'+
+    '.r4c-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:99;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}'+
+    '.r4c-modal-card{background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;max-width:960px;width:100%;padding:16px 18px;color:var(--text)}'+
+    '.r4c-modal-card h3{margin:0 0 4px;font-size:15px}'+
+    '.r4c-h4{font-size:13px;color:var(--acc);margin:10px 0 6px}'+
+    '.r4c-close{float:right;cursor:pointer;border:1px solid var(--border);border-radius:6px;background:var(--bg-surface);color:var(--text);padding:2px 10px}'+
+    '.r4c-hidden{display:none}';
+  var st=document.createElement('style'); st.setAttribute('data-r4c','1'); st.textContent=css;
+  document.head.appendChild(st);
+}
+/* 可折叠只读区块（失败时只留「实时通道未就绪」提示，不改既有页面渲染） */
+function r4cBuildUI(){
+  if(document.getElementById('r4c-box')) return;
+  var host=document.querySelector('.wrap')||document.body;
+  var box=document.createElement('details'); box.className='r4c-box'; box.id='r4c-box'; box.open=true;
+  box.innerHTML=
+    '<summary>数据目录（catalog 逻辑表 · 只读）<span class="r4c-flag" id="r4c-flag">检测中</span></summary>'+
+    '<div class="r4c-note" id="r4c-notice">实时通道未就绪（待 8091 自然重启）</div>'+
+    '<div id="r4c-wrap">'+
+      '<div class="r4c-bar">'+
+        '<input id="r4c-search" type="text" placeholder="关键词搜索表名 / 描述" size="28">'+
+        '<select id="r4c-source"><option value="">全部源</option></select>'+
+        '<span class="r4c-muted" id="r4c-count"></span>'+
+      '</div>'+
+      '<div class="r4c-scroll"><table class="r4c-tbl"><thead><tr>'+
+        '<th>表名</th><th>源</th><th>频率</th><th>新鲜度</th><th>行数</th><th>状态</th>'+
+      '</tr></thead><tbody id="r4c-body"></tbody></table></div>'+
+    '</div>'+
+    '<div id="r4c-modal" class="r4c-modal r4c-hidden">'+
+      '<div class="r4c-modal-card">'+
+        '<button class="r4c-close" id="r4c-close" type="button">关闭</button>'+
+        '<h3 id="r4c-modal-title"></h3>'+
+        '<div class="r4c-muted" id="r4c-modal-sub"></div>'+
+        '<div id="r4c-modal-body"></div>'+
+      '</div>'+
+    '</div>';
+  host.appendChild(box);
+  var s=document.getElementById('r4c-search'); if(s) s.addEventListener('input',r4cApplyFilter);
+  var sel=document.getElementById('r4c-source'); if(sel) sel.addEventListener('change',r4cApplyFilter);
+  var c=document.getElementById('r4c-close'); if(c) c.onclick=r4cCloseModal;
+  var m=document.getElementById('r4c-modal');
+  if(m) m.addEventListener('click',function(ev){if(ev.target===m) r4cCloseModal();});
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape') r4cCloseModal();});
+}
+function r4cRenderTableList(){
+  var wrap=document.getElementById('r4c-wrap'),body=document.getElementById('r4c-body'),
+      sel=document.getElementById('r4c-source'),count=document.getElementById('r4c-count'),
+      notice=document.getElementById('r4c-notice');
+  if(!wrap||!body||!sel) return;
+  var live=R4C_LIVE;
+  if(!live||!Array.isArray(live.items)||!live.items.length){
+    wrap.classList.add('r4c-hidden');
+    if(notice){ notice.classList.remove('r4c-hidden'); notice.style.display=''; notice.textContent='实时通道未就绪（待 8091 自然重启）'; }
+    if(count) count.textContent='';
+    return;
+  }
+  wrap.classList.remove('r4c-hidden');
+  if(notice){ notice.classList.add('r4c-hidden'); notice.style.display='none'; }
+  var sources=Object.keys(live.by_source||{}).sort();
+  var cur=sel.value, stamp=String(live.version)+':'+sources.length;
+  if(sel.getAttribute('data-built')!==stamp){
+    sel.innerHTML='<option value="">全部源</option>'+
+      sources.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+' ('+Number(live.by_source[s]||0)+')</option>';}).join('');
+    sel.setAttribute('data-built',stamp);
+    if(sources.indexOf(cur)>=0) sel.value=cur;
+  }
+  r4cApplyFilter();
+}
+function r4cApplyFilter(){
+  var live=R4C_LIVE,body=document.getElementById('r4c-body'),count=document.getElementById('r4c-count');
+  if(!live||!body) return;
+  var q=String((document.getElementById('r4c-search')||{}).value||'').trim().toLowerCase();
+  var src=String((document.getElementById('r4c-source')||{}).value||'');
+  var items=Array.isArray(live.items)?live.items:[];
+  var rows=items.filter(function(it){
+    if(src && it.source!==src) return false;
+    if(q && !(String(it.name||'').toLowerCase().indexOf(q)>=0||String(it.desc||'').toLowerCase().indexOf(q)>=0)) return false;
+    return true;
+  });
+  if(count) count.textContent='共 '+rows.length+' / '+items.length+' 表';
+  body.innerHTML=rows.map(function(it){
+    var name=String(it.name||'');
+    var st=it.deprecated?'已废弃':(it.verification_status||it.lifecycle||'—');
+    return '<tr class="r4c-row" data-tname="'+esc(name)+'">'+
+      '<td><b>'+esc(name)+'</b></td>'+
+      '<td>'+esc(it.source||'—')+'</td>'+
+      '<td>'+esc(it.freq||'—')+'</td>'+
+      '<td>'+esc(it.freshness==null?'—':it.freshness)+'</td>'+
+      '<td>'+esc(it.rows==null?'—':it.rows)+'</td>'+
+      '<td>'+esc(st)+'</td></tr>';
+  }).join('');
+  Array.prototype.forEach.call(body.querySelectorAll('tr[data-tname]'),function(tr){
+    tr.onclick=function(){r4cOpenTableDetail(tr.getAttribute('data-tname'));};
+  });
+}
+async function r4cOpenTableDetail(name){
+  var title='表详情 · '+name;
+  r4cShowModal(title,esc(name),'<div class="r4c-muted">加载中…</div>');
+  try{
+    var r=await fetch('/api/data/catalog/table?name='+encodeURIComponent(name)+'&limit=20',{cache:'no-store',signal:r4cTimeoutSignal()});
+    var d=null; try{ d=await r.json(); }catch(e){ d=null; }
+    if(!r.ok || !d || d.ok!==true){
+      var reason=(d&&(d.reason||d.message||d.error))||('HTTP '+r.status);
+      r4cShowModal(title,esc(name),'<div class="r4c-note">'+esc(reason)+'</div>');
+      return;
+    }
+    r4cShowModal(title,esc(d.resolved||d.name),r4cTableDetailHtml(d));
+  }catch(e){
+    r4cShowModal(title,esc(name),'<div class="r4c-note">'+esc(e&&e.message?e.message:String(e))+'</div>');
+  }
+}
+function r4cKv(k,v){return '<tr><th>'+esc(k)+'</th><td>'+v+'</td></tr>';}
+/* 弹窗正文：meta.schema[] / primary_key / sample_note / meta.freshness / clamped / limit_applied / 前 20 行，全部经 esc() */
+function r4cTableDetailHtml(d){
+  var meta=d.meta||{},cols=Array.isArray(d.columns)?d.columns:[],rows=Array.isArray(d.rows)?d.rows:[];
+  var pk=meta.primary_key==null?'—':(Array.isArray(meta.primary_key)?meta.primary_key.join(', '):meta.primary_key);
+  var h='<div class="r4c-muted">catalog v'+esc(R4C_LIVE?R4C_LIVE.version:'?')+
+    ' · '+esc(d.name)+' → '+esc(d.resolved||d.name)+' · 返回 '+esc(d.row_count==null?rows.length:d.row_count)+' 行</div>';
+  h+='<table class="r4c-kv"><tbody>'+
+    r4cKv('源',esc(meta.source||'—'))+r4cKv('频率',esc(meta.freq||'—'))+
+    r4cKv('新鲜度 freshness',esc(meta.freshness==null?'—':meta.freshness))+r4cKv('行数',esc(meta.rows==null?'—':meta.rows))+
+    r4cKv('日期列',esc(meta.date_col||'—'))+r4cKv('代码列',esc(meta.code_col||'—'))+
+    r4cKv('主键 primary_key',esc(pk))+r4cKv('状态',esc(meta.verification_status||meta.lifecycle||'—'))+
+    r4cKv('可用',d.available===false?'否':'是')+'</tbody></table>';
+  var schema=Array.isArray(meta.schema)?meta.schema:[];
+  h+='<h4 class="r4c-h4">Schema（'+schema.length+' 列）</h4>';
+  h+=schema.length?('<table class="r4c-kv"><thead><tr><th>#</th><th>列名</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
+    schema.map(function(c,i){return typeof c==='string'
+      ? '<tr><td>'+i+'</td><td>'+esc(c)+'</td><td>—</td><td>—</td></tr>'
+      : '<tr><td>'+i+'</td><td>'+esc(c.name||c.column||'')+'</td><td>'+esc(c.type||c.dtype||'—')+'</td><td>'+esc(c.desc||c.comment||'—')+'</td></tr>';}).join('')+
+    '</tbody></table>'):'<div class="r4c-muted">schema 未返回</div>';
+  h+='<h4 class="r4c-h4">样本数据（前 '+Math.min(20,rows.length)+' 行）</h4>';
+  /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
+  if(d.sample_note){h+='<div class="r4c-note">'+esc(d.sample_note)+'（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
+  /* clamped / limit_applied 一并披露，不静默截断；文案用修复后口径（见 test_round4_browser_fixes.py） */
+  if(d.clamped||d.limit_applied){h+='<div class="r4c-note">样本说明：'+
+    (d.clamped===true?'请求的 limit 超过上限，已夹至 '+esc(d.limit_applied==null?'—':d.limit_applied)+' 行；':'')+
+    'limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+' · clamped='+esc(!!d.clamped)+'。仅返回样本行，不代表全表数据。</div>';}
+  if(d.available===false){h+='<div class="r4c-note">'+esc(d.reason||'该表当前不可读')+'</div>';}
+  else if(!rows.length){h+='<div class="r4c-muted">无样本数据</div>';}
+  else{
+    var headCols=cols.length?cols:Object.keys(rows[0]||{});
+    h+='<div class="r4c-scroll"><table class="r4c-kv"><thead><tr>'+headCols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+      rows.slice(0,20).map(function(rr){return '<tr>'+headCols.map(function(c,i){return '<td>'+esc(Array.isArray(rr)?(rr[i]==null?'':rr[i]):(rr&&rr[c]!=null?rr[c]:''))+'</td>';}).join('')+'</tr>';}).join('')+
+      '</tbody></table></div>';
+  }
+  return h;
+}
+function r4cShowModal(t,s,h){
+  var m=document.getElementById('r4c-modal'); if(!m) return;
+  var ti=document.getElementById('r4c-modal-title'); if(ti) ti.textContent=t;
+  var su=document.getElementById('r4c-modal-sub'); if(su) su.innerHTML=s;
+  var bo=document.getElementById('r4c-modal-body'); if(bo) bo.innerHTML=h;
+  m.classList.remove('r4c-hidden'); m.style.display='flex';
+}
+function r4cCloseModal(){
+  var m=document.getElementById('r4c-modal'); if(!m) return;
+  m.classList.add('r4c-hidden'); m.style.display='none';
+}
+/* 与既有 load()/boot()/setInterval 链并行，不 await、不阻塞；失败静默回落 */
+r4cInjectCss();
+r4cBuildUI();
+try{ probeCatalog(); }catch(e){}
+/* R4-C CATALOG END */
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
 <!-- OS-UI-UNIFY:theme -->

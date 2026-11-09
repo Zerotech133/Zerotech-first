@@ -438,6 +438,11 @@ out = {
         "design": "K-STOCK-269 终案：池等权永在场+10日再平衡+regime 80/50/30(D-1)+缠论信号影子化；无硬止损；成本15bp",
         "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
         "price_basis": "hfq(pct_chg因子链,K-STOCK-263a)",
+        # v8 文案治理：本账本 actions 里的「建仓/减仓/卖出」是**模拟再平衡动作**，
+        # 不是对该标的的操作建议；缠论买卖点在此仅影子记录（design 已述"影子化"）。
+        # 不逐条改写动作名：那是回测事实，改了会与历史账本口径断裂。
+        "disclaimer": "纸面回测账本：建仓/减仓/卖出均为模拟再平衡动作，非投资建议；"
+                      "缠论信号仅影子记录、不驱动交易。",
     },
     "summary": summary,
     "equity_curve": equity_curve,

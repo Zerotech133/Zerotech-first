@@ -1,0 +1,21 @@
+﻿as_of,code,rule,severity,trade_date,dedupe_key,title
+2026-11-02,605258.SH,limit_move,high,2026-11-02,605258.SH|limit_move|2026-11-02,触及跌停（-10.00%）
+2026-11-02,605258.SH,new_event,high,2026-10-31,605258.SH|new_event|2026-10-31,新增事件 2 条（含风险类 2 条）
+2026-11-02,605258.SH,price_move,high,2026-11-02,605258.SH|price_move|2026-11-02,单日下跌 10.00%
+2026-11-02,600337.SH,new_event,medium,2026-10-31,600337.SH|new_event|2026-10-31,新增事件 1 条
+2026-11-02,688023.SH,price_move,medium,2026-11-02,688023.SH|price_move|2026-11-02,单日上涨 6.77%
+2026-11-02,600337.SH,data_stale,low,2026-11-05,600337.SH|data_stale|2026-11-05,数据滞后
+2026-11-02,605258.SH,data_stale,low,2026-11-05,605258.SH|data_stale|2026-11-05,数据滞后
+2026-11-02,688023.SH,data_stale,low,2026-11-05,688023.SH|data_stale|2026-11-05,数据滞后
+2026-11-03,605258.SH,new_event,high,2026-10-31,605258.SH|new_event|2026-10-31,新增事件 2 条（含风险类 2 条）
+2026-11-03,600337.SH,new_event,medium,2026-11-03,600337.SH|new_event|2026-11-03,新增事件 2 条
+2026-11-03,600337.SH,data_stale,low,2026-11-05,600337.SH|data_stale|2026-11-05,数据滞后
+2026-11-03,605258.SH,data_stale,low,2026-11-05,605258.SH|data_stale|2026-11-05,数据滞后
+2026-11-03,688023.SH,data_stale,low,2026-11-05,688023.SH|data_stale|2026-11-05,数据滞后
+2026-11-04,600337.SH,new_event,medium,2026-11-03,600337.SH|new_event|2026-11-03,新增事件 1 条
+2026-11-04,605258.SH,price_move,medium,2026-11-04,605258.SH|price_move|2026-11-04,单日上涨 6.53%
+2026-11-04,600337.SH,data_stale,low,2026-11-05,600337.SH|data_stale|2026-11-05,数据滞后
+2026-11-04,605258.SH,data_stale,low,2026-11-05,605258.SH|data_stale|2026-11-05,数据滞后
+2026-11-04,688023.SH,data_stale,low,2026-11-05,688023.SH|data_stale|2026-11-05,数据滞后
+2026-11-05,600337.SH,new_event,medium,2026-11-03,600337.SH|new_event|2026-11-03,新增事件 1 条
+2026-11-05,688023.SH,price_move,medium,2026-11-05,688023.SH|price_move|2026-11-05,单日上涨 6.21%

@@ -38,7 +38,7 @@ import datetime as dt
 import json
 import sys
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 VERSION = "v1"
 DEFAULT_DAYS = 14

@@ -1,13 +1,16 @@
-﻿# 单一任务 bot 守护（2026-10-25 老田批准"合并为单一计划任务守护"）
+# 单一任务 bot 守护（2026-10-25 老田批准"合并为单一计划任务守护"）
 # DSHBotWatchdog 每 5 分钟调用本脚本：保证恰好一个 feishu_bot_ws.py 进程。
 # 不再使用常驻 loop，避免"两个看护循环竞速各拉一个 bot"的双实例问题。
 $ErrorActionPreference = "Continue"
 
 $py_src = "C:\aios\CowAgent\venv\Scripts\python.exe"
 $bot    = "C:\aios\portal\feishu_bot_ws.py"
+$notify_bot = "C:\aios\portal\feishu_notify_bot.py"
 $log    = "C:\aios\portal\logs\feishu_bot_task.log"
 $out    = "C:\aios\portal\logs\feishu_bot_stdout.log"
 $err    = "C:\aios\portal\logs\feishu_bot_stderr.log"
+$notify_out = "C:\aios\portal\logs\feishu_notify_stdout.log"
+$notify_err = "C:\aios\portal\logs\feishu_notify_stderr.log"
 
 function Write-Log($msg) {
     $ts = Get-Date -Format "MM-dd HH:mm:ss"
@@ -29,9 +32,29 @@ if (-not $got) {
     exit 0
 }
 
+function Ensure-NotifyBot {
+    if (-not (Test-Path -LiteralPath $notify_bot)) { Write-Log "ABORT notify bot missing"; return }
+    $n = @(Get-CimInstance Win32_Process -Filter "name = 'python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like '*feishu_notify_bot.py*' })
+    if ($n.Count -gt 0) {
+        Write-Log ("notify alive pid=" + (($n | ForEach-Object { $_.ProcessId }) -join ','))
+        return
+    }
+    Write-Log "starting notify bot ..."
+    $np = Start-Process -FilePath $py_src `
+        -ArgumentList @("-u", "-X", "utf8", $notify_bot) `
+        -WorkingDirectory "C:\aios\portal" `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput $notify_out `
+        -RedirectStandardError $notify_err `
+        -PassThru
+    if ($np) { Write-Log "NOTIFY STARTED pid=$($np.Id)" } else { Write-Log "FAIL notify Start-Process null" }
+}
+
 try {
     $existing = @(Get-CimInstance Win32_Process -Filter "name = 'python.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -like '*feishu_bot_ws.py*' })
+    Ensure-NotifyBot
     if ($existing.Count -gt 0) {
         Write-Log ("alive pid=" + (($existing | ForEach-Object { $_.ProcessId }) -join ','))
         exit 0

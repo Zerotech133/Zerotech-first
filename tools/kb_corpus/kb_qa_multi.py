@@ -29,6 +29,18 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
+# 回环禁代理：Ollama 在 127.0.0.1:11434，系统代理会接管回环请求（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if (_p / "safe_urlopen.py").exists():
+        _sys.path.insert(0, str(_p))
+        break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(__file__).resolve().parents[2]
 V3_BANK = REPO / "research" / "reports" / "kb_qa_bank_v3_20261101.json"
 V3_EVAL = REPO / "research" / "reports" / "kb_qa_multi_20261101.json"
@@ -226,7 +238,7 @@ def call_ollama(prompt: str, model: str = DEFAULT_MODEL, timeout: float = DEFAUL
                                  data=json.dumps(body).encode("utf-8"),
                                  headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8", errors="replace"))
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
         raise MultiError(f"Ollama 调用失败：{exc}") from exc

@@ -1,0 +1,82 @@
+# 模型策略单一真源（Phase 0）
+# 2026-11-04：DP 训练调校工作台 Phase 0；替代三套注册表的散绑定。
+version: "1.0"
+updated_at: "2026-11-04T06:15:00+08:00"
+tier_source: agent_platform/registry/model_tiers.json
+ollama:
+  host: "http://127.0.0.1:11434"
+  installed:
+    - qwen3.5:9b
+    - qwen3.5:4b
+    - bge-m3
+  unavailable_for_binding:
+    - qwen3.6:35b-a3b
+bindings:
+  strong: glm/glm-5.3
+  strong_alt: deepseek/deepseek-v4-pro
+  fast: deepseek/deepseek-flash
+  fast_glm: glm/glm-5.3-flash
+  local: ollama/qwen3.5:9b
+roles:
+  ACAD1:
+    role_profile: academy_director
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+  STRAT1:
+    role_profile: strategy_researcher
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+  DEV2:
+    role_profile: model_trainer
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+    note: "不再绑 qwen3.6:35b-a3b（未安装/未登记）；训练执行由确定性 Python runner 承担，LLM 只做实验设计"
+  DEV3:
+    role_profile: strategy_engineer
+    primary: deepseek/deepseek-v4-pro
+    fallback: glm/glm-5.3
+  DEV4:
+    role_profile: backtest_engineer
+    primary: deepseek/deepseek-flash
+    fallback: glm/glm-5.3
+  BACK1:
+    role_profile: backtest_researcher
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+  PROD1:
+    role_profile: strategy_product_manager
+    primary: glm/glm-5.3-flash
+    fallback: deepseek/deepseek-flash
+  DATA1:
+    role_profile: data_team_lead
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-flash
+tasks:
+  hypothesis:
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+  code_impl:
+    primary: deepseek/deepseek-v4-pro
+    fallback: glm/glm-5.3
+  data_ops:
+    primary: glm/glm-5.3-flash
+    fallback: deepseek/deepseek-flash
+  backtest_script:
+    primary: deepseek/deepseek-flash
+    fallback: glm/glm-5.3
+  review_narrative:
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+  training_design:
+    primary: glm/glm-5.3
+    fallback: deepseek/deepseek-v4-pro
+rules:
+  deterministic_owner:
+    - training_run
+    - backtest_run
+    - gate_verdict
+  llm_cannot_do:
+    - change_gate_verdict
+    - approve_online
+    - write_production_data
+  fallback_policy: "primary 失败/429 -> fallback；仍失败 -> local/degraded 并显式记录；不静默成功"

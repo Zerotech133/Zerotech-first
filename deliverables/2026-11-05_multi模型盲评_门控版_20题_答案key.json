@@ -1,0 +1,86 @@
+{
+  "seed": 20261105,
+  "source": "C:\\项目\\老田的AI助手\\research\\reports\\multi_pair_eval_gated_20261105.json",
+  "key": {
+    "w13_U01": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "w13_U04": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "w13_U07": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "w13_U10": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "w13_A01": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "w13_A07": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "w13_A13": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "w13_A18": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "w13_A24": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "w13_A30": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "heldout_001": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "heldout_011": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "heldout_021": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "heldout_030": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "heldout_040": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "citation_sft_0003": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "citation_sft_0026": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "citation_sft_0013": {
+      "A": "v4d",
+      "B": "ollama"
+    },
+    "citation_sft_0039": {
+      "A": "ollama",
+      "B": "v4d"
+    },
+    "citation_sft_0178": {
+      "A": "ollama",
+      "B": "v4d"
+    }
+  }
+}

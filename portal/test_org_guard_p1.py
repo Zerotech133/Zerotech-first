@@ -42,6 +42,8 @@ os.environ["PORTAL_API_TOKEN"] = "p1-guard-test-token"
 os.chdir(HERE)
 sys.path.insert(0, HERE)
 sys.path.insert(0, STATION)
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 import cainiao_auth  # noqa: E402
 
@@ -137,7 +139,7 @@ def http_req(path, method="GET", body=None, headers=None, timeout=60):
     h.update(headers or {})
     req = urllib.request.Request(url, data=data, method=method, headers=h)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             return r.status, json.loads(r.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8", "replace")

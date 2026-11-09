@@ -67,7 +67,6 @@ def main(argv=None) -> int:
     prev = json.loads(sig_files[-1].read_text(encoding="utf-8")) if sig_files else None
     prev_sig = prev.get("signal_date") if prev else None
     # 数据截止到 latest：若没有持仓或跨月则视为月末调仓
-    is_month_end = True
     rebalance = (prev is None) or (prev_sig != latest and prev_sig[:6] != latest[:6])
     if args.dry_run:
         print(json.dumps({"latest": latest, "prev_sig": prev_sig, "rebalance": rebalance}, ensure_ascii=False))

@@ -299,7 +299,8 @@ def test_invalid_days_and_limit(tmp_path):
 
 # -------------------------------------------------------------------- CLI
 
-def test_cli_json_and_md(tmp_path, capsys):
+def test_cli_json_and_md(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(dc, "now_local", lambda: NOW)
     work = _work(tmp_path)
     _sheet(work, "acceptance_cli.json", "REJECT", ["红队通过率 50% < 80%"])
     out = tmp_path / "out"
@@ -313,7 +314,8 @@ def test_cli_json_and_md(tmp_path, capsys):
     assert Path(payload["report_md"]).exists()
 
 
-def test_cli_human_output(tmp_path, capsys):
+def test_cli_human_output(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(dc, "now_local", lambda: NOW)
     work = _work(tmp_path)
     _sheet(work, "acceptance_cli2.json", "OBSERVE", ["红队证据超龄 50 h > 上限 48 h"])
     code = dc.main(["--work-dir", str(work), "--out-dir", str(tmp_path / "out")])

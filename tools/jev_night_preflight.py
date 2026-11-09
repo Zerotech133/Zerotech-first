@@ -22,6 +22,22 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
+# 回环禁代理：本机服务（Ollama 11434 等）的请求不走系统代理（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(__file__).resolve().parents[1]
 NEWS_DB = Path(r"C:\aios\news_collector\news.db")
 PY = r"C:\Program Files\Python311\python.exe"
@@ -94,7 +110,7 @@ def lock_state() -> tuple[bool, str]:
 
 def model_loaded() -> tuple[bool, str]:
     try:
-        with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=8) as r:
+        with safe_urlopen(OLLAMA + "/api/tags", timeout=8) as r:
             tags = json.loads(r.read().decode("utf-8"))
         names = [m.get("name", "") for m in tags.get("models", [])]
         hit = [n for n in names if "qwen3.5:9b" in n]
@@ -113,7 +129,7 @@ def warm_model() -> tuple[bool, str]:
                              "stream": False, "keep_alive": "10h",
                              "options": {"num_predict": 1}}).encode("utf-8"),
             headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with safe_urlopen(req, timeout=120) as r:
             r.read()
         dt = _time.time() - t0
         # 2026-10-30 PREFLIGHT3：预热耗时反映 Ollama 队列争用（正常 <10s；>60s 说明被并发挤爆）
@@ -128,14 +144,16 @@ def disk_free_gb() -> float:
 
 
 def wrappers_ok() -> tuple[bool, str]:
+    # 2026-11-07 复盘执行项：补 feed 入口（BUG-3 盲区），入口×开关矩阵全量校验
     files = [REPO / "jev-eval" / "start_jev_night.ps1",
-             REPO / "jev-eval" / "jev_backfill_task.ps1"]
+             REPO / "jev-eval" / "jev_backfill_task.ps1",
+             REPO / "news_collector" / "start_jev_feed.ps1"]
     for f in files:
         if not f.exists():
             return False, "缺 wrapper: %s" % f.name
         if "JEV_PREFILTER" not in f.read_text(encoding="utf-8", errors="replace"):
             return False, "%s 缺 JEV_PREFILTER" % f.name
-    return True, "night/hourly wrapper env OK"
+    return True, "night/backfill/feed wrapper env OK"
 
 
 def collect(now: datetime | None = None) -> list[dict]:

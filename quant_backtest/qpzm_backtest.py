@@ -22,7 +22,8 @@ sector_effect.py；打分公式按产线逐条复刻（见 DESIGN 注释与单�
     breadth<0.40 或 med20<-3% → safe=False（rps_resonance.market_env）。
   · 信号后验: T 日收盘产生信号 → T+1 开盘价买入，持有 N 个交易日
     （T+1 起第 N 根 bar 收盘卖出）；N∈{5,10,20}。成本 = 往返一次性，
-    默认 0.15%。K254：全价后复权（pre_close 链）；T+1 一字板（开=高=收
+    默认 0.30%（单边 15bp×2，从 config.trade.by_market.CN 推导）。
+    K254：全价后复权（pre_close 链）；T+1 一字板（开=高=收
     且开盘涨幅达板）视为无法成交剔除；出场停牌按最后可得价结算并计数。
   · 参数网格: RPS 权重 3 组 × 买入/观察阈值 2 组 × 闸门开关 2 态。
 
@@ -35,6 +36,27 @@ sector_effect.py；打分公式按产线逐条复刻（见 DESIGN 注释与单�
   ... --start 20240401                          # 数据允许的全量信号窗
   ... --stocks-limit 80                         # 冒烟：只取部分股票
 """
+
+# ── 口径注记 v2（2026-11-07，QPZM_RD_PLAN.md v2，纯注释、不含任何逻辑）──
+# 1) M1 三重修复已入本文件，历史数字一律以 v2 基线锁为准：
+#    · 掩码：unfill.shift(-1).fillna(False) 在 pandas 3.x 退化为 object dtype，
+#      `~` 按位取反恒真 → 一字板剔除在修复前从未生效；三处掩码链尾已加
+#      .astype(bool)。贡献审计窗口 2.2~2.8bp（占三重修复 85%）。
+#    · --limit-mode exact：走 data/tdx_api/ts_stk_limit/ 交易所精确涨跌停价，
+#      缺失日自动回退 approx 并在 meta.limit_exact_meta.fallback_dates 留痕。
+#    · 数据池含 M1 补入的 83 只退市股（只增不改），缓解幸存者偏差；
+#      2020-2023 退市 127 只、2020 前 111 只仍未补齐，旧五窗口数字视为上界。
+# 2) 本引擎是「逐笔独立模型」，其净值是每日信号平均收益的算术累乘，
+#    12m 曾出现虚拟 −4.72% 而真组合 +14.21%（符号相反）。任何对外收益/
+#    回撤结论必须以 portfolio_sim.py 的真组合净值为准，禁止引用本文件净值。
+# 3) 红线：成本 30bp 往返、主持有期 hold10、审计窗口固定 20251015~20261014、
+#    阈值 75/50 不动；JEV 历史恒缺维，实际三维归一 0.4667/0.3333/0.2，
+#    对外称「多维加权（技术/RPS/环境）」，不称「四维共振」。
+# 4) PIT：禁用 qfq 系追溯指标；一律 hfq 或 bfq+adj_factor。既有池 2025 年中
+#    以前为前复权，同股收益链安全但跨股价格不可比（路径 B 另立项）。
+# 5) 基线锁：本文件被 t7_lock/baseline_lock.json 按 md5 锚定，
+#    **任何改动（包括只加注释）都必须重冻引擎指纹并跑 verify_baseline.py**，
+#    且只动引擎项、绝不碰 data 指纹。
 
 import argparse
 import json
@@ -65,6 +87,43 @@ JEV_REPLAY_PATH = os.path.join(HERE, "data", "jev_archive", "jev_replay_series.j
 JEV_MODES = ("missing", "neutral50", "w015", "replay")
 TH_CUR = (75, 50)  # 现行 买入/观察
 TH_ALT = (70, 50)
+DEFAULT_COST_FALLBACK = 0.0030  # CN 实盘往返（单边 15bp × 2），读 config 失败时回退
+
+
+def default_cost_roundtrip(market="CN"):
+    """从 config.json 的 trade.by_market 推导往返成本比例。
+
+    cost_bps / slippage_bps 为**单边**费率；回测的 cost 是逐笔往返扣一次
+    （trade_returns 里 ret = exit/entry - 1 - cost），故往返 = 2×(cost+slippage)/10000。
+    读不到 config 或市场缺失时回退 0.0030（CN 实盘口径），不静默用 0.0015。
+    """
+    try:
+        import backtest as _bt  # 复用既有 config 读取逻辑，不重复造 JSON 解析
+
+        cfg = _bt.load_trade_config(market)
+        cost_bps = float(cfg["cost_bps"])
+        slippage_bps = float(cfg["slippage_bps"])
+        val = 2.0 * (cost_bps + slippage_bps) / 10000.0
+        # load_trade_config 对未知市场静默回退 CN，这里探测并显式告警
+        probe = _bt.load_trade_config("__t8_unknown_market__")
+        if market != "CN" and (cost_bps, slippage_bps) == (
+            float(probe["cost_bps"]),
+            float(probe["slippage_bps"]),
+        ):
+            print(
+                "[cost] 警告：market=%s 不在 config.trade.by_market 中，"
+                "按 CN 保守口径推导为 %.6f（单边 %gbp×2）"
+                % (market, val, cost_bps + slippage_bps)
+            )
+        return val
+    except Exception as exc:
+        print(
+            "[cost] 警告：读取 config.trade.by_market[%s] 失败（%s: %s），"
+            "回退默认往返成本 %.4f" % (market, type(exc).__name__, exc, DEFAULT_COST_FALLBACK)
+        )
+        return DEFAULT_COST_FALLBACK
+
+
 MIN_BARS_ELIG = 55  # resonance_watchlist 最低 bar 数（缺则不参与打分）
 MIN_BARS_ENV = 21  # market_env 计入宽度要求
 STRAT_PARAMS = {  # config.json strategies（产线现行参数）
@@ -93,7 +152,8 @@ DESIGN = {
     "K254：出场日停牌按最后可得价结算（ffill）并计数"
     "(n_dropped 口径变更为 nobar+一字板)；T+1 一字板（开=高=收"
     "且开盘涨幅达板）视为无法成交剔除",
-    "cost": "往返一次性成本（佣金双边+印花税+滑点），默认 0.0015",
+    "cost": "往返一次性成本（佣金双边+印花税+滑点），默认 0.0030"
+    "（单边 12+3bp 由 config.trade.by_market.CN 推导 ×2；--cost 显式覆盖）",
     "price": "K254 起后复权口径：逐股 own-bar 因子链 "
     "f(t)=f(t-1)*close(t-1)/pre_close(t)，close/open 全乘因子；"
     "（K253 实证旧「未复权」口径近一年 2883 起除权、1131 起单次"
@@ -102,6 +162,10 @@ DESIGN = {
     "收盘出、全体可交易股票等权）限制在同一批信号日内的逐笔均值",
     "gate_veto": "闸门开 = env safe=False 时买入/观察信号全部否决；"
     "闸门关 = 不否决（env 分仍计入打分），用于隔离否决贡献",
+    "universe": "load_wide 按 os.listdir 全量读 data/ashare/，其中含 4 只指数"
+    "（000001.SH/000688.SH/399001.SZ/399006.SZ，仓库既有约定：指数住 ashare，"
+    "作大盘基准）；审计 T13 实测其占买入单元 0.128%，剔除后 n_buy −133、"
+    "均值 Δ≤0.0015pp（噪声以下）——故不修，仅此注记（R3，2026-11-05 审计）",
 }
 
 
@@ -405,7 +469,15 @@ def trade_returns(buy, open_px, close_px, n, cost, unfill=None):
     ret_vals = exit_px / entry - 1.0 - cost
     ok = open_px.shift(-1).notna() & close_px.ffill().shift(-n).notna()
     if unfill is not None:
-        unf = unfill.shift(-1).fillna(False).reindex_like(open_px).fillna(False)
+        # pandas 3.x：bool DF shift() 退化为 object，~ 会变成 int 按位取反
+        # （~True=-2 恒真值）导致掩码失效——必须 astype(bool) 恢复 K254 语义
+        unf = (
+            unfill.shift(-1)
+            .fillna(False)
+            .reindex_like(open_px)
+            .fillna(False)
+            .astype(bool)
+        )
         ok = ok & ~unf
     valid = buy & ok
     n_dropped = int((buy & ~ok).sum().sum())
@@ -437,7 +509,14 @@ def bench_returns(eligible, open_px, close_px, n, cost, unfill=None):
     exit_px = close_px.ffill().shift(-n)
     valid = eligible & entry.notna() & exit_px.notna()
     if unfill is not None:
-        unf = unfill.shift(-1).fillna(False).reindex_like(open_px).fillna(False)
+        # 同 trade_returns：astype(bool) 防 pandas 3.x object-shift 掩码失效
+        unf = (
+            unfill.shift(-1)
+            .fillna(False)
+            .reindex_like(open_px)
+            .fillna(False)
+            .astype(bool)
+        )
         valid = valid & ~unf
     ret_vals = (exit_px / entry - 1.0 - cost).to_numpy(dtype=float)
     return _flat_series(valid, ret_vals, eligible.index, eligible.columns)
@@ -513,7 +592,7 @@ def stock_positions(close):
     return pos_ma + pos_rsi + pos_boll + pos_tf
 
 
-def load_wide(data_dir, stocks_limit=0, log_every=1000):
+def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
     """读全部 parquet → union 交易日索引的 wide 矩阵集合。
 
     逐股在自身 bar 序列上算指标（与产线 own-bar 语义一致），再 scatter。
@@ -521,6 +600,8 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
     n_bars(float32 DataFrame), above20(计闸门槛 ≥MIN_BARS_ENV),
     eligible(≥MIN_BARS_ELIG bool), unfill(K254 一字板 bool)；
     K254 起 close/open 为后复权口径（own-bar pre_close 链因子）。
+    keep_raw=True 时额外保留原始价 _raw_open/_raw_high/_raw_close
+    （--limit-mode exact 精确一字板判定用；默认 False，行为不变）。
     """
     files = sorted(
         f
@@ -580,6 +661,7 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
     }
     above_buf = np.zeros((D, S), dtype=bool)
     unfill_buf = np.zeros((D, S), dtype=bool)  # K254 一字板(T+1 无法成交)
+    raw_buf = {k: blank() for k in ("open", "high", "close")} if keep_raw else None
     for j, df in enumerate(per):
         rows = np.array([dpos[int(d)] for d in df["trade_date"].to_numpy()])
         c = df["close"].astype(float)
@@ -615,6 +697,10 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
             & (rg >= lim - 0.005)
             & rg.notna()
         ).to_numpy()
+        if keep_raw:
+            raw_buf["open"][rows, j] = o_raw.to_numpy()
+            raw_buf["high"][rows, j] = h_raw.to_numpy()
+            raw_buf["close"][rows, j] = df["close"].astype(float).to_numpy()
 
     wide = {"dates": union, "codes": codes}
     for k, a in arr.items():
@@ -629,7 +715,94 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
         arr["n_bars"] >= MIN_BARS_ELIG, index=union, columns=codes
     )
     wide["unfill"] = pd.DataFrame(unfill_buf, index=union, columns=codes)
+    if keep_raw:
+        for k in ("open", "high", "close"):
+            wide["_raw_%s" % k] = pd.DataFrame(raw_buf[k], index=union, columns=codes)
     return wide
+
+
+def apply_exact_unfill(wide, start=None, end=None):
+    """--limit-mode exact：用交易所精确涨跌停价覆盖一字板判定（p0_limit 20261106）。
+
+    精确判定：当日 open==high==close 且 open>=up_limit（一字封死涨停，
+    T+1 无法买入）。缓存缺失的日期保留 approx 值（自动回退）。
+    就地替换 wide["unfill"]，返回 meta dict（覆盖/回退统计）。
+    """
+    import tdx_api_client as tdx
+
+    union, codes = wide["dates"], wide["codes"]
+    raw_o, raw_h, raw_c = wide["_raw_open"], wide["_raw_high"], wide["_raw_close"]
+    cache = tdx.load_cache(union[0], union[-1])
+    unf = wide["unfill"].copy()
+    meta = {
+        "mode": "exact",
+        "cache_dir": tdx.CACHE_DIR,
+        "cache_dates": 0,
+        "exact_dates": 0,
+        "fallback_dates": 0,
+        "fallback_dates_in_window": 0,
+        "exact_flips_vs_approx": None,
+    }
+    if cache is None or not len(cache):
+        meta["fallback_dates"] = int(len(union))
+        if start:
+            meta["fallback_dates_in_window"] = int(((union >= int(start)) & (union <= int(end or union[-1]))).sum())
+        print("[exact-unfill] cache empty, all %d dates fallback approx" % meta["fallback_dates"], flush=True)
+        wide["unfill"] = unf
+        return meta
+
+    cache_by_date = {int(d): g.set_index("ts_code")["up_limit"] for d, g in cache.groupby("trade_date")}
+    approx_vals = unf.to_numpy().copy()
+    flips = 0
+    n_exact = 0
+    win_mask = np.ones(len(union), dtype=bool)
+    if start:
+        win_mask &= union >= int(start)
+    if end:
+        win_mask &= union <= int(end)
+    for t, d in enumerate(union):
+        lim = cache_by_date.get(int(d))
+        if lim is None:
+            meta["fallback_dates"] += 1
+            if win_mask[t]:
+                meta["fallback_dates_in_window"] += 1
+            continue
+        meta["cache_dates"] += 1
+        # 只覆盖窗口内日期：窗外历史 K254 语义保留 approx（买入侧 shift(-1) 只关心窗内 T+1）
+        if not win_mask[t]:
+            continue
+        meta["exact_dates"] += 1
+        lim_v = lim.reindex(codes).to_numpy(dtype=float)
+        o = raw_o.iloc[t].to_numpy(dtype=float)
+        h = raw_h.iloc[t].to_numpy(dtype=float)
+        c = raw_c.iloc[t].to_numpy(dtype=float)
+        exact = (
+            (np.abs(o - h) <= 1e-6)
+            & (np.abs(o - c) <= 1e-6)
+            & (o >= lim_v - 1e-6)
+            & np.isfinite(lim_v)
+            & np.isfinite(o)
+        )
+        has_lim = np.isfinite(lim_v)
+        new_vals = np.where(has_lim, exact, unf.iloc[t].to_numpy(dtype=bool))
+        flips += int((new_vals.astype(bool) != unf.iloc[t].to_numpy(dtype=bool)).sum())
+        n_exact += int(has_lim.sum())
+        unf.iloc[t] = new_vals
+    meta["exact_flips_vs_approx"] = int(flips)
+    meta["exact_overridden_cells"] = int(n_exact)
+    print(
+        "[exact-unfill] cache_dates %d, exact %d, fallback %d (in-window %d), flips %d"
+        % (
+            meta["cache_dates"],
+            meta["exact_dates"],
+            meta["fallback_dates"],
+            meta["fallback_dates_in_window"],
+            flips,
+        ),
+        flush=True,
+    )
+    wide["unfill"] = unf
+    return meta
 
 
 # ── 网格与报告 ──────────────────────────────────────────────
@@ -640,8 +813,13 @@ GRID_GATE = [("gate_on", True), ("gate_off", False)]
 
 def run_backtest(args):
     t0 = time.time()
-    wide = load_wide(args.data_dir, args.stocks_limit)
+    wide = load_wide(
+        args.data_dir, args.stocks_limit, keep_raw=(getattr(args, "limit_mode", "approx") == "exact")
+    )
     union, codes = wide["dates"], wide["codes"]
+    limit_exact_meta = {}
+    if getattr(args, "limit_mode", "approx") == "exact":
+        limit_exact_meta = apply_exact_unfill(wide, args.start, args.end)
 
     chg = {p: wide["chg%d" % p] for p in PERIODS}
     env_df = env_gate(wide["above20"], wide["ret20"])
@@ -828,8 +1006,11 @@ def run_backtest(args):
             },
             "holds": holds,
             "cost_roundtrip": args.cost,
+            "cost_source": getattr(args, "cost_source", "unknown"),
             "jev_mode": args.jev_mode,
             "jev_replay_meta": jev_meta,
+            "limit_mode": getattr(args, "limit_mode", "approx"),
+            "limit_exact_meta": limit_exact_meta,
             "sample_mode": bool(args.stocks_limit),
             "elapsed_sec": round(time.time() - t0, 1),
         },
@@ -888,8 +1069,12 @@ def build_summary(report, env_win):
         % (report["meta"]["n_stocks"], w["start"], w["end"], w["signal_days"], unsafe)
     )
     lines.append(
-        "- 成本: 往返 %.2f%%；口径: T+1 开盘买入，持有 N 日收盘卖出；"
-        "超额基准 = 同窗口全体可交易股票等权" % (report["meta"]["cost_roundtrip"] * 100)
+        "- 成本: 往返 %.2f%%（来源 %s）；口径: T+1 开盘买入，持有 N 日收盘卖出；"
+        "超额基准 = 同窗口全体可交易股票等权"
+        % (
+            report["meta"]["cost_roundtrip"] * 100,
+            report["meta"].get("cost_source", "unknown"),
+        )
     )
     lines.append("")
     lines.append("## 参数网格（hold=%s 日）" % h0)
@@ -1129,7 +1314,9 @@ def build_killed_payload(
     br, md, _uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
     veto_w = (buy_off & ~buy_on).loc[in_win]
     on_w = buy_on.loc[in_win]
-    unf_t1 = wide["unfill"].shift(-1).fillna(False).loc[in_win]
+    unf_t1 = (
+        wide["unfill"].shift(-1).fillna(False).loc[in_win].astype(bool)
+    )  # astype(bool) 防 pandas 3.x object-shift 掩码失效（同 trade_returns）
     entry_na = open_px.shift(-1).isna().loc[in_win]
     safe_w = env_df["safe"].loc[in_win]
     hr_ok = mix_cur.notna().loc[in_win]
@@ -1211,6 +1398,7 @@ def build_killed_payload(
             },
             "n_stocks": wide["close"].shape[1],
             "cost_roundtrip": cost,
+            "cost_source": getattr(args, "cost_source", "unknown"),
             "jev_mode": args.jev_mode,
             "weights": "w_cur",
             "thresholds": list(TH_CUR),
@@ -1324,7 +1512,11 @@ def parse_args(argv=None):
     ap.add_argument("--end", default=None, help="信号窗止 YYYYMMDD（默认数据尾）")
     ap.add_argument("--hold", default="5,10,20", help="持有交易日，逗号分隔")
     ap.add_argument(
-        "--cost", type=float, default=0.0015, help="往返成本比例，默认 0.0015"
+        "--cost",
+        type=float,
+        default=None,
+        help="往返成本比例；默认从 config.trade.by_market.CN 推导为 0.0030"
+        "（单边15bp×2）",
     )
     ap.add_argument("--data-dir", default=DATA_DIR)
     ap.add_argument("--out", default=os.path.join(REPORTS, "qpzm_backtest_report.json"))
@@ -1341,6 +1533,14 @@ def parse_args(argv=None):
         "jev_replay_series.json 逐日截面（覆盖外日期自然缺维）",
     )
     ap.add_argument(
+        "--limit-mode",
+        default="approx",
+        choices=("approx", "exact"),
+        help="一字板判定口径：approx=K254 近似（开=高=收触板，默认，"
+        "行为不变）；exact=交易所精确涨跌停价（tdx_api 缓存，缺失日期"
+        "自动回退 approx 并记录 meta.limit_exact_meta.fallback_dates）",
+    )
+    ap.add_argument(
         "--killed-details",
         action="store_true",
         help="追加导出被剔除信号错杀清单（闸门否决/一字板/缺维"
@@ -1353,6 +1553,11 @@ def parse_args(argv=None):
         help="错杀清单 JSON 输出路径（--killed-details 时生效）",
     )
     args = ap.parse_args(argv)
+    if args.cost is None:
+        args.cost = default_cost_roundtrip("CN")
+        args.cost_source = "config:CN(往返)"
+    else:
+        args.cost_source = "cli(显式)"
     args.holds = sorted({int(x) for x in str(args.hold).split(",") if x})
     return args
 

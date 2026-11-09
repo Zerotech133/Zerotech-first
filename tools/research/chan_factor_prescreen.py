@@ -11,12 +11,13 @@
         t 及以前 bar；抽样 code-day 用截断数据重算对照）；
   结论分级：通过/观察/不通过（阈值同 W2 前筛，见 THRESHOLDS）。
 
-产出：research/reports/chan_factor_prescreen_20261103.{json,md}
+产出：research/reports/chan_factor_prescreen_<tag>.{json,md}（默认 tag=运行日）
 运行：C:\\项目\\py312\\python.exe -X utf8 tools/research/chan_factor_prescreen.py
 约束：数据根只读；不改 chan_factors.py；不 commit。
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import json
 import math
@@ -223,7 +224,7 @@ def build_structures(bars: pd.DataFrame) -> dict:
     res = cf.analyze_chan(bars)
     days = sorted({_day_of(d) for d in bars["dt"].astype(str)})
     day_pos = {d: i for i, d in enumerate(days)}
-    bar_day_pos = np.asarray([day_pos[_day_of(d)] for d in bars["dt"].astype(str)], dtype=int)
+    np.asarray([day_pos[_day_of(d)] for d in bars["dt"].astype(str)], dtype=int)
     n = len(bars)
 
     def _dp(idx):
@@ -401,7 +402,14 @@ def pit_truncation_check(bars: pd.DataFrame, sample_days: list[str],
 
 
 # ============================================================ 主流程
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="缠论因子独立前筛（动态输出名）")
+    ap.add_argument("--tag", default="", help="输出名后缀，默认运行日 YYYYMMDD")
+    ap.add_argument("--out-dir", default="", help="输出目录，默认 research/reports")
+    args = ap.parse_args(argv)
+    out_dir = Path(args.out_dir).expanduser() if args.out_dir else OUT
+    tag = args.tag or datetime.now().strftime("%Y%m%d")
+    stem = f"chan_factor_prescreen_{tag}"
     t0 = time.time()
     mapping = _code_files(MINS)
     codes_all = sorted(mapping)
@@ -531,8 +539,8 @@ def main() -> int:
     rep["meta"]["runtime_sec"] = round(time.time() - t0, 1)
     if rep["schema_check"]:
         print(f"[chan-prescreen] WARN schema: {rep['schema_check']}", flush=True)
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "chan_factor_prescreen_20261103.json").write_text(
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{stem}.json").write_text(
         json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
 
     # ---- MD
@@ -581,7 +589,7 @@ def main() -> int:
                  f"PIT 抽样不一致率 {f['pit']['sampled_mismatch_rate']}")
         L.append("")
     L += ["## 五、局限", ""] + [f"- {x}" for x in rep["limitations"]]
-    (OUT / "chan_factor_prescreen_20261103.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+    (out_dir / f"{stem}.md").write_text("\n".join(L) + "\n", encoding="utf-8")
     print(json.dumps({"summary": summary, "schema": rep["schema_check"],
                       "pit_pass": pit_pass_by_feat, "runtime": rep["meta"]["runtime_sec"]},
                      ensure_ascii=False), flush=True)

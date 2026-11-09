@@ -1,0 +1,59 @@
+{
+ "schema_version": 1,
+ "expect_day": "2026-11-05",
+ "status": "PASS",
+ "ok": true,
+ "warnings": [],
+ "generated_at": "2026-11-05 18:20:06",
+ "trade_basis": "2026-11-05 收盘（行情湖 ts_daily 最新可得交易日）",
+ "counts": {
+  "total": 732,
+  "T1_resonance": 0,
+  "T2_high_value": 45,
+  "T3_single": 687,
+  "crowd_alert": 0,
+  "rotation": {
+   "new_in": 0,
+   "dropped": 0,
+   "retained": 732,
+   "vs": "todays_20261104.json"
+  },
+  "env_diff_shadow": 47,
+  "panic_buy_shadow": 26,
+  "env_diff_exempt": 0,
+  "q_toxic_shadow": 6,
+  "q_first_buy_shadow": 6
+ },
+ "archive_path": "C:\\项目\\老田的AI助手\\portal\\data\\picks_history\\todays_20261105.json",
+ "archive": {
+  "exists": true,
+  "generated_at": "2026-11-05 18:20:06",
+  "trade_basis": "2026-11-05 收盘（行情湖 ts_daily 最新可得交易日）",
+  "total": 732,
+  "mtime": "2026-11-05 18:20:12"
+ },
+ "task": {
+  "state": "Ready",
+  "last_run": "2026-11-05 18:20:01",
+  "last_result": 0,
+  "next_run": "2026-11-06 18:20:00"
+ },
+ "checks": [
+  {
+   "name": "当日清单 generated_at/basis/counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "picks_history 归档",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "计划任务当日运行",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "errors": []
+}

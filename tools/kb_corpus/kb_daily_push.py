@@ -403,7 +403,10 @@ def send_group_card(payload: dict, *, target_name: str = GROUP_TARGET_NAME,
         return {"ok": False, "sent": False, "channel": "failed",
                 "reason": "target_not_found", "target": target}
     receive_id, receive_type = target["id"], target.get("type") or GROUP_TARGET_TYPE
-    content = json.dumps(payload["feishu_payload"], ensure_ascii=False)
+    # 2026-11-06 事故：OpenAPI 的 interactive content 必须是「卡片本体」，
+    # 不能是 {"msg_type":"interactive","card":{...}} 外层信封；否则飞书
+    # 返回 230099/200621 parse card json err。这里只发 card。
+    content = json.dumps(card, ensure_ascii=False)
     try:
         if send_group_fn is None:
             from news_collector import send_feishu  # noqa: PLC0415
@@ -441,7 +444,9 @@ def send_payload(payload: dict, *, send_fn=None, send_text_fn=None, kind: str = 
             sys.path.insert(0, repo)
         from news_collector import send_feishu  # noqa: PLC0415 - 延迟导入，dry-run 不联网
         send_fn = send_feishu.send_content
-    content = json.dumps(payload["feishu_payload"], ensure_ascii=False)
+    # 2026-11-06 事故：interactive content 只发卡片本体，不能发
+    # {"msg_type":"interactive","card":{...}} 外层信封（飞书 230099/200621）。
+    content = json.dumps(card, ensure_ascii=False)
     channel = "interactive"
     ok = False
     try:

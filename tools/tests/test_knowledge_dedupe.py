@@ -7,7 +7,7 @@
   3) 分组与 evidence 合并：同 key 组保留首条 + merged_count/merged_unit_ids/evidence_list（去重）；
   4) dry-run 不写：输入文件 sha 不变、报告 dry_run=true；
   5) apply：备份到指定目录 + 写回去重结果 + 二次 apply 幂等（无重复→不写/无新备份）；
-  6) 真实项目 dry-run 报告：3813 → 3406（-407）、dry_run、输入未改。
+  6) 真实项目报告：项目名随最近一次治理运行更新，验证结构与统计自洽。
 """
 from __future__ import annotations
 
@@ -124,7 +124,8 @@ def test_real_project_report():
     assert REPORT_JSON.is_file() and REPORT_MD.is_file()
     d = json.loads(REPORT_JSON.read_text(encoding="utf-8"))
     s = d["stats"]
-    assert d["project"] in ("视频号学习_8博主", "视频号学习_第二期", "laomu_notes")
+    # 通用报告由最近一次真实治理运行覆盖，项目名会变化；这里只固定已出现过的真实项目。
+    assert d["project"] in ("视频号学习_8博主", "视频号学习_第二期", "laomu_notes", "公开投教_布林线")
     assert s["input"] > 0
     assert s["output"] == s["input"] - s["duplicate_rows"]
     assert s["dup_groups"] == len(d["duplicates"])

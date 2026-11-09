@@ -261,7 +261,7 @@ def render_md(payload: dict) -> str:
         lines.append("| " + " | ".join([labels[k]] + vals + ds) + " |")
     lines += ["", f"- 最优策略：**{payload.get('best')}**",
               f"- {payload.get('conclusion')}",
-              f"- SFT/DPO 目标：引用正确率 ≥0.90、groundedness ≥0.60、不可答拒答率 ≥0.80；",
+              "- SFT/DPO 目标：引用正确率 ≥0.90、groundedness ≥0.60、不可答拒答率 ≥0.80；",
               f"- sampled_note：{payload.get('sampled_note') or '无（各策略均全量 40 题）'}",
               "", "## 二、策略定义", ""]
     for sname, desc in (payload.get("method", {}).get("strategies") or {}).items():
