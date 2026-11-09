@@ -56,7 +56,40 @@ STAGE_COLOR = {
 }
 # 首屏五张卡
 CARD_STAGES = ["三买待", "三买", "二买", "一买", "背驰"]
+
+# 可操作五层：与 pool_state.py --judge 的分层、飞书卡片的语言一致。
+# 九态回答「结构是什么」，五层回答「现在能不能动手」——卡片走五层，
+# 页面必须能给同一批票，否则点开找不到卡片上那句话说的是谁。
+LAYER_META = (
+    ("B", "B 可介入", "三买守位在手边（≤8%），跌破守位即认输", "#d92b2b"),
+    ("A", "A 今日突破", "刚越中枢上沿，等回踩，不追", "#e8590c"),
+    ("E", "E 贴沿未过", "紧贴上沿未过，埋伏不是买", "#b7791f"),
+)
+LAYER_DESC, LAYER_COLOR = {}, {}
 BAR_N = 60
+
+
+def _newest_judge():
+    """取最新一份池判据（A/B/C/D/E 五层），只认行情时点是今天的。
+
+    隔夜残留的 judge 挂上页面，会出现「今天 B 档三只」其实是上周五的名单。
+    宁可不出五层（页面退回纯九态），也不出过期情报。
+    """
+    try:
+        fs = sorted(glob.glob(os.path.join(REPORTS, "pool_judge_*.json")))
+    except OSError:
+        return None
+    if not fs:
+        return None
+    try:
+        with open(fs[-1], encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return None
+    live = str(d.get("live_at") or "")[:10]
+    if live and live != date.today().isoformat():
+        return None
+    return d
 
 
 def load_kline(code, n=BAR_N):
@@ -334,6 +367,12 @@ details.rule[open] summary:after{{content:" ⌃"}}
 .kline{{width:100%;height:auto;display:block}}
 .kbox{{background:#fff;border-radius:11px;padding:9px 6px 4px;margin-bottom:9px}}
 .nodata{{padding:24px;text-align:center;color:#a6afbd;font-size:12px}}
+.more{{background:#fff;border-radius:11px;padding:11px 13px;font-size:12.5px;
+      color:#8a93a3;margin-bottom:8px;display:flex;justify-content:space-between;
+      align-items:center;cursor:pointer}}
+.more b{{color:#1c2330;font-weight:600;font-size:13px}}
+.more .ar{{transition:transform .18s;display:inline-block}}
+.more.on .ar{{transform:rotate(180deg)}}
 .evs{{background:#fff;border-radius:11px;overflow:hidden;margin-bottom:9px}}
 .ev{{padding:9px 12px;border-bottom:1px solid #f2f4f7}}
 .ev:last-child{{border-bottom:none}}
@@ -364,8 +403,14 @@ details.rule[open] summary:after{{content:" ⌃"}}
 
   <div class="brief">{brief}</div>
 
-  <div class="sec"><span>点档位看名单</span><span>再点个股看判据</span></div>
+  <div class="sec"><span>今日判断</span><span>点档位看名单 · 再点个股看判据</span></div>
   <div id="rows-home"></div>
+
+  <div class="more" id="more-tog" onclick="toggleMore()">
+    <span><b>结构全貌（九态）</b> <span id="more-sub">按结构分类，不是买入清单</span></span>
+    <span class="ar">⌄</span>
+  </div>
+  <div id="rows-more" style="display:none"></div>
 
   <details class="rule"><summary>口径与剔除规则</summary>
     <b>三买待</b>＝收盘在 ZG 上方 8% 内＋末笔向上＋无新鲜卖点＋不在下跌趋势。<br>
@@ -428,19 +473,41 @@ function rowHtml(r){{
     + '<div class="arw">›</div></div>';
 }}
 
+function isLayer(st){{
+  for(var k in D.layerMap) if(D.layerMap[k]===st) return true;
+  return false;
+}}
+
+function rowHome(st){{
+  var arr = D[st]||[];
+  return '<div class="row" onclick="goList(\\''+st+'\\')" style="padding:11px 13px">'
+    + '<div class="l"><div class="nm" style="font-size:13px">'+st+'</div>'
+    + '<div class="mt">'+ (D.desc[st]||'') +'</div></div>'
+    + '<div class="r"><div class="px" style="color:'+(D.color[st]||'#1c2330')+'">'
+    + (D.counts[st]||arr.length) +' 只</div></div>'
+    + '<div class="arw">›</div></div>';
+}}
+
 function renderHome(){{
-  var h='';
+  /* 五层（今日判断）直接铺开，九态收进折叠区——九态是结构全貌，
+     一屏装不下，但它不是每天要看的那一眼。 */
+  D.layerMap = D.layerMap || {{}};
+  var h='', m='';
   ORDER.forEach(function(st){{
-    var arr = D[st]||[];
-    if(!arr.length) return;
-    h += '<div class="row" onclick="goList(\\''+st+'\\')" style="padding:11px 13px">'
-      + '<div class="l"><div class="nm" style="font-size:13px">'+st+'</div>'
-      + '<div class="mt">'+ (D.desc[st]||'') +'</div></div>'
-      + '<div class="r"><div class="px" style="color:'+(D.color[st]||'#1c2330')+'">'
-      + (D.counts[st]||arr.length) +' 只</div></div>'
-      + '<div class="arw">›</div></div>';
+    if(!((D[st]||[]).length)) return;
+    if(isLayer(st)) h += rowHome(st); else m += rowHome(st);
   }});
-  document.getElementById('rows-home').innerHTML = h;
+  document.getElementById('rows-home').innerHTML = h
+    || '<div class="nodata">五层全空，今天没有可操作位置</div>';
+  document.getElementById('rows-more').innerHTML = m;
+}}
+
+function toggleMore(){{
+  var m = document.getElementById('rows-more');
+  var t = document.getElementById('more-tog');
+  var open = m.style.display === 'none';
+  m.style.display = open ? 'block' : 'none';
+  t.classList.toggle('on', open);
 }}
 
 function goList(st){{
@@ -487,6 +554,23 @@ function goDetail(code){{
 }}
 
 renderHome();
+/* 深链：飞书卡片按钮带 ?layer=B 或 ?code=600419.SH，点开直接落到那一档。
+   卡片说「B 可介入 3 只」，点进去就该是那三只，不再让人在首页自己翻。 */
+(function(){{
+  var q = (location.search||'').replace(/^\?/,'')
+        || (location.hash||'').replace(/^#/,'');
+  if(!q) return;
+  var p = {{}};
+  q.split('&').forEach(function(kv){{
+    if(!kv) return;
+    var i = kv.indexOf('=');
+    if(i<0) return;
+    p[decodeURIComponent(kv.slice(0,i))] = decodeURIComponent(kv.slice(i+1));
+  }});
+  if(p.code && findRow(p.code)) {{ goDetail(p.code); return; }}
+  var st = (p.layer && D.layerMap && D.layerMap[p.layer]) || p.stage;
+  if(st && D[st]) goList(st);
+}})();
 </script></body></html>"""
 
 
@@ -561,31 +645,58 @@ def main():
             lmap.update(got)
             print(f"[h5] 补取实时价 {len(got)}/{len(miss)} 只")
 
+    def _mkrow(r, st, extra=None):
+        """一行明细：叠实时价 → 画走势 → 出证据卡。九态与五层共用。"""
+        rr = dict(r)
+        rr["stage"] = r.get("stage") or st
+        rr["struct_asof"] = asof
+        if extra:
+            rr.update(extra)
+        # 实时价：judge 行自带 lpx/lpct，九态行要查 lmap（pool_live + 补取）
+        px, pct = r.get("lpx"), r.get("lpct")
+        if px is None and r["code"] in lmap:
+            px, pct = lmap[r["code"]]
+        if px:
+            rr["lpx"], rr["lpct"] = px, pct or 0.0
+            # close 一并替换，否则「现价」与「距ZG」「判据实测值」各说各话
+            rr["close"] = px
+            rr["pct"] = (pct or 0) / 100.0
+            if rr.get("zg"):
+                rr["dist_zg"] = px / rr["zg"] - 1
+            # 位置按实时价重算：只换 close 不换 pos，详情页会出现
+            # 「现价 19.05 / 距 ZG +4.3% / 位置：枢内」这种自相矛盾的标签
+            rr["lpos"] = _lpos(px, rr.get("zd"), rr.get("zg"))
+        rr["svg"] = _svg(rr, load_kline(r["code"]) if st != "中枢" else None)
+        rr["ev"] = build_evidence(rr)
+        return rr
+
     for st in order + ["中枢"]:
-        rows = []
-        pool_rows = j["buckets"].get(st, [])
-        for r in pool_rows[:args.per_stage]:
-            rr = dict(r)
-            rr["stage"] = r.get("stage") or st
-            rr["struct_asof"] = asof
-            # 叠实时价：close 一并替换，否则「现价」与「距ZG」「判据实测值」
-            # 会各说各话（一个用 11-06 收盘、一个用当下）
-            if r["code"] in lmap:
-                px, pct = lmap[r["code"]]
-                rr["lpx"], rr["lpct"] = px, pct
-                rr["close"] = px
-                rr["pct"] = (pct or 0) / 100.0
-                if rr.get("zg"):
-                    rr["dist_zg"] = px / rr["zg"] - 1
-                # 位置也按实时价重算：只换 close 不换 pos，详情页会出现
-                # 「现价 19.05 / 距 ZG +4.3% / 位置：枢内」这种自相矛盾的标签
-                rr["lpos"] = _lpos(px, rr.get("zd"), rr.get("zg"))
-            k = load_kline(r["code"]) if st != "中枢" else None
-            rr["svg"] = _svg(rr, k)
-            rr["ev"] = build_evidence(rr)
-            rows.append(rr)
+        rows = [_mkrow(r, st)
+                for r in j["buckets"].get(st, [])[:args.per_stage]]
         data[st] = rows
         shown[st] = len(rows)
+
+    # ── 可操作五层（A/B/E）：与飞书卡片同一套语言 ────────────────
+    # 卡片说「B 可介入 3 只」，点开就必须是这 3 只。九态是结构描述、
+    # 五层是操作依据，两个视角并存：首页先给五层，往下才是九态全貌。
+    jd = _newest_judge()
+    layer_order, layer_map, layer_counts = [], {}, {}
+    if jd:
+        for key, label, desc, clr in LAYER_META:
+            items = (jd.get(key) or [])[:args.per_stage]
+            if not items:
+                continue
+            data[label] = [
+                _mkrow(it, label, {"layer": key, "stage": label,
+                                   "volr": it.get("volr"),
+                                   "guard": it.get("guard")})
+                for it in items]
+            layer_counts[label] = (jd.get("counts") or {}).get(key, len(data[label]))
+            shown[label] = len(data[label])
+            layer_order.append(label)
+            layer_map[key] = label
+            LAYER_DESC[label] = desc
+            LAYER_COLOR[label] = clr
 
     # 卡片
     cards = "".join(
@@ -609,12 +720,14 @@ def main():
     else:
         sub_line = f"操作级别 日线 · 窗口 {lookback} 根 · 可判 {judged} 只"
 
+    order_all = layer_order + order
     data_js = json.dumps({
-        **{st: data.get(st, []) for st in order + ["中枢"]},
-        "counts": counts,
+        **{st: data.get(st, []) for st in order_all + ["中枢"]},
+        "counts": {**counts, **layer_counts},
         "shown": shown,
-        "desc": STAGE_DESC,
-        "color": STAGE_COLOR,
+        "desc": {**STAGE_DESC, **LAYER_DESC},
+        "color": {**STAGE_COLOR, **LAYER_COLOR},
+        "layerMap": layer_map,
     }, ensure_ascii=False, separators=(",", ":"))
 
     html_txt = _BUILD.format(
@@ -625,7 +738,7 @@ def main():
         run_at=html.escape(j.get("run_at") or ""),
         engine_note="引擎 chanlun_signal，非形态打分。"
                     "本页零重算，判定口径以 pool_state.py 为准。",
-        data_js=data_js, order_js=json.dumps(order, ensure_ascii=False),
+        data_js=data_js, order_js=json.dumps(order_all, ensure_ascii=False),
     )
 
     with open(args.out, "w", encoding="utf-8") as f:
