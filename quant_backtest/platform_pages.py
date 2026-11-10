@@ -80,10 +80,13 @@ CATALOG = [
          asof=("json", "pool_state"), primary=True),
     dict(src="pool_report_h5.html", out="pool_report_h5.html", domain="structure",
          title="结构日报 · 手机版", sub="五层判定 + 九态名单 + 逐票证据卡",
-         asof=("json", "pool_state")),
+         asof=("json", "pool_state"), hero=True,
+         hero_sub="五层门闸逐层看：每层放行多少只、名单是谁，每票带证据卡，"
+                  "盘中叠实时价与收盘口径分开"),
     dict(src="pool_pc.html", out="pc.html", domain="structure",
          title="结构工作台 · PC", sub="三栏：选票 / 自绘 K 线与中枢 / 判据逐条",
-         asof=("json", "pool_state")),
+         asof=("json", "pool_state"), hero=True,
+         hero_sub="左栏选票，中间自绘 K 线与中枢，右栏判据逐条对错"),
     dict(src="pool_state.html", out="pool_state.html", domain="structure",
          title="结构池全景", sub="含中枢档 1005 只，全量九态明细",
          asof=("json", "pool_state")),
@@ -91,9 +94,16 @@ CATALOG = [
     # —— 板块 ——
     dict(src="sector_platform.html", out="sector_platform.html", domain="sector",
          title="板块操作平台", sub="465 板块位置 × 成分买点占比 × 结构优先排序",
-         asof=("json", "sector_state"), primary=True),
+         asof=("json", "sector_state"), primary=True, hero=True,
+         hero_sub="先看板块自己的位置与强度，再看成分股里买点占比，"
+                  "与个股层同源口径交叉验证"),
 
     # —— 选股 ——
+    dict(src="pool_pc2.html", out="pool_pc2.html", domain="pick",
+         title="选股工作台 v2", sub="三级下钻：档卡片 → 档内全列表 → 个股全部关系",
+         asof=("json", "pool_state"), primary=True, hero=True,
+         hero_sub="五档各多少只、沪深300 成分在池几只；点档看 top5 与全列表，"
+                  "点个股看结构/行业/RPS/龙虎榜/信号史全部关系"),
     dict(src="premarket.html", out="premarket.html", domain="pick",
          title="盘前分析", sub="隔夜、缺口、行业资金、赚钱效应", asof=("meta",)),
     dict(src="bt_hub.html", out="bt_hub.html", domain="pick",
@@ -551,6 +561,17 @@ h1{font-size:20px;margin:0 0 4px;letter-spacing:.2px}
 .sec h2{font-size:15px;margin:0;letter-spacing:.3px}
 .sec .d{color:#7b8698;font-size:11.5px}
 .sec .c{color:#5a6577;font-size:11px;margin-left:auto}
+/* HERO：第一屏四张核心大卡——进门先回答「今天该看什么」 */
+.hero-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0 6px}
+.card.hero{padding:16px 18px;border-radius:12px;background:#121a25;
+ border:1px solid #2a3648;min-height:118px}
+.card.hero:hover{background:#17212e;border-color:#3a4c66}
+.card.hero .t{font-size:17px}
+.card.hero .s{font-size:12.5px;color:#8fa0b5;margin-top:5px}
+.card.hero .guide{font-size:12px;color:#a8b8cc;margin-top:8px;line-height:1.6;
+ padding:7px 10px;border-radius:7px;background:#0e1520;border-left:2px solid #3a5a86}
+.card.hero .m{margin-top:10px}
+.card.hero .dt{font-size:11.5px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:10px}
 .card{display:block;padding:12px 13px;border-radius:9px;background:#111720;
  border:1px solid #1e2733;text-decoration:none;color:inherit;transition:.14s;position:relative}
@@ -571,6 +592,7 @@ h1{font-size:20px;margin:0 0 4px;letter-spacing:.2px}
 .note{margin:14px 0 0;padding:11px 13px;border-radius:8px;background:#101821;
  border-left:3px solid #38506b;color:#94a3b8;font-size:12px;line-height:1.75}
 @media (max-width:520px){.grid{grid-template-columns:1fr 1fr;gap:8px}
+ .hero-grid{grid-template-columns:1fr}
  .card{padding:10px}.card .t{font-size:13px}
  .card .s{font-size:11px;display:-webkit-box;-webkit-line-clamp:1;
   -webkit-box-orient:vertical;overflow:hidden}
@@ -632,8 +654,28 @@ def build_home(rows=None):
     h.append('<span class="tchip">生成 %s</span>' % datetime.now().strftime("%m-%d %H:%M"))
     h.append('</div>')
 
+    # HERO 第一屏：四张核心大卡（hero=True），进门先回答「今天该看什么」。
+    # 大卡也是 class="card"，sharecode 注入与 h5_pack 门面卡片自检都兼容。
+    heroes = [r for r in rows if r["item"].get("hero") and not r["missing"]]
+    if heroes:
+        h.append('<div class="sec"><h2>今天看什么</h2>'
+                 '<span class="d">四个核心工作台，点进去就是当天的活</span></div>')
+        h.append('<div class="hero-grid">')
+        for r in heroes:
+            it = r["item"]
+            h.append('<a class="card hero" href="%s">'
+                     '<div class="t">%s</div>'
+                     '<div class="s">%s</div>'
+                     '<div class="guide">%s</div>'
+                     '<div class="m"><span class="dt %s">%s · %s</span></div></a>'
+                     % (it["out"], it["title"], it["sub"] or "&nbsp;",
+                        it.get("hero_sub") or "&nbsp;",
+                        r["level"], r["asof"] or "?", r["note"]))
+        h.append('</div>')
+
     for key, title, desc, cadence in DOMAINS:
-        items = by_dom.get(key) or []
+        items = [r for r in (by_dom.get(key) or [])
+                 if not r["item"].get("hero")]  # hero 页已在第一屏，不重复
         if not items:
             continue
         h.append('<div class="sec"><h2>%s</h2><span class="d">%s</span>'

@@ -183,6 +183,31 @@ def main():
         else:
             log("OK", "流水线日志无 fail/abort")
 
+    # 7. 缓存自愈过程可见性（11-10 影子台账日期滚动自愈的首考验收）
+    #    有今天的 rescan 日志 → 核对重扫结果；没有 → 今天缓存本来就在（15:10
+    #    先跑已建好），INFO 即可。自愈失败最终会体现在第 5 项六腿 error 上。
+    res_logs = sorted(glob.glob(os.path.join(REPORTS, "market_scan_rescan_*.log")),
+                      key=os.path.getmtime)
+    today_logs = []
+    for p in res_logs:
+        mt = datetime.fromtimestamp(os.path.getmtime(p)).date()
+        if mt == today:
+            today_logs.append(p)
+    if today_logs:
+        for p in today_logs[-2:]:
+            txt = open(p, encoding="utf-8", errors="replace").read().strip()
+            last = txt.splitlines()[-1] if txt else ""
+            if "缓存已生成" in last and "rc=0" in last:
+                log("OK", "缓存自愈重扫成功（%s）" % os.path.basename(p))
+            elif "缓存仍缺失" in last or "自愈失败" in last:
+                log("WARN", "缓存自愈重扫未产出缓存（%s 末行：%s）"
+                            "——六腿将报缓存错误，人工跑 market_scan 重扫"
+                            % (os.path.basename(p), last[:80]))
+            else:
+                log("WARN", "重扫日志 %s 无结论行（进程被截断？）" % os.path.basename(p))
+    else:
+        print("[INFO] 今天未触发缓存重扫（滚动日缓存已在位或检查先于流水线）")
+
     print("== 汇总：ALERT %d / WARN %d ==" % (len(ALERTS), len(WARNS)))
     return 2 if ALERTS else (1 if WARNS else 0)
 
