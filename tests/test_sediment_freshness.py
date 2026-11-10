@@ -43,6 +43,8 @@ CREATE TABLE intel_briefs (
   code TEXT NOT NULL, trade_date TEXT NOT NULL, kind TEXT NOT NULL,
   name TEXT, tier TEXT, facts TEXT, conclusion TEXT,
   engine TEXT, engine_label TEXT, model TEXT, degrade_note TEXT, built_at TEXT,
+  assumptions TEXT, alternatives TEXT, disconfirming_evidence TEXT,
+  information_gaps TEXT, early_warning TEXT, feedback_due TEXT,
   PRIMARY KEY (code, trade_date, kind))
 """
 

@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "note": "情报队列排序标准与权重（P1）。权重须留痕；任何调整走任务单并重跑敏感性。",
+  "scale": [1, 5],
+  "criteria": [
+    {"key": "impact", "label": "影响", "weight": 0.30},
+    {"key": "timeliness", "label": "时效", "weight": 0.20},
+    {"key": "evidence", "label": "证据强度", "weight": 0.25},
+    {"key": "actionability", "label": "可行动性", "weight": 0.15},
+    {"key": "cost", "label": "成本", "weight": 0.10}
+  ],
+  "sensitivity": {"delta": 0.25, "top_n": 5}
+}

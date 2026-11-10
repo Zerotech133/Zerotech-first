@@ -544,6 +544,15 @@ def _sediment(code: str, days: int):
         try:
             row = con.execute(
                 "SELECT trade_date, facts, conclusion, engine, engine_label,"
+                " model, degrade_note, name, built_at, assumptions,"
+                " alternatives, disconfirming_evidence, information_gaps,"
+                " early_warning, feedback_due FROM intel_briefs"
+                " WHERE code=? AND kind='story'"
+                " ORDER BY trade_date DESC LIMIT 1", (code,)).fetchone()
+        except sqlite3.OperationalError:
+            # 旧库未迁移（P0 六字段缺失）：回退旧列，研判照常可读
+            row = con.execute(
+                "SELECT trade_date, facts, conclusion, engine, engine_label,"
                 " model, degrade_note, name, built_at FROM intel_briefs"
                 " WHERE code=? AND kind='story'"
                 " ORDER BY trade_date DESC LIMIT 1", (code,)).fetchone()
@@ -553,7 +562,7 @@ def _sediment(code: str, days: int):
         return None
     if not row:
         return None
-    td, facts, concl, eng, elabel, model, note, name, built = row
+    td, facts, concl, eng, elabel, model, note, name, built = row[:9]
     td_s = str(td)[:10]
     try:
         dt.date.fromisoformat(td_s)
@@ -565,6 +574,15 @@ def _sediment(code: str, days: int):
         return None
     today_iso = dt.date.today().isoformat()
     stale = not (td_s == today_iso and str(built or "")[:10] == today_iso)
+    # P0 判断层：六字段可空；没填不代表研判无效，只代表未过 G4 挑战记录
+    judgment = {}
+    judgment_cols = ("assumptions", "alternatives", "disconfirming_evidence",
+                     "information_gaps", "early_warning", "feedback_due")
+    if len(row) > 9:
+        for i, key in enumerate(judgment_cols):
+            val = row[9 + i]
+            if val not in (None, ""):
+                judgment[key] = val
     return {
         "ok": True, "schema": "jev_interpret.v1",
         "kind": "story", "code": code, "name": name,
@@ -574,6 +592,8 @@ def _sediment(code: str, days: int):
         "degrade_note": note,
         "facts": facts,
         "conclusion": concl,
+        "judgment": judgment,
+        "judgment_schema": "intel_judgment.v1",
         "generated_at": built,
         "sediment": {"trade_date": td, "built_at": built, "stale": stale,
                      "expect_trade_date": expect, "anchor": anchor,

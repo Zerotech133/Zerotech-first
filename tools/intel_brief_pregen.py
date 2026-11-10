@@ -70,10 +70,31 @@ CREATE TABLE IF NOT EXISTS intel_briefs (
     degrade_note TEXT,
     datasig      TEXT,
     built_at     TEXT,
+    -- P0 判断层字段（可空、向后兼容；发布前按 G4 检查单填写）
+    assumptions            TEXT,
+    alternatives           TEXT,
+    disconfirming_evidence TEXT,
+    information_gaps       TEXT,
+    early_warning          TEXT,
+    feedback_due           TEXT,
     PRIMARY KEY (code, trade_date, kind)
 );
 CREATE INDEX IF NOT EXISTS idx_ib_date ON intel_briefs(trade_date, tier);
 """
+
+# P0：旧库平滑迁移（只加列、不改历史行；重复执行幂等）
+JUDGMENT_COLS = (
+    "assumptions", "alternatives", "disconfirming_evidence",
+    "information_gaps", "early_warning", "feedback_due",
+)
+
+
+def _migrate_judgment_cols(db) -> None:
+    cols = {r[1] for r in db.execute("PRAGMA table_info(intel_briefs)")}
+    for col in JUDGMENT_COLS:
+        if col not in cols:
+            db.execute("ALTER TABLE intel_briefs ADD COLUMN %s TEXT" % col)
+    db.commit()
 
 _LOG_FP = None
 
@@ -138,6 +159,7 @@ def pregen(tiers: set, trade_date: str, limit: int = 0, force: bool = False,
     db = sqlite3.connect(FACTS_DB)
     db.executescript(DDL)
     db.commit()
+    _migrate_judgment_cols(db)
 
     done = skipped = failed = 0
     stat = {"local": 0, "cloud": 0, "rule": 0}
