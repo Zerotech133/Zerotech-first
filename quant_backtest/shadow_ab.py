@@ -34,6 +34,7 @@ import json
 import math
 import os
 import statistics
+import subprocess
 import sys
 import time
 
@@ -49,6 +50,45 @@ OUT = os.path.join(BASE, "reports", "bt10m_shadow.json")
 SHADOW_DIR = os.path.join(BASE, "data", "shadow")
 
 WINDOWS = list(V.WINDOWS) + [("PRE", "20231010", "20240930", "第三窗口")]
+
+# 事件缓存根（shadow_ab.BASE=quant_backtest 目录；引擎里的 cache_fp 以仓库根
+# 为 BASE 再拼 quant_backtest，两边落地是同一目录，别再叠一层 quant_backtest）
+SIG_DIR = os.path.join(BASE, "data", "sig_events")
+RESCAN_LOG = os.path.join(BASE, "reports", "market_scan_rescan_%s.log")
+
+
+def ensure_sig_cache(d0, d1):
+    """日期滚动自愈：v3 事件缓存缺失则自动重扫 market_scan（11-10 判例）。
+
+    d1 滚到新交易日后缓存名 (d0,d1) 变化，六腿全部报「缓存不存在」；
+    当天靠手工重扫救回，裁定改为流水线内自愈。重扫 ~3 分钟、32 核，
+    输出落 reports/market_scan_rescan_<d1>.log（长跑输出必须落文件）。
+    返回 (ok, cache_fp)；**内部任何异常都吞掉返回 False**——调用方
+    （pool_daily 第 7 步）是 soft，六腿各自 run_job 会再报出同样的缓存
+    错误进台账，自愈本身绝不能打断 18:30 链。
+    """
+    cache_fp = os.path.join(SIG_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
+    try:
+        if os.path.exists(cache_fp):
+            return True, cache_fp
+        log_fp = RESCAN_LOG % d1
+        print("[rescan] 缓存缺失：%s" % cache_fp, flush=True)
+        print("[rescan] 自动重扫 market_scan --d0 %s --d1 %s（输出 %s）"
+              % (d0, d1, log_fp), flush=True)
+        t0 = time.time()
+        with open(log_fp, "w", encoding="utf-8") as lf:
+            rc = subprocess.call(
+                [sys.executable, os.path.join(BASE, "market_scan.py"),
+                 "--d0", d0, "--d1", d1],
+                stdout=lf, stderr=subprocess.STDOUT, cwd=BASE)
+        ok = os.path.exists(cache_fp)
+        print("[rescan] rc=%s 用时 %.1fs 缓存%s"
+              % (rc, time.time() - t0, "已生成" if ok else "仍缺失"), flush=True)
+        return ok, cache_fp
+    except Exception as e:  # 自愈失败不影响主链（soft 语义）
+        print("[rescan] 自愈失败（不阻断，六腿将各自报缓存错误）：%r" % e,
+              flush=True)
+        return False, cache_fp
 
 
 def _pct(xs, q):
@@ -146,6 +186,9 @@ def daily():
     today = time.strftime("%Y%m%d")
     d1 = today
     d0 = str(int(today[:4]) - 1) + today[4:]  # 滚动一年
+
+    # 日期滚动自愈（11-10 判例）：缓存缺失自动重扫，失败不抛，六腿各自报错进台账
+    ensure_sig_cache(d0, d1)
 
     # 2026-11-10 固化 DEFAULT_PRESET=v3 后主腿是 v3；d_legacy 继续留作对照；
     # 2026-11-10 口径固化 v1（bt10m_frozen.py）：新增 F1（v3+止损−12%，固化
