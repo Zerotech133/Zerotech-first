@@ -276,6 +276,31 @@ def regime_of(day):
     return "low", "池指数<MA60"
 
 
+def regime_tier_of(day):
+    """五档强度（0 最弱 ~ 4 最强），与 regime_of 用同一批 D-1 值，只是切得更细。
+
+    为什么再切一刀：三档把「刚站上 MA20」和「远在 MA20 之上」压成同一个 high 帽，
+    但这两年 high 档内部的行情强度差了三倍——牛市跑输的缺口就在这里。五档让
+    「强的时候敢满仓、刚转强的时候先半仓」，而不是一刀切。
+    """
+    i = idx_nav.index.get_loc(day)
+    if i == 0:
+        return 2, "首日默认"
+    v, m20v, m60v = idx_nav.iloc[i - 1], ma20.iloc[i - 1], ma60.iloc[i - 1]
+    if pd.isna(m60v) or pd.isna(m20v) or not m20v:
+        return 2, "均线未预热"
+    if v >= m20v:
+        gap = v / m20v - 1.0
+        if gap >= 0.05:
+            return 4, "池指数高出MA20 5%以上"
+        if gap >= 0.02:
+            return 3, "池指数高出MA20 2~5%"
+        return 2, "池指数刚站上MA20"
+    if v >= m60v:
+        return 1, "MA60≤池指数<MA20"
+    return 0, "池指数<MA60"
+
+
 # ============================================================
 # 信号源（自算 + 缓存）
 # ============================================================
@@ -301,6 +326,22 @@ BUY_FILTER_LABEL = {
     "3": "仅三买",
     "all": "一/二/三类全要",
 }
+
+
+def _resolve_buy_filter(buy_filter):
+    """买点过滤严格解析：非法值直接抛 ValueError，禁止静默回落。
+
+    2026-11-10 A4 收口：run_job 入口守卫（2116-2124）只覆盖参数路径，
+    calc_chanlun_signals / calc_chanlun_signals_market 内部两处
+    ``.get(buy_filter, 兜底)`` 仍会把未知值悄悄变 all/3买——回测数字
+    看着正常、结论完全错（2026-11-09 判例：1买/3买 同值）。所有内部
+    调用一律经本函数，未知值 fail-fast。"""
+    if buy_filter not in BUY_FILTERS:
+        raise ValueError(
+            "buy_filter=%r 不在 %s 内，请显式给合法值（禁止静默回落 all/3买）"
+            % (buy_filter, sorted(BUY_FILTERS))
+        )
+    return BUY_FILTERS[buy_filter]
 SIG_EVENTS_CACHE = os.path.join(
     BASE, "quant_backtest", "data", "sig_events", "sig_events_%s_%s.json"
 )
@@ -333,7 +374,7 @@ def calc_chanlun_signals(d0, d1, progress=None, buy_filter="all"):
     buy_filter：买点等级过滤（"23"=仅二买三买·10-13 拍板 / "2" / "3" / "all"）。
     277 账本 sig_buy 不带买点类型 → 非 all 时走事件缓存自算（首跑数分钟，之后秒级）。
     """
-    allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["all"])
+    allowed = _resolve_buy_filter(buy_filter)
     if (
         allowed == BUY_FILTERS["all"]
         and d0 >= "20251013"
@@ -432,6 +473,8 @@ def calc_chanlun_signals_market(
     事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。
     hist_st（K-STOCK-311）：历史 ST 回溯——窗口内任一时点曾为 ST 的股票事件全剔
     （修现名剔 ST 的幸存者偏差；零重扫·等价宇宙剔除）。"""
+    # A4 fail-fast：非法 buy_filter 在碰缓存前就抛（禁止静默回落 3买）
+    allowed = _resolve_buy_filter(buy_filter)
     cache_fp = os.path.join(
         BASE,
         "quant_backtest",
@@ -489,7 +532,6 @@ def calc_chanlun_signals_market(
             before = len(events)
             events = [ev for ev in events if ev.get("stock") not in st_set]
             n_drop = before - len(events)
-    allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["3"])
     sig_buy, sig_sell = {}, {}
     sig_zg = {}  # day -> {stock: (zg, zd)}（三买失效离场）
     sig_meta = {}  # day -> {stock: {score,zg,zd,bei,bei2,vr}}（评分·展示）
@@ -730,6 +772,18 @@ class BacktestConfig:
     tp_pct: float = 0.0
     tp_decay: float = 0.0
     tp_min: float = 0.0
+    # 止盈成交口径（2026-11-10 影子对照）：回测里「盘中触价 = 按目标价成交」是乐观假设，
+    # 真实限价单会遇到排队、封板、尾盘急拉回落。四档口径用来量「假设价 vs 可实现价」的偏差：
+    #   limit    = max(目标价, 开盘价)——乐观档（历史默认，报告里的数字都是这档）
+    #   close    = 触价日按收盘价成交（冲高回落则少赚，冲高不回落则多赚）
+    #   gap_only = 只有开盘价就 ≥ 目标价才算成交（盘中触价一律视为没成交，最保守）
+    #   slip     = 目标价 × (1 − tp_slip)——模拟挂单滑点
+    tp_fill_mode: str = "limit"
+    tp_slip: float = 0.0
+    # 五档仓位（2026-11-10 老田「更细的分档」）：三档只有 high/mid/low，high 内部强度差
+    # 三倍却同帽。cap_mode="regime_tiers" 时按池指数相对 MA20/MA60 的位置分 0~4 档，
+    # cap 从 cap_tiers[0]（最弱）线性取到 cap_tiers[-1]（最强·实测高出 MA20 5% 以上）。
+    cap_tiers: tuple = (0.20, 0.35, 0.50, 0.80, 1.00)
     # 追高门槛按 regime 分档（2026-11-10 老田）：<0 表示该档沿用全局 max_ext_pct。
     # 牛市里强势股本来就会远离中枢，全局 3% 会系统性把仓位从最该买的票上挪开。
     max_ext_high: float = -1.0
@@ -753,9 +807,17 @@ class BacktestConfig:
             regime_lv, self.cap_mid
         )
 
+    def cap_of_tier(self, tier):
+        """五档仓位帽（cap_mode="regime_tiers"）。tier 0~4，越界夹到两端。"""
+        t = tuple(self.cap_tiers) or (0.20, 0.35, 0.50, 0.80, 1.00)
+        i = max(0, min(len(t) - 1, int(tier)))
+        return float(t[i])
+
     def cap_desc(self):
         if self.cap_mode == "fixed":
             return "固定 %d%%" % round(self.cap_fixed * 100)
+        if self.cap_mode == "regime_tiers":
+            return "五档 " + "/".join("%d" % round(x * 100) for x in self.cap_tiers)
         return "regime %d/%d/%d" % (
             round(self.cap_high * 100),
             round(self.cap_mid * 100),
@@ -811,17 +873,20 @@ def run_backtest(
     win = [d for d in cal_idx_all if cfg.d0 <= d <= cfg.d1]
     cal_saved, cal = cal, win
 
-    def rec(day, side, s, how, pnl=None):
-        trades.append(
-            {
-                "day": day,
-                "stock": s,
-                "side": side,
-                "how": how,
-                "note": "",
-                "pnl": None if pnl is None else round(pnl * 100, 2),
-            }
-        )
+    def rec(day, side, s, how, pnl=None, **extra):
+        """记一笔成交。extra 用于带成交明细（目标价/成交价/当日四价），
+        供事后做「假设价 vs 可实现价」的影子对照——只加键不改既有键，旧消费者无感。"""
+        d = {
+            "day": day,
+            "stock": s,
+            "side": side,
+            "how": how,
+            "note": "",
+            "pnl": None if pnl is None else round(pnl * 100, 2),
+        }
+        if extra:
+            d.update(extra)
+        trades.append(d)
 
     for di, day in enumerate(win):
         if progress and di % 20 == 0:
@@ -923,7 +988,14 @@ def run_backtest(
 
         # A2. 开盘买入（统一 T+1 open；runup 帽 / 总仓位帽 / slot / 信号有效期）
         regime_lv, regime_why = regime_of(day)
-        capv = cfg.cap_of(regime_lv)
+        # 五档模式：帽按 tier 取，但 regime_lv 仍保留三档语义供槽数联动/追高分档/闸门使用
+        # （它们都是按「三档」设计的，换五档会连带改三个下游口径，本轮只动仓位这一件事）。
+        tier_lv, tier_why = regime_tier_of(day)
+        capv = (
+            cfg.cap_of_tier(tier_lv)
+            if cfg.cap_mode == "regime_tiers"
+            else cfg.cap_of(regime_lv)
+        )
         # 槽数×regime 联动（K-STOCK-317·313 实锤弱市年 t5 占优）：mid 档收缩槽数，
         # high 档满编 top_n，low 档被 gate 挡不涉及。已持仓超联动数不强制减（仅限新开仓）。
         top_n_eff = cfg.top_n
@@ -1227,7 +1299,24 @@ def run_backtest(
                 if hi is None or hi < want:
                     continue
                 op = px(s, day, "open")
-                fill = max(want, op) if op is not None else want
+                # 成交口径（影子对照）：回测默认「触价=按目标价成交」，实盘有排队/封板/
+                # 尾盘回落。四档不再假设，直接量出偏差区间。
+                _fm = cfg.tp_fill_mode
+                if _fm == "gap_only":
+                    # 只有开盘就 ≥ 目标价才算成交（盘中触价一律当没成交→留给下一日）
+                    if op is None or op < want:
+                        continue
+                    fill = op
+                elif _fm == "close":
+                    # 触价日按收盘价：收盘回到目标下方 → 视为挂单没成交、尾盘了结
+                    cl = px(s, day, "close")
+                    if cl is None:
+                        continue
+                    fill = min(want, cl) if cl > 0 else want
+                elif _fm == "slip":
+                    fill = want * (1.0 - max(0.0, cfg.tp_slip))
+                else:  # limit（乐观档·历史默认）
+                    fill = max(want, op) if op is not None else want
                 val = p["val"] * fill / p["ref_px"]
                 pnl = val / p["cost"] - 1
                 cash += val * (1 - cfg.cost)
@@ -1243,7 +1332,13 @@ def run_backtest(
                         "pnl_pct": round(pnl * 100, 2),
                     }
                 )
-                rec(day, "SELL", s, "take_profit", pnl)
+                rec(day, "SELL", s, "take_profit", pnl,
+                    want=round(want, 3), fill=round(fill, 3),
+                    d_open=(round(op, 3) if op is not None else None),
+                    d_high=(round(hi, 3) if hi is not None else None),
+                    d_close=(round(px(s, day, "close"), 3)
+                             if px(s, day, "close") is not None else None),
+                    tp_mode=cfg.tp_fill_mode)
 
         # D. 收盘事件
         if cfg.strategy == "chanlun":
@@ -1626,7 +1721,101 @@ DEFAULTS = {
     "tp_pct": 0.0,
     "tp_decay": 0.0,
     "tp_min": 0.0,
+    "tp_fill_mode": "limit",
+    "tp_slip": 0.0,
+    "cap_tiers": [0.20, 0.35, 0.50, 0.80, 1.00],
 }
+
+
+# ============================================================
+# 命名预设（2026-11-10 老田：把 V2 固化，别再手抄参数）
+# ------------------------------------------------------------
+# 为什么要有预设：这个项目已经出现过四次「参数看着传了、实际没生效」
+# （cost 漏传 / BUY_FILTERS 缺键 / _r() 吞字符串 / 落盘对象不一致）。
+# 手抄参数进脚本，等于给第五次留门。预设只在一处定义，回测、日报、
+# 影子对照全部引用同一份常量，改口径只改这里。
+#
+# v2      = 唯一在三窗口都站住的那套（PRE/IN/OOS 122bp：+5.68% / +8.38% / +29.62%）
+# d_legacy= 上一轮的头号（20 日强平 + 移动止损 5%/3.5%），留作影子对照的 B 腿
+# ============================================================
+PRESETS = {
+    "v2": {
+        "max_ext_pct": 0.03,
+        "three_fail_exit": False,
+        "holding_max_days": 60,
+        "stop_pct": -0.08,
+        "tp_pct": 0.20,
+        "tp_decay": 0.0,
+        "tp_min": 0.02,
+        "trail_activate": 0.0,
+        "trail_drawdown": 0.0,
+        "exit_ma": 0,
+        "entry_ma": 0,
+    },
+    # v3（2026-11-10 固化）：v2 + 仓位 B100l20（牛市 100/中 50/弱市 20）
+    # + 止盈成交按目标价打 30bp 折。依据 reports/bt10m_v3.json：
+    #   Z1 三窗口 122bp：PRE +8.79 / IN +6.45 / OOS +32.69，三年 +53.66%（v2 是 +48.46%），
+    #   且 PRE（未参与挑参的窗口）是全场最高；影子诊断 45~50% 触价单冲高回落，
+    #   limit 乐观口径三年虚增约 3.7pp，slip30 是实测折价下沿。
+    # 回测对照请用 preset="v2" 或 "d_legacy"；daily 影子对照两腿同时跑。
+    "v3": {
+        "max_ext_pct": 0.03,
+        "three_fail_exit": False,
+        "holding_max_days": 60,
+        "stop_pct": -0.08,
+        "tp_pct": 0.20,
+        "tp_decay": 0.0,
+        "tp_min": 0.02,
+        "trail_activate": 0.0,
+        "trail_drawdown": 0.0,
+        "exit_ma": 0,
+        "entry_ma": 0,
+        "cap_mode": "regime_8050",   # 三档 high/mid/low（档位可配，Z1 实测口径）
+        "cap_high": 1.00,
+        "cap_mid": 0.50,
+        "cap_low": 0.20,
+        "top_n": 10,
+        "slot_pct": 0.10,
+        "slot_mode": "fixed",
+        "tp_fill_mode": "slip",
+        "tp_slip": 0.003,
+    },
+    "d_legacy": {
+        "max_ext_pct": 0.03,
+        "three_fail_exit": False,
+        "holding_max_days": 20,
+        "stop_pct": 0.0,
+        "tp_pct": 0.0,
+        "tp_decay": 0.0,
+        "tp_min": 0.0,
+        "trail_activate": 0.05,
+        "trail_drawdown": 0.035,
+        "exit_ma": 0,
+        "entry_ma": 0,
+    },
+}
+# 现行默认（日报/新建回测都走这个）。改口径只改这一行。
+DEFAULT_PRESET = "v3"
+
+
+def apply_preset(p, base=None):
+    """DEFAULTS → 预设 → 调用方显式参数，三层覆盖；返回合并后的完整参数表。
+
+    语义要点：预设只覆盖 DEFAULTS 里那些**没被调用方显式指定**的键。
+    显式给了同名键（哪怕值等于 DEFAULTS）必须盖回预设，否则「拿单参数去撞默认」
+    这种最基本的对照实验做不了。
+    preset 显式为 none/off 时不叠预设（纯 DEFAULTS 行为，老脚本靠这个保持原样）。
+    """
+    out = dict(DEFAULTS if base is None else base)
+    raw = {k: v for k, v in (p or {}).items() if v not in (None, "")}
+    name = raw.get("preset", DEFAULT_PRESET)
+    if name not in (None, "", "none", "off", "False", False):
+        if str(name) not in PRESETS:
+            raise ValueError("未知预设 %r（可选：%s）" % (name, ", ".join(PRESETS)))
+        out.update(PRESETS[str(name)])
+    out.update(raw)
+    return out
+
 
 
 def _parse_minute_datetime(value, field_name):
@@ -1795,8 +1984,12 @@ def run_job(params: dict, job_id: str, progress=None):
     if (params or {}).get("execution_mode", "daily_legacy") == "minute_store":
         return _run_minute_store_job(params or {}, job_id, progress)
     try:
-        p = dict(DEFAULTS)
-        p.update({k: v for k, v in (params or {}).items() if v not in (None, "")})
+        # 三层覆盖：DEFAULTS → 命名预设（默认 v2）→ 调用方显式参数。
+        # 2026-11-10 老田：把唯一三窗口站住的 V2 固化，不再让每个脚本手抄一遍。
+        try:
+            p = apply_preset(params)
+        except ValueError as e:
+            return None, str(e)
         universe = p["universe"] if p["universe"] in ("market", "pool76") else "market"
         if universe == "market":
             _ensure_market_loaded(progress)
@@ -1870,7 +2063,11 @@ def run_job(params: dict, job_id: str, progress=None):
             else "fixed",
             slot_min=max(0.005, min(0.5, _r("slot_min", 0.05))),
             slot_max=max(0.01, min(0.5, _r("slot_max", 0.10))),
-            cap_mode="fixed" if p["cap_mode"] == "fixed" else "regime_8050",
+            cap_mode=(
+                "fixed"
+                if p["cap_mode"] == "fixed"
+                else ("regime_tiers" if p["cap_mode"] == "regime_tiers" else "regime_8050")
+            ),
             cap_fixed=max(0.05, min(1.0, _r("cap_fixed", 0.80))),
             cap_high=max(0.05, min(1.0, _r("cap_high", 0.80))),
             cap_mid=max(0.05, min(1.0, _r("cap_mid", 0.50))),
@@ -1892,6 +2089,23 @@ def run_job(params: dict, job_id: str, progress=None):
             tp_pct=max(0.0, min(1.0, _num("tp_pct", 0.0))),
             tp_decay=max(0.0, min(0.05, _num("tp_decay", 0.0))),
             tp_min=max(0.0, min(1.0, _num("tp_min", 0.0))),
+            # 成交口径是字符串，直读（_r 走 float 会 ValueError→静默回落，前车之鉴）
+            tp_fill_mode=(
+                str(p.get("tp_fill_mode") or "limit").strip().lower()
+                if str(p.get("tp_fill_mode") or "limit").strip().lower()
+                in ("limit", "close", "gap_only", "slip")
+                else "limit"
+            ),
+            tp_slip=max(0.0, min(0.05, _num("tp_slip", 0.0))),
+            cap_tiers=tuple(
+                max(0.0, min(1.0, float(x)))
+                for x in (
+                    p.get("cap_tiers")
+                    if isinstance(p.get("cap_tiers"), (list, tuple))
+                    and len(p.get("cap_tiers")) == 5
+                    else (0.20, 0.35, 0.50, 0.80, 1.00)
+                )
+            ),
             # 注意：_r() = float(p.get(k) or dflt)，只适合数值。ladder_mode 是字符串，
             # 走 _r 会 ValueError→静默回落 "off"（本轮实测 8 组全同值才暴露）。必须直读。
             ladder_mode=str(p.get("ladder_mode") or "off").strip().lower(),
@@ -2184,7 +2398,9 @@ if __name__ == "__main__":
         help="手动票池文件（K-STOCK-333·全宇宙名单超 Windows 32K 命令行上限时用）：每行或逗号分隔代码，优先级低于 --manual-picks",
     )
     ap.add_argument(
-        "--cap-mode", default="regime_8050", choices=["regime_8050", "fixed"]
+        "--cap-mode", default="regime_8050",
+        choices=["regime_8050", "fixed", "regime_tiers"],
+        help="总仓位帽：regime_8050=三档 · fixed=固定 · regime_tiers=五档（池指数强度细分）",
     )
     ap.add_argument(
         "--cap-high", type=float, default=0.80, help="regime 高位总仓位帽（默认0.80）"
@@ -2210,8 +2426,31 @@ if __name__ == "__main__":
         default=0.05,
         help="追高帽：开盘较昨收涨幅>此值放弃（307 定稿 5%%·智策跳空纪律）",
     )
-    ap.add_argument("--stop-pct", type=float, default=0.0)
-    ap.add_argument("--holding-max", type=int, default=0)
+    # ---- 预设（2026-11-10 固化 V2）----
+    # 默认 v2：不带参数跑一次就是那条三窗口都站住的规则。
+    # 要复现历史口径用 --preset none（纯 DEFAULTS），旧对照用 --preset d_legacy。
+    ap.add_argument(
+        "--preset",
+        default=DEFAULT_PRESET,
+        choices=list(PRESETS) + ["none"],
+        help="规则预设：v2=现行默认（TP20%%/60日/-8%%止损/无失效线） · "
+        "d_legacy=旧头号（20日强平+移动止损5%%/3.5%%） · none=纯 DEFAULTS",
+    )
+    # 以下参数默认改成 SUPPRESS：不显式给就不进 params，让预设的值得以生效。
+    # （若保留 default=0.0，vars(args) 会把 0.0 当成「用户显式要求关掉」传给
+    #   apply_preset，V2 的 -8% 止损会被静默抹平——这正是本项目踩过四次的那类坑。）
+    ap.add_argument("--stop-pct", type=float, default=argparse.SUPPRESS,
+                    help="硬止损（预设 v2 = -0.08）")
+    ap.add_argument("--holding-max", type=int, default=argparse.SUPPRESS,
+                    help="持有上限（预设 v2 = 60 日）")
+    ap.add_argument("--tp-pct", type=float, default=argparse.SUPPRESS,
+                    help="目标位止盈（预设 v2 = 0.20）")
+    ap.add_argument("--tp-decay", type=float, default=argparse.SUPPRESS,
+                    help="目标每日下调幅度（预设 v2 = 0，不衰减）")
+    ap.add_argument("--tp-min", type=float, default=argparse.SUPPRESS,
+                    help="目标下限（预设 v2 = 0.02）")
+    ap.add_argument("--max-ext-pct", type=float, default=argparse.SUPPRESS,
+                    help="追高门槛（预设 v2 = 0.03）")
     ap.add_argument(
         "--buy-filter",
         default="3",
@@ -2226,9 +2465,9 @@ if __name__ == "__main__":
     )
     ap.add_argument(
         "--three-fail-exit",
-        default="true",
+        default=argparse.SUPPRESS,
         choices=["true", "false"],
-        help="三买失效离场：收盘跌破中枢即离场(默认开·缠论理论内规则)",
+        help="三买失效离场（预设 v2 = false：失效线锚在 zg，与目标位止盈口径冲突）",
     )
     ap.add_argument(
         "--fail-level",
@@ -2269,14 +2508,14 @@ if __name__ == "__main__":
     ap.add_argument(
         "--trail-activate",
         type=float,
-        default=0.0,
-        help="移动止损启动浮盈(0=关·智策CHAN族0.05·305)",
+        default=argparse.SUPPRESS,
+        help="移动止损启动浮盈（预设 v2 = 0 关；d_legacy = 0.05）",
     )
     ap.add_argument(
         "--trail-drawdown",
         type=float,
-        default=0.0,
-        help="移动止损峰值回撤幅(智策CHAN族0.035·305)",
+        default=argparse.SUPPRESS,
+        help="移动止损峰值回撤幅（预设 v2 = 0 关；d_legacy = 0.035）",
     )
     ap.add_argument(
         "--fail-buffer",

@@ -141,37 +141,66 @@ def is_st_pit_blocked(code, day, intervals=None):
     return False
 
 
+# 三买评分权重（2026-11-10 老田：位置 40/30/30 → 55/25/20）
+# ------------------------------------------------------------
+# 依据：位置分桶证据（三窗口）——close/zg−1 ≤2% 是唯一三年都为正的桶
+# （后20日 +1.44% / +1.06% / +6.49%），>20% 三年全负（−2.99% / −0.36% / −3.13%）。
+# 位置既然有单调性，就把它的权重从 40 提到 55；量能/背驰在 95 桶检验里从未通过
+# |t|≥2（背驰链路甚至 100% 空），降到 25/20。
+# 只改这里、不散落到函数里：改完必须重扫（评分是扫描器算好落缓存的）。
+# 2026-11-10 老田要求测 55/25/20，实测否证：IN 122bp +8.38%→+1.06%、OOS +29.62%→+26.25%
+# （PRE 不变：候选少于槽位排序不触发）。回退 40/30/30，参数保留可复测。
+SCORE_W = {"pos": 40.0, "vol": 30.0, "bei": 30.0}
+# 各维内部档位的相对比例（沿用旧结构，只按权重缩放，避免「权重一改档位也跟着变」）
+_POS_RATIO = (1.00, 0.80, 0.60, 0.35, 0.20)  # ≤2% / ≤5% / ≤10% / ≤20% / >20%
+_VOL_RATIO = (1.00, 0.80, 0.53, 0.27)  # ≥1.5 / ≥1.0 / ≥0.7 / <0.7
+_BEI_SPLIT = (0.60, 0.40)  # bei（回踩笔盘整背驰）: bei2（回踩vs离开力度背驰）
+
+
+def score_weights_tag():
+    """一行摘要，写进事件缓存 meta 供事后核对口径（换了权重没重扫=静默错配）。"""
+    return "pos%d/vol%d/bei%d" % (
+        SCORE_W["pos"],
+        SCORE_W["vol"],
+        SCORE_W["bei"],
+    )
+
+
 def score_3buy(close, zg, vr, bei, bei2):
-    """三买评分（0-100，老田"评分取前十"规律）：位置贴近 40 + 量能 30 + 背驰 30。
+    """三买评分（0-100，老田"评分取前十"规律）：位置 + 量能 + 背驰。
 
     - 位置：收盘距中枢上沿 zg 的回踩贴近度（贴近=洗盘充分·远离=追高风险）
     - 量能：信号日成交额 / 20 日均额（量比·放量过中枢优）
-    - 背驰：bei=回踩笔盘整背驰 18 分 · bei2=回踩vs离开力度背驰 12 分
+    - 背驰：bei=回踩笔盘整背驰 · bei2=回踩vs离开力度背驰
+    权重见 SCORE_W（默认 55/25/20）；内部档位按 _*_RATIO 比例缩放，总和恒 100。
     """
     if not zg or zg <= 0:
         return None
     t = close / zg - 1.0
     if t <= 0.02:
-        sp = 40
+        r = _POS_RATIO[0]
     elif t <= 0.05:
-        sp = 32
+        r = _POS_RATIO[1]
     elif t <= 0.10:
-        sp = 24
+        r = _POS_RATIO[2]
     elif t <= 0.20:
-        sp = 14
+        r = _POS_RATIO[3]
     else:
-        sp = 8
+        r = _POS_RATIO[4]
+    sp = SCORE_W["pos"] * r
     if vr is None:
-        sv = 15
+        sv = SCORE_W["vol"] * 0.5  # 无成交额数据：给中位，不奖不罚
     elif vr >= 1.5:
-        sv = 30
+        sv = SCORE_W["vol"] * _VOL_RATIO[0]
     elif vr >= 1.0:
-        sv = 24
+        sv = SCORE_W["vol"] * _VOL_RATIO[1]
     elif vr >= 0.7:
-        sv = 16
+        sv = SCORE_W["vol"] * _VOL_RATIO[2]
     else:
-        sv = 8
-    sb = (18 if bei else 0) + (12 if bei2 else 0)
+        sv = SCORE_W["vol"] * _VOL_RATIO[3]
+    sb = SCORE_W["bei"] * (
+        (_BEI_SPLIT[0] if bei else 0.0) + (_BEI_SPLIT[1] if bei2 else 0.0)
+    )
     return round(sp + sv + sb)
 
 
@@ -290,6 +319,9 @@ def scan_market(d0, d1, workers=None, progress=None):
         "workers": n,
         "seconds": round(time.time() - t0, 1),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        # 评分口径指纹：改了 SCORE_W 却没重扫 → 回测吃的是旧评分，
+        # 这种事在本项目已经发生过（参数看着传了、实际没生效）。写进产物就查得出来。
+        "score_weights": score_weights_tag(),
     }
     os.makedirs(OUT_DIR, exist_ok=True)
     fp = os.path.join(OUT_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
