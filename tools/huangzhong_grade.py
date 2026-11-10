@@ -18,7 +18,11 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DIR = ROOT / "docs" / "plans" / "2026-10-28_黄忠W1提交模板"
+_TEMPLATE_CANDIDATES = (
+    ROOT / "docs" / "plans" / "2026-10-28_黄忠W1提交模板",
+    ROOT / "docs" / "plans" / "_archive_20261110" / "2026-10-28_黄忠W1提交模板",
+)
+DEFAULT_DIR = next((p for p in _TEMPLATE_CANDIDATES if p.is_dir()), _TEMPLATE_CANDIDATES[0])
 OUT = ROOT / "work" / "huangzhong"
 
 GATE_ITEMS = ("compileall", "ports", "secrets", "names", "capabilities",
