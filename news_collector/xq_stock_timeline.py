@@ -81,7 +81,17 @@ def _ms_to_cst(ms):
 def load_queue(scope):
     cfg = json.load(open(QUEUE_F, encoding="utf-8"))
     items = cfg.get(scope) or cfg.get("all") or []
-    return sorted({i["code"].split(".")[0] for i in items})
+    codes = {i["code"].split(".")[0] for i in items}
+    # 侯风桥(HOUFENG)：并集合并侯风选股队列，纯增量，不削减现有缠论队列覆盖
+    hfq = os.path.join(HERE, "target_queue_houfeng.json")
+    if os.path.exists(hfq):
+        try:
+            hc = json.load(open(hfq, encoding="utf-8"))
+            hitems = hc.get(scope) or hc.get("all") or []
+            codes |= {i["code"].split(".")[0] for i in hitems}
+        except Exception:
+            pass
+    return sorted(codes)
 
 
 def load_seen(path):

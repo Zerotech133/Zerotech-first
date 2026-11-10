@@ -21,6 +21,7 @@
 | 9 | `quote_snapshot.py` | 行情快照 | 公开接口 | 长期在役 | 早于 10 月 | ✅ 计划任务 `QuoteSnapshot` | 快照 |
 | 10 | `tmp_guba_probe.py` / `tmp_irm_capture.py` | 探针 | 临时 | — | 11-09 | ❌ | tmp 日志 |
 | 11 | `run_kstock_intel.py` + `kstock_watchlist.json` | k_stock 持仓/近期出票标的（17只：A股8/港股3/美股6） | 标的驱动采集（irm 深交所互动易 / sse 上证 e 互动 / taoguba 淘股吧，均 requests 无头） | 老田 2026-11-10 指令（策略中台→OSINT1 桥） | 2026-11-10 | ✅ WorkBuddy 自动化 `KStockIntel 每日标的驱动采集`(07:30 ACTIVE) + 待管理员注册 Windows 任务 `KStockIntelDaily` | `data/{irm,sse,taoguba}/{code6}.jsonl` |
+| 12 | `run_houfeng_intel.py` + `houfeng_watchlist.json` + `target_queue_houfeng.json` | 侯风(HOUFENG) 选股策略产出（portal/houfeng/houfeng_pick_*.json 的 pool_off.picks，30只：SZ13/SH16/BJ1） | 标的驱动采集（irm 深交所.SZ / sse 上证.SH / taoguba 全A股含.BJ，均 requests 无头）；xq 经 `target_queue_houfeng.json` 并入 `xq_stock_timeline.load_queue` 并集（纯增量，不削减缠论465覆盖） | 老田 2026-11-10 指令（侯风平台→OSINT1 桥"把数据补齐"） | 2026-11-10 | ✅ WorkBuddy 自动化 `HoufengIntel 每日标的驱动采集`(07:40 ACTIVE, id `1e336f25…`)；串 07:00 xq → 07:30 k_stock → 07:40 侯风 | `data/{irm,sse,taoguba}/{code6}.jsonl` + xq 并入 `target_queue_chanlun.json` 全队列 |
 
 ## 二、审计前提订正（对 2026-11-10 整合版 §1.2 的反核）
 
@@ -38,3 +39,4 @@
 - [ ] **R4 文档订正**：整合版 §1.2/§2.2 + `docs/采集情报_板块手册.md` 同步改判（2026-11-10 已同步）
 - [ ] **红线维持**：采集频率/源/反爬不进渲染链路；#3/#4 增删号只改 `news_config.json`，不动代码
 - [ ] **R5 Windows 计划任务**：`KStockIntelDaily`(每日07:30) 注册脚本已备（`register_kstock_intel_task.ps1`）；当前非管理员会话注册被拒（"拒绝访问"），待管理员以管理员 PowerShell 执行；WorkBuddy 自动化已作兜底(07:30 ACTIVE，id `a4c50019…`)
+- [x] **R6 侯风桥落地**：#12 桥完成（run_houfeng_intel.py + houfeng_watchlist.json + target_queue_houfeng.json）；首跑 2026-11-10 09:00 补齐 irm+162/sse+22/taoguba+373 条（失败0，合法空：10只SH无e互动、920599.BJ无淘股吧帖）；xq 并集合并验证 489=465+24 唯一代码全覆盖；WorkBuddy 自动化 `HoufengIntel`(07:40 ACTIVE, id `1e336f25…`)。git 入库待老田点头（同 R1 口径）。
