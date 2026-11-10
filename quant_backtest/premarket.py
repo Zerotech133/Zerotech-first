@@ -1938,36 +1938,235 @@ def zen_market(win_start="20240101", n_disp=90):
         return None
 
 
-def write_page(data, snap):
-    d, parts = data, []
-    parts.append(
-        "<h1>🌅 盘前分析 <span class='dim'>%s</span></h1>"
-        "<div class='env'>综合开盘倾向 <b style='font-size:22px'>%s</b>"
-        " · 开盘溢价概率 <b>%d%%</b> · %s</div>"
-        % (d["ts"], d["overall"], d["prob"], d["verdict"])
+# ── 页面级可视化样式（11-10 老田：多可视化、别一长图滚到底）──
+# 只加新类不动共享 _CSS（29 页复用），锚点导航 + KPI 卡带 + 横向条形。
+_PM_CSS = """<style>
+h2{scroll-margin-top:46px}
+.anch{position:sticky;top:0;z-index:9;display:flex;gap:6px;flex-wrap:wrap;
+padding:8px 4px;background:rgba(13,17,23,.94);border-bottom:1px solid
+#21262d;margin:8px 0 2px}
+.anch a{font-size:12px;padding:3px 11px;border:1px solid #30363d;
+border-radius:13px;color:#8b949e;text-decoration:none}
+.anch a:hover{color:#58a6ff;border-color:#58a6ff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:10px;margin:10px 0}
+.kp{border:1px solid #30363d;border-radius:10px;background:#161b22;
+padding:10px 12px}
+.kp .t{font-size:11px;color:#8b949e;margin-bottom:2px}
+.kp .v{font-size:21px;font-weight:700;line-height:1.2}
+.kp .s{font-size:11px;color:#8b949e;margin-top:3px;line-height:1.5}
+.hrow{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:4px 0}
+.hrow .nm{width:158px;flex:none;text-align:right;color:#c9d1d9;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .tr{flex:1;height:13px;background:#21262d;border-radius:4px;
+position:relative;overflow:hidden}
+.hrow .tr i{position:absolute;top:0;height:100%;border-radius:3px}
+.hrow .vv{width:80px;flex:none;font-weight:600;font-size:12.5px}
+.hfact{margin:0 0 9px 166px}
+</style>"""
+
+
+def _gauge_svg(score, W=120, H=58):
+    """半圆仪表：score(-100~100) → 弧长比例，正红负绿（全站口径）。"""
+    frac = (
+        max(0.0, min(1.0, (float(score) + 100) / 200))
+        if score is not None else 0.5
+    )
+    L = 3.14159 * 46
+    col = "#f85149" if (score or 0) >= 0 else "#3fb950"
+    return (
+        "<svg width='%d' height='%d' style='display:block;margin:0 auto'>"
+        "<path d='M 14 52 A 46 46 0 0 1 106 52' fill='none' stroke='#21262d' "
+        "stroke-width='9' stroke-linecap='round'/>"
+        "<path d='M 14 52 A 46 46 0 0 1 106 52' fill='none' stroke='%s' "
+        "stroke-width='9' stroke-linecap='round' stroke-dasharray='%g %g'/>"
+        "</svg>" % (W, H, col, L * frac, L)
     )
 
-    # 综合判断深化（11-10）：因子分解 / 轨迹 / 历史校准
+
+def _div_row(name, val, mx, cls, extra=""):
+    """零轴横向条：val 正→右伸红条，负→左伸绿条（宽∝|val|/mx*50%）。"""
+    if val is None:
+        return (
+            "<div class='hrow'><span class='nm'>%s</span>"
+            "<span class='tr'><i style='left:50%%;width:0'></i></span>"
+            "<span class='vv' style='color:#8b949e;font-weight:400'>缺源"
+            "</span>%s</div>" % (name, extra)
+        )
+    w = min(50.0, abs(val) / mx * 50.0) if mx else 0
+    left = 50.0 if val >= 0 else 50.0 - w
+    bg = "#f85149" if val >= 0 else "#3fb950"
+    return (
+        "<div class='hrow'><span class='nm'>%s</span>"
+        "<span class='tr'><i style='left:%g%%;width:%g%%;background:%s'></i>"
+        "</span><span class='vv %s'>%+.2f%%</span>%s</div>"
+        % (name, left, w, bg, cls, val, extra)
+    )
+
+
+def _bar_row(name, val, mx, bg, extra=""):
+    """单侧横向条：val≥0 从左起，宽∝val/mx*100%。"""
+    w = min(100.0, abs(val) / mx * 100.0) if mx else 0
+    return (
+        "<div class='hrow'><span class='nm'>%s</span>"
+        "<span class='tr'><i style='left:0;width:%g%%;background:%s'></i>"
+        "</span>%s</div>" % (name, w, bg, extra)
+    )
+
+
+def write_page(data, snap):
+    d, parts = data, []
+    parts.append(_PM_CSS)
+    parts.append("<h1>🌅 盘前分析 <span class='dim'>%s</span></h1>" % d["ts"])
+
+    # 锚点导航（11-10：长图分区间跳转，sticky 吸顶）
+    parts.append(
+        "<div class='anch'>"
+        "<a href='#scan'>速览</a><a href='#action'>今日行动</a>"
+        "<a href='#zen'>缠论说大盘</a><a href='#env'>宏观环境</a>"
+        "<a href='#mood'>情绪资金</a><a href='#event'>事件研报</a>"
+        "<a href='#exec'>共振执行</a></div>"
+    )
+
+    # ── 速览首屏：KPI 卡带（11-10 老田：可视化、一屏看完核心判断）──
+    l3k = d.get("l3") or {}
+    l5k = d.get("l5") or {}
+    cne = l5k.get("cn_env") or {}
+    vx = l5k.get("vix") or {}
+    ash = (d.get("actions") or {}).get("shadow") or {}
+    f1 = next(
+        (lg for lg in (ash.get("legs") or []) if lg.get("f1")), None
+    )
+    zn = d.get("zen") or {}
+    kpis = []
+    # ① 综合倾向（弧形仪表）
+    kpis.append(
+        "<div class='kp'><div class='t'>综合开盘倾向</div>%s"
+        "<div class='v' style='text-align:center'>%s <span style='font-size:"
+        "12px;font-weight:400;color:#8b949e'>%s</span></div></div>"
+        % (
+            _gauge_svg(d.get("overall")),
+            d.get("overall") if d.get("overall") is not None else "—",
+            d.get("verdict") or "",
+        )
+    )
+    # ② 开盘溢价概率 + 校准警示
+    cal = ((d.get("deep") or {}).get("calib") or {})
+    if cal.get("current"):
+        prob_sub = "校准：同档历史走高 %d%%" % cal["current"]["win"]
+    elif cal.get("tiers"):
+        prob_sub = "⚠ 高于全部 %d 个历史日，按校准打折" % cal.get("n_hist", 0)
+    else:
+        prob_sub = "台账加厚中"
+    kpis.append(
+        "<div class='kp'><div class='t'>开盘溢价概率</div>"
+        "<div class='v'>%d%%</div><div class='s'>%s</div></div>"
+        % (d.get("prob") or 0, prob_sub)
+    )
+    # ③ 两市量能
+    amt_pct = l3k.get("amt_pct")
+    amt_cls = "buy" if (amt_pct or 0) > 0 else "avoid"
+    kpis.append(
+        "<div class='kp'><div class='t'>两市成交（量能）</div>"
+        "<div class='v'>%s<span style='font-size:12px;color:#8b949e'> 亿"
+        "</span></div><div class='s'><span class='%s'>%s vs20日 %+.1f%%</span>"
+        " · %s</div></div>"
+        % (
+            l3k.get("amt_yi") or "—",
+            amt_cls,
+            l3k.get("vol_state") or "",
+            amt_pct if amt_pct is not None else 0,
+            l3k.get("date") or "",
+        )
+    )
+    # ④ 市场宽度（赚钱效应温度）
+    kpis.append(
+        "<div class='kp'><div class='t'>市场宽度（20日）</div>"
+        "<div class='v'>%s%%</div><div class='s'>%s</div></div>"
+        % (
+            cne.get("breath") if cne.get("breath") is not None else "—",
+            (cne.get("verdict") or "")[:28],
+        )
+    )
+    # ⑤ VIX（风险偏好代理）
+    if vx:
+        kpis.append(
+            "<div class='kp'><div class='t'>VIX %s</div>"
+            "<div class='v %s'>%s</div><div class='s'>5日 %+.1f%%</div></div>"
+            % (
+                "⚡模拟" if vx.get("source") == "sim" else "",
+                "avoid" if (vx.get("pct") or 0) >= 0 else "buy",
+                vx.get("val") or "—",
+                vx.get("chg5") or 0,
+            )
+        )
+    # ⑥ 影子 F1 主腿
+    if f1:
+        rp = f1.get("ret_pct")
+        kpis.append(
+            "<div class='kp'><div class='t'>★F1 主腿候选（影子）</div>"
+            "<div class='v %s'>%+.2f%%</div><div class='s'>持仓 %d · 盘前盯"
+            "止损 −12%%/移动止损</div></div>"
+            % (
+                "buy" if (rp or 0) >= 0 else "avoid",
+                rp if rp is not None else 0,
+                f1.get("n_hold") or 0,
+            )
+        )
+    # ⑦ 缠论阶段
+    if zn:
+        dzd = zn.get("dist_zd")
+        kpis.append(
+            "<div class='kp'><div class='t'>缠论说大盘（上证）</div>"
+            "<div class='v' style='font-size:15px'>%s</div>"
+            "<div class='s'>现价 %.0f · 距 zd %+.1f%% · <a href='#zen'>看结构"
+            " →</a></div></div>"
+            % (zn.get("stage") or "—", zn.get("close") or 0, dzd or 0)
+        )
+    parts.append("<div class='kpis'>%s</div>" % "".join(kpis))
+
+    # ── 综合判断深化（11-10）：因子分解（条图化）/ 轨迹 / 历史校准 ──
+    parts.append("<h2 id='scan'>速览 · 分数怎么来的（±100 净占比 · 加权）</h2>")
     deep = d.get("deep") or {}
     if deep.get("contrib"):
-        trs = "".join(
-            "<tr><td>%s</td><td>%s</td><td>%s</td><td class='%s'>%s</td>"
-            "<td class='dim' style='white-space:normal'>%s</td></tr>"
-            % (
-                c["name"],
-                ("%.0f" % c["score"]) if c["score"] is not None else "<span class='dim'>缺源</span>",
-                c["note"],
-                "buy" if (c["score"] or 0) > 10
-                else ("avoid" if (c["score"] or 0) < -10 else ""),
-                ("贡献 %+.1f pp" % c["pp"]) if c["pp"] is not None else "—",
-                c["fact"],
+        mx = max(
+            (abs(c["pp"]) for c in deep["contrib"] if c["pp"] is not None),
+            default=0,
+        ) or 1
+        chunks = []
+        for c in deep["contrib"]:
+            if c["pp"] is None:
+                bar = (
+                    "<div class='hrow'><span class='nm'>%s</span>"
+                    "<span class='tr'><i style='left:50%%;width:0'></i></span>"
+                    "<span class='vv' style='color:#8b949e;font-weight:400'>"
+                    "缺源</span></div>" % c["name"]
+                )
+            else:
+                w = min(50.0, abs(c["pp"]) / mx * 50.0)
+                left = 50.0 if c["pp"] >= 0 else 50.0 - w
+                bg = "#f85149" if c["pp"] >= 0 else "#3fb950"
+                bar = (
+                    "<div class='hrow'><span class='nm'>%s</span>"
+                    "<span class='tr'><i style='left:%g%%;width:%g%%;"
+                    "background:%s'></i></span>"
+                    "<span class='vv %s'>%+.1f pp</span></div>"
+                    % (c["name"], left, w, bg,
+                       "buy" if c["pp"] >= 0 else "avoid", c["pp"])
+                )
+            chunks.append(bar)
+            chunks.append(
+                "<div class='dim hfact' title='%s'>%s%s</div>"
+                % (
+                    html.escape(c.get("fact") or ""),
+                    "%.0f %s" % (c["score"], c["note"])
+                    if c["score"] is not None else "—",
+                    " · " + c["fact"] if c.get("fact") else "",
+                )
             )
-            for c in deep["contrib"]
-        )
         parts.append(
-            "<div class='env'><b>分数怎么来的（±100 净占比 · 加权）</b>"
-            "<table style='margin-top:6px'><tr><th>因子</th><th>分数</th>"
-            "<th>权重</th><th>贡献</th><th>依据</th></tr>%s</table></div>" % trs
+            "<div class='env' style='padding-bottom:6px'>%s</div>"
+            % "".join(chunks)
         )
     tr = deep.get("trail")
     if tr:
@@ -2056,7 +2255,7 @@ def write_page(data, snap):
         )
     if d["alerts"]:
         parts.append(
-            "<h2>⚠ 风险预警</h2><div class='env' style='color:"
+            "<h2 id='alert'>⚠ 风险预警</h2><div class='env' style='color:"
             "#e8710a'>%s</div>" % "<br>".join("· " + a for a in d["alerts"])
         )
 
@@ -2068,8 +2267,20 @@ def write_page(data, snap):
     act_html = []
     if ap:
         order = ["三买", "二买", "一买", "三买待"]
-        chips = " ".join(
-            "<b>%s %d</b>" % (k, ap["buy_counts"][k]) for k in order
+        # ①-1 五档数量横条（11-10 可视化）
+        mxp = max((ap["buy_counts"].get(k) or 0 for k in order), default=1) or 1
+        tier_bg = {"三买": "#f85149", "二买": "#d29922", "一买": "#8b949e",
+                   "三买待": "#58a6ff"}
+        pool_bars = "".join(
+            _bar_row(
+                k,
+                ap["buy_counts"].get(k) or 0,
+                mxp,
+                tier_bg.get(k, "#58a6ff"),
+                "<span class='vv' style='color:%s'>%d</span>"
+                % (tier_bg.get(k, "#8b949e"), ap["buy_counts"].get(k) or 0),
+            )
+            for k in order
             if ap["buy_counts"].get(k)
         )
         t5 = "".join(
@@ -2085,63 +2296,75 @@ def write_page(data, snap):
             for r in ap["top3buy"]
         )
         act_html.append(
-            "<div class='env'><b>① 结构池（数据日 %s）</b>：%s"
-            "<table style='margin-top:6px'><tr><th>三买评分 top5</th>"
+            "<div class='env'><b>① 结构池（数据日 %s）</b>%s"
+            "<table style='margin-top:8px'><tr><th>三买评分 top5</th>"
             "<th>代码</th><th>评分</th><th>昨日涨幅</th></tr>%s</table>"
             "<div class='dim' style='margin-top:4px'>"
             "<a href='pool_pc2.html'>选股工作台 v2（五档全列表 + 个股全关系）→</a>"
             " · <a href='pc.html'>结构工作台 →</a></div></div>"
-            % (ap.get("asof") or "?", chips, t5)
+            % (ap.get("asof") or "?", pool_bars, t5)
         )
     if ash and ash.get("legs"):
-        rows = ""
-        for lg in ash["legs"]:
+        # ② 六腿累计收益 → 零轴发散条（11-10 可视化），持仓明细收 dim
+        legs = ash["legs"]
+        mxl = max(
+            (abs(lg.get("ret_pct") or 0) for lg in legs), default=1
+        ) or 1
+        leg_bars = ""
+        leg_notes = ""
+        for lg in legs:
+            rp = lg.get("ret_pct")
+            cn = lg["cn"]
+            nm = cn if cn.startswith("★") else ("★" + cn if lg["f1"] else cn)
+            leg_bars += _div_row(
+                nm, rp, mxl,
+                "buy" if (rp or 0) > 0 else "avoid",
+                "<span class='dim' style='font-size:11px'>持 %d</span>"
+                % (lg.get("n_hold") or 0),
+            )
             hs = " ".join(
                 "%s(%+.1f%%)"
                 % (h.get("code") or "?", h.get("pnl_pct") or 0)
                 for h in lg["holdings"]
             )
-            rp = lg.get("ret_pct")
-            rows += (
-                "<tr><td>%s%s</td><td>%d</td><td class='%s'>%s</td>"
-                "<td class='dim' style='white-space:normal'>%s</td></tr>"
+            leg_notes += (
+                "<div class='dim hfact'>%s%s：%s</div>"
                 % (
                     lg["cn"],
                     "（盘前盯止损 −12%/移动止损）" if lg["f1"] else "",
-                    lg["n_hold"],
-                    "buy" if (rp or 0) > 0 else "avoid",
-                    "%+.2f%%" % rp if rp is not None else "—",
                     hs or "—",
                 )
             )
         act_html.append(
             "<div class='env'><b>② 影子台账（固化 v1 六腿 · 台账日 %s）</b>"
-            "<table style='margin-top:6px'><tr><th>腿</th><th>持仓</th>"
-            "<th>累计</th><th>持仓明细（浮盈）</th></tr>%s</table>"
-            "<div class='dim' style='margin-top:4px'>六腿影子记账 · "
+            "%s%s"
+            "<div class='dim' style='margin-top:6px'>六腿影子记账 · "
             "F1 连续核对无异常后按四条件转正 · 台账产物 data/shadow/</div></div>"
-            % (ash.get("date") or "?", rows)
+            % (ash.get("date") or "?", leg_bars, leg_notes)
         )
     if ase:
-        t5 = "".join(
-            "<tr><td>%s</td><td>%s</td><td class='%s'>%+.2f%%</td>"
-            "<td class='buy'>%+.2f%%</td></tr>"
-            % (
-                s["name"],
-                s.get("stage") or "—",
-                "buy" if (s.get("pct") or 0) > 0 else "avoid",
-                (s.get("pct") or 0) * 100,
-                s["r5"],
+        # ③ 板块层强度 top5 → 5 日强度横条（11-10 可视化）
+        tops = ase["top"]
+        mxs = max(
+            (abs(s.get("r5") or 0) for s in tops), default=1
+        ) or 1
+        sec_bars = "".join(
+            _div_row(
+                "%s · %s" % (s["name"], s.get("stage") or "—"),
+                s.get("r5"),
+                mxs,
+                "buy",
+                "<span class='dim' style='font-size:11px'>昨 %+.2f%%</span>"
+                % (s.get("pct") or 0),
             )
-            for s in ase["top"]
+            for s in tops
         )
         act_html.append(
             "<div class='env'><b>③ 板块层强度 top5（asof %s · T+1 晨更为设计内）</b>"
-            "<table style='margin-top:6px'><tr><th>板块</th><th>阶段</th>"
-            "<th>昨日</th><th>5日</th></tr>%s</table>"
-            "<div class='dim' style='margin-top:4px'>"
+            "%s"
+            "<div class='dim' style='margin-top:6px'>"
             "<a href='sector_platform.html'>板块操作平台（465 板块位置 × 买点占比）→</a></div></div>"
-            % (ase.get("asof") or "?", t5)
+            % (ase.get("asof") or "?", sec_bars)
         )
     if act_html:
         missing = [
@@ -2160,7 +2383,7 @@ def write_page(data, snap):
             else ""
         )
         parts.append(
-            "<h2>零、今日行动卡 <span class='dim' style='font-weight:400;"
+            "<h2 id='action'>零、今日行动卡 <span class='dim' style='font-weight:400;"
             "font-size:12px'>（收盘线产物 · 08:20 盘前按此执行）</span></h2>"
             "%s%s" % ("".join(act_html), miss_note)
         )
@@ -2197,7 +2420,7 @@ def write_page(data, snap):
             "%.0f–%.0f" % (q["zd"], q["zg"]) for q in zn["pv_seq"]
         )
         parts.append(
-            "<h2>零+、缠论说大盘 <span class='dim' style='font-weight:400;"
+            "<h2 id='zen'>零+、缠论说大盘 <span class='dim' style='font-weight:400;"
             "font-size:12px'>（上证日线 · 与全池同一结构引擎 · 数据 T-1 %d）"
             "</span></h2>"
             "<div class='env'><b>阶段：%s</b> · 现价 %.0f · 最近中枢 %.0f–%.0f"
@@ -2219,35 +2442,36 @@ def write_page(data, snap):
         )
     elif d.get("zen") is None:
         parts.append(
-            "<h2>零+、缠论说大盘</h2><div class='env'>未生成：index_daily "
+            "<h2 id='zen'>零+、缠论说大盘</h2><div class='env'>未生成：index_daily "
             "缺源或结构为空（数据仓 index_daily 是 T-1 时序，缺日则跳过，"
             "不阻断盘前页）</div>"
         )
 
-    # 层1
-    def _l1_cell(r):
-        if r.get("sim"):
-            return "%s（%+.2f%%）" % (r.get("val"), r["pct"])
-        return ("%+.2f%%" % r["pct"]) if r.get("pct") is not None else "缺源"
-
-    trs = "".join(
-        "<tr><td>%s%s</td><td>%s</td><td class='%s'>%s</td></tr>"
-        % (
-            r["name"],
-            " <span class='dim'>⚡模拟</span>" if r.get("sim") else "",
-            r.get("date") or "—",
-            "buy"
-            if (r.get("pct") or 0) > 0
-            else ("avoid" if (r.get("pct") or 0) < 0 else ""),
-            _l1_cell(r),
+    # 层1（11-10 可视化：表格 → 零轴涨跌条）
+    rows1 = d["l1"]["rows"]
+    mx1 = max(
+        (abs(r.get("pct")) for r in rows1 if r.get("pct") is not None),
+        default=0,
+    ) or 1
+    bars1 = "".join(
+        _div_row(
+            r["name"] + (" ⚡" if r.get("sim") else ""),
+            r.get("pct"),
+            mx1,
+            "buy" if (r.get("pct") or 0) > 0 else "avoid",
+            "<span class='dim' style='font-size:11px'>%s%s</span>"
+            % (
+                ("%s · " % r.get("val")) if (r.get("sim") and r.get("val") is not None) else "",
+                r.get("date") or "",
+            ),
         )
-        for r in d["l1"]["rows"]
+        for r in rows1
     )
     parts.append(
-        "<h2>一、宏观与市场环境 · 外围联动因子 <b>%s</b></h2>"
-        "<table><tr><th>指数</th><th>日期</th><th>隔夜涨跌</th>"
-        "</tr>%s</table><div class='dim'>%s</div>"
-        % (d["l1"]["score"], trs, d["l1"]["note"])
+        "<h2 id='env'>一、宏观与市场环境 · 外围联动因子 <b>%s</b></h2>"
+        "<div class='env' style='padding-bottom:6px'>%s</div>"
+        "<div class='dim'>%s</div>"
+        % (d["l1"]["score"], bars1, d["l1"]["note"])
     )
     # 层2
     l2 = d["l2"]
@@ -2455,7 +2679,7 @@ def write_page(data, snap):
         e = l5.get("cn_env") or {}
         vx = l5.get("vix") or {}
         parts.append(
-            "<h2>五、资金与市场情绪 · 情绪因子 <b>%s</b></h2><div "
+            "<h2 id='mood'>五、资金与市场情绪 · 情绪因子 <b>%s</b></h2><div "
             "class='env'>近3天新闻判断 %d 条：利多 %d / 利空 %d / 中性 %d"
             "%s%s</div>"
             % (
@@ -2724,7 +2948,7 @@ def write_page(data, snap):
     an = l6.get("ann_stats")
     if an:
         parts.append(
-            "<h2>六、个股公告 · 公告因子</h2><div class='env'>近2天公告 "
+            "<h2 id='event'>六、个股公告 · 公告因子</h2><div class='env'>近2天公告 "
             "%d 条：利多 %d / 利空 %d / 中性 %d</div>"
             % (an["total"], an["bull"], an["bear"], an["neu"])
         )
@@ -2914,7 +3138,7 @@ def write_page(data, snap):
         )
     )
     parts.append(
-        "<h2>八、量化技术与执行 · 共振 Top5 <span class='dim' "
+        "<h2 id='exec'>八、量化技术与执行 · 共振 Top5 <span class='dim' "
         "style='font-weight:400;font-size:12px'>（共振快照 %s · "
         "每日 17:35 更新）</span></h2>"
         "<table><tr><th>标的</th><th>综合</th><th>建议</th></tr>"
