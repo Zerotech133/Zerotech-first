@@ -44,4 +44,4 @@
 | ❌ 不计 | P-04（实验田） | 单 pattern 覆盖涨停池 92.23%，近「涨停」同义反复，计入使闸失去鉴别力 |
 | ❌ 不计 | P-07 neutral / other 面 | neutral T+1 -0.05% ≈ 0，仅背景层 |
 
-代码：`_p51_matcher.P["GATE_A2_NUMERATOR"] / P["GATE_A2_EXCLUDE"]`。分母与判定规则待批，全文见 `docs/jev_gate_a2_spec.md`。
+代码：`_p51_matcher.P["GATE_A2_NUMERATOR"] / P["GATE_A2_EXCLUDE"]`。分母 D1（全涨停池 2,701）与判定规则四条已批；四层读数 13.85% → 34.0% → 65.6% → 91.8%，瓶颈在新闻票码召回（当日 news 七成未打票码，信号可达率仅 51.8%）。全文见 `docs/jev_gate_a2_spec.md`。
