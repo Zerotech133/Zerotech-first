@@ -1355,6 +1355,10 @@ def run(push=False):
     alerts = _risk_alerts(l1, l3, l5)
     # 11-10 叠加：收盘线产物（结构池/影子台账/板块层）→ 今日行动卡
     actions = today_actions()
+    # 11-10 深化：综合判断 → 因子分解/轨迹/历史校准（老田：深度不够）
+    deep = deep_verdict({"vals": vals, "overall": overall, "prob": prob,
+                         "verdict": verdict, "l1": l1, "l2": l2, "l3": l3,
+                         "l4": l4, "l5": l5})
     # `trade_date` + 带时区的 `ts` 是 /api/alerts 的 source_health 契约要求的
     # 两个字段（portal/api_common.py:_alert_source_health 的 dated()）：
     # 只有业务日 + 生产者给出的 tz-aware 完成时间，才算"当期证据"。
@@ -1377,6 +1381,7 @@ def run(push=False):
         "verdict": verdict,
         "alerts": alerts,
         "actions": actions,
+        "deep": deep,
     }
     with open(
         os.path.join(REPORTS, "premarket_latest.json"), "w", encoding="utf-8"
@@ -1525,6 +1530,156 @@ def today_actions():
     return out
 
 
+def deep_verdict(data, w=None):
+    """综合判断深化（11-10）：一行分数 → 可查证的深度。
+
+    原顶部只有「29 · 96% · 偏多」，三个被老田点名的浅点：
+      ① 分数构成不可见 → 因子贡献分解（五层分数/权重/加权贡献 pp + 事实解读）
+      ② 无时间纵深 → 近 10 日倾向轨迹（SVG sparkline + 今日分位）
+      ③ 概率无校准 → 同分数段历史校准：premarket_history 里同档日子，
+         对齐数据仓上证**次日开盘溢价**的实际胜率与均值——页称概率和
+         历史实况对不上时读者能看到（可证伪，样本小如实标注）。
+    全 soft：history/index_daily 缺源各块降级为「—」，不阻断生成。
+    """
+    w = w or {"外围": 0.35, "流动性": 0.15, "政策": 0.15, "板块": 0.15, "情绪": 0.20}
+    out = {"contrib": [], "trail": None, "calib": None}
+
+    # ① 因子贡献分解（vals 缺源层如实标注，权重归一与 run() 同口径）
+    vals = data.get("vals") or {}
+    live = {k: v for k, v in vals.items() if v is not None}
+    tot = sum(w[k] for k in live) or 1.0
+    l1r = (data.get("l1") or {}).get("rows") or []
+    l1p = [r.get("pct") for r in l1r if r.get("pct") is not None]
+    l3 = data.get("l3") or {}
+    l2 = data.get("l2") or {}
+    jev = l2.get("jev")
+    l4 = data.get("l4") or []
+    mo = (data.get("l5") or {}).get("money") or {}
+
+    def _fact(k):
+        if k == "外围" and l1p:
+            return "隔夜 " + " ".join(
+                "%s%+.1f%%" % (r["name"][:4], r["pct"])
+                for r in l1r[:3] if r.get("pct") is not None
+            )
+        if k == "流动性":
+            s = ""
+            if l3.get("amt_yi"):
+                s += "两市 %s 亿" % l3["amt_yi"]
+            if l3.get("vol_state"):
+                s += " · %s（vs5日均 %+.1f%%）" % (l3["vol_state"], l3.get("vol_pct") or 0)
+            return s or "—"
+        if k == "政策":
+            if jev:
+                return "新闻 %d 条：利多 %d / 利空 %d → %s" % (
+                    jev["n"], jev["bull"], jev["bear"], jev["score"])
+            return "近3天无已判政策新闻（层缺源，权重已归一）"
+        if k == "板块":
+            n4 = [s for s in l4 if s.get("n", 0) >= 2]
+            if n4:
+                avg = round(sum(s["score"] for s in n4) / len(n4))
+                return "%d 个板块代理均值 %s" % (len(n4), avg)
+            return "—"
+        if k == "情绪":
+            if mo.get("date"):
+                return "赚钱效应快照 %s" % mo["date"]
+            return "—"
+        return "—"
+
+    for k in ("外围", "情绪", "流动性", "政策", "板块"):
+        v = vals.get(k)
+        if v is None:
+            out["contrib"].append({"name": k, "score": None, "pp": None,
+                                   "fact": _fact(k), "note": "缺源"})
+        else:
+            out["contrib"].append({
+                "name": k, "score": v, "fact": _fact(k),
+                "pp": round(v * w[k] / tot, 1),
+                "note": "权重 %.0f%%" % (w[k] * 100 / tot * 100) if False
+                else "×%.2f" % (w[k] / tot),
+            })
+
+    # ② 近 10 日轨迹（history 不含今天的行 + 今天，构成含今日的序列）
+    today = datetime.now().strftime("%Y%m%d")
+    hist = []
+    hp = os.path.join(REPORTS, "premarket_history.jsonl")
+    try:
+        hist = [json.loads(l) for l in open(hp, encoding="utf-8") if l.strip()]
+    except Exception:
+        hist = []
+    past = [r for r in hist if r.get("date") != today and r.get("overall") is not None]
+    past.sort(key=lambda r: r["date"])
+    seq = past[-9:] + [{"date": today, "overall": data.get("overall")}]
+    if len(seq) >= 3:
+        wins = [r["overall"] for r in past[-10:]]
+        base = sorted(wins) if wins else []
+        med = base[len(base) // 2] if base else None
+        out["trail"] = {
+            "dates": [r["date"] for r in seq],
+            "overall": [r["overall"] for r in seq],
+            "n_hist": len(past),
+            "med10": med,
+            "hi10": max(base) if base else None,
+            "lo10": min(base) if base else None,
+            "rank_pct": (
+                round(100.0 * len([x for x in base if x <= seq[-1]["overall"]])
+                      / len(base)) if base and seq[-1]["overall"] is not None else None
+            ),
+        }
+
+    # ③ 同分数段历史校准：history 里的历史日 → 上证次日开盘溢价实况
+    try:
+        import datamart as dm
+
+        days = _closed_trade_days()
+        n_ix = min(70, len(days))
+        ix = dm.read(
+            "index_daily", start=days[-n_ix], end=days[-1],
+            codes=["000001.SH"], fields=["ts_code", "trade_date", "open", "close"],
+        )
+        if ix is not None and not ix.empty:
+            s = (ix[ix["ts_code"] == "000001.SH"]
+                 .sort_values("trade_date")
+                 .reset_index(drop=True))
+            px = {str(r.trade_date): (float(r.open), float(r.close))
+                  for r in s.itertuples()}
+            dlist = sorted(px)
+            nxt = {d: dlist[i + 1] for i, d in enumerate(dlist[:-1])}
+            tiers = [("高分档 ≥25", 25, 10**9), ("中档 5~25", 5, 25),
+                     ("低档 <5", -10**9, 5)]
+            calib = []
+            for label, lo, hi in tiers:
+                prems = []
+                for r in past:
+                    ov = r.get("overall")
+                    if ov is None or not (lo <= ov < hi) or r["date"] not in nxt:
+                        continue
+                    c_d = px[r["date"]][1]
+                    o_n = px[nxt[r["date"]]][0]
+                    prems.append((o_n / c_d - 1) * 10000)
+                if prems:
+                    calib.append({
+                        "label": label, "n": len(prems),
+                        "win": round(100.0 * len([p for p in prems if p > 0])
+                                     / len(prems)),
+                        "avg_bp": round(sum(prems) / len(prems)),
+                    })
+            ov_now = data.get("overall")
+            cur = None
+            for c in calib:
+                lo, hi = {"高分档 ≥25": (25, 10**9), "中档 5~25": (5, 25),
+                          "低档 <5": (-10**9, 5)}[c["label"]]
+                if ov_now is not None and lo <= ov_now < hi:
+                    cur = c
+            out["calib"] = {"tiers": calib, "current": cur, "n_hist": len(past),
+                            "max_overall": max(
+                                (r["overall"] for r in past
+                                 if r.get("overall") is not None), default=None)}
+    except Exception:
+        pass
+    return out
+
+
 def write_page(data, snap):
     d, parts = data, []
     parts.append(
@@ -1533,6 +1688,114 @@ def write_page(data, snap):
         " · 开盘溢价概率 <b>%d%%</b> · %s</div>"
         % (d["ts"], d["overall"], d["prob"], d["verdict"])
     )
+
+    # 综合判断深化（11-10）：因子分解 / 轨迹 / 历史校准
+    deep = d.get("deep") or {}
+    if deep.get("contrib"):
+        trs = "".join(
+            "<tr><td>%s</td><td>%s</td><td>%s</td><td class='%s'>%s</td>"
+            "<td class='dim' style='white-space:normal'>%s</td></tr>"
+            % (
+                c["name"],
+                ("%.0f" % c["score"]) if c["score"] is not None else "<span class='dim'>缺源</span>",
+                c["note"],
+                "buy" if (c["score"] or 0) > 10
+                else ("avoid" if (c["score"] or 0) < -10 else ""),
+                ("贡献 %+.1f pp" % c["pp"]) if c["pp"] is not None else "—",
+                c["fact"],
+            )
+            for c in deep["contrib"]
+        )
+        parts.append(
+            "<div class='env'><b>分数怎么来的（±100 净占比 · 加权）</b>"
+            "<table style='margin-top:6px'><tr><th>因子</th><th>分数</th>"
+            "<th>权重</th><th>贡献</th><th>依据</th></tr>%s</table></div>" % trs
+        )
+    tr = deep.get("trail")
+    if tr:
+        seq = tr["overall"]
+        W, H = 460, 64
+        mn, mx = min(seq), max(seq)
+        sp = (mx - mn) or 1
+        pts = " ".join(
+            "%g,%g" % (2 + i * (W - 4) / (len(seq) - 1),
+                       H - 8 - (v - mn) / sp * (H - 20))
+            for i, v in enumerate(seq)
+        )
+        zero_y = H - 8 - (0 - mn) / sp * (H - 20) if mn < 0 < mx else None
+        last = seq[-1]
+        col = "#e35d5d" if (last or 0) >= 0 else "#3aa76d"
+        zero_line = (
+            "<line x1='0' y1='%g' x2='%d' y2='%g' stroke='#3a4656' "
+            "stroke-dasharray='3,3'/>" % (zero_y, W, zero_y)
+            if zero_y is not None else ""
+        )
+        labels = "".join(
+            "<text x='%g' y='%d' font-size='9' fill='#7b8698'>%s</text>"
+            % (2 + i * (W - 4) / (len(seq) - 1), H,
+               d6[4:6] + "/" + d6[6:])
+            for i, d6 in enumerate(tr["dates"])
+        )
+        parts.append(
+            "<div class='env'><b>近 %d 日倾向轨迹</b>（今日 %s，%d 日中位 %s，"
+            "区间 %s ~ %s，%d 日样本）<br>"
+            "<svg width='%d' height='%d' style='margin-top:6px'>%s"
+            "<polyline points='%s' fill='none' stroke='%s' stroke-width='2'/>"
+            "%s</svg><div class='dim'>今日分位：历史近 10 日中排第 %s%%"
+            "（越高代表越接近近期乐观极值，别把高位当常态）</div></div>"
+            % (
+                len(seq) - 1, last, tr["n_hist"], tr["med10"],
+                tr["lo10"], tr["hi10"], tr["n_hist"], W, H, zero_line, pts, col,
+                labels, tr["rank_pct"],
+            )
+        )
+    cal = deep.get("calib")
+    if cal and cal.get("tiers"):
+        rows = "".join(
+            "<tr><td>%s</td><td>%d</td><td class='%s'>%d%%</td>"
+            "<td class='%s'>%+.0f bp</td></tr>"
+            % (
+                t["label"], t["n"],
+                "buy" if t["win"] > 50 else "avoid", t["win"],
+                "buy" if t["avg_bp"] > 0 else "avoid", t["avg_bp"],
+            )
+            for t in cal["tiers"]
+        )
+        cur = cal.get("current")
+        cur_note = ""
+        if cur:
+            cur_note = (
+                "<div class='dim' style='margin-top:4px'>今日在 %s：页称概率 "
+                "<b>%d%%</b>，历史 %d 个同档日**次日开盘实际**走高 %d%%"
+                "（平均 %+.0f bp）——两数有差是正常的：prob 是当日因子的"
+                " logistic 映射，校准值才是这个分数段的历史兑现率，随台账"
+                "加厚以校准值为准。</div>"
+                % (cur["label"], d["prob"], cur["n"], cur["win"], cur["avg_bp"])
+            )
+        elif cal.get("tiers"):
+            # 高档无样本时如实警示：乐观极值无历史兑现证据
+            cur_note = (
+                "<div class='dim' style='margin-top:4px'>⚠ 今日分数 %s 高于"
+                "全部 %d 个历史日（历史最高 %s）——<b>这个乐观程度没有历史兑现"
+                "样本可对照</b>；且已有样本的校准整体偏冷（%s），页称概率 "
+                "%d%% 请按历史校准打折理解。</div>"
+                % (
+                    d["overall"], cal["n_hist"], cal.get("max_overall"),
+                    "；".join("%s 实际走高 %d%% / %+.0f bp"
+                              % (t["label"], t["win"], t["avg_bp"])
+                              for t in cal["tiers"]),
+                    d["prob"],
+                )
+            )
+        else:
+            cur_note = "<div class='dim'>今日分数落在历史样本之外（无同档对照）</div>"
+        parts.append(
+            "<div class='env'><b>概率的历史校准</b>（premarket_history × "
+            "上证次日开盘，仅 %d 日样本，随台账加厚）"
+            "<table style='margin-top:6px'><tr><th>分数档</th><th>天数</th>"
+            "<th>次日开盘走高</th><th>平均开盘溢价</th></tr>%s</table>%s</div>"
+            % (cal["n_hist"], rows, cur_note)
+        )
     if d["alerts"]:
         parts.append(
             "<h2>⚠ 风险预警</h2><div class='env' style='color:"
