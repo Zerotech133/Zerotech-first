@@ -5,6 +5,12 @@
 body{background:#0d1117;color:#e6edf3;
      font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
      max-width:430px;margin:0 auto;min-height:100vh}
+/* PC 上手机版两侧全空（判例 UI-审计5）：≥768px 放宽到 660px 浮起，
+   手机端不受影响；再宽就破坏竖屏卡片流，不跟 */
+@media (min-width:768px){
+  html{background:#070a0f}
+  body{max-width:660px;box-shadow:0 0 44px rgba(0,0,0,.5);
+       border-left:1px solid #1d2530;border-right:1px solid #1d2530}}
 .screen{display:none;min-height:100vh;padding:10px 14px 4px}
 .screen.on{display:block}
 .hd{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
@@ -126,7 +132,7 @@ details.rule[open] summary:after{content:" ⌃"}
 
 <div class="screen on" id="s-home">
   <div class="hd"><h1>缠论结构日报</h1><span class="d">20261110</span></div>
-  <div class="sub">结构 11-10 · 可判 3936 只 · <b style="color:#e35d5d">价 18:54</b><br><span style="color:#7b8698">市场 15:03 · </span>涨2975 / 跌883 · 涨停117</div>
+  <div class="sub">结构 11-10 · 可判 3936 只 · <b style="color:#e35d5d">价 20:09</b><br><span style="color:#7b8698">市场 15:03 · </span>涨2975 / 跌883 · 涨停117</div>
 
   <div class="sgo" onclick="goSectorHome()">
     <div><div>板块操作平台</div>

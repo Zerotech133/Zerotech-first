@@ -396,6 +396,12 @@ _BUILD = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 body{{background:#0d1117;color:#e6edf3;
      font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
      max-width:430px;margin:0 auto;min-height:100vh}}
+/* PC 上手机版两侧全空（判例 UI-审计5）：≥768px 放宽到 660px 浮起，
+   手机端不受影响；再宽就破坏竖屏卡片流，不跟 */
+@media (min-width:768px){{
+  html{{background:#070a0f}}
+  body{{max-width:660px;box-shadow:0 0 44px rgba(0,0,0,.5);
+       border-left:1px solid #1d2530;border-right:1px solid #1d2530}}}}
 .screen{{display:none;min-height:100vh;padding:10px 14px 4px}}
 .screen.on{{display:block}}
 .hd{{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}}
