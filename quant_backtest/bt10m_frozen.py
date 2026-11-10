@@ -117,9 +117,8 @@ def selfcheck():
         got = d["legs"][leg]["final_nav"]
         assert abs(got - want) <= 0.05, \
             "固化自检失败：%s NAV %.2f ≠ 参照 %.2f（参数被改动？）" % (leg, got, want)
-    # 3) 参数映射逐键核对：报告里的腿参数必须等于固化定义
-    for leg, extra in LEG_PARAMS.items():
-        pass  # monthly2.json 不含参数快照；参数在位由自检1保证
+    # 注：monthly2.json 不含参数快照，参数在位性由自检1保证；
+    # 每日影子台账另核 assumptions 的 stop_pct=-0.12（G-B 门）。
     print("自检2 通过：%d 腿 M1 参照 NAV 与 monthly2 报告一致" % (
         len(REFERENCE_NAV) - 1))
     print("固化口径 v1（%s）自检全部通过" % DATE)
