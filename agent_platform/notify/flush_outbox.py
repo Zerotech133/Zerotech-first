@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """outbox 补发 runner：把 data/outbox 内 status=queued 的消息经飞书 webhook 重发。
 
+路由纪律（老田 2026-11-10 裁定）下，queued 只剩人类审批类（approval_card）；
+AI↔AI 消息 enqueue 时已自动转 bridge_inbox 内部闭环（delivered_internal），
+不经本 runner。
+
 用法：
     python notify/flush_outbox.py            # 补发全部 queued
     python notify/flush_outbox.py MSG-xxx    # 只补发指定 id
