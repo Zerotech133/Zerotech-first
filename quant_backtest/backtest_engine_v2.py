@@ -794,7 +794,13 @@ class BacktestConfig:
     # intraday = 止损价当日挂限价单：low 触价当日成交；开盘已跳穿则按开盘价（不吃便宜）。
     # 与止盈「盘中触价=成交」假设对称；同日高低点双越界按止损优先（本块排在止盈块之前）。
     stop_fill_mode: str = "open_next"
-    stop_slip: float = 0.0  # 仅作用于触价成交档（跳空开盘价本身即市价，不叠加）
+    stop_slip: float = 0.0
+    # S-A 分批止盈（2026-11-10，知识库 K1「首目标减半仓」+ 自身数据 TP 封顶互证）：
+    # tp_partial>0 时目标位触发只卖该比例（最低留 10%），余仓继续持有到止损/到期；
+    # tp_rearm_pct>0 时余仓在「TP 价 ×(1+rearm)」再触发时清仓（默认 0 = 不再触发）。
+    # 默认全 0 = 关闭，v3 行为逐位不变（影子台账四腿不受影响）。
+    tp_partial: float = 0.0
+    tp_rearm_pct: float = 0.0  # 仅作用于触价成交档（跳空开盘价本身即市价，不叠加）
     # 五档仓位（2026-11-10 老田「更细的分档」）：三档只有 high/mid/low，high 内部强度差
     # 三倍却同帽。cap_mode="regime_tiers" 时按池指数相对 MA20/MA60 的位置分 0~4 档，
     # cap 从 cap_tiers[0]（最弱）线性取到 cap_tiers[-1]（最强·实测高出 MA20 5% 以上）。
@@ -1348,15 +1354,21 @@ def run_backtest(
                 _held = di - holding_since.get(s, di)
                 if _held < max(1, cfg.min_holding_days):
                     continue  # A 股 T+1：当日买入当日不可卖
-                _tgt = cfg.tp_pct - cfg.tp_decay * _held
-                if _tgt < _tp_floor:
-                    _tgt = _tp_floor
-                if _tgt <= 0:
-                    continue
                 base = p.get("entry_px") or p["ref_px"]
                 if not base:
                     continue
-                want = base * (1 + _tgt)
+                if p.get("tp_done"):
+                    # S-A：已分批止盈过的余仓——无再触发参数则只等止损/到期
+                    if cfg.tp_rearm_pct <= 0 or not p.get("tp_next"):
+                        continue
+                    want = p["tp_next"]
+                else:
+                    _tgt = cfg.tp_pct - cfg.tp_decay * _held
+                    if _tgt < _tp_floor:
+                        _tgt = _tp_floor
+                    if _tgt <= 0:
+                        continue
+                    want = base * (1 + _tgt)
                 hi = px(s, day, "high")
                 if hi is None or hi < want:
                     continue
@@ -1381,21 +1393,40 @@ def run_backtest(
                     fill = max(want, op) if op is not None else want
                 val = p["val"] * fill / p["ref_px"]
                 pnl = val / p["cost"] - 1
-                cash += val * (1 - cfg.cost)
-                del pos[s]
-                holding_since.pop(s, None)
+                # S-A 分批：首触发按 tp_partial 比例卖出（余仓留场），再触发或关闭时全额
+                _frac = 1.0
+                if cfg.tp_partial > 0 and not p.get("tp_done"):
+                    _frac = max(0.1, min(cfg.tp_partial, 0.9))
+                if _frac >= 1.0:
+                    cash += val * (1 - cfg.cost)
+                    _how = "take_profit_rearm" if p.get("tp_done") else "take_profit"
+                    del pos[s]
+                    holding_since.pop(s, None)
+                else:
+                    _sellv = val * _frac
+                    cash += _sellv * (1 - cfg.cost)
+                    p["val"] *= (1.0 - _frac)
+                    p["cost"] *= (1.0 - _frac)
+                    p["tp_done"] = True
+                    if cfg.tp_rearm_pct > 0:
+                        p["tp_next"] = fill * (1.0 + cfg.tp_rearm_pct)
+                    _how = "take_profit_part"
                 n_tp[0] += 1
                 actions.append(
                     {
                         "type": "sell",
                         "stock": s,
-                        "note": "目标位止盈 +%.1f%%（持有%d日·盘中触价）"
-                        % (_tgt * 100, _held),
+                        "note": ("目标位止盈%s（较入场 %+.1f%%，持有%d日·盘中触价）"
+                                 % (("减仓%.0f%%" % (_frac * 100)) if _frac < 1.0
+                                    else ("·再触发清仓" if _how == "take_profit_rearm" else ""),
+                                    (fill / base - 1) * 100, _held)
+                                 ),
                         "pnl_pct": round(pnl * 100, 2),
                     }
                 )
-                rec(day, "SELL", s, "take_profit", pnl,
+                rec(day, "SELL", s, _how, pnl,
                     want=round(want, 3), fill=round(fill, 3),
+                    tp_frac=round(_frac, 2),
                     d_open=(round(op, 3) if op is not None else None),
                     d_high=(round(hi, 3) if hi is not None else None),
                     d_close=(round(px(s, day, "close"), 3)
@@ -2204,6 +2235,8 @@ def run_job(params: dict, job_id: str, progress=None):
                 else "open_next"
             ),
             stop_slip=max(0.0, min(0.05, _num("stop_slip", 0.0))),
+            tp_partial=max(0.0, min(0.9, _num("tp_partial", 0.0))),
+            tp_rearm_pct=max(0.0, min(1.0, _num("tp_rearm_pct", 0.0))),
             pos_gap_max=max(0.0, _num("pos_gap_max", 0.0)),
             slot_score_cap=max(0.0, _num("slot_score_cap", 0.0)),
             cap_tiers=tuple(
