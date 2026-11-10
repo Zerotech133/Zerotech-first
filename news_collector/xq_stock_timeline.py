@@ -7,7 +7,8 @@ include）+ WAF 挑战自愈（reload 重武装）+ 405/WAF 停轮 + 只读 GET 
 sortId=2 最新优先）。
 
 产物：data/xq_timeline/{code}.jsonl（append，按 status_id 去重）。
-字段：id/code/name/ts/text/title/user_id/view/like/comment/reply。
+字段：id/code/symbol/ts/text/title/user_id/view/like/reply/link/src
+（link 为雪球 permalink 溯源字段，2026-11-11 L3 补；存量由 xq_backfill_link.py 幂等回填）。
 
 CLI：
   python xq_stock_timeline.py --queue actionable   # 65 只先验
@@ -56,6 +57,7 @@ async (arg) => {
               like_count: s.like_count || 0,
               reply_count: s.reply_count || 0,
               retweet_count: s.retweet_count || 0,
+              link: ('https://xueqiu.com/' + ((s.user && s.user.id) ? s.user.id : 'status') + '/' + s.id),
             }))};
   } catch (e) {
     return {err: 'WAF_CHALLENGE ' + String(e).slice(0, 80)};
@@ -186,6 +188,7 @@ def main():
                                "view": it.get("view_count"),
                                "like": it.get("like_count"),
                                "reply": it.get("reply_count"),
+                               "link": it.get("link"),
                                "src": "xq.stock_timeline"}
                         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                         new += 1
