@@ -964,6 +964,131 @@ def run_backtest(args):
                 "median": round(float(ret.median()), 6) if len(ret) else None,
                 "win_rate": round(float((ret > 0).mean()), 4) if len(ret) else None,
             }
+    # ---- P60 RPS 分层（2026-11-10 老田批第 2 项）----
+    # 目的：回答「RPS 该做硬门槛，还是继续当 0.25 分量」。
+    #   holds_buy  —— 现行体系（w_cur + 闸门开 + TH_CUR）已买入样本内按 RPS 分档，
+    #                 看低分档是否拖累整体；若后验随 RPS 单调，剔低档（门控）即可提升
+    #   holds_all  —— 全可交易样本按 RPS 分档，纯截面预测力，不含打分与阈值影响
+    # 窗口与 variants 一致（in_win），绝对口径，组间可直接比。
+    RPS_EDGES = ((0.0, 50.0, "rps<50"), (50.0, 70.0, "rps50_70"),
+                 (70.0, 90.0, "rps70_90"), (90.0, 101.0, "rps>=90"))
+    mix_in = mix_cur.loc[in_win]
+    buy_in = buy_cur.loc[in_win]
+    elig_in = eligible.loc[in_win]
+    open_in = wide["open"].loc[in_win]
+    close_in = wide["close"].loc[in_win]
+    unfill_in = wide["unfill"].loc[in_win] if wide.get("unfill") is not None else None
+    rps_split = {
+        "note": "RPS 分层后验（50/120/250 加权混合分，0-100）；"
+        "holds_buy=已买入样本内，holds_all=全可交易样本；绝对口径",
+        "buckets": {},
+    }
+    for _lo, _hi, _lb in RPS_EDGES:
+        _band = (mix_in >= _lo) & (mix_in < _hi)
+        _row = {
+            "n_buy": int((_band & buy_in).sum().sum()),
+            "n_all": int((_band & elig_in).sum().sum()),
+            "holds_buy": {},
+            "holds_all": {},
+        }
+        for _n in holds:
+            for _key, _mask in (("holds_buy", _band & buy_in), ("holds_all", _band & elig_in)):
+                _ret, _drop = trade_returns(
+                    _mask, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _row[_key][str(_n)] = {
+                    "n_trades": int(len(_ret)),
+                    "mean": round(float(_ret.mean()), 6) if len(_ret) else None,
+                    "median": round(float(_ret.median()), 6) if len(_ret) else None,
+                    "win_rate": round(float((_ret > 0).mean()), 4) if len(_ret) else None,
+                }
+        rps_split["buckets"][_lb] = _row
+    rps_split["n_nan_rps"] = int(mix_in.isna().sum().sum())
+
+    # ---- P61 加法 vs 门控 A/B（2026-11-10 老田批第 3 项）----
+    # 加法（现行）：score = 各维加权平均 >= 75 → 强项可补偿弱项
+    # 门控（共振）  ：tech>=T1 且 rps>=T2 且 env_safe 且 RPS 有值 → 买入，score 不参与判定
+    # 依据：原型「共振定乾坤」= 各维必须同时成立，不是加权求和。
+    #       P60 分层已证：RPS 全样本单调递减（反转），买入样本单调递增——单看 RPS 会错，
+    #       必须与 tech 联合，故网格取 tech×rps 双阈值。
+    GATE_AB_GRID = [(t1, t2) for t1 in (50, 60, 70, 80) for t2 in (0, 50, 70, 90)]
+    tech_in = tech_w.loc[in_win]
+    _safe_row = env_df.loc[in_win, "safe"].to_numpy(dtype=bool)
+    safe_mat = pd.DataFrame(
+        np.broadcast_to(_safe_row[:, None], tech_in.shape),
+        index=tech_in.index,
+        columns=tech_in.columns,
+    )
+    gate_ab = {
+        "note": "门控变体：tech>=T1 且 rps>=T2 且 env_safe 且 RPS 有值；"
+        "对照组 = variants 里的 w_cur_th7550_gate_on（加权平均口径）；"
+        "绝对口径，窗口与 variants 一致",
+        "variants": [],
+    }
+    for _t1, _t2 in GATE_AB_GRID:
+        _cond = (tech_in >= _t1) & (mix_in >= _t2) & elig_in & safe_mat
+        _gv = {
+            "label": "gate_t%d_r%d" % (_t1, _t2),
+            "tech_th": _t1,
+            "rps_th": _t2,
+            "n_buy": int(_cond.sum().sum()),
+            "holds": {},
+        }
+        for _n in holds:
+            _r, _d = trade_returns(
+                _cond, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            _gv["holds"][str(_n)] = {
+                "n_trades": int(len(_r)),
+                "mean": round(float(_r.mean()), 6) if len(_r) else None,
+                "median": round(float(_r.median()), 6) if len(_r) else None,
+                "win_rate": round(float((_r > 0).mean()), 4) if len(_r) else None,
+            }
+        gate_ab["variants"].append(_gv)
+
+    # ---- P61 时间稳定性：逐月 T+5/T+10（防单期行情主导结论）----
+    # 关键：buy 掩码用全窗口 open/close 计算出场，月掩码只作用于「信号日」，
+    # 避免月末 5 日内的信号因切片而丢失出场价（否则每月末被系统性剔除）。
+    _dates = tech_in.index
+    # 索引可能是 int(YYYYMMDD) 也可能是 Timestamp，两种都要能取年月
+    def _ym(_d):
+        if hasattr(_d, "year"):
+            return int(_d.year), int(_d.month)
+        _i = int(_d)
+        return _i // 10000, (_i // 100) % 100
+
+    _YM = [_ym(_d) for _d in _dates]
+    _MONTHS = sorted(set(_YM))
+    _CFG = [
+        ("base_w_cur_gate_on", buy_in),
+        ("gate_t70_r70", (tech_in >= 70) & (mix_in >= 70) & elig_in & safe_mat),
+        ("gate_t70_r90", (tech_in >= 70) & (mix_in >= 90) & elig_in & safe_mat),
+        ("gate_t50_r90", (tech_in >= 50) & (mix_in >= 90) & elig_in & safe_mat),
+    ]
+    gate_ab["monthly"] = {
+        "note": "逐月按信号日分组；出场用全窗口价格，月末信号不丢出场价；"
+        "同一成本口径（args.cost）",
+        "holds": [int(h) for h in holds if int(h) <= 10],
+        "rows": [],
+    }
+    for _lab, _mask in _CFG:
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _mask & pd.DataFrame(
+                np.broadcast_to(_mm, _mask.shape), index=_mask.index, columns=_mask.columns
+            )
+            _row = {
+                "cfg": _lab,
+                "month": "%04d%02d" % (_y, _m),
+                "n_buy": int(_sel.sum().sum()),
+            }
+            for _n in gate_ab["monthly"]["holds"]:
+                _r, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _row["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            gate_ab["monthly"]["rows"].append(_row)
+
     all_ret_hold = {}
     for n in holds:
         ret, _drop = trade_returns(
@@ -1037,6 +1162,8 @@ def run_backtest(args):
             "holds_by_period": subnew_holds,
             "all": all_ret_hold,
         },
+        "rps_split": rps_split,
+        "gate_ab": gate_ab,
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
