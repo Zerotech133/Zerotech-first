@@ -26,9 +26,40 @@ _CACHE_TTL = 11 * 3600  # 略小于 xq_browser 写侧 12h
 _state = {"patched": False, "cookie_str": "", "cookie_ts": 0.0}
 
 
+def _login_archive_cookie_str() -> str:
+    """登录存档全量 cookie 串（config/xq_login_cookies_u.json）。
+
+    2026-11-08 起：收割件把真实登录全量 cookie 写入该存档（含 WAF 伴生
+    acw_tc/ssxmod_itna 等），新鲜度远超匿名预热缓存（后者 2026-11-03 起
+    过期且匿名链被 WAF 打死——P2-8 判例）。优先用登录存档；缺失/解析
+    失败静默降级回原预热缓存链路。绝不打印值。
+    """
+    try:
+        path = os.path.join(_HERE, "config", "xq_login_cookies_u.json")
+        with open(path, encoding="utf-8-sig") as f:
+            data = json.load(f)
+        pairs = [
+            (c["name"], c["value"])
+            for c in data.get("cookies", [])
+            if isinstance(c, dict) and c.get("name") and c.get("value")
+        ]
+        if pairs:
+            return "; ".join("%s=%s" % p for p in pairs)
+    except Exception:
+        pass
+    return ""
+
+
 def _browser_cookie_str() -> str:
-    """匿名预热 cookie 串（TTL 内读缓存；缺失/过期 harvest 一次）。"""
+    """完整 cookie 基座：登录存档优先 → 匿名预热缓存（TTL 内读缓存；
+    缺失/过期 harvest 一次）。"""
     if _state["cookie_str"] and time.time() - _state["cookie_ts"] < _CACHE_TTL:
+        return _state["cookie_str"]
+    # 2026-11-08：登录存档（真实登录态全量 cookie）优先
+    s = _login_archive_cookie_str()
+    if s:
+        _state["cookie_str"] = s
+        _state["cookie_ts"] = time.time()
         return _state["cookie_str"]
     pairs: list = []
     try:

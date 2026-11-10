@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sys
+from typing import Optional  # 2026-11-08 审计修复：L307 返回注解引 "Optional[str]"，此前未导入（F821）
 import time
 import argparse
 from collections import defaultdict, Counter

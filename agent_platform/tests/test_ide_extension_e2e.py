@@ -153,6 +153,12 @@ def test_release_artifact_manifest_hashes():
     sys.path.insert(0, str(ROOT))
     from ide_release_info import build_info
     info = build_info(RELEASE_ROOT)
+    # 2026-11-07 K-PYTEST-TRIAGE：该用例此前无条件断言 info["ok"] is True，
+    # 而 build_info() 缺 current.json 时返回 release_current_missing（fail-closed，不抛异常），
+    # 非生产机 / 无 release 制品时必然假失败。补与同文件 :167-168 同口径的 skip 前置；
+    # Windows 且有制品时仍保持严格断言，不放宽判定。
+    if not (RELEASE_ROOT / "current.json").is_file():
+        pytest.skip("无 release artifact（非生产机）")
     assert info["ok"] is True, info
     assert info["all_match"] is True, info
     assert info.get("version")

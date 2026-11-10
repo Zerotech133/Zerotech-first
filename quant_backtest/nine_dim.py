@@ -301,6 +301,13 @@ def _load_market():
                 .reset_index(drop=True)
             )
             code = f[:-8].replace("_", ".")
+            # 读侧 schema 防御（2026-11-08）：QPZM 维护脚本补入的退市股
+            # parquet 仅 6 列（trade_date/ohlc/pre_close），缺 amount/volume/
+            # pct_chg——下游 5 处引用点会 KeyError。退市股无成交，补 0 语义
+            # 诚实：额=0 → 粗筛"额>2亿"自然出局，不进候选池。
+            for _c in ("amount", "volume", "pct_chg"):
+                if _c not in df.columns:
+                    df[_c] = 0.0
             frames[code] = df
             latest = max(latest, _td8(df["trade_date"].iloc[-1]))
         except Exception:

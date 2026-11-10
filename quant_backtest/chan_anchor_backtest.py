@@ -144,6 +144,9 @@ def _run_one(tag: str, desc: str, over: dict) -> dict:
             meta = d.get("meta") or {}
             cfg = meta.get("config") or {}
             expected = dict(eng.DEFAULTS)
+            # 2026-11-10：引擎默认预设改为 v2，本脚本的历史产物是按旧 DEFAULTS 生成的，
+            # 校验时必须钉死旧口径，否则 recache 门会误判「配置不一致」。
+            expected.setdefault("preset", "none")
             expected.update(params)
             for key in (
                 "d0",

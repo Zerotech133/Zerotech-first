@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import logging
 import json
 import time
 import urllib.request
@@ -55,6 +56,7 @@ def _rpc(method: str, params: dict, timeout: int = 60) -> dict:
                     data = json.loads(line[6:])
                     break
                 except Exception:
+                    logging.getLogger(__name__).debug("swallowed exception at line 57")
                     continue
     if not isinstance(data, dict):
         raise RuntimeError("mcp_bad_response")

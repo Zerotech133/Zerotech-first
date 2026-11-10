@@ -2492,7 +2492,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
             _CT = {"echarts.min.js": "application/javascript",
                    "g6.min.js": "application/javascript",
                    "nav.js": "application/javascript",
+                   "nav.css": "text/css",
+                   "ui_palette.css": "text/css",
+                   "page_shell.css": "text/css",
+                   "ui_palette.js": "application/javascript",
+                   "page_shell.js": "application/javascript",
+                   "jev_nav.js": "application/javascript",
                    "tokens.css": "text/css",
+                   "os_theme.css": "text/css",
+                   "ui/ui.css": "text/css",
                    "mobile_table.css": "text/css",
                    "shortscreen.js": "application/javascript",
                    "firstscreen.js": "application/javascript",
@@ -2843,6 +2851,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-MDC-R03 批次①b：案卷五屏评审路由（骨架态——空态不接真源，
             # 老田 2026-10-23 批准挂载；合并自 K-INTEL-20261022-FE）
             self._html_file(os.path.join(ROOT, "intel_dossier_skeleton.html"))
+        elif path in ("/jev-graph", "/jev_graph.html"):
+            # 2026-11-09：板块联动网前端正式挂载（JEV 情报工作台 Step 5）。
+            # 静态页 portal/jev_graph.html；CSS/JS 资源走 /static/*（portal_api 已托管）。
+            self._html_file(os.path.join(ROOT, "jev_graph.html"))
         elif path == "/api/intel-graph/dossier":
             # K-MDC-E2/#2：第六屏数据端点转生产（只读，A4/A5 影子+D2 规则实时构建；
             # 老田 2026-10-23 下一步方案#2 批准；8091 不重启，随冷启动生效）

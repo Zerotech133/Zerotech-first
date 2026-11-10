@@ -99,14 +99,32 @@ try {
     # scene (08:25/09:24 code=1 root cause unreadable). Session separator first.
     ('===== session start ' + (Get-Date -Format s) + ' =====') |
         Out-File 'C:\Temp\portal_api_err.log' -Append -Encoding utf8
-    & 'C:\Program Files\Python311\python.exe' 'C:\aios\portal\portal_api.py' 1>> 'C:\Temp\portal_api_out.log' 2>> 'C:\Temp\portal_api_err.log'
-    $rc = $LASTEXITCODE
-    if ($null -eq $rc -or '' -eq "$rc") { $rc = 1 }  # guard: alarm better than fake green
-    ('python exited code=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
-    if ($rc -ne 0) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py portal_api $rc C:\Temp\portal_api_err.log 1>$null 2>$null
+    # ★2026-11-10 根治：Start-Process 不带 -Wait — portal_api 是常驻进程不会退出，
+    # -Wait 会卡死直到 ExecutionTimeLimit 杀进程 → rc=2147946720 (SHARING_VIOLATION)。
+    # 改为：启动后最多 15s 探测 health endpoint，起来 exit 0；没起来 exit 1。
+    $pyProc = Start-Process -FilePath 'C:\Program Files\Python311\python.exe' `
+        -ArgumentList @('C:\aios\portal\portal_api.py') `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput 'C:\Temp\portal_api_out.log' `
+        -RedirectStandardError 'C:\Temp\portal_api_err.log' `
+        -PassThru
+    $healthy = $false
+    for ($i = 0; $i -lt 15; $i++) {
+        Start-Sleep -Milliseconds 1000
+        try {
+            $r = [System.Net.HttpWebRequest]::Create('http://127.0.0.1:8091/health')
+            $r.Proxy = $null; $r.Timeout = 2500
+            $resp = $r.GetResponse()
+            $resp.Close()
+            $healthy = $true; break
+        } catch { }
     }
-    exit $rc
+    if ($healthy) {
+        ('started OK PID=' + $pyProc.Id + ' health=up ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+        exit 0
+    }
+    ('started but health probe failed PID=' + $pyProc.Id + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+    exit 1
 } catch {
     ('ERR ' + $_.Exception.Message) | Out-File $log -Append -Encoding utf8
     exit 1

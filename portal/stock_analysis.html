@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- build:saux-20261109-2 -->
 <title>个股分析 · 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
@@ -69,10 +70,17 @@
   </div>
 
   <div class="bar">
-    <input id="code" placeholder="输入代码，如 600337.SH / 688023.SH" autocomplete="off">
+    <input id="code" placeholder="输入代码（600337 或 600337.SH 均可）" autocomplete="off">
     <button class="btn primary" id="btnQuery">查询</button>
     <button class="btn" id="btnRun">提交分析（后台队列）</button>
     <button class="btn" id="btnReview">刷新复核队列</button>
+  </div>
+  <div class="muted" style="font-size:12px;margin:-2px 0 10px">输入代码后按 Enter 或点「提交分析」入队；「查询」只读取最近报告。</div>
+  <div id="runState" style="display:none;margin:-4px 0 14px">
+    <div style="height:6px;background:var(--line,#1b2230);border-radius:4px;overflow:hidden">
+      <div id="runBar" style="height:100%;width:0;background:var(--ok,#3fb950);transition:width .3s"></div>
+    </div>
+    <div class="muted" id="runText" style="font-size:12px;margin-top:6px">—</div>
   </div>
 
   <div class="grid">
@@ -147,6 +155,25 @@
   var $ = function(id){ return document.getElementById(id); };
   var state = { code: '', showAll: false };
   function toast(msg){ var t=$('toast'); t.textContent=msg; t.style.display='block'; setTimeout(function(){t.style.display='none';}, 2200); }
+  function normCode(v){
+    var s = String(v||'').trim().toUpperCase().replace(/\s+/g,'');
+    var m = s.match(/^(SH|SZ|BJ)(\d{6})$/);
+    if(m){ s = m[2] + '.' + m[1]; }
+    if(/^\d{6}$/.test(s)){
+      var h = s.charAt(0);
+      if(h==='6'||h==='9'){ s += '.SH'; }
+      else if(h==='0'||h==='3'){ s += '.SZ'; }
+      else if(h==='8'||h==='4'){ s += '.BJ'; }
+    }
+    return /^(60\d{4}|68\d{4}|00\d{4}|30\d{4}|8\d{5}|4\d{5})\.(SH|SZ|BJ)$/.test(s) ? s : '';
+  }
+  function showRun(pct, text){
+    var box=$('runState'); if(!box){ return; }
+    box.style.display='block'; $('runBar').style.width=(pct||0)+'%'; $('runText').textContent=text||'';
+  }
+  function hideRun(delay){
+    setTimeout(function(){ var box=$('runState'); if(box){ box.style.display='none'; } }, delay||6000);
+  }
   function api(path, opts){
     opts = opts || {};
     return fetch(path, opts).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, body:j }; }); });
@@ -181,9 +208,10 @@
   }
 
   function query(){
-    var code = ($('code').value||'').trim().toUpperCase();
-    if(!/^[0-9]{6}\.(SH|SZ|BJ)$/.test(code)){ toast('代码格式应为 600337.SH'); return; }
-    state.code = code; $('k-run').textContent='…';
+    var code = normCode($('code').value);
+    if(!code){ toast('代码格式应为 600337 或 600337.SH'); return; }
+    $('code').value = code;
+    state.code = code; $('k-run').textContent='…'; showRun(25, '正在读取最近报告…');
     Promise.all([api('/api/analysis/latest?code='+encodeURIComponent(code)),
                  api('/api/analysis/list?code='+encodeURIComponent(code)+'&limit=10')]).then(function(rs){
       renderLatest(rs[0].body || {});
@@ -194,8 +222,8 @@
         runs.forEach(function(r){ h += '<tr><td>'+esc(r.run_id)+'</td><td class="muted">'+esc((r.started||'').slice(5))+'</td><td>'+esc(r.status)+'</td><td>'+esc(r.rating)+'</td><td>'+esc(r.coverage)+'%</td></tr>'; });
         $('listBody').innerHTML = h+'</table>';
       }
-      loadReview();
-    }).catch(function(e){ toast('查询失败：'+e); });
+      loadReview(); hideRun(900);
+    }).catch(function(e){ toast('查询失败：'+e); hideRun(1500); });
   }
 
   function loadReview(){
@@ -233,13 +261,35 @@
   }
 
   function submitRun(){
-    var code = ($('code').value||'').trim().toUpperCase();
-    if(!/^[0-9]{6}\.(SH|SZ|BJ)$/.test(code)){ toast('代码格式应为 600337.SH'); return; }
+    var code = normCode($('code').value);
+    if(!code){ toast('代码格式应为 600337 或 600337.SH'); return; }
+    $('code').value = code;
+    var btn = $('btnRun');
+    if(btn.disabled){ return; }
+    var old = btn.textContent;
+    btn.disabled = true; btn.textContent = '提交中…';
+    showRun(8, '正在提交到后台队列…');
+    var pct = 8;
+    var timer = setInterval(function(){ pct = Math.min(90, pct + 6); showRun(pct, '正在提交到后台队列…'); }, 600);
     api('/api/analysis/submit', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({code:code, llm:false, push:false}) }).then(function(r){
-      if((r.body||{}).ok){ toast('已入队：'+(r.body.job_id||'')); }
-      else { toast('提交失败：'+((r.body||{}).error||r.status)); }
-    }).catch(function(e){ toast('提交失败：'+e); });
+      clearInterval(timer);
+      if((r.body||{}).ok){
+        showRun(100, '已入队：' + ((r.body||{}).job_id||'') + '（由 15:40 盘后批或分析批次消费）');
+        toast('已入队：' + ((r.body||{}).job_id||''));
+        hideRun(9000);
+        query();
+      } else {
+        showRun(100, '提交失败：' + ((r.body||{}).error || r.status));
+        toast('提交失败：' + ((r.body||{}).error || r.status));
+      }
+      btn.disabled = false; btn.textContent = old;
+    }).catch(function(e){
+      clearInterval(timer);
+      showRun(100, '提交失败：' + e);
+      toast('提交失败：' + e);
+      btn.disabled = false; btn.textContent = old;
+    });
   }
 
   $('btnQuery').onclick = query;
@@ -256,7 +306,7 @@
       }).join('');
     }).catch(function(){ $('watchlistBody').innerHTML='<span class="empty">加载失败</span>'; });
   }
-  $('code').addEventListener('keydown', function(e){ if(e.key==='Enter') query(); });
+  $('code').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitRun(); } });
   document.addEventListener('DOMContentLoaded', function(){
     var p = new URLSearchParams(location.search);
     loadWatchlist();

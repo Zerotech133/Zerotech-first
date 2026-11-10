@@ -43,6 +43,11 @@ from datetime import datetime
 
 import numpy as np
 
+# 公共文件锁（判例 2026-11-09：多进程共写 bench json 互撞致 H1 FAIL）
+import sys as _sys
+_sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common_filelock import write_json_safe  # noqa: E402
+
 log = logging.getLogger(__name__)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -120,10 +125,7 @@ def build_bench_ew(force=False, verbose=True):
         "n": [acc[d][1] for d in dates],
     }
     os.makedirs(DATA, exist_ok=True)
-    tmp = BENCH_EW + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False)
-    os.replace(tmp, BENCH_EW)
+    write_json_safe(BENCH_EW, out)  # 持锁 + 唯一 tmp(pid) + 原子替换，多进程安全
     if verbose:
         print("bench EW built: %d dates, %d files -> %s" % (len(dates), ok, BENCH_EW))
     return out

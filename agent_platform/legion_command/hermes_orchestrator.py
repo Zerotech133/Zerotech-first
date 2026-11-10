@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import logging
 import json
 import os
 import re
@@ -206,6 +207,7 @@ def orchestrate(message: str, task: str = "", model: str = "",
     try:
         _evidence.new_run(run_id, task=task, agent=agent)
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 208")
         pass
     _msg_rd = _redact(message)
     if _msg_rd.get("hits"):
@@ -246,6 +248,7 @@ def orchestrate(message: str, task: str = "", model: str = "",
             "plan": plan["plan"],
         })
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 248")
         pass
     if not plan["need_execute"]:
         base["mode"] = "answer"
@@ -253,6 +256,7 @@ def orchestrate(message: str, task: str = "", model: str = "",
         try:
             _evidence.finalize(run_id, mode="answer", binding=base["binding"])
         except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).exception("swallowed exception at line 255")
             pass
         return base
     from legion_command import openhands_engine as OH
@@ -280,6 +284,7 @@ def orchestrate(message: str, task: str = "", model: str = "",
         _evidence.finalize(run_id, mode=base["mode"], binding=base["binding"],
                            conversation_id=res.get("conversation_id") or "")
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 282")
         pass
     _event(run_id, "run_end", {"mode": base["mode"]})
     return base

@@ -291,10 +291,27 @@ def _tstat(xs):
 
 
 def _summ(rows, slip):
+    """笔级 → 年化。**成本只扣一次**。
+
+    2026-11-08 修正：旧版把 `rets` 先扣了成本，`ann_alpha` 自然已是净值，
+    却又写 `ann_net = ann_alpha - ann_cost`，成本被扣了两遍。后果是
+    hold60（真值 +0.34%）显示成 −4.62%、hold250（真值 +0.72%）显示成 −0.47%，
+    「无一档为正」这个结论是这么来的。
+
+    现在把三个数分开报，互不覆盖：
+        ann_gross  毛超额年化（未扣成本）
+        ann_cost   年化成本（换手 × 双边 bp）
+        ann_net    净超额年化 = ann_gross − ann_cost（这才是能看的那个）
+    `ann_alpha` 保持旧语义（净），只为不打断并行 session 的引用；
+    新代码一律用 ann_net。
+    """
     if not rows:
         return None
-    rets = [r["ret"] - (BUY_COST + SELL_COST) - 2 * slip for r in rows]
-    alps = [x - r["idx"] for x, r in zip(rets, rows) if r["idx"] is not None]
+    gross = [r["ret"] for r in rows]
+    cost = BUY_COST + SELL_COST + 2 * slip
+    rets = [x - cost for x in gross]
+    g_alps = [x - r["idx"] for x, r in zip(gross, rows) if r["idx"] is not None]
+    n_alps = [x - r["idx"] for x, r in zip(rets, rows) if r["idx"] is not None]
     holds = [r["hold"] for r in rows]
     hm = statistics.mean(holds) if holds else 0
     # 单笔年化：笔均 × 每年能滚几轮。持期不同笔均必然不同，只有年化可比。
@@ -302,18 +319,22 @@ def _summ(rows, slip):
     # 这是「这笔钱只做这一笔、做完立刻做下一笔」的口径。
     per_yr = 244.0 / hm if hm else None
     ann_ret = 100 * statistics.mean(rets) * per_yr if per_yr else None
-    ann_alpha = 100 * statistics.mean(alps) * per_yr if (alps and per_yr) else None
-    ann_cost = 100 * (BUY_COST + SELL_COST + 2 * slip) * per_yr if per_yr else None
+    ann_gross = 100 * statistics.mean(g_alps) * per_yr if (g_alps and per_yr) else None
+    ann_net = 100 * statistics.mean(n_alps) * per_yr if (n_alps and per_yr) else None
+    ann_cost = 100 * cost * per_yr if per_yr else None
     return {
         "n": len(rows),
         "avg_ret": round(100 * statistics.mean(rets), 3),
         "ret_t": round(_tstat(rets) or 0, 2),
-        "avg_alpha": round(100 * statistics.mean(alps), 3) if alps else None,
-        "alpha_t": round(_tstat(alps) or 0, 2) if alps else None,
+        "avg_alpha_gross": round(100 * statistics.mean(g_alps), 3) if g_alps else None,
+        "avg_alpha": round(100 * statistics.mean(n_alps), 3) if n_alps else None,
+        "alpha_t": round(_tstat(n_alps) or 0, 2) if n_alps else None,
+        "alpha_gross_t": round(_tstat(g_alps) or 0, 2) if g_alps else None,
         "ann_ret": round(ann_ret, 2) if ann_ret is not None else None,
-        "ann_alpha": round(ann_alpha, 2) if ann_alpha is not None else None,
+        "ann_gross": round(ann_gross, 2) if ann_gross is not None else None,
+        "ann_alpha": round(ann_net, 2) if ann_net is not None else None,
         "ann_cost": round(ann_cost, 2) if ann_cost is not None else None,
-        "ann_net": round(ann_alpha - ann_cost, 2) if (ann_alpha is not None and ann_cost is not None) else None,
+        "ann_net": round(ann_net, 2) if ann_net is not None else None,
         "win": round(100 * sum(1 for x in rets if x > 0) / len(rets), 2),
         "median": round(100 * statistics.median(rets), 3),
         "hold_med": int(statistics.median(holds)),
@@ -428,15 +449,15 @@ def run(slip_bp=0.0, workers=8, write=True, first_only=False, entry_until=None,
         os.replace(tmp, OUT)
         print("→ %s" % OUT)
 
-    print("%-14s %6s %9s %8s %8s %8s %8s" % (
-        "口径", "n", "笔均超额", "年化超额", "年化成本", "年化净", "中位持期"))
+    print("%-14s %6s %9s %7s %9s %8s %9s %7s" % (
+        "口径", "n", "笔均毛超额", "毛年化", "年化成本", "净年化", "中位持期", "胜率"))
     for m in modes + [x + "_done" for x in ("sell_any", "sell_1s")]:
         s = tab[m]
         if not s:
             continue
-        print("%-14s %6d %8.2f%% %8.2f%% %8.2f%% %8.2f%% %8d" % (
-            m, s["n"], s["avg_alpha"] or 0, s["ann_alpha"] or 0,
-            s["ann_cost"] or 0, s["ann_net"] or 0, s["hold_med"]))
+        print("%-14s %6d %8.2f%% %8.2f%% %8.2f%% %8.2f%% %8d %6.1f%%" % (
+            m, s["n"], s["avg_alpha_gross"] or 0, s["ann_gross"] or 0,
+            s["ann_cost"] or 0, s["ann_net"] or 0, s["hold_med"], s["win"]))
     print()
     print("配对口径（同一批信号同时有两个口径）：")
     for m in ("hold20", "sell_any"):

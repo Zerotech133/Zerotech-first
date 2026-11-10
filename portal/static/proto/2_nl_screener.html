@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>条件选股 · 零界</title>
+<link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>零界 <small>· 个股分析</small></div>
+  <nav class="tabs">
+    <a href="1_sa_workbench.html">工作台</a>
+    <a class="active" href="#">条件选股</a>
+    <a href="3_strategy_studio.html">策略工作室</a>
+    <a href="4_backtest_report.html">回测报告</a>
+    <a href="#">报告库</a>
+  </nav>
+  <div class="top-right">
+    <span class="pill"><span class="dot"></span>数据 2026-11-02 · T+1</span>
+    <a class="btn sm" href="#">💬 Hermes 对话</a>
+  </div>
+</div>
+
+<main>
+  <div class="crumbs"><a href="#">零界</a> / 个股分析 / 条件选股</div>
+  <h1>条件选股</h1>
+  <p class="sub">用自然语言描述你要找的股票。系统会先解析成<strong>可核对的条件</strong>，你确认后才执行；结果只做研究候选，不构成推荐。</p>
+
+  <!-- 输入 -->
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <span class="badge blue">自然语言</span><span class="badge">结构化预览</span><span class="badge">确认后执行</span>
+      <span class="spacer"></span><span class="small muted">已应用你的偏好：排除 ST · 偏好低估值/质量</span>
+    </div>
+    <div class="searchbar">
+      <input class="input" id="nlq" value="轻工制造里，PS 历史分位低于 50%、营收同比转正、剔除 ST，按质量分排序，最多 20 只">
+      <button class="btn primary" onclick="parse()">解析条件</button>
+    </div>
+    <div class="row small muted" style="margin-top:10px">
+      <span>示例：</span>
+      <a href="#" onclick="setq('沪深300 里 ROE 连续 3 年 > 10%、资产负债率 < 60%，按股息率排序');return false">沪深300 · 高质量低负债</a>
+      <span>·</span>
+      <a href="#" onclick="setq('近 60 天有回购事件、PS 分位低于 30%、成交额大于 1 亿');return false">回购 + 低估值 + 流动性</a>
+      <span>·</span>
+      <a href="#" onclick="setq('观察池里近 20 日跌幅超过 15% 的');return false">观察池 · 超跌</a>
+    </div>
+  </div>
+
+  <!-- 解析预览 -->
+  <section class="card" id="preview">
+    <h2><span>① 条件预览 <span class="badge ok" style="margin-left:6px">可执行</span></span><span class="hint">确认无误后点击「确认并筛选」</span></h2>
+    <div class="row" style="margin-bottom:12px">
+      <span class="chip"><span class="k">股票池</span> 轻工制造（申万 L1）</span>
+      <span class="chip"><span class="k">PS 分位</span> ≤ 50%</span>
+      <span class="chip"><span class="k">营收同比</span> ≥ 0</span>
+      <span class="chip"><span class="k">排除</span> ST / 退市风险</span>
+      <span class="chip"><span class="k">排序</span> 质量分 ↓</span>
+      <span class="chip"><span class="k">上限</span> 20 只</span>
+      <span class="chip add">＋ 加条件</span>
+    </div>
+    <div class="notice info">
+      <span>🧭</span><div><b>解析口径已展示：</b>PS 历史分位=近 5 年分位（截至 2026-11-02）；营收同比=最近报告期（2026Q3）同比；质量分=五维评分中的质量维度。字段缺失的股票会被标注并从结果中剔除。</div>
+    </div>
+    <div class="row">
+      <button class="btn primary" onclick="runScreen()">确认并筛选</button>
+      <button class="btn" onclick="toast('已打开高级编辑器：可增删条件/切换算子')">编辑条件（高级）</button>
+      <span class="spacer"></span>
+      <span class="small muted">预计命中 23 只 · 计算约 1.2s</span>
+    </div>
+  </section>
+
+  <!-- 结果 -->
+  <section class="card" id="results" style="display:none">
+    <h2><span>② 候选结果 <span class="badge blue" id="hitCount">23 只</span></span><span class="hint">按质量分排序 · 点击「命中理由」看依据</span></h2>
+
+    <div class="row" style="margin-bottom:10px">
+      <input class="input" style="max-width:260px" placeholder="在结果中搜索代码/名称">
+      <button class="btn sm">批量分析选中（0）</button>
+      <button class="btn sm">加入观察池</button>
+      <button class="btn sm ghost">导出 CSV</button>
+      <span class="spacer"></span>
+      <span class="badge ok">数据 2026-11-02</span>
+    </div>
+
+    <div style="overflow:auto">
+    <table>
+      <thead><tr>
+        <th style="width:28px"><input type="checkbox" onclick="toggleAll(this)"></th>
+        <th>代码/名称</th><th>行业</th><th class="num">PS 分位</th><th class="num">营收同比</th><th class="num">质量分</th>
+        <th>命中理由</th><th>风险标签</th><th>最近评级</th><th></th>
+      </tr></thead>
+      <tbody id="rows">
+        <tr>
+          <td><input type="checkbox" class="pick"></td>
+          <td><span class="code">603816.SH</span><br><span class="small">顾家家居</span></td>
+          <td class="small">家居用品</td><td class="num">38%</td><td class="num up">+6.2%</td><td class="num"><b>72.4</b></td>
+          <td class="small muted">PS 分位 38% ≤ 50%；营收 +6.2%；质量分 72.4</td>
+          <td><span class="tag event">地产链</span></td><td><span class="badge blue">观察</span></td>
+          <td><button class="btn sm" onclick="toast('已加入批量分析队列')">分析</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="pick"></td>
+          <td><span class="code">603833.SH</span><br><span class="small">欧派家居</span></td>
+          <td class="small">家居用品</td><td class="num">44%</td><td class="num up">+3.1%</td><td class="num"><b>69.8</b></td>
+          <td class="small muted">PS 分位 44%；营收 +3.1%；质量分 69.8</td>
+          <td><span class="tag event">地产链</span></td><td><span class="badge blue">观察</span></td>
+          <td><button class="btn sm" onclick="toast('已加入批量分析队列')">分析</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="pick"></td>
+          <td><span class="code">002572.SZ</span><br><span class="small">索菲亚</span></td>
+          <td class="small">家居用品</td><td class="num">41%</td><td class="num up">+1.8%</td><td class="num"><b>66.2</b></td>
+          <td class="small muted">PS 分位 41%；营收 +1.8%；质量分 66.2</td>
+          <td><span class="tag event">地产链</span></td><td><span class="badge blue">观察</span></td>
+          <td><button class="btn sm" onclick="toast('已加入批量分析队列')">分析</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="pick"></td>
+          <td><span class="code">600337.SH</span><br><span class="small">ST美克</span></td>
+          <td class="small">家居用品</td><td class="num">92%</td><td class="num dn">-36.8%</td><td class="num"><b>36.0</b></td>
+          <td class="small muted">质量分 36.0；PS 92%（不满足，仅因"观察池优先"展示）</td>
+          <td><span class="tag bad">ST</span><span class="tag bad">重整</span></td><td><span class="badge warn">事件观察</span></td>
+          <td><button class="btn sm" onclick="toast('已加入批量分析队列')">分析</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="pick"></td>
+          <td><span class="code">603180.SH</span><br><span class="small">金牌家居</span></td>
+          <td class="small">家居用品</td><td class="num">31%</td><td class="num up">+2.4%</td><td class="num"><b>61.5</b></td>
+          <td class="small muted">PS 分位 31%；营收 +2.4%；质量分 61.5</td>
+          <td></td><td><span class="badge blue">观察</span></td>
+          <td><button class="btn sm" onclick="toast('已加入批量分析队列')">分析</button></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" class="pick"></td>
+          <td><span class="code">001322.SZ</span><br><span class="small">箭牌家居</span></td>
+          <td class="small">家居用品</td><td class="num">47%</td><td class="num up">+9.6%</td><td class="num"><b>58.9</b></td>
+          <td class="small muted">PS 分位 47%；营收 +9.6%；质量分 58.9</td>
+          <td><span class="tag event">地产链</span></td><td><span class="badge blue">观察</span></td>
+          <td><button class="btn sm" onclick="toast('已加入批量分析队列')">分析</button></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <span class="small muted">共 23 只，展示前 6 · 已命中条件 21 只；2 只因"观察池优先"附带展示</span>
+      <span class="spacer"></span>
+      <button class="btn sm">下一页</button>
+    </div>
+
+    <div class="notice warn">
+      <span>⚠️</span><div><b>筛选结果仅用于研究：</b>不构成买卖建议；命中理由基于历史数据与静态条件，未考虑流动性冲击、交易成本与你的持仓约束，请自行复核。</div>
+    </div>
+  </section>
+
+  <footer>
+    <span>口径：PS 分位=近 5 年 · 营收同比=最近报告期</span>
+    <span>数据 2026-11-02</span>
+    <span>研究分析，不构成投资建议</span>
+  </footer>
+</main>
+
+<div class="toast" id="toast"></div>
+<script>
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600);}
+function setq(t){document.getElementById('nlq').value=t;}
+function parse(){toast('已解析 6 个条件，请核对预览');document.getElementById('preview').style.display='block';}
+function runScreen(){
+  toast('筛选计算中…');
+  const r=document.getElementById('results');r.style.display='block';
+  setTimeout(()=>{r.scrollIntoView({behavior:'smooth',block:'start'});toast('已生成 23 只候选（示例数据）');},700);
+}
+function toggleAll(el){document.querySelectorAll('.pick').forEach(x=>x.checked=el.checked);}
+</script>
+</body>
+</html>

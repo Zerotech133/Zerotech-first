@@ -18,7 +18,7 @@ def test_core_is_five_and_registered():
     assert set(ids) == {
         "rps50",
         "nine_dim_score",
-        "jev_conf",
+        "jev_signal",
         "chan_signal",
         "kg_resonance",
     }
@@ -57,7 +57,7 @@ def test_decision_requires_allow_decision_and_ab():
     ann = sr.annotate("rps50", 88, as_of="2026-10-26")
     r = g.validate_items([ann], for_decision=True, require_all_core=False)
     assert r["ok"], r
-    c = sr.annotate("jev_conf", 0.7, as_of="2026-10-26")
+    c = sr.annotate("jev_signal", 0.5, as_of="2026-10-26")
     r2 = g.validate_items([c], for_decision=True, require_all_core=False)
     assert not r2["ok"]  # C 级 + allow_decision=false
 

@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+import logging
 import hashlib
 import json
 import time
@@ -50,6 +51,7 @@ def collect(mission_id: str = "") -> list:
         try:
             st = _load(p)
         except Exception:
+            logging.getLogger(__name__).debug("swallowed exception at line 52")
             continue
         if not isinstance(st, dict):
             continue

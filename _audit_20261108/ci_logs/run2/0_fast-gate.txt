@@ -1,0 +1,509 @@
+﻿2026-11-08T03:59:25.1798203Z Current runner version: '2.338.2'
+2026-11-08T03:59:25.1814003Z ##[group]Runner Image Provisioner
+2026-11-08T03:59:25.1814488Z Hosted Compute Agent
+2026-11-08T03:59:25.1814805Z Version: 20261103.629
+2026-11-08T03:59:25.1815140Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-08T03:59:25.1815529Z Build Date: 2026-11-03T17:26:59Z
+2026-11-08T03:59:25.1815887Z Worker ID: {f04ec7b4-4567-4e74-9204-aa74e0ef2c6e}
+2026-11-08T03:59:25.1816287Z Region: westus2
+2026-11-08T03:59:25.1816645Z Cloud: Azure
+2026-11-08T03:59:25.1816913Z ##[endgroup]
+2026-11-08T03:59:25.1817556Z ##[group]Operating System
+2026-11-08T03:59:25.1817866Z Microsoft Windows Server 2025
+2026-11-08T03:59:25.1818183Z 10.0.26100
+2026-11-08T03:59:25.1818449Z Datacenter
+2026-11-08T03:59:25.1818723Z ##[endgroup]
+2026-11-08T03:59:25.1819015Z ##[group]Runner Image
+2026-11-08T03:59:25.1819308Z Image: windows-2025-vs2026
+2026-11-08T03:59:25.1819625Z Version: 20261103.298.1
+2026-11-08T03:59:25.1820448Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20261103.298/images/windows/Windows2025-VS2026-Readme.md
+2026-11-08T03:59:25.1821286Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20261103.298
+2026-11-08T03:59:25.1821774Z ##[endgroup]
+2026-11-08T03:59:25.1822338Z ##[group]GITHUB_TOKEN Permissions
+2026-11-08T03:59:25.1823367Z Contents: read
+2026-11-08T03:59:25.1823670Z Metadata: read
+2026-11-08T03:59:25.1824262Z ##[endgroup]
+2026-11-08T03:59:25.1825446Z Secret source: Actions
+2026-11-08T03:59:25.1825902Z Cache mode: write
+2026-11-08T03:59:25.1826299Z Prepare workflow directory
+2026-11-08T03:59:25.2055432Z Prepare all required actions
+2026-11-08T03:59:25.2087206Z Getting action download info
+2026-11-08T03:59:25.5037946Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-08T03:59:25.5845195Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-11-08T03:59:25.7663479Z Complete job name: fast-gate
+2026-11-08T03:59:25.8809925Z ##[group]Run actions/checkout@v4
+2026-11-08T03:59:25.8810571Z with:
+2026-11-08T03:59:25.8811100Z   fetch-depth: 0
+2026-11-08T03:59:25.8811349Z   repository: Zerotech133/Zerotech-first
+2026-11-08T03:59:25.8813273Z   token: ***
+2026-11-08T03:59:25.8813480Z   ssh-strict: true
+2026-11-08T03:59:25.8813689Z   ssh-user: git
+2026-11-08T03:59:25.8813909Z   persist-credentials: true
+2026-11-08T03:59:25.8814148Z   clean: true
+2026-11-08T03:59:25.8814371Z   sparse-checkout-cone-mode: true
+2026-11-08T03:59:25.8814633Z   fetch-tags: false
+2026-11-08T03:59:25.8814851Z   show-progress: true
+2026-11-08T03:59:25.8815067Z   lfs: false
+2026-11-08T03:59:25.8815267Z   submodules: false
+2026-11-08T03:59:25.8815486Z   set-safe-directory: true
+2026-11-08T03:59:25.8815739Z   allow-unsafe-pr-checkout: false
+2026-11-08T03:59:25.8816088Z env:
+2026-11-08T03:59:25.8816283Z   TEST_GATE_PROFILE: ci
+2026-11-08T03:59:25.8816506Z ##[endgroup]
+2026-11-08T03:59:25.9776975Z Syncing repository: Zerotech133/Zerotech-first
+2026-11-08T03:59:25.9778050Z ##[group]Getting Git version info
+2026-11-08T03:59:25.9778402Z Working directory is 'D:\a\Zerotech-first\Zerotech-first'
+2026-11-08T03:59:26.0283544Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-08T03:59:26.3936628Z git version 2.56.0.windows.4
+2026-11-08T03:59:26.3976323Z ##[endgroup]
+2026-11-08T03:59:26.3989000Z Temporarily overriding HOME='D:\a\_temp\f1e25566-28cd-4320-88d2-dca38441015a' before making global git config changes
+2026-11-08T03:59:26.3989741Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-08T03:59:26.3995994Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Zerotech-first\Zerotech-first
+2026-11-08T03:59:26.4538918Z Deleting the contents of 'D:\a\Zerotech-first\Zerotech-first'
+2026-11-08T03:59:26.4546493Z ##[group]Initializing the repository
+2026-11-08T03:59:26.4552075Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Zerotech-first\Zerotech-first
+2026-11-08T03:59:26.5259313Z Initialized empty Git repository in D:/a/Zerotech-first/Zerotech-first/.git/
+2026-11-08T03:59:26.5300478Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Zerotech133/Zerotech-first
+2026-11-08T03:59:26.5923230Z ##[endgroup]
+2026-11-08T03:59:26.5923756Z ##[group]Disabling automatic garbage collection
+2026-11-08T03:59:26.5929308Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-11-08T03:59:26.6181387Z ##[endgroup]
+2026-11-08T03:59:26.6181842Z ##[group]Setting up auth
+2026-11-08T03:59:26.6189492Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-08T03:59:26.6430305Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-08T03:59:27.9369777Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-08T03:59:27.9625338Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-08T03:59:28.3476449Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-08T03:59:28.3713756Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-08T03:59:28.7748488Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-11-08T03:59:28.7996575Z ##[endgroup]
+2026-11-08T03:59:28.7997024Z ##[group]Fetching the repository
+2026-11-08T03:59:28.8006836Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-11-08T03:59:46.3073331Z From https://github.com/Zerotech133/Zerotech-first
+2026-11-08T03:59:46.3073944Z  * [new branch]          chanlun-archive-v9         -> origin/chanlun-archive-v9
+2026-11-08T03:59:46.3074411Z  * [new branch]          chanlun-v8-copy            -> origin/chanlun-v8-copy
+2026-11-08T03:59:46.3074802Z  * [new branch]          governance-upgrade         -> origin/governance-upgrade
+2026-11-08T03:59:46.3075196Z  * [new branch]          main                       -> origin/main
+2026-11-08T03:59:46.3075554Z  * [new branch]          staging-20261106           -> origin/staging-20261106
+2026-11-08T03:59:46.3075983Z  * [new branch]          task/K-SEC-20261108-PORT-8870 -> origin/task/K-SEC-20261108-PORT-8870
+2026-11-08T03:59:46.3076484Z  * [new tag]             archive/20261106/K-OPS-20261019-K266PATH -> archive/20261106/K-OPS-20261019-K266PATH
+2026-11-08T03:59:46.3077045Z  * [new tag]             archive/20261106/K-ORG-068 -> archive/20261106/K-ORG-068
+2026-11-08T03:59:46.3077434Z  * [new tag]             archive/20261106/K-ORG-175 -> archive/20261106/K-ORG-175
+2026-11-08T03:59:46.3077792Z  * [new tag]             archive/20261106/K-ORG-180 -> archive/20261106/K-ORG-180
+2026-11-08T03:59:46.3078102Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEBUILD -> archive/20261106/K-QUANT-20261029-IDEBUILD
+2026-11-08T03:59:46.3078509Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEFAIL -> archive/20261106/K-QUANT-20261029-IDEFAIL
+2026-11-08T03:59:46.3078853Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEHELLO -> archive/20261106/K-QUANT-20261029-IDEHELLO
+2026-11-08T03:59:46.3079358Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEHISTORY -> archive/20261106/K-QUANT-20261029-IDEHISTORY
+2026-11-08T03:59:46.3079831Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDELOOP -> archive/20261106/K-QUANT-20261029-IDELOOP
+2026-11-08T03:59:46.3081293Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDELOOP2 -> archive/20261106/K-QUANT-20261029-IDELOOP2
+2026-11-08T03:59:46.3081865Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEPOLISH -> archive/20261106/K-QUANT-20261029-IDEPOLISH
+2026-11-08T03:59:46.3082787Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDESTANDALONE -> archive/20261106/K-QUANT-20261029-IDESTANDALONE
+2026-11-08T03:59:46.3083527Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDETIMEOUT -> archive/20261106/K-QUANT-20261029-IDETIMEOUT
+2026-11-08T03:59:46.3084118Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDETOOLS2 -> archive/20261106/K-QUANT-20261029-IDETOOLS2
+2026-11-08T03:59:46.3084710Z  * [new tag]             archive/20261106/K-QUANT-20261029-T2MANUAL2 -> archive/20261106/K-QUANT-20261029-T2MANUAL2
+2026-11-08T03:59:46.3085334Z  * [new tag]             archive/20261106/K-QUANT-20261030-IDECANCEL -> archive/20261106/K-QUANT-20261030-IDECANCEL
+2026-11-08T03:59:46.3085807Z  * [new tag]             archive/20261106/K-QUANT-20261030-IDEOUTPUT -> archive/20261106/K-QUANT-20261030-IDEOUTPUT
+2026-11-08T03:59:46.3086165Z  * [new tag]             archive/20261106/K-QUANT-20261030-OHUI -> archive/20261106/K-QUANT-20261030-OHUI
+2026-11-08T03:59:46.3086456Z  * [new tag]             archive/20261106/K-STOCK-228 -> archive/20261106/K-STOCK-228
+2026-11-08T03:59:46.3086764Z  * [new tag]             archive/20261106/WO-ACAD-BOARD-V2-20261030 -> archive/20261106/WO-ACAD-BOARD-V2-20261030
+2026-11-08T03:59:46.3087114Z  * [new tag]             archive/20261106/WO-HUANGZHONG-20261028 -> archive/20261106/WO-HUANGZHONG-20261028
+2026-11-08T03:59:46.3087477Z  * [new tag]             archive/20261106/WO-LCS1-A6-BACKTEST-20261029 -> archive/20261106/WO-LCS1-A6-BACKTEST-20261029
+2026-11-08T03:59:46.3087829Z  * [new tag]             archive/20261106/WO-MEETING-JS-20261029 -> archive/20261106/WO-MEETING-JS-20261029
+2026-11-08T03:59:46.3117381Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/main
+2026-11-08T03:59:46.3478792Z   origin/main
+2026-11-08T03:59:46.3510873Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/main
+2026-11-08T03:59:46.3838602Z 1caea734ca38bd283cbe62085544af05086534da
+2026-11-08T03:59:46.3860223Z ##[endgroup]
+2026-11-08T03:59:46.3860446Z ##[group]Determining the checkout info
+2026-11-08T03:59:46.3861676Z ##[endgroup]
+2026-11-08T03:59:46.3867712Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-11-08T03:59:46.4175020Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-11-08T03:59:46.4403196Z ##[group]Checking out the ref
+2026-11-08T03:59:46.4408881Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-11-08T03:59:47.5170166Z Updating files:  50% (5463/10854)
+2026-11-08T03:59:48.1233704Z Updating files:  51% (5536/10854)
+2026-11-08T03:59:48.1416828Z Updating files:  52% (5645/10854)
+2026-11-08T03:59:48.1557915Z Updating files:  53% (5753/10854)
+2026-11-08T03:59:48.1707139Z Updating files:  54% (5862/10854)
+2026-11-08T03:59:48.1881523Z Updating files:  55% (5970/10854)
+2026-11-08T03:59:48.2845343Z Updating files:  56% (6079/10854)
+2026-11-08T03:59:48.3028507Z Updating files:  57% (6187/10854)
+2026-11-08T03:59:48.3175933Z Updating files:  58% (6296/10854)
+2026-11-08T03:59:48.3419420Z Updating files:  59% (6404/10854)
+2026-11-08T03:59:48.3551712Z Updating files:  60% (6513/10854)
+2026-11-08T03:59:48.3738117Z Updating files:  61% (6621/10854)
+2026-11-08T03:59:48.3907086Z Updating files:  62% (6730/10854)
+2026-11-08T03:59:48.4055537Z Updating files:  63% (6839/10854)
+2026-11-08T03:59:48.4211111Z Updating files:  64% (6947/10854)
+2026-11-08T03:59:48.4363013Z Updating files:  65% (7056/10854)
+2026-11-08T03:59:48.4501906Z Updating files:  66% (7164/10854)
+2026-11-08T03:59:48.4641118Z Updating files:  67% (7273/10854)
+2026-11-08T03:59:48.4799785Z Updating files:  68% (7381/10854)
+2026-11-08T03:59:48.4955168Z Updating files:  69% (7490/10854)
+2026-11-08T03:59:48.4960220Z Updating files:  69% (7595/10854)
+2026-11-08T03:59:48.5117877Z Updating files:  70% (7598/10854)
+2026-11-08T03:59:48.5621170Z Updating files:  71% (7707/10854)
+2026-11-08T03:59:48.5760953Z Updating files:  72% (7815/10854)
+2026-11-08T03:59:48.6442398Z Updating files:  73% (7924/10854)
+2026-11-08T03:59:48.6913909Z Updating files:  74% (8032/10854)
+2026-11-08T03:59:48.7196708Z Updating files:  75% (8141/10854)
+2026-11-08T03:59:48.7354476Z Updating files:  76% (8250/10854)
+2026-11-08T03:59:48.7564046Z Updating files:  77% (8358/10854)
+2026-11-08T03:59:48.7849796Z Updating files:  78% (8467/10854)
+2026-11-08T03:59:48.8047560Z Updating files:  79% (8575/10854)
+2026-11-08T03:59:48.8182184Z Updating files:  80% (8684/10854)
+2026-11-08T03:59:48.8337675Z Updating files:  81% (8792/10854)
+2026-11-08T03:59:48.8514794Z Updating files:  82% (8901/10854)
+2026-11-08T03:59:48.8671320Z Updating files:  83% (9009/10854)
+2026-11-08T03:59:48.8852549Z Updating files:  84% (9118/10854)
+2026-11-08T03:59:48.9039358Z Updating files:  85% (9226/10854)
+2026-11-08T03:59:48.9222134Z Updating files:  86% (9335/10854)
+2026-11-08T03:59:48.9384185Z Updating files:  87% (9443/10854)
+2026-11-08T03:59:48.9561147Z Updating files:  88% (9552/10854)
+2026-11-08T03:59:48.9744287Z Updating files:  89% (9661/10854)
+2026-11-08T03:59:48.9882892Z Updating files:  90% (9769/10854)
+2026-11-08T03:59:49.0018498Z Updating files:  91% (9878/10854)
+2026-11-08T03:59:49.0129228Z Updating files:  92% (9986/10854)
+2026-11-08T03:59:49.0257349Z Updating files:  93% (10095/10854)
+2026-11-08T03:59:49.0396513Z Updating files:  94% (10203/10854)
+2026-11-08T03:59:49.0534914Z Updating files:  95% (10312/10854)
+2026-11-08T03:59:49.6122942Z Updating files:  96% (10420/10854)
+2026-11-08T03:59:49.6897475Z Updating files:  96% (10422/10854)
+2026-11-08T03:59:49.7230886Z Updating files:  97% (10529/10854)
+2026-11-08T03:59:49.7395959Z Updating files:  98% (10637/10854)
+2026-11-08T03:59:49.7557900Z Updating files:  99% (10746/10854)
+2026-11-08T03:59:49.7558156Z Updating files: 100% (10854/10854)
+2026-11-08T03:59:49.7558361Z Updating files: 100% (10854/10854), done.
+2026-11-08T03:59:49.7729695Z Switched to a new branch 'main'
+2026-11-08T03:59:49.7833863Z branch 'main' set up to track 'origin/main'.
+2026-11-08T03:59:49.7991858Z ##[endgroup]
+2026-11-08T03:59:49.8360943Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-11-08T03:59:49.8593372Z 1caea734ca38bd283cbe62085544af05086534da
+2026-11-08T03:59:49.8953756Z ##[group]Run actions/setup-python@v5
+2026-11-08T03:59:49.8953950Z with:
+2026-11-08T03:59:49.8954069Z   python-version: 3.11
+2026-11-08T03:59:49.8954191Z   check-latest: false
+2026-11-08T03:59:49.8955448Z   token: ***
+2026-11-08T03:59:49.8955558Z   update-environment: true
+2026-11-08T03:59:49.8955689Z   allow-prereleases: false
+2026-11-08T03:59:49.8955808Z   freethreaded: false
+2026-11-08T03:59:49.8955925Z env:
+2026-11-08T03:59:49.8956025Z   TEST_GATE_PROFILE: ci
+2026-11-08T03:59:49.8956144Z ##[endgroup]
+2026-11-08T03:59:49.9967171Z ##[group]Installed versions
+2026-11-08T03:59:50.0129261Z (node:4616) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-08T03:59:50.0129651Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-08T03:59:50.0130392Z Successfully set up CPython (3.11.9)
+2026-11-08T03:59:50.0130740Z ##[endgroup]
+2026-11-08T03:59:50.0346359Z ##[group]Run python -m pip install --upgrade pip
+2026-11-08T03:59:50.0346657Z [36;1mpython -m pip install --upgrade pip[0m
+2026-11-08T03:59:50.0346868Z [36;1mpython -m pip install -r requirements-dev.txt[0m
+2026-11-08T03:59:50.0347143Z [36;1mpython -m pip install numpy pandas pyyaml jsonschema pyjwt cryptography lark-oapi[0m
+2026-11-08T03:59:50.0347449Z [36;1m# 2026-11-08 首轮实跑补齐（run 42442700503）：datawarehouse 套件[0m
+2026-11-08T03:59:50.0347892Z [36;1m# test_dataset_query.py 顶部 `import pyarrow`，缺包导致整个 datawarehouse[0m
+2026-11-08T03:59:50.0348117Z [36;1m# 目录 rc=2 收集失败（日志：pytest 异常退出 rc=2）；requests 为[0m
+2026-11-08T03:59:50.0348329Z [36;1m# xq_crawl_trust_env 等用例所需；python-docx 供 learning_intake 类用例[0m
+2026-11-08T03:59:50.0348525Z [36;1m# （仅 tools 全量触发，fast 不跑，但缺包同样会收集失败）。[0m
+2026-11-08T03:59:50.0348714Z [36;1mpython -m pip install pyarrow requests python-docx[0m
+2026-11-08T03:59:50.1055964Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T03:59:50.1056255Z env:
+2026-11-08T03:59:50.1056373Z   TEST_GATE_PROFILE: ci
+2026-11-08T03:59:50.1056541Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T03:59:50.1056833Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T03:59:50.1057081Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T03:59:50.1057297Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T03:59:50.1057530Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T03:59:50.1057702Z ##[endgroup]
+2026-11-08T03:59:54.3313961Z Requirement already satisfied: pip in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (26.3)
+2026-11-08T03:59:55.9555850Z Collecting pytest>=9.0 (from -r requirements-dev.txt (line 2))
+2026-11-08T03:59:56.1110619Z   Downloading pytest-9.2.0-py3-none-any.whl.metadata (7.9 kB)
+2026-11-08T03:59:56.1645206Z Collecting pytest-timeout>=2.3 (from -r requirements-dev.txt (line 3))
+2026-11-08T03:59:56.1759646Z   Downloading pytest_timeout-2.4.0-py3-none-any.whl.metadata (20 kB)
+2026-11-08T03:59:56.5047845Z Collecting ruff>=0.15 (from -r requirements-dev.txt (line 4))
+2026-11-08T03:59:56.5148125Z   Downloading ruff-0.17.4-py3-none-win_amd64.whl.metadata (21 kB)
+2026-11-08T03:59:56.7376872Z Collecting duckdb==1.5.6 (from -r requirements-dev.txt (line 5))
+2026-11-08T03:59:56.7487097Z   Downloading duckdb-1.5.6-cp311-cp311-win_amd64.whl.metadata (4.2 kB)
+2026-11-08T03:59:56.8003221Z Collecting colorama>=0.4 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T03:59:56.8092735Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2026-11-08T03:59:56.8642203Z Collecting iniconfig>=2 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T03:59:56.8730392Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+2026-11-08T03:59:56.9332221Z Collecting packaging>=24 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T03:59:56.9422838Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+2026-11-08T03:59:56.9916221Z Collecting pluggy<2,>=1.6 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T03:59:56.9998831Z   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+2026-11-08T03:59:57.0533543Z Collecting pygments>=2.15 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T03:59:57.0875169Z   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+2026-11-08T03:59:57.1386492Z Downloading duckdb-1.5.6-cp311-cp311-win_amd64.whl (13.2 MB)
+2026-11-08T03:59:57.6525341Z    ---------------------------------------- 13.2/13.2 MB 26.7 MB/s  0:00:00
+2026-11-08T03:59:57.6615029Z Downloading pytest-9.2.0-py3-none-any.whl (411 kB)
+2026-11-08T03:59:57.7017025Z Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+2026-11-08T03:59:57.7314107Z Downloading pytest_timeout-2.4.0-py3-none-any.whl (14 kB)
+2026-11-08T03:59:57.7587570Z Downloading ruff-0.17.4-py3-none-win_amd64.whl (10.3 MB)
+2026-11-08T03:59:57.9446759Z    ---------------------------------------- 10.3/10.3 MB 53.6 MB/s  0:00:00
+2026-11-08T03:59:57.9532081Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2026-11-08T03:59:57.9804275Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+2026-11-08T03:59:58.0102152Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+2026-11-08T03:59:58.0375730Z Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+2026-11-08T03:59:58.0763921Z    ---------------------------------------- 1.3/1.3 MB 31.9 MB/s  0:00:00
+2026-11-08T03:59:58.1594021Z Installing collected packages: ruff, pygments, pluggy, packaging, iniconfig, duckdb, colorama, pytest, pytest-timeout
+2026-11-08T04:00:00.9349462Z 
+2026-11-08T04:00:00.9358864Z Successfully installed colorama-0.4.6 duckdb-1.5.6 iniconfig-2.3.1 packaging-26.3 pluggy-1.7.0 pygments-2.21.0 pytest-9.2.0 pytest-timeout-2.4.0 ruff-0.17.4
+2026-11-08T04:00:02.2155071Z Collecting numpy
+2026-11-08T04:00:02.3566645Z   Downloading numpy-2.4.6-cp311-cp311-win_amd64.whl.metadata (6.6 kB)
+2026-11-08T04:00:02.4808984Z Collecting pandas
+2026-11-08T04:00:02.4906564Z   Downloading pandas-3.1.1-cp311-cp311-win_amd64.whl.metadata (16 kB)
+2026-11-08T04:00:02.5707383Z Collecting pyyaml
+2026-11-08T04:00:02.5786754Z   Downloading pyyaml-6.0.3-cp311-cp311-win_amd64.whl.metadata (2.4 kB)
+2026-11-08T04:00:02.6375422Z Collecting jsonschema
+2026-11-08T04:00:02.6455731Z   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+2026-11-08T04:00:02.7369984Z Collecting pyjwt
+2026-11-08T04:00:02.7448742Z   Downloading pyjwt-2.15.1-py3-none-any.whl.metadata (3.5 kB)
+2026-11-08T04:00:02.9186863Z Collecting cryptography
+2026-11-08T04:00:02.9271542Z   Downloading cryptography-50.0.2-cp311-abi3-win_amd64.whl.metadata (4.4 kB)
+2026-11-08T04:00:02.9896242Z Collecting lark-oapi
+2026-11-08T04:00:02.9991600Z   Downloading lark_oapi-1.7.5-py3-none-any.whl.metadata (15 kB)
+2026-11-08T04:00:03.0640925Z Collecting python-dateutil>=2.9.0 (from pandas)
+2026-11-08T04:00:03.0731782Z   Downloading python_dateutil-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+2026-11-08T04:00:03.1318926Z Collecting tzdata (from pandas)
+2026-11-08T04:00:03.1409551Z   Downloading tzdata-2026.6-py2.py3-none-any.whl.metadata (1.4 kB)
+2026-11-08T04:00:03.1960815Z Collecting attrs>=22.2.0 (from jsonschema)
+2026-11-08T04:00:03.2059865Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+2026-11-08T04:00:03.2607083Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema)
+2026-11-08T04:00:03.2695225Z   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+2026-11-08T04:00:03.3267866Z Collecting referencing>=0.28.4 (from jsonschema)
+2026-11-08T04:00:03.3349094Z   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+2026-11-08T04:00:03.5485639Z Collecting rpds-py>=0.25.0 (from jsonschema)
+2026-11-08T04:00:03.5590535Z   Downloading rpds_py-2026.9.1-cp311-cp311-win_amd64.whl.metadata (4.2 kB)
+2026-11-08T04:00:03.6760948Z Collecting cffi>=2.0.0 (from cryptography)
+2026-11-08T04:00:03.6882483Z   Downloading cffi-2.1.1-cp311-cp311-win_amd64.whl.metadata (2.6 kB)
+2026-11-08T04:00:03.7421328Z Collecting requests>=2.25 (from lark-oapi)
+2026-11-08T04:00:03.7507593Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-11-08T04:00:03.8046475Z Collecting requests_toolbelt>=0.9 (from lark-oapi)
+2026-11-08T04:00:03.8133103Z   Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl.metadata (14 kB)
+2026-11-08T04:00:03.9138262Z Collecting pycryptodome>=3.9 (from lark-oapi)
+2026-11-08T04:00:03.9294499Z   Downloading pycryptodome-4.4.0-cp39-abi3-win_amd64.whl.metadata (6.3 kB)
+2026-11-08T04:00:04.0607282Z Collecting websockets<16,>=11 (from lark-oapi)
+2026-11-08T04:00:04.0774715Z   Downloading websockets-15.0.1-cp311-cp311-win_amd64.whl.metadata (7.0 kB)
+2026-11-08T04:00:04.1845459Z Collecting httpx<1.0,>=0.24 (from lark-oapi)
+2026-11-08T04:00:04.1940953Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2026-11-08T04:00:04.2472713Z Collecting anyio (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T04:00:04.2586070Z   Downloading anyio-4.16.0-py3-none-any.whl.metadata (4.7 kB)
+2026-11-08T04:00:04.3175360Z Collecting certifi (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T04:00:04.3260358Z   Downloading certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+2026-11-08T04:00:04.3752914Z Collecting httpcore==1.* (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T04:00:04.3906853Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2026-11-08T04:00:04.4464731Z Collecting idna (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T04:00:04.4608061Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-11-08T04:00:04.5175963Z Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T04:00:04.5278222Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-11-08T04:00:04.5820945Z Collecting pycparser (from cffi>=2.0.0->cryptography)
+2026-11-08T04:00:04.5900616Z   Downloading pycparser-3.12-py3-none-any.whl.metadata (9.7 kB)
+2026-11-08T04:00:04.6492008Z Collecting typing-extensions>=4.4.0 (from referencing>=0.28.4->jsonschema)
+2026-11-08T04:00:04.6576995Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-11-08T04:00:04.7803528Z Collecting charset_normalizer<4,>=2 (from requests>=2.25->lark-oapi)
+2026-11-08T04:00:04.7903644Z   Downloading charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl.metadata (47 kB)
+2026-11-08T04:00:04.8566498Z Collecting urllib3<3,>=1.26 (from requests>=2.25->lark-oapi)
+2026-11-08T04:00:04.8754753Z   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+2026-11-08T04:00:04.9729017Z Downloading numpy-2.4.6-cp311-cp311-win_amd64.whl (12.6 MB)
+2026-11-08T04:00:05.3193994Z    ---------------------------------------- 12.6/12.6 MB 37.5 MB/s  0:00:00
+2026-11-08T04:00:05.3351552Z Downloading pandas-3.1.1-cp311-cp311-win_amd64.whl (11.0 MB)
+2026-11-08T04:00:05.7737974Z    ---------------------------------------- 11.0/11.0 MB 24.5 MB/s  0:00:00
+2026-11-08T04:00:05.7861916Z Downloading pyyaml-6.0.3-cp311-cp311-win_amd64.whl (158 kB)
+2026-11-08T04:00:05.8147009Z Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+2026-11-08T04:00:05.8430540Z Downloading pyjwt-2.15.1-py3-none-any.whl (33 kB)
+2026-11-08T04:00:05.8712131Z Downloading cryptography-50.0.2-cp311-abi3-win_amd64.whl (3.8 MB)
+2026-11-08T04:00:05.9361635Z    ---------------------------------------- 3.8/3.8 MB 56.5 MB/s  0:00:00
+2026-11-08T04:00:05.9581119Z Downloading lark_oapi-1.7.5-py3-none-any.whl (7.7 MB)
+2026-11-08T04:00:06.1025099Z    ---------------------------------------- 7.7/7.7 MB 53.2 MB/s  0:00:00
+2026-11-08T04:00:06.1102351Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+2026-11-08T04:00:06.1388857Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+2026-11-08T04:00:06.1689440Z Downloading websockets-15.0.1-cp311-cp311-win_amd64.whl (176 kB)
+2026-11-08T04:00:06.1998770Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-11-08T04:00:06.2399593Z Downloading cffi-2.1.1-cp311-cp311-win_amd64.whl (185 kB)
+2026-11-08T04:00:06.2696315Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-11-08T04:00:06.2984657Z Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+2026-11-08T04:00:06.3358308Z Downloading pycryptodome-4.4.0-cp39-abi3-win_amd64.whl (1.7 MB)
+2026-11-08T04:00:06.3851655Z    ---------------------------------------- 1.7/1.7 MB 30.4 MB/s  0:00:00
+2026-11-08T04:00:06.3939658Z Downloading python_dateutil-4.0.0-py3-none-any.whl (92 kB)
+2026-11-08T04:00:06.4286495Z Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+2026-11-08T04:00:06.4601442Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+2026-11-08T04:00:06.4928697Z Downloading charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl (214 kB)
+2026-11-08T04:00:06.5255063Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-11-08T04:00:06.5528156Z Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+2026-11-08T04:00:06.5872511Z Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+2026-11-08T04:00:06.6205423Z Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl (54 kB)
+2026-11-08T04:00:06.6482952Z Downloading rpds_py-2026.9.1-cp311-cp311-win_amd64.whl (226 kB)
+2026-11-08T04:00:06.6813874Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-11-08T04:00:06.7113496Z Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+2026-11-08T04:00:06.7410600Z Downloading pycparser-3.12-py3-none-any.whl (62 kB)
+2026-11-08T04:00:06.7712937Z Downloading tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+2026-11-08T04:00:07.1371561Z Installing collected packages: websockets, urllib3, tzdata, typing-extensions, rpds-py, pyyaml, pyjwt, pycryptodome, pycparser, numpy, idna, h11, charset_normalizer, certifi, attrs, requests, referencing, python-dateutil, httpcore, cffi, anyio, requests_toolbelt, pandas, jsonschema-specifications, httpx, cryptography, lark-oapi, jsonschema
+2026-11-08T04:00:48.5968394Z 
+2026-11-08T04:00:48.5984583Z Successfully installed anyio-4.16.0 attrs-26.1.0 certifi-2026.10.23 cffi-2.1.1 charset_normalizer-3.5.2 cryptography-50.0.2 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 lark-oapi-1.7.5 numpy-2.4.6 pandas-3.1.1 pycparser-3.12 pycryptodome-4.4.0 pyjwt-2.15.1 python-dateutil-4.0.0 pyyaml-6.0.3 referencing-0.37.0 requests-2.34.2 requests_toolbelt-1.0.0 rpds-py-2026.9.1 typing-extensions-4.16.0 tzdata-2026.6 urllib3-2.8.0 websockets-15.0.1
+2026-11-08T04:00:49.9029170Z Collecting pyarrow
+2026-11-08T04:00:50.0750647Z   Downloading pyarrow-26.0.1-cp311-cp311-win_amd64.whl.metadata (3.0 kB)
+2026-11-08T04:00:50.0962701Z Requirement already satisfied: requests in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (2.34.2)
+2026-11-08T04:00:50.1279358Z Collecting python-docx
+2026-11-08T04:00:50.1494930Z   Downloading python_docx-1.2.0-py3-none-any.whl.metadata (2.0 kB)
+2026-11-08T04:00:50.1703381Z Requirement already satisfied: charset_normalizer<4,>=2 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (3.5.2)
+2026-11-08T04:00:50.1706309Z Requirement already satisfied: idna<4,>=2.5 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (3.20)
+2026-11-08T04:00:50.1709088Z Requirement already satisfied: urllib3<3,>=1.26 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (2.8.0)
+2026-11-08T04:00:50.1711521Z Requirement already satisfied: certifi>=2023.5.7 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (2026.10.23)
+2026-11-08T04:00:50.3581305Z Collecting lxml>=3.1.0 (from python-docx)
+2026-11-08T04:00:50.3711196Z   Downloading lxml-6.1.3-cp311-cp311-win_amd64.whl.metadata (3.4 kB)
+2026-11-08T04:00:50.3922279Z Requirement already satisfied: typing_extensions>=4.9.0 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from python-docx) (4.16.0)
+2026-11-08T04:00:50.4054380Z Downloading pyarrow-26.0.1-cp311-cp311-win_amd64.whl (29.0 MB)
+2026-11-08T04:00:51.5053927Z    ---------------------------------------- 29.0/29.0 MB 27.5 MB/s  0:00:01
+2026-11-08T04:00:51.5148449Z Downloading python_docx-1.2.0-py3-none-any.whl (252 kB)
+2026-11-08T04:00:51.5551759Z Downloading lxml-6.1.3-cp311-cp311-win_amd64.whl (4.0 MB)
+2026-11-08T04:00:51.6525502Z    ---------------------------------------- 4.0/4.0 MB 40.5 MB/s  0:00:00
+2026-11-08T04:00:51.7333006Z Installing collected packages: pyarrow, lxml, python-docx
+2026-11-08T04:00:54.3966726Z 
+2026-11-08T04:00:54.3982418Z Successfully installed lxml-6.1.3 pyarrow-26.0.1 python-docx-1.2.0
+2026-11-08T04:00:54.5535458Z ##[group]Run # fail-fast：闸脚本缺失直接红，不静默跳过（对齐 test_gate.ps1 的 fail-closed 判例）
+2026-11-08T04:00:54.5535852Z [36;1m# fail-fast：闸脚本缺失直接红，不静默跳过（对齐 test_gate.ps1 的 fail-closed 判例）[0m
+2026-11-08T04:00:54.5536179Z [36;1mif (-not (Test-Path tools/test_gate.ps1)) { Write-Host "::error::tools/test_gate.ps1 missing"; exit 1 }[0m
+2026-11-08T04:00:54.5536550Z [36;1mif (-not (Test-Path tools/check_portal_split.py)) { Write-Host "::error::budget tool missing"; exit 1 }[0m
+2026-11-08T04:00:54.5536852Z [36;1mpython -X utf8 -c "import sys; print(sys.version)"[0m
+2026-11-08T04:00:54.5589095Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T04:00:54.5589304Z env:
+2026-11-08T04:00:54.5589433Z   TEST_GATE_PROFILE: ci
+2026-11-08T04:00:54.5589612Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5589866Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T04:00:54.5590634Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5590860Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5591088Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5591269Z ##[endgroup]
+2026-11-08T04:00:54.8081052Z 3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]
+2026-11-08T04:00:54.8604605Z ##[group]Run # 与 devtask merge 内联闸完全同参：portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse
+2026-11-08T04:00:54.8605050Z [36;1m# 与 devtask merge 内联闸完全同参：portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse[0m
+2026-11-08T04:00:54.8605369Z [36;1m# + budget --strict + nav --check + route inventory --check + artifact guard[0m
+2026-11-08T04:00:54.8605690Z [36;1mpowershell -NoProfile -ExecutionPolicy Bypass -File tools/test_gate.ps1 -Suite fast[0m
+2026-11-08T04:00:54.8655452Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T04:00:54.8655651Z env:
+2026-11-08T04:00:54.8655762Z   TEST_GATE_PROFILE: ci
+2026-11-08T04:00:54.8655943Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8656195Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T04:00:54.8656437Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8656711Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8656932Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8657107Z ##[endgroup]
+2026-11-08T04:00:57.7158978Z [bootstrap] bundle missing; generating before gate...
+2026-11-08T04:00:57.8366051Z == bundle bootstrap（Phase2-B B5；不提交 git）==
+2026-11-08T04:00:57.8366504Z repo: D:\a\Zerotech-first\Zerotech-first
+2026-11-08T04:00:57.8366741Z bundle: exists=True bytes=1076258
+2026-11-08T04:00:57.8366948Z action: generated  ok=True
+2026-11-08T04:00:58.7484125Z [baseline] 环境覆盖层: ci
+2026-11-08T04:00:58.7560032Z [artifact] ⚠ 无 release 根 C:\项目\_vault\legion_ide\release\legion-ide（开发机无发布物；只告警，不阻断）
+2026-11-08T04:00:58.8074018Z ===== [portal] portal/tests portal/test_bot_ws_backoff.py portal/test_km_card_kind.py portal/test_watch_tower_linkage.py portal/test_watch_tower_snapshot.py =====
+2026-11-08T04:02:12.4232495Z [portal] 新增失败 1 项:
+2026-11-08T04:02:12.4250264Z   - portal/tests/test_run_build_pick_verdicts_safe.py::TestOutGuard::test_temp_out_allowed
+2026-11-08T04:02:12.4431914Z   21 failed, 1314 passed, 8 skipped, 2 xfailed, 2 warnings in 71.43s (0:01:11)
+2026-11-08T04:02:12.4443774Z ===== [kstock] k_stock/tests =====
+2026-11-08T04:05:17.2621154Z [kstock] 无新增失败(既存 0 项已登记) [184.8s]
+2026-11-08T04:05:17.2625580Z   813 passed, 3 skipped in 184.45s (0:03:04)
+2026-11-08T04:05:17.2635044Z ===== [ide] agent_platform/tests/test_legion_ide_audit.py agent_platform/tests/test_gate_coverage_w5.py agent_platform/tests/test_legion_ide_http.py agent_platform/tests/test_hermes_orchestrator.py agent_platform/tests/test_legion_ide_session.py agent_platform/tests/test_legion_ide_undo_store.py agent_platform/tests/test_ide_extension_e2e.py agent_platform/tests/test_ide_rw.py agent_platform/tests/test_intel_context.py agent_platform/tests/test_intel_to_n1.py agent_platform/tests/test_d1_intel_evidence.py agent_platform/tests/test_release_live_smoke.py agent_platform/tests/test_ide_release_artifact.py agent_platform/tests/test_ide_bundle_bootstrap.py agent_platform/tests/test_evidence_raw_pit.py agent_platform/tests/test_decision_outcomes_pit.py agent_platform/tests/test_approval_control.py agent_platform/tests/test_agent_policy.py agent_platform/tests/test_a0_agent_p1.py agent_platform/tests/test_a0_chief_evidence_fields.py agent_platform/tests/test_acad1_pool_contract.py agent_platform/tests/test_agent_sandbox.py agent_platform/tests/test_anonymous_review.py agent_platform/tests/test_approvals_registry.py agent_platform/tests/test_approvals_store.py agent_platform/tests/test_approval_card.py agent_platform/tests/test_approval_control_m4_enforce.py agent_platform/tests/test_approval_rollup.py agent_platform/tests/test_execution_gate.py agent_platform/tests/test_v11_m0_preflight.py =====
+2026-11-08T04:05:46.4801044Z [ide] 无新增失败(既存 1 项已登记) [29.2s]
+2026-11-08T04:05:46.4805334Z   1 failed, 356 passed, 7 skipped in 28.88s
+2026-11-08T04:05:46.4819246Z ===== [agent_key] agent_platform/tests/test_d1_evidence_policy.py agent_platform/tests/test_legion_ide.py agent_platform/tests/test_d1_l4_provider.py agent_platform/tests/test_ide_release_info.py agent_platform/tests/test_a0_evidence_judge.py agent_platform/tests/test_evidence.py agent_platform/tests/test_academy_wiring.py agent_platform/tests/test_legion_meeting_backfill.py agent_platform/tests/test_idem_acceptance.py agent_platform/tests/test_idempotency.py agent_platform/tests/test_academy_ops.py agent_platform/tests/test_ide_enrich.py agent_platform/tests/test_d1_json_contract.py agent_platform/tests/test_dev_legion_metrics.py agent_platform/tests/test_legion_litellm_route.py agent_platform/tests/test_ide_roles.py agent_platform/tests/test_d1_decision_strict.py agent_platform/tests/test_legion_readiness.py agent_platform/tests/test_roster_d1_contract.py agent_platform/tests/test_identity_display_names.py agent_platform/tests/test_academy_role_attrs.py agent_platform/tests/test_legion_command_run_scope.py agent_platform/tests/test_dev_legion_api.py agent_platform/tests/test_legion_contract.py agent_platform/tests/test_ide_worktree.py agent_platform/tests/test_d1_calibration.py agent_platform/tests/test_dev_legion_ui.py agent_platform/tests/test_dev_legion_ai_card.py agent_platform/tests/test_d1_research_mcp.py agent_platform/tests/test_dev_legion_quant_card.py agent_platform/tests/test_dev_legion_risk_card.py agent_platform/tests/test_ide_context.py agent_platform/tests/test_d1_data_fallback.py agent_platform/tests/test_dev_legion_real.py agent_platform/tests/test_decision_outcomes.py agent_platform/tests/test_devtask_dev_gate.py agent_platform/tests/test_gate3_verdict.py agent_platform/tests/test_inbox_gateway_lifecycle.py agent_platform/tests/test_gateway.py agent_platform/tests/test_gate_content_hash.py agent_platform/tests/test_dev_gate_warn_report.py agent_platform/tests/test_run_shadow_guard.py agent_platform/tests/test_signature_guard.py agent_platform/tests/test_lookahead_guard.py agent_platform/tests/test_quality_gate.py agent_platform/tests/test_demo_guard.py agent_platform/tests/test_osleg_p2b_gate.py agent_platform/tests/test_osleg_http_api.py agent_platform/tests/test_org_enroll.py agent_platform/tests/test_check_trigger_chain.py agent_platform/tests/test_gov_ai.py agent_platform/tests/test_codex_bridge.py =====
+2026-11-08T04:06:38.1458722Z [agent_key] 无新增失败(既存 0 项已登记) [51.6s]
+2026-11-08T04:06:38.1463217Z   734 passed, 3 skipped in 51.32s
+2026-11-08T04:06:38.1474530Z ===== [quant_key] quant_backtest/tests/test_xq_acceptance_evidence_offline.py quant_backtest/tests/test_multisource_evidence_contract.py quant_backtest/tests/test_game_watch_alert_evidence_adapter.py quant_backtest/tests/test_intel_evidence_dto.py quant_backtest/tests/test_intel_evidence_store.py quant_backtest/tests/test_valuation_identity.py quant_backtest/tests/test_calendar_provider.py quant_backtest/tests/test_xq_request_gate_offline.py quant_backtest/tests/test_quant_sector_dual_gate.py quant_backtest/tests/test_peak_shift_gates.py quant_backtest/tests/test_watch_offline_consumption_gate.py quant_backtest/tests/test_weak_inventory_gate.py quant_backtest/tests/test_execution_calendar_gate.py quant_backtest/tests/test_session_aggregate.py quant_backtest/tests/test_xq_factor_v1.py quant_backtest/tests/test_xq_t7_cache_tdx_backfill.py quant_backtest/tests/test_game_signal_ref_bridge.py quant_backtest/tests/test_watch_dispatch_agent_reporting.py quant_backtest/tests/test_xq_history_priority_offline.py quant_backtest/tests/test_osleg_http_contract.py quant_backtest/tests/test_proxy_dialogue.py quant_backtest/tests/test_xq_offline_chain_e2e.py quant_backtest/tests/test_xq_classify_retry_degraded.py quant_backtest/tests/test_xq_recontent_exit.py quant_backtest/tests/test_xq_retry_cap.py quant_backtest/tests/test_verify_daily_report.py quant_backtest/tests/test_chanlun_learn.py =====
+2026-11-08T04:07:20.9989863Z [quant_key] 无新增失败(既存 0 项已登记) [42.8s]
+2026-11-08T04:07:20.9994016Z   557 passed in 42.46s
+2026-11-08T04:07:21.0003596Z ===== [tools_key] tools/tests/test_release_legion_ide.py tools/tests/test_auto_rebuild_ide_bundle.py tools/tests/test_academy_ledger_check.py tools/tests/test_academy_activation4.py tools/tests/test_killsvc_guard.py tools/tests/test_l2_guard_fp.py tools/tests/test_merge_gated.py tools/tests/test_git_worktree_guard.py tools/tests/test_devtask_branch_gate.py tools/tests/test_merge_dirty_guard.py tools/tests/test_sql_guard.py tools/tests/test_devtask_gates.py tools/tests/test_merge_lock_gated.py tools/tests/test_huangzhong_tools_suite_gate.py tools/tests/test_learning_curation.py tools/tests/test_learning_pipeline_curation.py tools/tests/test_market_analysis.py tools/tests/test_safe_urlopen.py tools/tests/test_scan_secrets_fp.py tools/tests/test_keepalive_budget.py tools/tests/test_devtask_worktree_mech.py =====
+2026-11-08T04:07:43.5199091Z [tools_key] 无新增失败(既存 1 项已登记) [22.5s]
+2026-11-08T04:07:43.5203509Z   1 failed, 202 passed, 1 skipped in 22.18s
+2026-11-08T04:07:43.5210256Z ===== [datawarehouse] tools/datawarehouse/tests =====
+2026-11-08T04:08:18.3356778Z [datawarehouse] 新增失败 43 项:
+2026-11-08T04:08:18.3364579Z   - tools/datawarehouse/tests/test_acad1_research_datasources.py::TestDeclaredAndManifests::test_composition_validate_strict_no_new_errors[acad1-legion/manifest.yaml]
+2026-11-08T04:08:18.3369988Z   - tools/datawarehouse/tests/test_dataset_query.py::test_sqlite_since_iso_text_matches_direct_sql
+2026-11-08T04:08:18.3375459Z   - tools/datawarehouse/tests/test_dataset_query.py::test_files_since_works_and_counts
+2026-11-08T04:08:18.3380741Z   - tools/datawarehouse/tests/test_dataset_query.py::test_files_order_size_numeric_desc
+2026-11-08T04:08:18.3386107Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestCli::test_cli_resolve_all_six_ok
+2026-11-08T04:08:18.3391271Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestCli::test_cli_unknown_ref_rc2
+2026-11-08T04:08:18.3396394Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestCli::test_cli_declared_summary
+2026-11-08T04:08:18.3401619Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_planned_without_due_rejected
+2026-11-08T04:08:18.3407116Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_duplicate_ref_rejected
+2026-11-08T04:08:18.3412116Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_missing_owner_rejected
+2026-11-08T04:08:18.3417694Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_bad_schema_rejected
+2026-11-08T04:08:18.3423258Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_missing_file_is_optional
+2026-11-08T04:08:18.3428387Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_injected_declared_ref_resolves
+2026-11-08T04:08:18.3433417Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestReadOnlyAndBaseline::test_stats_baseline_unchanged
+2026-11-08T04:08:18.3438650Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestReadOnlyAndBaseline::test_declared_loading_does_not_write
+2026-11-08T04:08:18.3443916Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_registry_stats_matches_file
+2026-11-08T04:08:18.3449030Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_qualification_distribution
+2026-11-08T04:08:18.3454052Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_catalog_snapshot_real_values
+2026-11-08T04:08:18.3459309Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_lifecycle_coverage
+2026-11-08T04:08:18.3464786Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_table_info_known_and_alias
+2026-11-08T04:08:18.3517781Z   37 failed, 407 passed, 6 errors in 34.33s
+2026-11-08T04:08:18.4142912Z [budget] PASS（strict）：硬规则 0 违规、建议项 0 WARN [0.1s]
+2026-11-08T04:08:18.5256050Z [nav] PASS：导航统一 [0.1s]
+2026-11-08T04:08:18.6045097Z [route] PASS：路由清单与基线零 diff [0.1s]
+2026-11-08T04:08:18.8301100Z [wtcheck] PASS：汇总：PASS —— active 单全部具备 worktree + 分支 [0.21s]
+2026-11-08T04:08:18.9222400Z [org] WARN-ONLY：fail=19 warn=3 info=45（不阻断；W4 决策后转 strict）[0.08s]
+2026-11-08T04:08:18.9231210Z 
+2026-11-08T04:08:18.9235982Z ===== 汇总 =====
+2026-11-08T04:08:18.9266356Z 
+2026-11-08T04:08:18.9301111Z Suite         Rc Failed Known New Seconds Log                                                                          
+2026-11-08T04:08:18.9305691Z -----         -- ------ ----- --- ------- ---                                                                          
+2026-11-08T04:08:18.9308983Z artifact      -2      0     0   0       0                                                                              
+2026-11-08T04:08:18.9312086Z portal         1     21    21   1    73.5 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_portal_20261108_040057.log    
+2026-11-08T04:08:18.9315128Z kstock         0      0     2   0   184.8 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_kstock_20261108_040057.log    
+2026-11-08T04:08:18.9318435Z ide            1      1    22   0    29.2 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_ide_20261108_040057.log       
+2026-11-08T04:08:18.9321683Z agent_key      0      0    22   0    51.6 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_agent_key_20261108_040057.log 
+2026-11-08T04:08:18.9324910Z quant_key      0      0     1   0    42.8 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_quant_key_20261108_040057.log 
+2026-11-08T04:08:18.9328064Z tools_key      1      1     6   0    22.5 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_tools_key_20261108_040057.log 
+2026-11-08T04:08:18.9345185Z datawarehouse  1     43     0  43    34.8 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_datawarehouse_20261108_0400...
+2026-11-08T04:08:18.9348261Z budget         0      0     0   0     0.1 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_budget_20261108_040057.log    
+2026-11-08T04:08:18.9351360Z nav            0      0     0   0     0.1 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_nav_20261108_040057.log       
+2026-11-08T04:08:18.9354476Z route          0      0     0   0     0.1 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_route_20261108_040057.log     
+2026-11-08T04:08:18.9357623Z wtcheck        0      0     0   0    0.21 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_wtcheck_20261108_040057.log   
+2026-11-08T04:08:18.9360860Z org_gate       1     19     3   0    0.08 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_org_20261108_040057.log       
+2026-11-08T04:08:18.9361105Z 
+2026-11-08T04:08:18.9361757Z 
+2026-11-08T04:08:18.9378910Z 已知 flaky(不计入新增失败, 需跟踪):
+2026-11-08T04:08:18.9397097Z   - [portal/tests] portal/tests/test_minute_router_process_restart.py::test_minute_router_recovers_after_real_process_restart
+2026-11-08T04:08:18.9401576Z   - [agent_platform/tests] agent_platform/tests/test_closeout_round.py::test_if_changed_skips_duplicate
+2026-11-08T04:08:18.9406478Z   - [agent_platform/tests] agent_platform/tests/test_devtask_owner_domain.py::TestIllegalOwnerDegraded::test_空owner判非法并降级
+2026-11-08T04:08:18.9410763Z   - [agent_platform/tests] agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected
+2026-11-08T04:08:18.9415082Z   - [agent_platform/tests] agent_platform/tests/test_huangzhong_mcp.py::test_run_review_requires_confirm_and_audits
+2026-11-08T04:08:18.9419695Z   - [agent_platform/tests] agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks
+2026-11-08T04:08:18.9423967Z   - [agent_platform/tests] agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes
+2026-11-08T04:08:18.9428010Z   - [agent_platform/tests] agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected
+2026-11-08T04:08:18.9432570Z   - [agent_platform/tests] agent_platform/tests/test_legion_ide_audit.py::test_acquire_lock_is_exclusive
+2026-11-08T04:08:18.9437681Z   - [agent_platform/tests] agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects
+2026-11-08T04:08:18.9442627Z   - [agent_platform/tests] agent_platform/tests/test_repair_lane.py::test_create_and_run_batch
+2026-11-08T04:08:18.9447017Z   - [agent_platform/tests] agent_platform/tests/test_sandbox.py::test_real_skill_verify_ok
+2026-11-08T04:08:18.9451515Z   - [agent_platform/tests] agent_platform/tests/test_sign_tools.py::test_sign_verify_roundtrip
+2026-11-08T04:08:18.9456198Z   - [agent_platform/tests] agent_platform/tests/test_zhaoyun_view.py::test_build_view_full
+2026-11-08T04:08:18.9461344Z GATE FAIL: 新增失败 44 项
+2026-11-08T04:08:19.0303712Z ##[error]Process completed with exit code 1.
+2026-11-08T04:08:19.0438777Z ##[group]Run Write-Host "=== gate done（rc=$LASTEXITCODE）==="
+2026-11-08T04:08:19.0439155Z [36;1mWrite-Host "=== gate done（rc=$LASTEXITCODE）==="[0m
+2026-11-08T04:08:19.0487416Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T04:08:19.0487653Z env:
+2026-11-08T04:08:19.0487808Z   TEST_GATE_PROFILE: ci
+2026-11-08T04:08:19.0488030Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:08:19.0488433Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T04:08:19.0488842Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:08:19.0489107Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:08:19.0489355Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:08:19.0489595Z ##[endgroup]
+2026-11-08T04:08:19.2727647Z === gate done（rc=）===
+2026-11-08T04:08:19.3337673Z Post job cleanup.
+2026-11-08T04:08:19.4402269Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-08T04:08:19.4670088Z git version 2.56.0.windows.4
+2026-11-08T04:08:19.4715085Z Temporarily overriding HOME='D:\a\_temp\732eabda-accd-42eb-b2e1-96b107bb6586' before making global git config changes
+2026-11-08T04:08:19.4715616Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-08T04:08:19.4722201Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Zerotech-first\Zerotech-first
+2026-11-08T04:08:19.4987532Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-08T04:08:19.5250295Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-08T04:08:19.9295955Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-08T04:08:19.9532479Z http.https://github.com/.extraheader
+2026-11-08T04:08:19.9567628Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-11-08T04:08:19.9828146Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-08T04:08:20.4307592Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-08T04:08:20.4569817Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-08T04:08:20.8452290Z Cleaning up orphan processes
+2026-11-08T04:08:20.8872846Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -36,6 +36,7 @@ import sys
 import time
 import unicodedata
 from concurrent.futures import ProcessPoolExecutor
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -430,9 +431,8 @@ def main():
             "H5_days": H5_MAX_DAYS,
         },
     }
-    with open(a.out + ".tmp", "w", encoding="utf-8") as f:
+    with atomic_io.replacing(a.out) as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
-    os.replace(a.out + ".tmp", a.out)
 
     # 滚动运行日志：每次追加一行摘要。计划任务直接调 python.exe，不用
     # bat/cmd 做重定向——本仓路径含中文，走 shell 会有编码坑。

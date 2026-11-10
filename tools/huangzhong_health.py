@@ -572,6 +572,39 @@ def check_required_files(work: Path) -> dict:
                   review_count=len(list(work.glob("review_*.json"))))
 
 
+def check_station_junction(root: Path) -> dict:
+    """A8（2026-11-10）：C:\\aios junction 契约守卫——C 盘 156 个计划任务动作依赖它。
+
+    junction 断裂（误删/目标漂移/换盘符）→ C 盘脚本批量静默瘫痪。本检查挂在
+    HuangzhongAlertNotify 链上（该任务动作走 C:\\项目\\ 非 ASCII 路径 +
+    C:\\项目\\py312 解释器，不受 junction 影响），断裂时告警链仍能发出。
+    判据复用 ops/health_check.check_junction（K267 治理 + K-STOCK-414 动态目标）：
+    junction 必须解析到本仓库实际所在，且 portal 在位。"""
+    root = Path(root)
+    # 作用域门：本守卫只在评估对象=本站仓库时强制（生产 run() 的 root=ROOT
+    # 即本文件所在仓）；worktree/tmp 副本评估时 skipped，不影响聚合。
+    own_real = os.path.realpath(str(ROOT))
+    if os.path.realpath(str(root)).lower() != own_real.lower():
+        return _check("station_junction", "C:\\aios junction 契约", "skipped",
+                      "非站点根评估（root≠本脚本所在仓），守卫不适用")
+    expected = own_real.lower()
+    try:
+        real = os.path.realpath("C:/aios").lower()
+        portal_ok = os.path.isdir("C:/aios/portal")
+    except OSError as e:
+        return _check("station_junction", "C:\\aios junction 契约", "fail",
+                      "junction 探测异常（OSError）：%s" % e)
+    if real != expected:
+        return _check("station_junction", "C:\\aios junction 契约", "fail",
+                      "junction 目标漂移：realpath(C:/aios)=%s ≠ 仓库实际=%s"
+                      % (real, expected), real=real, expected=expected)
+    if not portal_ok:
+        return _check("station_junction", "C:\\aios junction 契约", "fail",
+                      "junction 可解析但 C:/aios/portal 不在位（junction 指向错误目录？）")
+    return _check("station_junction", "C:\\aios junction 契约", "ok",
+                  "junction 健康：解析到本仓库且 portal 在位")
+
+
 def check_exec(repo_root: Path) -> dict:
     script = Path(repo_root) / "tools" / "huangzhong_review.py"
     if not script.exists():
@@ -661,6 +694,7 @@ def run(work_dir: Path | str | None = None, repo_root: Path | str | None = None,
         check_scheduled_tasks(tasks, now),
         check_push_config(work),
         check_required_files(work),
+        check_station_junction(root),
     ]
     if check_exec_flag:
         checks.append(check_exec(root))

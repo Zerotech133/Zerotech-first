@@ -1,14 +1,14 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-06T23:48:19+08:00",
+ "generated_at": "2026-11-09T20:00:07+08:00",
  "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
  "mode": "apply",
  "dry_run": false,
  "project": "公开投教_布林线",
  "source": {
   "path": "C:\\项目\\知识库\\30_知识单元\\公开投教_布林线_units_draft.jsonl",
-  "sha256": "a4d1b6283e29e84b143a30d97e31e7f15a1f8fea6328165c87d5c4a7a8b4f16b",
+  "sha256": "95f90635995b48e6eeeb802d09d30b266c3f9ab378787fcf5053175c101d0acf",
   "bytes": 1841
  },
  "policy": {
@@ -25,7 +25,7 @@
   "merged": 0,
   "boilerplate": 0,
   "by_group_size": {},
-  "output_sha256": "a4d1b6283e29e84b143a30d97e31e7f15a1f8fea6328165c87d5c4a7a8b4f16b"
+  "output_sha256": "95f90635995b48e6eeeb802d09d30b266c3f9ab378787fcf5053175c101d0acf"
  },
  "duplicates": [],
  "kept_sample": [

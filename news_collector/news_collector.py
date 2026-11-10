@@ -520,6 +520,24 @@ SOURCES = {
     "chinanews": fetch_chinanews,
 }
 
+# C9A-KOL-001（2026-11-08 老田批）：公众号 KOL 采集挂载。
+# 模块缺失/依赖故障不拖垮既有 9 源（fail-visible 打印）。
+try:
+    import wechat_kol as _wechat_kol
+
+    SOURCES["wechat_kol"] = _wechat_kol.fetch_wechat_kol
+except Exception as _e:
+    print("[wechat_kol] WARN 挂载失败: %s" % str(_e)[:120])
+
+# C9A-KOL-001 v2（2026-11-08 老田批）：雪球专栏影子源挂载（B组11作者，
+# 与 wechat_kol 9 号合计 20 号）。名单在 news_config.json xq_kol_users。
+try:
+    import xq_kol as _xq_kol
+
+    SOURCES["xq_kol"] = _xq_kol.fetch_xq_kol
+except Exception as _e:
+    print("[xq_kol] WARN 挂载失败: %s" % str(_e)[:120])
+
 
 # ── 存储 ──────────────────────────────────────────────
 
@@ -735,7 +753,17 @@ def main():
     db = init_db()
 
     source_status, new_total, all_new = {}, 0, []
+    # C9A-CX-001（2026-11-08 老田批）：降级源跳过采集（TDX 为主、自采兜底）。
+    # 清空 news_config.json 的 degraded_sources 即恢复。
+    degraded = cfg.get("degraded_sources", {}) or {}
     for name, fn in SOURCES.items():
+        if name in degraded:
+            source_status[name] = {
+                "ok": True, "got": 0, "new": 0,
+                "skipped": "degraded: %s" % degraded[name],
+            }
+            log("source %s SKIP degraded (%s)" % (name, degraded[name]))
+            continue
         try:
             items = fn(size)
             fresh = insert_items(db, items, name)

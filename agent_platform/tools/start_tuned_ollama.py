@@ -193,6 +193,7 @@ def server_config():
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except Exception:
+            logging.getLogger(__name__).debug("swallowed exception at line 195")
             continue
         # config 是**启动那一刻**写的一行，服务跑久后它早被挤出文件尾部
         # （tuned.log 20 分钟就到 1.1MB），所以头尾都要扫；中间是请求日志，无 config。

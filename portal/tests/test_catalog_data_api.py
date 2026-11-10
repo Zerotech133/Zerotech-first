@@ -414,18 +414,22 @@ def test_unknown_catalog_path_404(cat):
     assert h.payload["ok"] is False
 
 
-def test_real_catalog_258_tables(monkeypatch):
-    """真实 catalog 集成：v43 / 258 表 / 14 别名 / 全量统计（不读样本、不起服务）。"""
+def test_real_catalog_consistency(monkeypatch):
+    """真实 catalog 集成（2026-11-10 A11 改动态断言）。
+
+    原版钉死 v43/258 表，catalog 升 v44/259 即假红。现只钉结构一致性：
+    版本/表数随数据演进（下限=v43/258 首版口径），分布和恒等于 total，
+    别名数不缩水。不读样本、不起服务。"""
     real = PORTAL.parent / "quant_backtest" / "data" / "catalog.json"
     monkeypatch.setattr(mod, "CATALOG_PATH", real)
     h = _get("/api/data/catalog/tables", "detail=brief&limit=2")
     assert h.code == 200
     p = h.payload
-    assert p["version"] == 43
-    assert p["total"] == 258
-    assert p["aliases"] == 14
-    assert sum(p["by_source"].values()) == 258
-    assert sum(p["by_freq"].values()) == 258
+    assert isinstance(p["version"], int) and p["version"] >= 43
+    assert p["total"] >= 258
+    assert p["aliases"] >= 14
+    assert sum(p["by_source"].values()) == p["total"]
+    assert sum(p["by_freq"].values()) == p["total"]
     assert p["returned"] == 2
     assert all("store" not in i and "manifest" not in i and "schema" not in i
                for i in p["items"])

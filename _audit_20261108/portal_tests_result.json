@@ -1,0 +1,1422 @@
+{
+ "generated_at": "2026-11-08 06:47:12",
+ "files": 118,
+ "results": [
+  {
+   "file": "test_acad1_sso_client.py",
+   "rc": 0,
+   "sec": 7.3,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 1.28s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_analysis_strategy_proxy.py",
+   "rc": 0,
+   "sec": 5.2,
+   "counts": {
+    "passed": 23
+   },
+   "last": "23 passed in 0.40s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_acad1_pool_fullview.py",
+   "rc": 0,
+   "sec": 6.8,
+   "counts": {
+    "passed": 37
+   },
+   "last": "37 passed in 1.27s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_analysis_internal.py",
+   "rc": 0,
+   "sec": 5.2,
+   "counts": {
+    "passed": 30
+   },
+   "last": "30 passed in 0.36s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_backtest_contract.py",
+   "rc": 0,
+   "sec": 5.6,
+   "counts": {
+    "passed": 5
+   },
+   "last": "5 passed in 0.51s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_backtest_jev_render.py",
+   "rc": 0,
+   "sec": 6.0,
+   "counts": {
+    "passed": 1
+   },
+   "last": "1 passed in 0.42s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_backtest_minute.py",
+   "rc": 0,
+   "sec": 11.3,
+   "counts": {
+    "passed": 98,
+    "xfailed": 1
+   },
+   "last": "98 passed, 1 xfailed in 7.44s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_commercial.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.39s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_customer.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 12
+   },
+   "last": "12 passed in 0.59s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_d1_decision.py",
+   "rc": 0,
+   "sec": 5.6,
+   "counts": {
+    "passed": 5
+   },
+   "last": "5 passed in 0.47s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_d1_handoff.py",
+   "rc": 0,
+   "sec": 5.0,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.48s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_d1_meeting.py",
+   "rc": 0,
+   "sec": 5.1,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.57s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_d1_research.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.40s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_d1_training.py",
+   "rc": 0,
+   "sec": 5.3,
+   "counts": {
+    "passed": 25
+   },
+   "last": "25 passed in 0.65s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_dw_pg.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 28
+   },
+   "last": "28 passed in 0.60s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_envelope_d1.py",
+   "rc": 0,
+   "sec": 5.6,
+   "counts": {
+    "passed": 23
+   },
+   "last": "23 passed in 0.81s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_hardening_p0b.py",
+   "rc": 0,
+   "sec": 5.3,
+   "counts": {
+    "passed": 13
+   },
+   "last": "13 passed in 1.08s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_intel_evidence.py",
+   "rc": 0,
+   "sec": 5.3,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.67s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_intel_graph.py",
+   "rc": 0,
+   "sec": 7.8,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 3.74s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_kg_contract.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.52s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_monitor.py",
+   "rc": 0,
+   "sec": 4.1,
+   "counts": {
+    "passed": 9
+   },
+   "last": "9 passed in 0.37s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_paper.py",
+   "rc": 0,
+   "sec": 5.4,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.50s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_pool_page.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.37s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_sim_confirm.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.42s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_war_room.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.38s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_war_room_envelope.py",
+   "rc": 0,
+   "sec": 5.0,
+   "counts": {
+    "passed": 16
+   },
+   "last": "16 passed in 0.77s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_watch_plans.py",
+   "rc": 0,
+   "sec": 5.3,
+   "counts": {
+    "passed": 19
+   },
+   "last": "19 passed in 0.81s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_api_zhuge_review.py",
+   "rc": 0,
+   "sec": 5.0,
+   "counts": {
+    "passed": 15
+   },
+   "last": "15 passed in 0.59s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_auth_contracts.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 0.56s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_auth_gateway.py",
+   "rc": 0,
+   "sec": 4.5,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.45s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_auth_local_admin.py",
+   "rc": 0,
+   "sec": 5.3,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.85s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_auth_oidc.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.78s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_auth_oidc_runtime.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.47s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_catalog_data_api.py",
+   "rc": 0,
+   "sec": 6.7,
+   "counts": {
+    "passed": 32
+   },
+   "last": "32 passed in 2.18s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_council_retired_20261105.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.55s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_d1_envelope_ui.py",
+   "rc": 0,
+   "sec": 4.9,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.82s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_d1_levels_ui.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.49s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_d1_overview_page.py",
+   "rc": 0,
+   "sec": 4.3,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.37s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_d1_research_ui.py",
+   "rc": 0,
+   "sec": 4.3,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.32s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_d1_training_page.py",
+   "rc": 0,
+   "sec": 4.5,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 0.52s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_dataops_v3.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.54s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_drift_error_structured.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 10
+   },
+   "last": "10 passed in 0.45s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_dw_catalog_alignment.py",
+   "rc": 0,
+   "sec": 4.9,
+   "counts": {
+    "passed": 7,
+    "skipped": 1
+   },
+   "last": "7 passed, 1 skipped in 0.56s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_dw_catalog_fallback.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 13
+   },
+   "last": "13 passed in 0.43s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_dw_query_post.py",
+   "rc": 0,
+   "sec": 8.2,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 3.79s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_health_portal_mixin.py",
+   "rc": 0,
+   "sec": 5.4,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 1.10s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_huangzhong_events.py",
+   "rc": 0,
+   "sec": 5.4,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.51s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_huangzhong_events_page.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 0.45s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_identity_registry.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.55s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_ifs_auth_contract.py",
+   "rc": 0,
+   "sec": 6.4,
+   "counts": {
+    "passed": 28,
+    "xfailed": 2
+   },
+   "last": "28 passed, 2 xfailed in 1.78s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_ifs_idempotency.py",
+   "rc": 0,
+   "sec": 6.8,
+   "counts": {
+    "passed": 24
+   },
+   "last": "24 passed in 1.25s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_ifs_wire_chain.py",
+   "rc": 0,
+   "sec": 7.6,
+   "counts": {
+    "passed": 1
+   },
+   "last": "1 passed in 0.86s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_intel_dossier_skeleton.py",
+   "rc": 0,
+   "sec": 7.3,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.79s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_intel_feishu_export.py",
+   "rc": 0,
+   "sec": 6.3,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 1.01s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_intel_privacy.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 10
+   },
+   "last": "10 passed in 0.45s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_intel_sort_order.py",
+   "rc": 0,
+   "sec": 5.5,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.88s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_intel_workbench_xq_link.py",
+   "rc": 0,
+   "sec": 5.4,
+   "counts": {
+    "passed": 5
+   },
+   "last": "5 passed in 1.22s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_jev_card_forward.py",
+   "rc": 0,
+   "sec": 5.0,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 0.81s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_jev_review_frontend_identity.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.59s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_job_spec_registry.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 10
+   },
+   "last": "10 passed in 0.55s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_job_spec_registry_expiry_recovery.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.57s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_legion_ops_cors.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.38s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_legion_write_guard.py",
+   "rc": 0,
+   "sec": 4.5,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.38s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_login_ui.py",
+   "rc": 0,
+   "sec": 4.2,
+   "counts": {
+    "passed": 9
+   },
+   "last": "9 passed in 0.45s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_minute_router_isolated.py",
+   "rc": 0,
+   "sec": 7.7,
+   "counts": {
+    "passed": 1
+   },
+   "last": "1 passed in 3.33s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_minute_router_process_restart.py",
+   "rc": 0,
+   "sec": 17.1,
+   "counts": {
+    "passed": 1
+   },
+   "last": "1 passed in 12.82s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_nginx_api_auth_subset.py",
+   "rc": 0,
+   "sec": 6.7,
+   "counts": {
+    "passed": 14
+   },
+   "last": "14 passed in 2.72s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_nginx_auth_request.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 13
+   },
+   "last": "13 passed in 0.66s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_approval_voice_page.py",
+   "rc": 0,
+   "sec": 4.1,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.38s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_asr.py",
+   "rc": 1,
+   "sec": 29.0,
+   "counts": {},
+   "last": "+++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_asr_selfcheck.py",
+   "rc": 0,
+   "sec": 5.4,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.73s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_auth_hardening.py",
+   "rc": 0,
+   "sec": 5.5,
+   "counts": {
+    "passed": 13
+   },
+   "last": "13 passed in 0.94s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_bp.py",
+   "rc": 0,
+   "sec": 5.5,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.77s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_controlled.py",
+   "rc": 0,
+   "sec": 6.3,
+   "counts": {
+    "passed": 9
+   },
+   "last": "9 passed in 0.95s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_controlled_audit.py",
+   "rc": 0,
+   "sec": 6.2,
+   "counts": {
+    "passed": 18
+   },
+   "last": "18 passed in 1.67s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_controlled_c1.py",
+   "rc": 0,
+   "sec": 5.3,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.79s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_controlled_ui.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.52s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_entry_ia.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 7
+   },
+   "last": "7 passed in 0.54s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_entry_links.py",
+   "rc": 0,
+   "sec": 4.5,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.40s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_goal_api.py",
+   "rc": 0,
+   "sec": 5.1,
+   "counts": {
+    "passed": 8
+   },
+   "last": "8 passed in 0.78s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_goal_contract.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 13
+   },
+   "last": "13 passed in 0.44s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_goal_store.py",
+   "rc": 0,
+   "sec": 5.8,
+   "counts": {
+    "passed": 10
+   },
+   "last": "10 passed in 1.36s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_page_tools.py",
+   "rc": 0,
+   "sec": 5.1,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.57s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_quick_auth.py",
+   "rc": 0,
+   "sec": 5.0,
+   "counts": {
+    "passed": 12
+   },
+   "last": "12 passed in 0.74s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_quickstart.py",
+   "rc": 0,
+   "sec": 5.5,
+   "counts": {
+    "passed": 11
+   },
+   "last": "11 passed in 1.15s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_software_flow.py",
+   "rc": 0,
+   "sec": 6.4,
+   "counts": {
+    "passed": 14
+   },
+   "last": "14 passed in 1.76s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_os_software_preview.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.66s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_p0_04_contract_gate.py",
+   "rc": 0,
+   "sec": 4.3,
+   "counts": {
+    "passed": 4,
+    "skipped": 1
+   },
+   "last": "4 passed, 1 skipped in 0.46s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_p0e_governance.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 28
+   },
+   "last": "28 passed in 0.66s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_p1_6_manual_inventory.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 5
+   },
+   "last": "5 passed in 0.40s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_page_guard.py",
+   "rc": 0,
+   "sec": 3.9,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.34s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_persist.py",
+   "rc": 0,
+   "sec": 4.0,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.71s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_post_auth_early_branches.py",
+   "rc": 0,
+   "sec": 3.8,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.86s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_quant_alert_render_contract.py",
+   "rc": 0,
+   "sec": 3.1,
+   "counts": {
+    "passed": 1
+   },
+   "last": "1 passed in 0.34s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_rate_limit.py",
+   "rc": 0,
+   "sec": 3.0,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.19s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_risk_feedback_ledger.py",
+   "rc": 0,
+   "sec": 3.1,
+   "counts": {
+    "passed": 6
+   },
+   "last": "6 passed in 0.27s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round2_catalog_pages.py",
+   "rc": 0,
+   "sec": 3.5,
+   "counts": {
+    "passed": 17
+   },
+   "last": "17 passed in 0.37s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round2_cleanup.py",
+   "rc": 0,
+   "sec": 3.2,
+   "counts": {
+    "passed": 19
+   },
+   "last": "19 passed in 0.27s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round2_p1c.py",
+   "rc": 0,
+   "sec": 4.1,
+   "counts": {
+    "passed": 20
+   },
+   "last": "20 passed in 0.65s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round4_browser_fixes.py",
+   "rc": 0,
+   "sec": 4.0,
+   "counts": {
+    "passed": 22
+   },
+   "last": "22 passed in 0.35s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round4_p1d.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 17
+   },
+   "last": "17 passed in 0.63s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round5_customer.py",
+   "rc": 0,
+   "sec": 4.2,
+   "counts": {
+    "passed": 19
+   },
+   "last": "19 passed in 0.43s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round5_p0d.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 14
+   },
+   "last": "14 passed in 0.54s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round5_t5.py",
+   "rc": 0,
+   "sec": 4.7,
+   "counts": {
+    "passed": 24
+   },
+   "last": "24 passed in 0.62s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round6_zeroL2.py",
+   "rc": 0,
+   "sec": 4.2,
+   "counts": {
+    "passed": 21
+   },
+   "last": "21 passed in 0.38s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round7_closeout.py",
+   "rc": 0,
+   "sec": 4.2,
+   "counts": {
+    "passed": 25
+   },
+   "last": "25 passed in 0.36s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_round9_six_items_closeout.py",
+   "rc": 0,
+   "sec": 3.5,
+   "counts": {
+    "passed": 12
+   },
+   "last": "12 passed in 0.28s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_route_table_contract.py",
+   "rc": 0,
+   "sec": 4.8,
+   "counts": {
+    "passed": 40
+   },
+   "last": "40 passed in 1.26s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_run_build_pick_verdicts_safe.py",
+   "rc": 0,
+   "sec": 4.3,
+   "counts": {
+    "passed": 20
+   },
+   "last": "20 passed in 0.41s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_strategy_pool_projection.py",
+   "rc": 0,
+   "sec": 6.0,
+   "counts": {
+    "passed": 16
+   },
+   "last": "16 passed in 1.81s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_trace_drilldown_guard.py",
+   "rc": 1,
+   "sec": 28.6,
+   "counts": {},
+   "last": "+++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_ui_adoption.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.40s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_ui_kit.py",
+   "rc": 0,
+   "sec": 4.0,
+   "counts": {
+    "passed": 4
+   },
+   "last": "4 passed in 0.37s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_unify_os_ui.py",
+   "rc": 0,
+   "sec": 4.6,
+   "counts": {
+    "passed": 3
+   },
+   "last": "3 passed in 0.43s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_watch_admin_exit.py",
+   "rc": 0,
+   "sec": 16.9,
+   "counts": {
+    "passed": 40
+   },
+   "last": "40 passed in 12.81s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_zhice_bff_contracts.py",
+   "rc": 0,
+   "sec": 5.2,
+   "counts": {
+    "passed": 12
+   },
+   "last": "12 passed in 1.08s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_zhuge_ops.py",
+   "rc": 0,
+   "sec": 4.5,
+   "counts": {
+    "passed": 2
+   },
+   "last": "2 passed in 0.40s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  },
+  {
+   "file": "test_zhuge_review.py",
+   "rc": 0,
+   "sec": 4.4,
+   "counts": {
+    "passed": 12
+   },
+   "last": "12 passed in 0.47s",
+   "failed": [],
+   "n_failed": 0,
+   "timeout": false
+  }
+ ]
+}

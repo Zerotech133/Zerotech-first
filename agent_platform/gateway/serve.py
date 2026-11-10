@@ -73,11 +73,16 @@ class Handler(BaseHTTPRequestHandler):
     # ---- 基础 ----
     def _send(self, obj, status=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (ConnectionAbortedError, BrokenPipeError, OSError):
+            # 客户端先断开时，服务端还在写响应会抛 ConnectionAbortedError (WinError 10053)
+            # / BrokenPipeError / 其他 OSError — 静默吞掉，不能让异常冒泡带垮整个 worker
+            pass
 
     def _bad_request(self, message):
         self._send(
@@ -92,77 +97,109 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---- 路由 ----
     def do_GET(self):
-        path = urlparse(self.path).path
-        if path == "/health":
-            self._send({"ok": True, "service": "legion-gateway", "version": "1.0"})
-            return
-        if path.startswith("/inbox/receipt/"):
-            msg_id = path[len("/inbox/receipt/") :].strip("/")
-            self._send(inbox_gateway.receipt(msg_id))
-            return
-        if _osleg_enabled() and path.startswith(_OSLEG_PREFIX + "/"):
-            status, payload = _osleg_dispatch(
-                "GET",
-                path,
-                _osleg_query(urlparse(self.path).query),
-                None,
-                {key: value for key, value in self.headers.items()},
-            )
-            self._send(payload, status)
-            return
-        self._send(
-            make_envelope(
-                kind="http", ok=False, error={"code": "not_found", "message": path}
-            ),
-            404,
-        )
-
-    def do_POST(self):
-        path = urlparse(self.path).path
         try:
-            length = int(self.headers.get("Content-Length") or 0)
-            raw = self.rfile.read(length) if length else b"{}"
-            req = json.loads(raw.decode("utf-8"))
-        except (ValueError, UnicodeDecodeError):
-            self._bad_request("body must be UTF-8 JSON")
-            return
-        if _osleg_enabled() and path.startswith(_OSLEG_PREFIX + "/"):
-            status, payload = _osleg_dispatch(
-                "POST",
-                path,
-                {},
-                req,
-                {key: value for key, value in self.headers.items()},
-            )
-            self._send(payload, status)
-            return
-        if path == "/llm/chat":
-            if not isinstance(req, dict) or not isinstance(req.get("user", ""), str):
-                self._bad_request("user must be string")
+            path = urlparse(self.path).path
+            if path == "/health":
+                self._send({"ok": True, "service": "legion-gateway", "version": "1.0"})
+                return
+            if path.startswith("/inbox/receipt/"):
+                msg_id = path[len("/inbox/receipt/") :].strip("/")
+                self._send(inbox_gateway.receipt(msg_id))
+                return
+            if _osleg_enabled() and path.startswith(_OSLEG_PREFIX + "/"):
+                status, payload = _osleg_dispatch(
+                    "GET",
+                    path,
+                    _osleg_query(urlparse(self.path).query),
+                    None,
+                    {key: value for key, value in self.headers.items()},
+                )
+                self._send(payload, status)
                 return
             self._send(
-                llm_gateway.chat(
-                    binding=req.get("binding"),
-                    system=req.get("system", ""),
-                    user=req.get("user", ""),
-                )
+                make_envelope(
+                    kind="http", ok=False, error={"code": "not_found", "message": path}
+                ),
+                404,
             )
-            return
-        if path == "/inbox/submit":
+        except Exception:
+            # 兜底：任何业务异常（inbox_gateway 查不到、osleg 内部错等）都转 500 信封，
+            # 不能让异常冒泡到 ThreadingHTTPServer worker 线程带垮整个服务
+            try:
+                self._send(
+                    make_envelope(
+                        kind="http",
+                        ok=False,
+                        error={"code": "internal_error", "message": path},
+                    ),
+                    500,
+                )
+            except Exception:
+                logging.getLogger(__name__).exception("swallowed exception at line 137")
+                pass  # 连 _send 都崩（比如客户端已关）就彻底静默
+
+    def do_POST(self):
+        try:
+            path = urlparse(self.path).path
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                raw = self.rfile.read(length) if length else b"{}"
+                req = json.loads(raw.decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._bad_request("body must be UTF-8 JSON")
+                return
+            if _osleg_enabled() and path.startswith(_OSLEG_PREFIX + "/"):
+                status, payload = _osleg_dispatch(
+                    "POST",
+                    path,
+                    {},
+                    req,
+                    {key: value for key, value in self.headers.items()},
+                )
+                self._send(payload, status)
+                return
+            if path == "/llm/chat":
+                if not isinstance(req, dict) or not isinstance(req.get("user", ""), str):
+                    self._bad_request("user must be string")
+                    return
+                self._send(
+                    llm_gateway.chat(
+                        binding=req.get("binding"),
+                        system=req.get("system", ""),
+                        user=req.get("user", ""),
+                    )
+                )
+                return
+            if path == "/inbox/submit":
+                self._send(
+                    inbox_gateway.submit(
+                        req.get("kind", ""),
+                        req.get("payload") or {},
+                        source=req.get("source", "external"),
+                    )
+                )
+                return
             self._send(
-                inbox_gateway.submit(
-                    req.get("kind", ""),
-                    req.get("payload") or {},
-                    source=req.get("source", "external"),
-                )
+                make_envelope(
+                    kind="http", ok=False, error={"code": "not_found", "message": path}
+                ),
+                404,
             )
-            return
-        self._send(
-            make_envelope(
-                kind="http", ok=False, error={"code": "not_found", "message": path}
-            ),
-            404,
-        )
+        except Exception:
+            # 兜底：llm_gateway.chat() 连不上 LLM、inbox_gateway.submit() 业务错等
+            # 都转 500 信封，不能冒出去带垮 worker
+            try:
+                self._send(
+                    make_envelope(
+                        kind="http",
+                        ok=False,
+                        error={"code": "internal_error", "message": path},
+                    ),
+                    500,
+                )
+            except Exception:
+                logging.getLogger(__name__).exception("swallowed exception at line 199")
+                pass  # 连 _send 都崩（客户端已关）就彻底静默
 
 
 def build_server(host="127.0.0.1", port=8795):
@@ -189,6 +226,12 @@ def main(argv=None):
         srv.serve_forever()
     except KeyboardInterrupt as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/serve.py", exc)
+    except Exception as exc:
+        # 兜底：serve_forever() 下任何未预料异常（如 socket 层异常冒泡到主线程）
+        # 都应记日志后退出，不要带崩；看门狗 10min 一轮会自动拉起
+        logging.getLogger(__name__).error(
+            "legion-gateway fatal: %s: %s", type(exc).__name__, exc, exc_info=True
+        )
     finally:
         srv.server_close()
     return 0

@@ -113,6 +113,7 @@ DOMAIN_NAV_GROUPS = {
         ("🎖 策略资产", (
             ("🎖 策略中心", "/strategies", "strategies"),
             ("🌊 青萍之末 🚧", "/bt-qpzm", "qpzm"),
+            ("🏆 候风产品族", "/houfeng/HOUFENG_STRATEGY_CARD.html", "houfeng"),
             ("🔔 订阅推送", "/bt/subscribe", "subscribe"),
             ("🧭 缠论", "/bt-chanlun", "chanlun"),
             ("🛒 买点实战台", "/bt-buy", "chanlun-buy"),

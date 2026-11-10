@@ -34,6 +34,10 @@ CAPITAL = 10_000_000.0
 
 # 基准参数 = 已交付的 bt10m1y（缠论等机会轮动 · 仅三买 · 8% 槽 · 千分之 1.5 单边）
 BASE_PARAMS = {
+    # 2026-11-10：引擎默认预设改成 v2 之后，本文件必须钉死 preset="none"。
+    # 这里的 BASE_PARAMS 是「降换手实验」那一轮的历史基线（tp_pct=0、three_fail_exit=True），
+    # 不钉住就会被默认预设悄悄改写，所有历史数字不可复现。
+    "preset": "none",
     "strategy": "chanlun",
     "d0": "20251013",
     "d1": "20261012",

@@ -225,6 +225,10 @@ def test_load_wide_eligibility(tmpdir):
                 # K254 列契约：load_wide 要求 high/pre_close；pre_close=close 前值
                 # → 后复权因子链 ratio=1，chg250 断言数学不变
                 "high": np.arange(n, dtype=float) + 5,
+                # v3b 引擎改动（2026-11-07 13:15）：load_wide 增读 low 列，供
+                # portfolio_sim 的价格计划/结构矩阵使用。测试夹具原缺此列 →
+                # load_wide 直接跳过该文件，本用例长期报 "no parquet loaded"。
+                "low": np.arange(n, dtype=float) + 3,
                 "close": np.arange(n, dtype=float) + 5,
                 "pre_close": np.arange(n, dtype=float) + 4,
             }

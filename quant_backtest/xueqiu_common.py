@@ -174,11 +174,28 @@ def _merge_cached_browser_cookies(sess: "requests.Session") -> bool:
     全部失败静默 False，不阻塞采集。返回是否至少注入一条。
     """
     cookies: list = []
+    # 2026-11-08：登录存档（真实登录态全量 cookie，含伴生）优先——
+    # 匿名预热缓存 2026-11-03 起过期且匿名链被 WAF 打死（P2-8 判例）；
+    # 登录存档由 xq_cookie_harvest 收割件维护，缺失/解析失败静默降级。
     try:
-        from xq_browser import _load_cache
-        cookies = _load_cache() or []
+        import json as _json
+        _login_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "config", "xq_login_cookies_u.json")
+        with open(_login_path, encoding="utf-8-sig") as _f:
+            _data = _json.load(_f)
+        _login_cks = [c for c in _data.get("cookies", []) if isinstance(c, dict)]
+        if _login_cks:
+            cookies = _login_cks
+            print("[xq_common] 登录存档伴生 cookie 已采用（%d 条，新鲜登录态）"
+                  % len(cookies))
     except Exception:
         cookies = []
+    if not cookies:
+        try:
+            from xq_browser import _load_cache
+            cookies = _load_cache() or []
+        except Exception:
+            cookies = []
     if not cookies:
         try:
             import json as _json

@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import logging
 import json
 import re
 import time
@@ -53,6 +54,7 @@ def _emit_event(kind: str, task: str, detail: str) -> None:
     try:
         _load_events_module().emit(kind, task=task, agent="A0", detail=detail)
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 55")
         pass
 
 
@@ -63,6 +65,7 @@ def _trace(name: str, attrs: dict, start: float) -> None:
         trace.record(trace.trace_id(), name, kind="meeting",
                      start=start, end=time.time(), status="ok", attrs=attrs)
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 65")
         pass
 
 

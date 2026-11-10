@@ -422,6 +422,8 @@ gt = lambda j: json.loads(j).get('bias')       # ground truth = 现有 9B 判定
 - 或 `dm.read` 分页（`limit=cap` + `offset`/游标）拉满当日再推进；
 - 截断轮 `inserted=0` 不得推进水位（现「活锁破除」逻辑会把重复窗口当成成功）。
 - 影响面：采集层、水位格式、`runs.detail`；需历史补数方案。**须老田单独批准。**
+  **（2026-11-07 已立项独立 RFC：`20261107_jev_cap_data_loss_p0_rfc.md`，
+  含方案①止血/②连续水位游标/③cap 语义重定义与待批决策点 D1–D4。）**
 
 ---
 

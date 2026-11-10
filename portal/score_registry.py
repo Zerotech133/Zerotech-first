@@ -3,8 +3,8 @@
 
 单一事实源：portal/work/score_registry.json（schema zb.score.v1）。
 所有 H5/卡片/报表的分数必须经本模块注解：
-  annotate("jev_conf", 0.72) →
-    {"metric_id":"jev_conf","label":"JEV 置信度","value":0.72,
+  annotate("jev_signal", 0.12) →
+    {"metric_id":"jev_signal","label":"JEV 信号分","value":0.12,
      "as_of":"2026-10-26 08:00","evidence_level":"C",
      "allow_push":true,"allow_decision":false,"definition":...}
 规则：

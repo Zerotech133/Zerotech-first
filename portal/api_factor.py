@@ -48,6 +48,9 @@ _LIB_LOCK = threading.Lock()
 _CATALOG = None
 _CATALOG_AT = 0.0
 _CATALOG_TTL = 60
+_FRESHNESS = None
+_FRESHNESS_AT = 0.0
+_FRESHNESS_TTL = 5
 _CACHE: "OrderedDict[str, tuple[float, dict]]" = OrderedDict()
 _CACHE_LOCK = threading.Lock()
 _COMPUTE_SEM = threading.BoundedSemaphore(2)
@@ -117,6 +120,10 @@ def _refresh_catalog() -> None:
 
 
 def _freshness() -> dict:
+    global _FRESHNESS, _FRESHNESS_AT
+    now = time.time()
+    if _FRESHNESS is not None and now - _FRESHNESS_AT < _FRESHNESS_TTL:
+        return _FRESHNESS
     out = {}
     for table in ("daily", "daily_basic", "adj_factor", "index_daily"):
         p = _DATA / table
@@ -130,6 +137,8 @@ def _freshness() -> dict:
             }
         else:
             out[table] = {"latest": None, "mtime": None, "parts": 0}
+    _FRESHNESS = out
+    _FRESHNESS_AT = now
     return out
 
 

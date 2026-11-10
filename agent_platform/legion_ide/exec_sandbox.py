@@ -15,6 +15,7 @@
 """
 from __future__ import annotations
 
+import logging
 import ctypes
 import os
 import subprocess
@@ -87,6 +88,7 @@ def _close(handle) -> None:
         if handle:
             ctypes.windll.kernel32.CloseHandle(handle)
     except Exception:
+        logging.getLogger(__name__).exception("swallowed exception at line 89")
         pass
 
 
@@ -158,10 +160,12 @@ def _terminate_and_reap(k32, job, proc) -> None:
         try:
             k32.TerminateJobObject(ctypes.c_void_p(job), 1)
         except Exception:
+            logging.getLogger(__name__).exception("swallowed exception at line 160")
             pass
     try:
         proc.kill()
     except Exception:
+        logging.getLogger(__name__).exception("swallowed exception at line 164")
         pass
     try:
         proc.communicate(timeout=5)
@@ -169,12 +173,15 @@ def _terminate_and_reap(k32, job, proc) -> None:
         try:
             proc.kill()
         except Exception:
+            logging.getLogger(__name__).exception("swallowed exception at line 171")
             pass
         try:
             proc.communicate(timeout=5)
         except Exception:
+            logging.getLogger(__name__).exception("swallowed exception at line 175")
             pass
     except Exception:
+        logging.getLogger(__name__).exception("swallowed exception at line 177")
         pass
 
 

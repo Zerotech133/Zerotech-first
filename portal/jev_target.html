@@ -95,7 +95,7 @@
           <div class="ui-card">
             <h3 style="margin:0 0 8px;font-size:13.5px">判定明细（<span id="jn">—</span>）</h3>
             <div style="max-height:300px;overflow:auto">
-              <table class="ui-table"><thead><tr><th>时间</th><th>方向</th><th>conf</th><th>标题</th><th>来源</th><th style="white-space:nowrap">证据</th></tr></thead><tbody id="j-body"></tbody></table>
+              <table class="ui-table"><thead><tr><th>时间</th><th>方向</th><th title="conf 已证伪（AUC 0.414 反相关：高 conf 反而更可能错）· 仅原始留痕，不参与决策">conf⚠</th><th>标题</th><th>来源</th><th style="white-space:nowrap">证据</th></tr></thead><tbody id="j-body"></tbody></table>
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@
         }
         var stat=s.total+" 条相关消息（已判定 "+st+" · 未判定 "+(s.unjudged||0)+" 条）";
         if(s.peak_day)stat+=" · 峰值 "+s.peak_day.date+"（"+s.peak_day.n+" 条）";
-        if(s.conf_avg!=null)stat+=" · 均置信 "+s.conf_avg;
+        if(s.conf_avg!=null)stat+=" · 均置信 "+s.conf_avg+"（conf已证伪·仅留痕）";
         if(s.net_bias!=null)stat+=" · 净倾向 "+((s.net_bias>0?"+":"")+s.net_bias);
         $("sent-stat").textContent=stat;
         var mx=[];

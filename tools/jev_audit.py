@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -196,9 +197,26 @@ CREATE INDEX IF NOT EXISTS idx_dec_audit_trade_day ON dec_audit(trade_day);
 """
 
 
-def open_db() -> sqlite3.Connection:
-    AUDIT_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(AUDIT_DB, timeout=15)
+def resolve_audit_db(explicit: str | None = None) -> Path:
+    """R0 / HIT-DEV-20261107：CLI --audit-db > 环境变量 JEV_AUDIT_DB > 模块默认 AUDIT_DB。
+
+    用于把预演指向副本；未显式指定时行为与 R0 之前完全一致。
+    """
+    if explicit:
+        return Path(explicit)
+    env = os.environ.get("JEV_AUDIT_DB")
+    if env:
+        return Path(env)
+    return AUDIT_DB
+
+
+def open_db(db_path: Path | None = None, read_only: bool = False) -> sqlite3.Connection:
+    """R0：read_only=True 以 SQLite mode=ro 打开，写操作由 SQLite 自身阻断（双保险）。"""
+    target = Path(db_path) if db_path else AUDIT_DB
+    if read_only:
+        return sqlite3.connect("file:%s?mode=ro" % target.as_posix(), uri=True, timeout=15)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(target, timeout=15)
     conn.executescript(SCHEMA)
     # 2026-10-30 BATCH1：老库迁移（created_at 用于 T+1 信号日口径与溯源）
     cols = {row[1] for row in conn.execute("PRAGMA table_info(dec_audit)")}
@@ -227,7 +245,11 @@ def _signal_base_day(ts: str, created_at: str) -> str:
     return ts_day
 
 
-def upsert_judged(conn: sqlite3.Connection, rows: list[dict], opens: list[str]) -> int:
+def upsert_judged(conn: sqlite3.Connection, rows: list[dict], opens: list[str],
+                  dry_run: bool = False) -> int:
+    """R0：dry_run=True 只返回待写条数，不执行任何 SELECT/INSERT/UPDATE/COMMIT。"""
+    if dry_run:
+        return len(rows)
     now = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     n = 0
     for r in rows:
@@ -264,10 +286,26 @@ def upsert_judged(conn: sqlite3.Connection, rows: list[dict], opens: list[str]) 
     return n
 
 
-def fill_posterior(conn: sqlite3.Connection, band: float) -> int:
+def fill_posterior(conn: sqlite3.Connection, band: float, dry_run: bool = False,
+                   stats: dict | None = None) -> int:
+    """R0 / HIT-DEV-20261107：补 T+1 后验，并把「为什么跳过」拆成可解释计数。
+
+    dry_run=True 时不执行任何 UPDATE/COMMIT，只统计；配合 open_db(read_only=True)
+    由 SQLite mode=ro 双保险。默认（不传新参数）写库行为与 R0 之前完全一致。
+
+    分类互斥且守恒：
+        candidates = no_codes + bad_json + future_day + no_bench + no_stock + priced
+    priced 中只有非 dry_run 的部分计入 updated（正常路径 updated == priced == 返回 n）。
+    """
     rows = conn.execute(
         "SELECT seq, news_id, trade_day, bias, companies FROM dec_audit"
         " WHERE posterior_at IS NULL AND trade_day IS NOT NULL").fetchall()
+    if stats is not None:
+        stats.clear()
+        stats.update({"candidates": len(rows), "no_codes": 0, "bad_json": 0,
+                      "future_day": 0, "no_bench": 0, "no_stock": 0,
+                      "priced": 0, "updated": 0, "data_through": None,
+                      "dry_run": bool(dry_run)})
     if not rows:
         return 0
     dates = {r[2] for r in rows}
@@ -278,31 +316,54 @@ def fill_posterior(conn: sqlite3.Connection, band: float) -> int:
         except ValueError as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_audit.py", exc)
     stock, bench = load_returns(dates, codes)
+    data_through = max(bench) if bench else None
+    if stats is not None:
+        stats["data_through"] = data_through
     now = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     n = 0
     for seq, _nid, trade_day, bias, companies in rows:
-        if trade_day not in bench:
-            continue
         try:
             codes_list = json.loads(companies or "[]")
         except ValueError:
+            if stats is not None:
+                stats["bad_json"] += 1
+            continue
+        if not codes_list:
+            if stats is not None:
+                stats["no_codes"] += 1
+            continue
+        if data_through and trade_day > data_through:
+            if stats is not None:
+                stats["future_day"] += 1
+            continue
+        if trade_day not in bench:
+            if stats is not None:
+                stats["no_bench"] += 1
             continue
         vals = [stock[(c, trade_day)] for c in codes_list if (c, trade_day) in stock]
         if not vals:
+            if stats is not None:
+                stats["no_stock"] += 1
             continue
         ret = sum(vals) / len(vals)
         excess = ret - bench[trade_day]
+        if stats is not None:
+            stats["priced"] += 1
+        if not dry_run:
+            conn.execute(
+                "UPDATE dec_audit SET ret=?, bench=?, excess=?, hit=?, posterior_at=?"
+                " WHERE seq=?", (round(ret, 3), round(bench[trade_day], 3),
+                                 round(excess, 3), hit_of(bias, excess, band), now, seq))
+            if stats is not None:
+                stats["updated"] += 1
+            n += 1
+    if not dry_run:
+        # 带宽变化时重算 neutral 命中（bull/bear 与带宽无关，不动）
         conn.execute(
-            "UPDATE dec_audit SET ret=?, bench=?, excess=?, hit=?, posterior_at=?"
-            " WHERE seq=?", (round(ret, 3), round(bench[trade_day], 3),
-                             round(excess, 3), hit_of(bias, excess, band), now, seq))
-        n += 1
-    # 带宽变化时重算 neutral 命中（bull/bear 与带宽无关，不动）
-    conn.execute(
-        "UPDATE dec_audit SET hit=CASE WHEN abs(excess)<=? THEN 1 ELSE 0 END"
-        " WHERE posterior_at IS NOT NULL AND bias='neutral' AND excess IS NOT NULL",
-        (band,))
-    conn.commit()
+            "UPDATE dec_audit SET hit=CASE WHEN abs(excess)<=? THEN 1 ELSE 0 END"
+            " WHERE posterior_at IS NOT NULL AND bias='neutral' AND excess IS NOT NULL",
+            (band,))
+        conn.commit()
     return n
 
 
@@ -551,15 +612,28 @@ def main(argv=None) -> int:
     ap.add_argument("--report-only", action="store_true")
     ap.add_argument("--repair-exports", action="store_true",
                     help="按 DB 内所有 posterior 日期整日重写 jsonl 并生成 posterior_index.json")
+    # R0 / HIT-DEV-20261107：零写入预演 + 可注入 DB 路径（用于副本演练）
+    ap.add_argument("--dry-run", action="store_true",
+                    help="只算不写：DB 以 mode=ro 打开，跳过所有写库与产物文件，打印跳过原因分类")
+    ap.add_argument("--audit-db", default=None,
+                    help="覆盖 AUDIT_DB（也可用环境变量 JEV_AUDIT_DB），用于副本预演")
     args = ap.parse_args(argv)
     t0 = time.time()
-    conn = open_db()
+    explicit = args.audit_db or os.environ.get("JEV_AUDIT_DB")
+    db_path = resolve_audit_db(args.audit_db)
+    if explicit:
+        # 产物目录跟随 DB 目录，避免副本预演污染真源目录（仅本进程内生效）
+        globals()["AUDIT_DIR"] = db_path.parent
+    conn = open_db(db_path if explicit else None, read_only=args.dry_run)
+    stats: dict = {}
     if not args.report_only:
         opens = load_open_days()
         judged = load_judged(args.days)
-        n_up = upsert_judged(conn, judged, opens)
-        n_post = fill_posterior(conn, args.band)
-        if args.repair_exports:
+        n_up = upsert_judged(conn, judged, opens, dry_run=args.dry_run)
+        n_post = fill_posterior(conn, args.band, dry_run=args.dry_run, stats=stats)
+        if args.dry_run:
+            jsonl = None
+        elif args.repair_exports:
             idx = repair_posterior_exports(conn)
             jsonl = AUDIT_DIR / "posterior_index.json"
             print("[1/2] 导出修复: DB后验 %d / 文件并集 %d / 缺失 %d（by_day=%s）"
@@ -567,15 +641,23 @@ def main(argv=None) -> int:
                      json.dumps(idx["by_day"], ensure_ascii=False)), flush=True)
         else:
             jsonl = export_posterior_jsonl(conn)
-        print("[1/2] 账本: 判读 %d 条写入（新增/更新），后验回填 %d 条" % (n_up, n_post), flush=True)
+        print("[1/2] 账本%s: 判读 %d 条%s，后验回填 %d 条" % (
+            "[DRY-RUN 预演]" if args.dry_run else "", n_up,
+            "（待写）" if args.dry_run else "写入（新增/更新）", n_post), flush=True)
+        if stats:
+            print("  跳过分类: %s" % json.dumps(stats, ensure_ascii=False, sort_keys=True), flush=True)
     else:
         jsonl = None
     report = build_report(conn, args.band)
-    today = time.strftime("%Y%m%d")
-    out = AUDIT_DIR / ("baseline_%s.json" % today)
-    out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    (AUDIT_DIR / "latest.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    if args.dry_run:
+        out = None
+        print("  DRY-RUN: 未写任何 DB 行、未写 posterior jsonl / baseline / latest.json", flush=True)
+    else:
+        today = time.strftime("%Y%m%d")
+        out = AUDIT_DIR / ("baseline_%s.json" % today)
+        out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        (AUDIT_DIR / "latest.json").write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     conn.close()
     d = report["directional"]
     print("[2/2] 报告: 已判 %d / 带码 %d / 可定价 %d；方向类 %d 条 准确率 %s%% | 全判 bull 基线 %s%%"
@@ -584,8 +666,8 @@ def main(argv=None) -> int:
         round((d["rate"] or 0) * 100, 1), round((d["baseline_all_bull"]["rate"] or 0) * 100, 1),
         report.get("data_through"), report.get("n_trade_days")),
         flush=True)
-    print("  jsonl:", jsonl or "(report-only)", flush=True)
-    print("  report:", out, "| 耗时 %.1fs" % (time.time() - t0), flush=True)
+    print("  jsonl:", jsonl or "(dry-run/report-only)", flush=True)
+    print("  report:", out or "(dry-run)", "| 耗时 %.1fs" % (time.time() - t0), flush=True)
     return 0
 
 

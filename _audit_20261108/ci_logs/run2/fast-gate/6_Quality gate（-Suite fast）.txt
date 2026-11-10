@@ -1,0 +1,104 @@
+﻿2026-11-08T04:00:54.8604580Z ##[group]Run # 与 devtask merge 内联闸完全同参：portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse
+2026-11-08T04:00:54.8605048Z [36;1m# 与 devtask merge 内联闸完全同参：portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse[0m
+2026-11-08T04:00:54.8605367Z [36;1m# + budget --strict + nav --check + route inventory --check + artifact guard[0m
+2026-11-08T04:00:54.8605688Z [36;1mpowershell -NoProfile -ExecutionPolicy Bypass -File tools/test_gate.ps1 -Suite fast[0m
+2026-11-08T04:00:54.8655445Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T04:00:54.8655649Z env:
+2026-11-08T04:00:54.8655760Z   TEST_GATE_PROFILE: ci
+2026-11-08T04:00:54.8655940Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8656193Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T04:00:54.8656435Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8656667Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8656930Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.8657105Z ##[endgroup]
+2026-11-08T04:00:57.7158921Z [bootstrap] bundle missing; generating before gate...
+2026-11-08T04:00:57.8366002Z == bundle bootstrap（Phase2-B B5；不提交 git）==
+2026-11-08T04:00:57.8366501Z repo: D:\a\Zerotech-first\Zerotech-first
+2026-11-08T04:00:57.8366738Z bundle: exists=True bytes=1076258
+2026-11-08T04:00:57.8366945Z action: generated  ok=True
+2026-11-08T04:00:58.7484066Z [baseline] 环境覆盖层: ci
+2026-11-08T04:00:58.7559987Z [artifact] ⚠ 无 release 根 C:\项目\_vault\legion_ide\release\legion-ide（开发机无发布物；只告警，不阻断）
+2026-11-08T04:00:58.8073970Z ===== [portal] portal/tests portal/test_bot_ws_backoff.py portal/test_km_card_kind.py portal/test_watch_tower_linkage.py portal/test_watch_tower_snapshot.py =====
+2026-11-08T04:02:12.4232442Z [portal] 新增失败 1 项:
+2026-11-08T04:02:12.4250213Z   - portal/tests/test_run_build_pick_verdicts_safe.py::TestOutGuard::test_temp_out_allowed
+2026-11-08T04:02:12.4431879Z   21 failed, 1314 passed, 8 skipped, 2 xfailed, 2 warnings in 71.43s (0:01:11)
+2026-11-08T04:02:12.4443761Z ===== [kstock] k_stock/tests =====
+2026-11-08T04:05:17.2621089Z [kstock] 无新增失败(既存 0 项已登记) [184.8s]
+2026-11-08T04:05:17.2625560Z   813 passed, 3 skipped in 184.45s (0:03:04)
+2026-11-08T04:05:17.2634996Z ===== [ide] agent_platform/tests/test_legion_ide_audit.py agent_platform/tests/test_gate_coverage_w5.py agent_platform/tests/test_legion_ide_http.py agent_platform/tests/test_hermes_orchestrator.py agent_platform/tests/test_legion_ide_session.py agent_platform/tests/test_legion_ide_undo_store.py agent_platform/tests/test_ide_extension_e2e.py agent_platform/tests/test_ide_rw.py agent_platform/tests/test_intel_context.py agent_platform/tests/test_intel_to_n1.py agent_platform/tests/test_d1_intel_evidence.py agent_platform/tests/test_release_live_smoke.py agent_platform/tests/test_ide_release_artifact.py agent_platform/tests/test_ide_bundle_bootstrap.py agent_platform/tests/test_evidence_raw_pit.py agent_platform/tests/test_decision_outcomes_pit.py agent_platform/tests/test_approval_control.py agent_platform/tests/test_agent_policy.py agent_platform/tests/test_a0_agent_p1.py agent_platform/tests/test_a0_chief_evidence_fields.py agent_platform/tests/test_acad1_pool_contract.py agent_platform/tests/test_agent_sandbox.py agent_platform/tests/test_anonymous_review.py agent_platform/tests/test_approvals_registry.py agent_platform/tests/test_approvals_store.py agent_platform/tests/test_approval_card.py agent_platform/tests/test_approval_control_m4_enforce.py agent_platform/tests/test_approval_rollup.py agent_platform/tests/test_execution_gate.py agent_platform/tests/test_v11_m0_preflight.py =====
+2026-11-08T04:05:46.4800988Z [ide] 无新增失败(既存 1 项已登记) [29.2s]
+2026-11-08T04:05:46.4805326Z   1 failed, 356 passed, 7 skipped in 28.88s
+2026-11-08T04:05:46.4817111Z ===== [agent_key] agent_platform/tests/test_d1_evidence_policy.py agent_platform/tests/test_legion_ide.py agent_platform/tests/test_d1_l4_provider.py agent_platform/tests/test_ide_release_info.py agent_platform/tests/test_a0_evidence_judge.py agent_platform/tests/test_evidence.py agent_platform/tests/test_academy_wiring.py agent_platform/tests/test_legion_meeting_backfill.py agent_platform/tests/test_idem_acceptance.py agent_platform/tests/test_idempotency.py agent_platform/tests/test_academy_ops.py agent_platform/tests/test_ide_enrich.py agent_platform/tests/test_d1_json_contract.py agent_platform/tests/test_dev_legion_metrics.py agent_platform/tests/test_legion_litellm_route.py agent_platform/tests/test_ide_roles.py agent_platform/tests/test_d1_decision_strict.py agent_platform/tests/test_legion_readiness.py agent_platform/tests/test_roster_d1_contract.py agent_platform/tests/test_identity_display_names.py agent_platform/tests/test_academy_role_attrs.py agent_platform/tests/test_legion_command_run_scope.py agent_platform/tests/test_dev_legion_api.py agent_platform/tests/test_legion_contract.py agent_platform/tests/test_ide_worktree.py agent_platform/tests/test_d1_calibration.py agent_platform/tests/test_dev_legion_ui.py agent_platform/tests/test_dev_legion_ai_card.py agent_platform/tests/test_d1_research_mcp.py agent_platform/tests/test_dev_legion_quant_card.py agent_platform/tests/test_dev_legion_risk_card.py agent_platform/tests/test_ide_context.py agent_platform/tests/test_d1_data_fallback.py agent_platform/tests/test_dev_legion_real.py agent_platform/tests/test_decision_outcomes.py agent_platform/tests/test_devtask_dev_gate.py agent_platform/tests/test_gate3_verdict.py agent_platform/tests/test_inbox_gateway_lifecycle.py agent_platform/tests/test_gateway.py agent_platform/tests/test_gate_content_hash.py agent_platform/tests/test_dev_gate_warn_report.py agent_platform/tests/test_run_shadow_guard.py agent_platform/tests/test_signature_guard.py agent_platform/tests/test_lookahead_guard.py agent_platform/tests/test_quality_gate.py agent_platform/tests/test_demo_guard.py agent_platform/tests/test_osleg_p2b_gate.py agent_platform/tests/test_osleg_http_api.py agent_platform/tests/test_org_enroll.py agent_platform/tests/test_check_trigger_chain.py agent_platform/tests/test_gov_ai.py agent_platform/tests/test_codex_bridge.py =====
+2026-11-08T04:06:38.1458666Z [agent_key] 无新增失败(既存 0 项已登记) [51.6s]
+2026-11-08T04:06:38.1463214Z   734 passed, 3 skipped in 51.32s
+2026-11-08T04:06:38.1474486Z ===== [quant_key] quant_backtest/tests/test_xq_acceptance_evidence_offline.py quant_backtest/tests/test_multisource_evidence_contract.py quant_backtest/tests/test_game_watch_alert_evidence_adapter.py quant_backtest/tests/test_intel_evidence_dto.py quant_backtest/tests/test_intel_evidence_store.py quant_backtest/tests/test_valuation_identity.py quant_backtest/tests/test_calendar_provider.py quant_backtest/tests/test_xq_request_gate_offline.py quant_backtest/tests/test_quant_sector_dual_gate.py quant_backtest/tests/test_peak_shift_gates.py quant_backtest/tests/test_watch_offline_consumption_gate.py quant_backtest/tests/test_weak_inventory_gate.py quant_backtest/tests/test_execution_calendar_gate.py quant_backtest/tests/test_session_aggregate.py quant_backtest/tests/test_xq_factor_v1.py quant_backtest/tests/test_xq_t7_cache_tdx_backfill.py quant_backtest/tests/test_game_signal_ref_bridge.py quant_backtest/tests/test_watch_dispatch_agent_reporting.py quant_backtest/tests/test_xq_history_priority_offline.py quant_backtest/tests/test_osleg_http_contract.py quant_backtest/tests/test_proxy_dialogue.py quant_backtest/tests/test_xq_offline_chain_e2e.py quant_backtest/tests/test_xq_classify_retry_degraded.py quant_backtest/tests/test_xq_recontent_exit.py quant_backtest/tests/test_xq_retry_cap.py quant_backtest/tests/test_verify_daily_report.py quant_backtest/tests/test_chanlun_learn.py =====
+2026-11-08T04:07:20.9989812Z [quant_key] 无新增失败(既存 0 项已登记) [42.8s]
+2026-11-08T04:07:20.9994000Z   557 passed in 42.46s
+2026-11-08T04:07:21.0002825Z ===== [tools_key] tools/tests/test_release_legion_ide.py tools/tests/test_auto_rebuild_ide_bundle.py tools/tests/test_academy_ledger_check.py tools/tests/test_academy_activation4.py tools/tests/test_killsvc_guard.py tools/tests/test_l2_guard_fp.py tools/tests/test_merge_gated.py tools/tests/test_git_worktree_guard.py tools/tests/test_devtask_branch_gate.py tools/tests/test_merge_dirty_guard.py tools/tests/test_sql_guard.py tools/tests/test_devtask_gates.py tools/tests/test_merge_lock_gated.py tools/tests/test_huangzhong_tools_suite_gate.py tools/tests/test_learning_curation.py tools/tests/test_learning_pipeline_curation.py tools/tests/test_market_analysis.py tools/tests/test_safe_urlopen.py tools/tests/test_scan_secrets_fp.py tools/tests/test_keepalive_budget.py tools/tests/test_devtask_worktree_mech.py =====
+2026-11-08T04:07:43.5199037Z [tools_key] 无新增失败(既存 1 项已登记) [22.5s]
+2026-11-08T04:07:43.5203505Z   1 failed, 202 passed, 1 skipped in 22.18s
+2026-11-08T04:07:43.5210252Z ===== [datawarehouse] tools/datawarehouse/tests =====
+2026-11-08T04:08:18.3356718Z [datawarehouse] 新增失败 43 项:
+2026-11-08T04:08:18.3364533Z   - tools/datawarehouse/tests/test_acad1_research_datasources.py::TestDeclaredAndManifests::test_composition_validate_strict_no_new_errors[acad1-legion/manifest.yaml]
+2026-11-08T04:08:18.3369983Z   - tools/datawarehouse/tests/test_dataset_query.py::test_sqlite_since_iso_text_matches_direct_sql
+2026-11-08T04:08:18.3375456Z   - tools/datawarehouse/tests/test_dataset_query.py::test_files_since_works_and_counts
+2026-11-08T04:08:18.3380739Z   - tools/datawarehouse/tests/test_dataset_query.py::test_files_order_size_numeric_desc
+2026-11-08T04:08:18.3386104Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestCli::test_cli_resolve_all_six_ok
+2026-11-08T04:08:18.3391268Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestCli::test_cli_unknown_ref_rc2
+2026-11-08T04:08:18.3396367Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestCli::test_cli_declared_summary
+2026-11-08T04:08:18.3401603Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_planned_without_due_rejected
+2026-11-08T04:08:18.3407112Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_duplicate_ref_rejected
+2026-11-08T04:08:18.3412114Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_missing_owner_rejected
+2026-11-08T04:08:18.3417689Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_bad_schema_rejected
+2026-11-08T04:08:18.3423255Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_missing_file_is_optional
+2026-11-08T04:08:18.3428384Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestInvalidDeclarations::test_injected_declared_ref_resolves
+2026-11-08T04:08:18.3433415Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestReadOnlyAndBaseline::test_stats_baseline_unchanged
+2026-11-08T04:08:18.3438639Z   - tools/datawarehouse/tests/test_dataset_refs_declared.py::TestReadOnlyAndBaseline::test_declared_loading_does_not_write
+2026-11-08T04:08:18.3443888Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_registry_stats_matches_file
+2026-11-08T04:08:18.3449027Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_qualification_distribution
+2026-11-08T04:08:18.3454050Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_catalog_snapshot_real_values
+2026-11-08T04:08:18.3459306Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_lifecycle_coverage
+2026-11-08T04:08:18.3464782Z   - tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_table_info_known_and_alias
+2026-11-08T04:08:18.3517777Z   37 failed, 407 passed, 6 errors in 34.33s
+2026-11-08T04:08:18.4142856Z [budget] PASS（strict）：硬规则 0 违规、建议项 0 WARN [0.1s]
+2026-11-08T04:08:18.5255994Z [nav] PASS：导航统一 [0.1s]
+2026-11-08T04:08:18.6045040Z [route] PASS：路由清单与基线零 diff [0.1s]
+2026-11-08T04:08:18.8301049Z [wtcheck] PASS：汇总：PASS —— active 单全部具备 worktree + 分支 [0.21s]
+2026-11-08T04:08:18.9222109Z [org] WARN-ONLY：fail=19 warn=3 info=45（不阻断；W4 决策后转 strict）[0.08s]
+2026-11-08T04:08:18.9231184Z 
+2026-11-08T04:08:18.9235972Z ===== 汇总 =====
+2026-11-08T04:08:18.9266347Z 
+2026-11-08T04:08:18.9301099Z Suite         Rc Failed Known New Seconds Log                                                                          
+2026-11-08T04:08:18.9305688Z -----         -- ------ ----- --- ------- ---                                                                          
+2026-11-08T04:08:18.9308976Z artifact      -2      0     0   0       0                                                                              
+2026-11-08T04:08:18.9312083Z portal         1     21    21   1    73.5 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_portal_20261108_040057.log    
+2026-11-08T04:08:18.9315126Z kstock         0      0     2   0   184.8 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_kstock_20261108_040057.log    
+2026-11-08T04:08:18.9318415Z ide            1      1    22   0    29.2 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_ide_20261108_040057.log       
+2026-11-08T04:08:18.9321680Z agent_key      0      0    22   0    51.6 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_agent_key_20261108_040057.log 
+2026-11-08T04:08:18.9324908Z quant_key      0      0     1   0    42.8 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_quant_key_20261108_040057.log 
+2026-11-08T04:08:18.9328062Z tools_key      1      1     6   0    22.5 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_tools_key_20261108_040057.log 
+2026-11-08T04:08:18.9345182Z datawarehouse  1     43     0  43    34.8 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_datawarehouse_20261108_0400...
+2026-11-08T04:08:18.9348259Z budget         0      0     0   0     0.1 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_budget_20261108_040057.log    
+2026-11-08T04:08:18.9351356Z nav            0      0     0   0     0.1 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_nav_20261108_040057.log       
+2026-11-08T04:08:18.9354469Z route          0      0     0   0     0.1 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_route_20261108_040057.log     
+2026-11-08T04:08:18.9357621Z wtcheck        0      0     0   0    0.21 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_wtcheck_20261108_040057.log   
+2026-11-08T04:08:18.9360858Z org_gate       1     19     3   0    0.08 C:\Users\RUNNER~1\AppData\Local\Temp\test_gate_org_20261108_040057.log       
+2026-11-08T04:08:18.9361100Z 
+2026-11-08T04:08:18.9361754Z 
+2026-11-08T04:08:18.9378897Z 已知 flaky(不计入新增失败, 需跟踪):
+2026-11-08T04:08:18.9397085Z   - [portal/tests] portal/tests/test_minute_router_process_restart.py::test_minute_router_recovers_after_real_process_restart
+2026-11-08T04:08:18.9401571Z   - [agent_platform/tests] agent_platform/tests/test_closeout_round.py::test_if_changed_skips_duplicate
+2026-11-08T04:08:18.9406469Z   - [agent_platform/tests] agent_platform/tests/test_devtask_owner_domain.py::TestIllegalOwnerDegraded::test_空owner判非法并降级
+2026-11-08T04:08:18.9410743Z   - [agent_platform/tests] agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected
+2026-11-08T04:08:18.9415073Z   - [agent_platform/tests] agent_platform/tests/test_huangzhong_mcp.py::test_run_review_requires_confirm_and_audits
+2026-11-08T04:08:18.9419687Z   - [agent_platform/tests] agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks
+2026-11-08T04:08:18.9423960Z   - [agent_platform/tests] agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes
+2026-11-08T04:08:18.9428005Z   - [agent_platform/tests] agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected
+2026-11-08T04:08:18.9432538Z   - [agent_platform/tests] agent_platform/tests/test_legion_ide_audit.py::test_acquire_lock_is_exclusive
+2026-11-08T04:08:18.9437671Z   - [agent_platform/tests] agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects
+2026-11-08T04:08:18.9442619Z   - [agent_platform/tests] agent_platform/tests/test_repair_lane.py::test_create_and_run_batch
+2026-11-08T04:08:18.9446803Z   - [agent_platform/tests] agent_platform/tests/test_sandbox.py::test_real_skill_verify_ok
+2026-11-08T04:08:18.9451508Z   - [agent_platform/tests] agent_platform/tests/test_sign_tools.py::test_sign_verify_roundtrip
+2026-11-08T04:08:18.9456190Z   - [agent_platform/tests] agent_platform/tests/test_zhaoyun_view.py::test_build_view_full
+2026-11-08T04:08:18.9461334Z GATE FAIL: 新增失败 44 项
+2026-11-08T04:08:19.0303684Z ##[error]Process completed with exit code 1.

@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import logging
 import json
 import os
 import re
@@ -44,6 +45,7 @@ def _resolve_sandbox_base() -> str:
             if r.status == 200:
                 return "http://127.0.0.1:8771"
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 46")
         pass
     # 2) 回退：Docker 容器 IP（在支持 host->bridge 的环境可用）
     import subprocess
@@ -154,6 +156,7 @@ def _sandbox_watch_loop() -> None:
             if not _wait_health(2):
                 ensure_sandbox(timeout=60)
         except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).debug("swallowed exception at line 156")
             pass
         time.sleep(60)
 

@@ -1,0 +1,173 @@
+﻿2026-11-08T07:44:54.1119260Z ##[group]Run actions/checkout@v4
+2026-11-08T07:44:54.1120607Z with:
+2026-11-08T07:44:54.1120983Z   fetch-depth: 0
+2026-11-08T07:44:54.1121378Z   repository: Zerotech133/Zerotech-first
+2026-11-08T07:44:54.1125266Z   token: ***
+2026-11-08T07:44:54.1125628Z   ssh-strict: true
+2026-11-08T07:44:54.1125987Z   ssh-user: git
+2026-11-08T07:44:54.1126354Z   persist-credentials: true
+2026-11-08T07:44:54.1126762Z   clean: true
+2026-11-08T07:44:54.1127143Z   sparse-checkout-cone-mode: true
+2026-11-08T07:44:54.1127984Z   fetch-tags: false
+2026-11-08T07:44:54.1128384Z   show-progress: true
+2026-11-08T07:44:54.1128760Z   lfs: false
+2026-11-08T07:44:54.1129116Z   submodules: false
+2026-11-08T07:44:54.1129923Z   set-safe-directory: true
+2026-11-08T07:44:54.1131057Z   allow-unsafe-pr-checkout: false
+2026-11-08T07:44:54.1132352Z env:
+2026-11-08T07:44:54.1132734Z   TEST_GATE_PROFILE: ci
+2026-11-08T07:44:54.1133141Z ##[endgroup]
+2026-11-08T07:44:54.2671419Z Syncing repository: Zerotech133/Zerotech-first
+2026-11-08T07:44:54.2673346Z ##[group]Getting Git version info
+2026-11-08T07:44:54.2673969Z Working directory is 'D:\a\Zerotech-first\Zerotech-first'
+2026-11-08T07:44:54.3521000Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-08T07:44:54.6279795Z git version 2.56.0.windows.4
+2026-11-08T07:44:54.6344649Z ##[endgroup]
+2026-11-08T07:44:54.6367219Z Temporarily overriding HOME='D:\a\_temp\264146a5-a87d-4e49-a85e-ad204ca520d7' before making global git config changes
+2026-11-08T07:44:54.6369723Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-08T07:44:54.6381070Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\Zerotech-first\Zerotech-first
+2026-11-08T07:44:54.7021221Z Deleting the contents of 'D:\a\Zerotech-first\Zerotech-first'
+2026-11-08T07:44:54.7028007Z ##[group]Initializing the repository
+2026-11-08T07:44:54.7036805Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\Zerotech-first\Zerotech-first
+2026-11-08T07:44:54.7813386Z Initialized empty Git repository in D:/a/Zerotech-first/Zerotech-first/.git/
+2026-11-08T07:44:54.7868741Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Zerotech133/Zerotech-first
+2026-11-08T07:44:54.8577692Z ##[endgroup]
+2026-11-08T07:44:54.8578567Z ##[group]Disabling automatic garbage collection
+2026-11-08T07:44:54.8587385Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-11-08T07:44:54.9022144Z ##[endgroup]
+2026-11-08T07:44:54.9024355Z ##[group]Setting up auth
+2026-11-08T07:44:54.9035196Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-08T07:44:54.9454925Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-08T07:44:56.2822986Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-08T07:44:56.3261270Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-08T07:44:56.9488520Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-08T07:44:56.9913647Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-08T07:44:57.6155946Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-11-08T07:44:57.6592148Z ##[endgroup]
+2026-11-08T07:44:57.6592981Z ##[group]Fetching the repository
+2026-11-08T07:44:57.6606271Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-11-08T07:45:16.5322566Z From https://github.com/Zerotech133/Zerotech-first
+2026-11-08T07:45:16.5323492Z  * [new branch]          chanlun-archive-v9         -> origin/chanlun-archive-v9
+2026-11-08T07:45:16.5324298Z  * [new branch]          chanlun-v8-copy            -> origin/chanlun-v8-copy
+2026-11-08T07:45:16.5324821Z  * [new branch]          ci/diag-main-fullfail      -> origin/ci/diag-main-fullfail
+2026-11-08T07:45:16.5325336Z  * [new branch]          governance-upgrade         -> origin/governance-upgrade
+2026-11-08T07:45:16.5325786Z  * [new branch]          main                       -> origin/main
+2026-11-08T07:45:16.5326173Z  * [new branch]          staging-20261106           -> origin/staging-20261106
+2026-11-08T07:45:16.5327027Z  * [new branch]          task/K-SEC-20261108-PORT-8870 -> origin/task/K-SEC-20261108-PORT-8870
+2026-11-08T07:45:16.5328018Z  * [new tag]             archive/20261106/K-OPS-20261019-K266PATH -> archive/20261106/K-OPS-20261019-K266PATH
+2026-11-08T07:45:16.5328838Z  * [new tag]             archive/20261106/K-ORG-068 -> archive/20261106/K-ORG-068
+2026-11-08T07:45:16.5329259Z  * [new tag]             archive/20261106/K-ORG-175 -> archive/20261106/K-ORG-175
+2026-11-08T07:45:16.5329660Z  * [new tag]             archive/20261106/K-ORG-180 -> archive/20261106/K-ORG-180
+2026-11-08T07:45:16.5330244Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEBUILD -> archive/20261106/K-QUANT-20261029-IDEBUILD
+2026-11-08T07:45:16.5330863Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEFAIL -> archive/20261106/K-QUANT-20261029-IDEFAIL
+2026-11-08T07:45:16.5331580Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEHELLO -> archive/20261106/K-QUANT-20261029-IDEHELLO
+2026-11-08T07:45:16.5333517Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEHISTORY -> archive/20261106/K-QUANT-20261029-IDEHISTORY
+2026-11-08T07:45:16.5334537Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDELOOP -> archive/20261106/K-QUANT-20261029-IDELOOP
+2026-11-08T07:45:16.5335170Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDELOOP2 -> archive/20261106/K-QUANT-20261029-IDELOOP2
+2026-11-08T07:45:16.5335847Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDEPOLISH -> archive/20261106/K-QUANT-20261029-IDEPOLISH
+2026-11-08T07:45:16.5336506Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDESTANDALONE -> archive/20261106/K-QUANT-20261029-IDESTANDALONE
+2026-11-08T07:45:16.5337173Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDETIMEOUT -> archive/20261106/K-QUANT-20261029-IDETIMEOUT
+2026-11-08T07:45:16.5337810Z  * [new tag]             archive/20261106/K-QUANT-20261029-IDETOOLS2 -> archive/20261106/K-QUANT-20261029-IDETOOLS2
+2026-11-08T07:45:16.5338666Z  * [new tag]             archive/20261106/K-QUANT-20261029-T2MANUAL2 -> archive/20261106/K-QUANT-20261029-T2MANUAL2
+2026-11-08T07:45:16.5339464Z  * [new tag]             archive/20261106/K-QUANT-20261030-IDECANCEL -> archive/20261106/K-QUANT-20261030-IDECANCEL
+2026-11-08T07:45:16.5340481Z  * [new tag]             archive/20261106/K-QUANT-20261030-IDEOUTPUT -> archive/20261106/K-QUANT-20261030-IDEOUTPUT
+2026-11-08T07:45:16.5341211Z  * [new tag]             archive/20261106/K-QUANT-20261030-OHUI -> archive/20261106/K-QUANT-20261030-OHUI
+2026-11-08T07:45:16.5341705Z  * [new tag]             archive/20261106/K-STOCK-228 -> archive/20261106/K-STOCK-228
+2026-11-08T07:45:16.5342225Z  * [new tag]             archive/20261106/WO-ACAD-BOARD-V2-20261030 -> archive/20261106/WO-ACAD-BOARD-V2-20261030
+2026-11-08T07:45:16.5342820Z  * [new tag]             archive/20261106/WO-HUANGZHONG-20261028 -> archive/20261106/WO-HUANGZHONG-20261028
+2026-11-08T07:45:16.5343474Z  * [new tag]             archive/20261106/WO-LCS1-A6-BACKTEST-20261029 -> archive/20261106/WO-LCS1-A6-BACKTEST-20261029
+2026-11-08T07:45:16.5344113Z  * [new tag]             archive/20261106/WO-MEETING-JS-20261029 -> archive/20261106/WO-MEETING-JS-20261029
+2026-11-08T07:45:16.5394042Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/main
+2026-11-08T07:45:16.5839351Z   origin/main
+2026-11-08T07:45:16.5896457Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/main
+2026-11-08T07:45:16.6318311Z cf7e54ae510336c28bb22fa2627bc10db9d1c3b9
+2026-11-08T07:45:16.6363199Z ##[endgroup]
+2026-11-08T07:45:16.6363651Z ##[group]Determining the checkout info
+2026-11-08T07:45:16.6365227Z ##[endgroup]
+2026-11-08T07:45:16.6375343Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-11-08T07:45:16.6874422Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-11-08T07:45:16.7308772Z ##[group]Checking out the ref
+2026-11-08T07:45:16.7318495Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-11-08T07:45:17.8188655Z Updating files:  27% (3010/10873)
+2026-11-08T07:45:17.8468476Z Updating files:  28% (3045/10873)
+2026-11-08T07:45:17.8797598Z Updating files:  29% (3154/10873)
+2026-11-08T07:45:17.9088437Z Updating files:  30% (3262/10873)
+2026-11-08T07:45:17.9311532Z Updating files:  31% (3371/10873)
+2026-11-08T07:45:17.9552040Z Updating files:  32% (3480/10873)
+2026-11-08T07:45:17.9785310Z Updating files:  33% (3589/10873)
+2026-11-08T07:45:18.0050636Z Updating files:  34% (3697/10873)
+2026-11-08T07:45:18.0588133Z Updating files:  35% (3806/10873)
+2026-11-08T07:45:18.0875900Z Updating files:  36% (3915/10873)
+2026-11-08T07:45:18.1215058Z Updating files:  37% (4024/10873)
+2026-11-08T07:45:18.4213682Z Updating files:  38% (4132/10873)
+2026-11-08T07:45:18.4454792Z Updating files:  39% (4241/10873)
+2026-11-08T07:45:18.4713931Z Updating files:  40% (4350/10873)
+2026-11-08T07:45:18.5000533Z Updating files:  41% (4458/10873)
+2026-11-08T07:45:18.5293848Z Updating files:  42% (4567/10873)
+2026-11-08T07:45:18.5547301Z Updating files:  43% (4676/10873)
+2026-11-08T07:45:18.5806912Z Updating files:  44% (4785/10873)
+2026-11-08T07:45:18.6081526Z Updating files:  45% (4893/10873)
+2026-11-08T07:45:18.6452356Z Updating files:  46% (5002/10873)
+2026-11-08T07:45:18.6879497Z Updating files:  47% (5111/10873)
+2026-11-08T07:45:18.7174282Z Updating files:  48% (5220/10873)
+2026-11-08T07:45:18.7526637Z Updating files:  49% (5328/10873)
+2026-11-08T07:45:18.8118617Z Updating files:  50% (5437/10873)
+2026-11-08T07:45:18.8289178Z Updating files:  50% (5487/10873)
+2026-11-08T07:45:18.9093897Z Updating files:  51% (5546/10873)
+2026-11-08T07:45:18.9421180Z Updating files:  52% (5654/10873)
+2026-11-08T07:45:18.9676295Z Updating files:  53% (5763/10873)
+2026-11-08T07:45:18.9940204Z Updating files:  54% (5872/10873)
+2026-11-08T07:45:19.0251823Z Updating files:  55% (5981/10873)
+2026-11-08T07:45:19.1702396Z Updating files:  56% (6089/10873)
+2026-11-08T07:45:19.2042762Z Updating files:  57% (6198/10873)
+2026-11-08T07:45:19.2327729Z Updating files:  58% (6307/10873)
+2026-11-08T07:45:19.2775857Z Updating files:  59% (6416/10873)
+2026-11-08T07:45:19.3022199Z Updating files:  60% (6524/10873)
+2026-11-08T07:45:19.3361632Z Updating files:  61% (6633/10873)
+2026-11-08T07:45:19.3669070Z Updating files:  62% (6742/10873)
+2026-11-08T07:45:19.3942524Z Updating files:  63% (6850/10873)
+2026-11-08T07:45:19.4241587Z Updating files:  64% (6959/10873)
+2026-11-08T07:45:19.4542044Z Updating files:  65% (7068/10873)
+2026-11-08T07:45:19.4798266Z Updating files:  66% (7177/10873)
+2026-11-08T07:45:19.5079817Z Updating files:  67% (7285/10873)
+2026-11-08T07:45:19.5384138Z Updating files:  68% (7394/10873)
+2026-11-08T07:45:19.5821028Z Updating files:  69% (7503/10873)
+2026-11-08T07:45:19.7556293Z Updating files:  70% (7612/10873)
+2026-11-08T07:45:19.8157433Z Updating files:  71% (7720/10873)
+2026-11-08T07:45:19.8778116Z Updating files:  71% (7805/10873)
+2026-11-08T07:45:19.9041599Z Updating files:  72% (7829/10873)
+2026-11-08T07:45:20.0432043Z Updating files:  73% (7938/10873)
+2026-11-08T07:45:20.1468444Z Updating files:  74% (8047/10873)
+2026-11-08T07:45:20.1886994Z Updating files:  75% (8155/10873)
+2026-11-08T07:45:20.2202024Z Updating files:  76% (8264/10873)
+2026-11-08T07:45:20.2622219Z Updating files:  77% (8373/10873)
+2026-11-08T07:45:20.3205065Z Updating files:  78% (8481/10873)
+2026-11-08T07:45:20.3539182Z Updating files:  79% (8590/10873)
+2026-11-08T07:45:20.3823150Z Updating files:  80% (8699/10873)
+2026-11-08T07:45:20.4082092Z Updating files:  81% (8808/10873)
+2026-11-08T07:45:20.4385981Z Updating files:  82% (8916/10873)
+2026-11-08T07:45:20.4669468Z Updating files:  83% (9025/10873)
+2026-11-08T07:45:20.5006677Z Updating files:  84% (9134/10873)
+2026-11-08T07:45:20.5358380Z Updating files:  85% (9243/10873)
+2026-11-08T07:45:20.5719608Z Updating files:  86% (9351/10873)
+2026-11-08T07:45:20.6012267Z Updating files:  87% (9460/10873)
+2026-11-08T07:45:20.6330113Z Updating files:  88% (9569/10873)
+2026-11-08T07:45:20.6654883Z Updating files:  89% (9677/10873)
+2026-11-08T07:45:20.6911631Z Updating files:  90% (9786/10873)
+2026-11-08T07:45:20.7172007Z Updating files:  91% (9895/10873)
+2026-11-08T07:45:20.7385190Z Updating files:  92% (10004/10873)
+2026-11-08T07:45:20.7629672Z Updating files:  93% (10112/10873)
+2026-11-08T07:45:20.7881821Z Updating files:  94% (10221/10873)
+2026-11-08T07:45:20.8128623Z Updating files:  95% (10330/10873)
+2026-11-08T07:45:20.8168931Z Updating files:  96% (10439/10873)
+2026-11-08T07:45:20.8373310Z Updating files:  96% (10454/10873)
+2026-11-08T07:45:20.8926524Z Updating files:  97% (10547/10873)
+2026-11-08T07:45:20.9205937Z Updating files:  98% (10656/10873)
+2026-11-08T07:45:21.1187847Z Updating files:  99% (10765/10873)
+2026-11-08T07:45:21.1188572Z Updating files: 100% (10873/10873)
+2026-11-08T07:45:21.1189382Z Updating files: 100% (10873/10873), done.
+2026-11-08T07:45:21.1472337Z Switched to a new branch 'main'
+2026-11-08T07:45:21.1580124Z branch 'main' set up to track 'origin/main'.
+2026-11-08T07:45:21.1795773Z ##[endgroup]
+2026-11-08T07:45:21.2343405Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-11-08T07:45:21.2740894Z cf7e54ae510336c28bb22fa2627bc10db9d1c3b9

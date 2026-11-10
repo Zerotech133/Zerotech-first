@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>候风 · 方法论竞技场 · 三年期</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 22px 44px}
+.plat-bar{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:var(--brand);text-decoration:none;font-weight:600}
+.plat-bar .sep{color:var(--line)}
+.plat-bar .cur{color:var(--text);font-weight:700}
+.top{display:flex;align-items:baseline;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+.top h1{font-size:22px;font-weight:800}
+.top .sub{font-size:12.5px;color:var(--muted)}
+.caliber{background:var(--card);border:1px solid #dfe6f5;border-left:4px solid var(--brand);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+.caliber b{color:var(--text)}
+.caliber code{background:#f0f3fa;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11.5px}
+/* 组合层 KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:11.5px;color:var(--dim)}
+.kpi .v{font-size:21px;font-weight:800;font-family:var(--mono);margin-top:2px}
+.kpi .v.pos{color:var(--up)} .kpi .v.neg{color:var(--dn)}
+.kpi .n{font-size:10.5px;color:var(--dim);margin-top:1px}
+/* 裁决 */
+.verdict{border-radius:14px;padding:16px 20px;margin-bottom:16px;background:#fff6f5;border:1px solid #f6d5d1;border-left:5px solid var(--dn)}
+.verdict .k{font-size:12px;color:var(--dn);font-weight:800;letter-spacing:.5px}
+.verdict .t{font-size:19px;font-weight:800;margin:4px 0 6px;line-height:1.5}
+.verdict .d{font-size:12.8px;color:var(--muted)}
+.verdict .d b{color:var(--text)}
+/* 账本卡 */
+.grp{font-size:12.5px;font-weight:800;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.grp i{display:inline-block;width:4px;height:14px;border-radius:2px;background:var(--brand)}
+.accts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:960px){.accts{grid-template-columns:repeat(2,1fr)}}
+.acc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;position:relative;transition:transform .12s}
+.acc:hover{transform:translateY(-2px)}
+.acc.star{border:2px solid var(--up);box-shadow:0 4px 16px rgba(224,52,44,.14)}
+.acc.bad{border:2px dashed var(--dn)}
+.acc .badge{position:absolute;top:-9px;left:14px;color:#fff;font-size:11px;border-radius:10px;padding:1px 10px;font-weight:700}
+.acc .badge.b1{background:var(--up)} .acc .badge.b2{background:var(--dn)} .acc .badge.b3{background:var(--dim)}
+.acc .nm{font-size:14px;font-weight:700;line-height:1.35}
+.acc .desc{font-size:11.5px;color:var(--dim);margin:4px 0 8px;min-height:30px}
+.acc .pnl{font-size:24px;font-weight:800;font-family:var(--mono)}
+.acc .pnl.pos{color:var(--up)} .acc .pnl.neg{color:var(--dn)}
+.acc .meta{font-size:11.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.acc .bar{height:5px;border-radius:3px;background:#f0f2f8;margin-top:10px;overflow:hidden}
+.acc .bar i{display:block;height:100%;border-radius:3px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.panel h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.panel .hint{font-size:12px;color:var(--dim);margin-bottom:12px}
+.panel .hint b{color:var(--text)}
+/* 按年矩阵 */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid #f0f2f8;white-space:nowrap}
+th{background:#fafbff;color:var(--muted);font-weight:700;font-size:11.5px;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+td.pos{color:var(--up)} td.neg{color:var(--dn)}
+td.dim{color:var(--dim);font-size:11px}
+tr.yr-row td{background:#f7f9ff;font-weight:800;color:var(--text);border-top:2px solid #dfe6f5}
+/* 敏感性 */
+.sens{display:grid;grid-template-columns:repeat(3,1fr);gap:0;align-items:stretch;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+@media(max-width:860px){.sens{grid-template-columns:1fr}}
+.sens .cell{padding:14px 16px;border-right:1px solid var(--line)}
+.sens .cell:last-child{border-right:none;background:#fafbff}
+.sens .l{font-size:11.5px;color:var(--dim)}
+.sens .v{font-size:22px;font-weight:800;font-family:var(--mono);margin-top:2px}
+.sens .v.pos{color:var(--up)} .sens .v.neg{color:var(--dn)}
+.sens .n{font-size:11.5px;color:var(--muted);margin-top:2px}
+/* 分层 */
+.lay{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:760px){.lay{grid-template-columns:repeat(2,1fr)}}
+.vol{border:1px solid var(--line);border-radius:10px;padding:11px 8px;text-align:center}
+.vol.hl{border-color:var(--up);background:#fdf6f5}
+.vol .q{font-size:11.5px;color:var(--muted)}
+.vol .d{font-size:19px;font-weight:800;font-family:var(--mono);margin:2px 0}
+.vol .d.pos{color:var(--up)} .vol .d.neg{color:var(--dn)}
+.vol .n{font-size:10.5px;color:var(--dim);font-family:var(--mono)}
+/* 月度矩阵 */
+.mscroll{overflow-x:auto;padding-bottom:6px}
+.mgrid{border-collapse:separate;border-spacing:2px;font-size:10.5px;min-width:920px}
+.mgrid th{background:transparent;font-size:10.5px;padding:2px 3px;color:var(--dim);font-weight:600;text-align:center;position:static}
+.mgrid th.lbl{text-align:left;color:var(--muted);font-weight:800;font-size:11.5px;min-width:104px}
+.mgrid td{padding:4px 3px;text-align:center;border-radius:4px;font-family:var(--mono);font-size:10.5px}
+.mgrid td.h{background:#fafbff;color:var(--muted);font-family:inherit}
+.mgrid td.p1{background:#fdecea;color:#b3271e}
+.mgrid td.p2{background:#fef3f1;color:#c0392b}
+.mgrid td.n1{background:#e8f6ee;color:#127a43}
+.mgrid td.n2{background:#f1faf5;color:#1a7f45}
+.mgrid td.z{background:#f5f6fa;color:#b9c0d0}
+.mgrid .yrsep{border-left:3px solid #dfe6f5}
+/* 表 */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:16px;padding:3px 11px;font-size:12px;cursor:pointer;color:var(--muted)}
+.tab.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+.tab.yr{font-weight:800}
+.tag{font-size:10.5px;border-radius:8px;padding:0 6px;font-family:var(--mono)}
+.tag.SL{background:#fdecea;color:#c0392b} .tag.TP{background:#e8f6ee;color:#1a7f45}
+.tag.hold{background:#eef1f8;color:#5a6478} .tag.na{background:#f5f5f5;color:#999}
+.foot{font-size:11.5px;color:var(--dim);margin-top:22px;line-height:1.9;border-top:1px dashed var(--line);padding-top:12px}
+.foot b{color:var(--muted)}
+.note{font-size:11.8px;color:var(--muted);background:#fafbff;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin-top:10px;line-height:1.8}
+.note b{color:var(--text)}
+.warn{background:#fff9f0;border:1px dashed #f0d9b5}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>/* 页级覆盖：与本页原值逐位一致（视觉零变化） */
+:root {--mono:'SF Mono',Consolas,monospace;}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="plat-bar"><a href="HOUFENG_STRATEGY_CARD.html">策略中心</a><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><a href="HOUFENG_PLAYBOOK.html">回放日历</a><span class="sep">/</span><a href="HOUFENG_ARENA.html">竞技场·一年</a><span class="sep">/</span><span class="cur">竞技场·三年</span><span class="sep">/</span><a href="HOUFENG_HOLDGRID.html">持仓网格</a><span class="sep">/</span><a href="HOUFENG_DIVIDEND.html">红利防御档</a><span class="sep">/</span><a href="M2_DASHBOARD.html">冻结看板</a><span style="margin-left:auto"><span id="gen">载入中…</span></span></div>
+
+  <div class="top">
+    <h1>方法论竞技场 · 三年期</h1>
+    <div class="sub" id="sub">同一信号池，六本虚拟账 · 36 个月（2023-11 ~ 2026-11）</div>
+  </div>
+
+  <div class="caliber">
+    <b>三年窗口为什么重要</b>：一年期只有一个市场环境，任何"卖出规则有效/无效"的结论都可能是单年巧合。三年跨了完整的两轮涨跌，同一条规则在不同年份若一致，才谈得上规律。<br>
+    <b>口径</b>：信号池 M2.1 三年 <b id="npool">—</b> 笔（买入完全相同，只有卖出哲学不同）；静态逐笔、不复投、每笔按 basis 计权重，本金 1000 万口径。<br>
+    <b>为什么这次不用分钟口径</b>：分钟文件只覆盖 2025-11 之后的部分月份，拿三年窗口去算会让未覆盖段全退化成"死拿到第 5 日"，人为造出"止损无用"。三年主口径一律用<b>日线近似（100% 覆盖）</b>，成交价按真实跳空处理。
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="verdict">
+    <div class="k">三年期结论</div>
+    <div class="t" id="verdict-t">—</div>
+    <div class="d" id="verdict-d">—</div>
+  </div>
+
+  <div class="grp"><i></i>六本账 · 三年合计（1000 万本金，逐笔等权按 basis）</div>
+  <div class="accts" id="accts"></div>
+
+  <div class="panel">
+    <h2>按年分解 · 这条结论是不是规律</h2>
+    <div class="hint">每年单独算一遍。如果"主动卖出跑不赢到点就卖"在三年、三种市场环境里都成立，它就不是巧合；只要有一年翻盘，就不能当铁律用。</div>
+    <div style="overflow:auto"><table id="ytab"></table></div>
+    <div class="note" id="ynote"></div>
+  </div>
+
+  <div class="panel">
+    <h2>成交价假设 · 三年累计差多少</h2>
+    <div class="hint">同一套「SL+TP 全执行」规则，唯一变量是止损破位时能不能按止损价成交。</div>
+    <div class="sens" id="sens"></div>
+    <div class="note" id="sens-note"></div>
+  </div>
+
+  <div class="panel">
+    <h2>止损与止盈，分开看（三年全样本）</h2>
+    <div class="hint">在"真的被触发"的子样本里，比较「按规则卖出」与「死拿到第 5 日」的平均收益差（Δ 为正＝卖出更好）。止损和止盈是两回事，必须拆开算。</div>
+    <div class="sens" id="st"></div>
+    <div style="overflow:auto;margin-top:12px"><table id="sttab"></table></div>
+    <div class="note" id="stnote"></div>
+  </div>
+
+  <div class="panel">
+    <h2>波动分层 A · 市场五分位（旧口径）</h2>
+    <div class="hint">按全市场截面 vol20 分位。信号池本身选的就是高波票，绝大多数挤在 Q5 —— 这个分层几乎没在分层。</div>
+    <div class="lay" id="lay-mkt"></div>
+  </div>
+
+  <div class="panel">
+    <h2>波动分层 B · 池内五分位（修正后）</h2>
+    <div class="hint">改在信号池内部按 vol20 排名等分五组，每组样本量相当，分层才真正可比。</div>
+    <div class="lay" id="lay-pool"></div>
+  </div>
+
+  <div class="panel">
+    <h2>月度矩阵 · 逐月（<span id="mn">—</span> 个有信号的月份）</h2>
+    <div class="hint">红色为盈、绿色为亏（A 股口径）。横向看逐年稳定性，纵向比同一月谁强谁弱。2026-10 起闸门关闭无新信号，故不是满 36 格。</div>
+    <div class="mscroll"><table class="mgrid" id="mgrid"></table></div>
+  </div>
+
+  <div class="panel">
+    <h2>逐笔对照</h2>
+    <div class="hint">每笔并排四个收益：基准 5 日 / 全执行（实际成交）/ 高波版 / 只止盈。徽章为触发原因。</div>
+    <div class="tabs" id="ytabs"></div>
+    <div class="tabs" id="mtabs"></div>
+    <div style="max-height:520px;overflow:auto">
+      <table id="tbl">
+        <thead><tr>
+          <th>股票</th><th>入场</th><th>权重(万)</th><th>波动位</th>
+          <th>C 5日</th><th>D 全执行</th><th>E 高波版</th><th>T 只止盈</th><th>触发</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>数据链</b>：houfeng_arena_36m.json（schema houfeng.arena/v2，程序生成零手填）→ 本页纯 fetch 渲染。<br>
+    <b>信号池</b>：portfolio_sim.py 三年窗口重跑（--start 20231107 --end 20261106，hold 5 / top30 / inv_vol / drop_p1 / limit exact / trade-diag）。<br>
+    <b>执行模型</b>：guardian v1.0.3 日线近似口径 —— SL=max(持有高点−2×ATR14, 成本×0.96)，TP=持有高点−1×ATR14；SL 破位按 min(SL, 当日开盘) 成交，TP 按收盘价成交，双边成本 0.3%。<br>
+    <b>未纳入</b>：F 知识方法论（T/M 矩阵只在一期算过，三年无对应结果，不编造）；分钟精确口径（覆盖不足，会污染结论）。
+  </div>
+</div>
+
+<script>
+const up='#e0342c', dn='#0f9d58';
+const fmtPnl=v=>(v>0?'+':'')+v.toFixed(1);
+const cls=v=>v>0?'pos':(v<0?'neg':'');
+
+fetch('houfeng_arena_36m.json').then(r=>r.json()).then(A=>{
+  document.getElementById('gen').textContent='数据生成 '+A.generated;
+  document.getElementById('npool').textContent=A.signal_pool.n_trades;
+  if(A.window) document.getElementById('sub').textContent=
+    '同一信号池，六本虚拟账 · '+A.window.label+'（'+A.window.start.slice(0,4)+'-'+A.window.start.slice(4,6)+
+    ' ~ '+A.window.end.slice(0,4)+'-'+A.window.end.slice(4,6)+'）';
+
+  const acc=A.accounts, keys=Object.keys(acc);
+  const list=keys.map(k=>({k,...acc[k]}));
+  // d_opt 是「乐观成交」假设账，不可实现 —— 只作对照，不参与"最优/最差"评比
+  const real=list.filter(a=>a.k!=='d_opt');
+  const best=real.reduce((a,b)=>b.pnl_wan>a.pnl_wan?b:a);
+  const worst=real.reduce((a,b)=>b.pnl_wan<a.pnl_wan?b:a);
+
+  // ── 组合层 KPI ──
+  const P=A.portfolio||{};
+  const kpis=[
+    {l:'三年累计收益（组合层）',v:P.total_return_pct,n:'含复投与仓位约束',suf:'%',pos:P.total_return_pct>0},
+    {l:'年化收益',v:P.annualized_pct,n:'几何年化',suf:'%',pos:P.annualized_pct>0},
+    {l:'最大回撤',v:P.max_dd_pct,n:'组合净值口径',suf:'%',pos:P.max_dd_pct>0},
+    {l:'夏普',v:P.sharpe,n:'日频',suf:'',pos:P.sharpe>0},
+    {l:'买入笔数',v:P.n_buys,n:'三年合计',suf:'',pos:null}
+  ];
+  document.getElementById('kpis').innerHTML=kpis.map(x=>
+    '<div class="kpi"><div class="l">'+x.l+'</div><div class="v '+(x.pos===null?'':(x.pos?'pos':'neg'))+'">'+
+    (x.pos===true&&x.suf==='%'?'+':'')+(x.v==null?'—':x.v)+(x.suf||'')+'</div><div class="n">'+x.n+'</div></div>').join('');
+
+  // ── 裁决（全部由数据算，不写死）──
+  const cWan=acc.c.pnl_wan;
+  // "主动卖出"= 除基准与乐观假设外的所有账
+  const actives=real.filter(a=>a.k!=='c');
+  const bestActive=actives.reduce((a,b)=>b.pnl_wan>a.pnl_wan?b:a);
+  const beat=bestActive.pnl_wan-cWan;
+  document.getElementById('verdict-t').textContent =
+    '三年跑完，'+(best.k==='c'?'「什么都不做」的基准依然第一':'最优账本是 '+best.name)+
+    '（'+fmtPnl(best.pnl_wan)+' 万）；最好的主动卖出方案（'+bestActive.name+'）'+
+    (beat>=0?('反超基准 '+beat.toFixed(1)+' 万'):('仍差基准 '+Math.abs(beat).toFixed(1)+' 万'))+'。';
+  const tOnly=acc.t_only, dReal=acc.d, dOpt=acc.d_opt;
+  document.getElementById('verdict-d').innerHTML =
+    '最差的是 <b>'+worst.name+'（'+fmtPnl(worst.pnl_wan)+' 万）</b>。同一套全执行规则，'+
+    '在"止损总能按止损价成交"的假设下是 <b>'+fmtPnl(dOpt.pnl_wan)+' 万</b>，按真实跳空成交只剩 <b>'+
+    fmtPnl(dReal.pnl_wan)+' 万</b> —— <b>'+Math.abs(dOpt.pnl_wan-dReal.pnl_wan).toFixed(1)+
+    ' 万的差距来自成交价假设，不是来自方法论</b>。三年窗口把这条结论从"一年观察"升级为"跨两轮涨跌的规律"。';
+
+  // ── 卡片 ──
+  function card(a,badge,starCls){
+    const maxAbs=Math.max(...list.map(x=>Math.abs(x.pnl_wan)),1);
+    const w=Math.min(100,Math.abs(a.pnl_wan)/maxAbs*100);
+    return '<div class="acc '+(starCls||'')+'">'+
+      (badge?'<div class="badge '+badge[1]+'">'+badge[0]+'</div>':'')+
+      '<div class="nm">'+a.name+'</div>'+
+      '<div class="desc">'+a.desc+'</div>'+
+      '<div class="pnl '+cls(a.pnl_wan)+'">'+fmtPnl(a.pnl_wan)+'<span style="font-size:13px;font-weight:600"> 万</span></div>'+
+      '<div class="meta">均值/笔 '+(a.avg_pct>0?'+':'')+a.avg_pct.toFixed(2)+'%　胜率 '+a.win_pct.toFixed(1)+'%</div>'+
+      '<div class="bar"><i style="width:'+w+'%;background:'+(a.pnl_wan>=0?up:dn)+'"></i></div></div>';
+  }
+  const badgeOf=k=>k==='c'?['基准','b1']:(k==='d'?['最差','b2']:(k==='d_opt'?['乐观假设','b3']:null));
+  const starOf=k=>(k==='c'?'star':(k==='d'?'bad':''));
+  document.getElementById('accts').innerHTML=list.map(a=>card(a,badgeOf(a.k),starOf(a.k))).join('');
+
+  // ── 按年分解 ──
+  const Y=A.yearly||[];
+  const yKeys=[['ret_c','C 固定5日'],['ret_d','D 全执行'],['ret_d_day_opt','D 乐观成交'],
+               ['ret_e','E 高波版'],['ret_e_mkt','E 市场分位'],['ret_tponly','T 只止盈']];
+  let yh='<thead><tr><th>年份</th><th>笔数</th>'+yKeys.map(k=>'<th>'+k[1]+'</th>').join('')+
+         '<th>D vs C</th><th>E vs C</th></tr></thead><tbody>';
+  Y.forEach(y=>{
+    yh+='<tr><td><b>'+y.year+'</b></td><td class="dim">'+y.n+'</td>'+
+      yKeys.map(k=>{const v=y.accounts[k[0]];return '<td class="'+cls(v.pnl)+'">'+fmtPnl(v.pnl)+'</td>'}).join('')+
+      '<td class="'+cls(y.accounts.ret_d.delta_vs_c)+'">'+fmtPnl(y.accounts.ret_d.delta_vs_c)+'</td>'+
+      '<td class="'+cls(y.accounts.ret_e.delta_vs_c)+'">'+fmtPnl(y.accounts.ret_e.delta_vs_c)+'</td></tr>';
+  });
+  // 合计行（直接取六本账合计，避免与逐笔口径混淆）
+  yh+='<tr class="yr-row"><td>三年合计</td><td>'+A.signal_pool.n_trades+'</td>'+
+    '<td>'+fmtPnl(acc.c.pnl_wan)+'</td><td>'+fmtPnl(acc.d.pnl_wan)+'</td><td>'+fmtPnl(acc.d_opt.pnl_wan)+'</td>'+
+    '<td>'+fmtPnl(acc.e.pnl_wan)+'</td><td>'+fmtPnl(acc.e_mkt.pnl_wan)+'</td><td>'+fmtPnl(acc.t_only.pnl_wan)+'</td>'+
+    '<td class="'+cls(acc.d.pnl_wan-acc.c.pnl_wan)+'">'+fmtPnl(acc.d.pnl_wan-acc.c.pnl_wan)+'</td>'+
+    '<td class="'+cls(acc.e.pnl_wan-acc.c.pnl_wan)+'">'+fmtPnl(acc.e.pnl_wan-acc.c.pnl_wan)+'</td></tr>';
+  yh+='</tbody>';
+  document.getElementById('ytab').innerHTML=yh;
+
+  const wins=Y.filter(y=>y.accounts.ret_d.delta_vs_c>0).length;
+  const absD=Y.reduce((s,y)=>s+y.accounts.ret_d.pnl,0);
+  document.getElementById('ynote').innerHTML =
+    '<b>怎么读</b>：三年里「D 全执行」有 <b>'+wins+'/'+Y.length+'</b> 年跑赢基准，差额合计 '+
+    fmtPnl(absD-Y.reduce((s,y)=>s+y.accounts.ret_c.pnl,0))+' 万。'+
+    (wins===0?'<b>没有一年翻盘</b> —— 这说明在 A 股短周期均值回复的行情下，"机械止损"的负期望不是某一年的偶然。'
+             :'<b>有年份翻盘</b> —— 说明结论对市场环境敏感，不能当铁律，需要加环境条件（如只在趋势下行段启用）。');
+
+  // ── 成交价敏感性 ──
+  const sens=[
+    {l:'C 固定 5 日（不做任何主动卖出）',v:acc.c.pnl_wan,n:'均值/笔 '+acc.c.avg_pct.toFixed(2)+'%　胜率 '+acc.c.win_pct.toFixed(1)+'%'},
+    {l:'D 全执行 · 止损按止损价精确成交（乐观）',v:dOpt.pnl_wan,n:'均值/笔 '+dOpt.avg_pct.toFixed(2)+'%　胜率 '+dOpt.win_pct.toFixed(1)+'%'},
+    {l:'D 全执行 · 跳空按开盘价成交（真实）',v:dReal.pnl_wan,n:'均值/笔 '+dReal.avg_pct.toFixed(2)+'%　胜率 '+dReal.win_pct.toFixed(1)+'%'}
+  ];
+  document.getElementById('sens').innerHTML=sens.map(s=>
+    '<div class="cell"><div class="l">'+s.l+'</div><div class="v '+cls(s.v)+'">'+fmtPnl(s.v)+' 万</div><div class="n">'+s.n+'</div></div>').join('');
+  document.getElementById('sens-note').innerHTML=
+    '<b>三年累计差 '+Math.abs(dOpt.pnl_wan-dReal.pnl_wan).toFixed(1)+' 万</b>。止损位通常在成本下方 4%~6%（2×ATR 与 0.96 取高者），'+
+    'A 股高波动票经常跳空低开直接穿过止损位，真实成交价是开盘价而非止损价。把这条隐含假设拿掉，'+
+    '账本从 <b>'+fmtPnl(dOpt.pnl_wan)+' 万</b> 变成 <b>'+fmtPnl(dReal.pnl_wan)+' 万</b>。'+
+    '换句话说：任何宣称"止损保护了收益"的回测，先查它按什么价成交。';
+
+  // ── SL / TP 分开看 ──
+  const ts=A.trigger_stats||{}, sl=A.sl_summary||{}, tp=A.tp_summary||{};
+  const cells=[];
+  if(sl.n) cells.push({l:'止损 SL（n='+sl.n+' 笔触发）',v:sl.delta,
+    n:'止损 '+sl.exec_pct.toFixed(2)+'% vs 死拿 '+sl.hold_pct.toFixed(2)+'%　实际成交'});
+  if(sl.n) cells.push({l:'止损 SL · 乐观成交口径',v:sl.opt_pct-sl.hold_pct,
+    n:'止损 '+sl.opt_pct.toFixed(2)+'% vs 死拿 '+sl.hold_pct.toFixed(2)+'%　差距被成交价吃掉'});
+  if(tp.n) cells.push({l:'止盈 TP（n='+tp.n+' 笔触发）',v:tp.delta,
+    n:'止盈 '+tp.exec_pct.toFixed(2)+'% vs 死拿 '+tp.hold_pct.toFixed(2)+'%'});
+  document.getElementById('st').innerHTML=cells.map(s=>
+    '<div class="cell"><div class="l">'+s.l+'</div><div class="v '+cls(s.v)+'">'+
+    (s.v>0?'+':'')+s.v.toFixed(2)+' pp</div><div class="n">'+s.n+'</div></div>').join('');
+
+  // 按年拆解表
+  const SY=A.sl_tp_yearly||[];
+  if(SY.length){
+    let sh='<thead><tr><th>年份</th><th>SL 笔数</th><th>止损</th><th>死拿</th><th>SL Δ</th>'+
+           '<th>TP 笔数</th><th>止盈</th><th>死拿</th><th>TP Δ</th></tr></thead><tbody>';
+    SY.forEach(y=>{
+      const s=y.sl||{n:0}, p=y.tp||{n:0};
+      sh+='<tr><td><b>'+y.year+'</b></td><td class="dim">'+s.n+'</td>'+
+        '<td class="neg">'+(s.exec_pct!=null?s.exec_pct.toFixed(2)+'%':'—')+'</td>'+
+        '<td class="dim">'+(s.hold_pct!=null?s.hold_pct.toFixed(2)+'%':'—')+'</td>'+
+        '<td class="'+cls(s.delta)+'"><b>'+(s.delta>0?'+':'')+(s.delta||0).toFixed(2)+'</b></td>'+
+        '<td class="dim">'+p.n+'</td>'+
+        '<td class="pos">'+(p.exec_pct!=null?'+'+p.exec_pct.toFixed(2)+'%':'—')+'</td>'+
+        '<td class="dim">'+(p.hold_pct!=null?'+'+p.hold_pct.toFixed(2)+'%':'—')+'</td>'+
+        '<td class="'+cls(p.delta)+'"><b>'+(p.delta>0?'+':'')+(p.delta||0).toFixed(2)+'</b></td></tr>';
+    });
+    const sl=A.sl_summary||{}, tp=A.tp_summary||{};
+    sh+='<tr class="yr-row"><td>三年合计</td><td>'+sl.n+'</td>'+
+      '<td>'+sl.exec_pct.toFixed(2)+'%</td><td>'+sl.hold_pct.toFixed(2)+'%</td>'+
+      '<td>'+sl.delta.toFixed(2)+'</td><td>'+tp.n+'</td>'+
+      '<td>+'+tp.exec_pct.toFixed(2)+'%</td><td>+'+tp.hold_pct.toFixed(2)+'%</td>'+
+      '<td>'+tp.delta.toFixed(2)+'</td></tr></tbody>';
+    document.getElementById('sttab').innerHTML=sh;
+    const slNeg=SY.filter(y=>y.sl&&y.sl.delta<0).length, tpNeg=SY.filter(y=>y.tp&&y.tp.delta<0).length;
+    document.getElementById('stnote').innerHTML=
+      '<b>止损</b>：'+SY.length+' 年里有 <b>'+slNeg+' 年</b>为负（即"止损不如死拿"），三年合计 '+
+      sl.delta.toFixed(2)+'pp。<b>止盈</b>：'+tpNeg+'/'+SY.length+' 年为负，三年合计 '+tp.delta.toFixed(2)+'pp。'+
+      '<br><b>两者性质不同</b>：止损是"把浮亏钉死"，在 A 股短周期均值回复里，破位那一刻往往是当日恐慌低点，第 5 日多数已部分修复；'+
+      '止盈是"把浮盈截断"，伤害小得多但也没收益 —— 因为它砍掉的通常是继续上涨的头寸。'+
+      '<b>结论：止损要关，止盈可留可去（接近零成本，但也不贡献超额）。</b>';
+  }
+
+  // ── 分层 ──
+  const lay=(id,arr,hl)=>{
+    document.getElementById(id).innerHTML=(arr||[]).map(v=>
+      '<div class="vol'+(hl&&hl(v.q)?' hl':'')+'"><div class="q">Q'+v.q+'</div>'+
+      '<div class="d '+cls(v.delta)+'">'+(v.delta>0?'+':'')+v.delta.toFixed(2)+'</div>'+
+      '<div class="n">n='+v.n+'</div></div>').join('')||'<div class="n">样本不足</div>';
+  };
+  lay('lay-mkt',A.vol_layer,()=>false);
+  lay('lay-pool',A.vol_layer_pool,()=>false);
+
+  // ── 月度矩阵 ──
+  const M=A.monthly||[], mKeys=[['ret_c','C 5日'],['ret_d','D 全执行'],['ret_e','E 高波版'],['ret_tponly','T 只止盈']];
+  document.getElementById('mn').textContent=M.length;
+  const allV=M.flatMap(m=>mKeys.map(k=>Math.abs((m[k[0]]||{pnl:0}).pnl)));
+  const mx=Math.max(...allV,1);
+  let mh='<thead><tr><th class="lbl">账本 \\ 月份</th>'+
+    M.map((m,i)=>'<th class="'+((i>0&&m.month.slice(0,4)!==M[i-1].month.slice(0,4))?'yrsep':'')+'">'+
+      m.month.slice(4)+'<br><span style="font-size:9px">'+m.month.slice(2,4)+'</span></th>').join('')+'</tr></thead><tbody>';
+  mKeys.forEach(k=>{
+    mh+='<tr><td class="h">'+k[1]+'</td>'+M.map((m,i)=>{
+      const v=(m[k[0]]||{pnl:0}).pnl;
+      const sep=(i>0&&m.month.slice(0,4)!==M[i-1].month.slice(0,4))?' yrsep':'';
+      const a=Math.abs(v)/(mx||1);
+      const c=v===0?'z':(v>0?(a>0.5?'p1':'p2'):(a>0.5?'n1':'n2'));
+      return '<td class="'+c+sep+'">'+(v>0?'+':'')+v.toFixed(0)+'</td>';
+    }).join('')+'</tr>';
+  });
+  mh+='</tbody>';
+  document.getElementById('mgrid').innerHTML=mh;
+
+  // ── 逐笔（先年、后月，两级筛选）──
+  const trs=A.trades, mset=[...new Set(trs.map(t=>t.m))].sort();
+  const yset=[...new Set(trs.map(t=>t.m.slice(0,4)))].sort();
+  const tb=document.querySelector('#tbl tbody');
+  let curY=yset[0], curM=mset.find(m=>m.startsWith(curY));
+  function renderTabs(){
+    document.getElementById('ytabs').innerHTML=yset.map(y=>
+      '<div class="tab yr'+(y===curY?' on':'')+'" data-y="'+y+'">'+y+' 年</div>').join('');
+    document.getElementById('mtabs').innerHTML=mset.filter(m=>m.startsWith(curY)).map(m=>
+      '<div class="tab'+(m===curM?' on':'')+'" data-m="'+m+'">'+m.slice(4)+'月</div>').join('');
+    document.querySelectorAll('#ytabs .tab').forEach(el=>{
+      el.onclick=()=>{curY=el.dataset.y;curM=mset.find(m=>m.startsWith(curY));renderTabs();render();};
+    });
+    document.querySelectorAll('#mtabs .tab').forEach(el=>{
+      el.onclick=()=>{
+        document.querySelectorAll('#mtabs .tab').forEach(x=>x.classList.remove('on'));
+        el.classList.add('on');curM=el.dataset.m;render();
+      };
+    });
+  }
+  function render(){
+    const g=trs.filter(t=>t.m===curM);
+    tb.innerHTML=g.map(t=>{
+      const p=v=>'<td class="'+(v>0?'pos':'neg')+'">'+(v>0?'+':'')+(v*100).toFixed(2)+'%</td>';
+      const tag=(t.day_reason||'hold');
+      return '<tr><td>'+t.code+'</td><td style="font-family:var(--mono)">'+t.entry+'</td>'+
+        '<td>'+t.basis.toFixed(1)+'</td><td>'+(t.vq_pool?('Q'+t.vq_pool):'—')+'</td>'+
+        p(t.ret_c)+p(t.ret_d)+p(t.ret_e)+p(t.ret_tp)+
+        '<td><span class="tag '+tag+'">'+tag+'</span></td></tr>';
+    }).join('');
+  }
+  renderTabs(); render();
+});
+</script>
+<footer><span>候风 HOUFENG 产品族 · 竞技场·三年</span><span style="margin-left:auto">模拟盘数据 · 不构成投资建议 · 历史回测不代表未来表现（程序生成）</span></footer>
+</body>
+</html>

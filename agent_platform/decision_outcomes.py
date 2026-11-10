@@ -54,6 +54,7 @@ IFS F5c（2026-11-04 WO-IFS-OUTCOME-WIRE-20261104）：outcome 行补 **outcome_
 """
 from __future__ import annotations
 
+import logging
 import argparse
 import hashlib
 import json
@@ -108,6 +109,7 @@ def _record_ids(row):
         try:
             return dict(_outcome_chain.record_ids(row))
         except Exception:  # noqa: BLE001 - 回退实现同语义，不改变结果
+            logging.getLogger(__name__).exception("swallowed exception at line 110")
             pass
     row = row if isinstance(row, dict) else {}
     nested = row.get("ids") if isinstance(row.get("ids"), dict) else {}

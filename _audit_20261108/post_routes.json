@@ -1,0 +1,526 @@
+{
+ "whitelist": {
+  "mutation": [
+   "/api/agent/learn",
+   "/api/agent/update",
+   "/api/analysis/review",
+   "/api/analysis/submit",
+   "/api/batch-backtest",
+   "/api/bt2_nl",
+   "/api/bt2_run",
+   "/api/chanlun/card/feedback",
+   "/api/chanlun/label/save",
+   "/api/chanlun/pool/push",
+   "/api/combo_backtest",
+   "/api/council/confirm",
+   "/api/council/simrun",
+   "/api/ctl/alert",
+   "/api/d1/decision",
+   "/api/d1/handoff",
+   "/api/d1/meeting",
+   "/api/data/update",
+   "/api/data/update-plan",
+   "/api/debate/say",
+   "/api/flow/rerun",
+   "/api/jev/review/reopen",
+   "/api/jev/review/resolve",
+   "/api/manager_fire",
+   "/api/manager_hire",
+   "/api/monitor/pool",
+   "/api/monitor/run",
+   "/api/my_strategies",
+   "/api/onboard",
+   "/api/paper_direct_open",
+   "/api/paper_order",
+   "/api/paper_stop",
+   "/api/portfolio_adjust",
+   "/api/portfolio_close",
+   "/api/portfolio_hire",
+   "/api/portfolio_open",
+   "/api/portfolio_set",
+   "/api/portfolio_subscribe",
+   "/api/portfolio_undo",
+   "/api/project/register",
+   "/api/recv_add",
+   "/api/register",
+   "/api/report_push",
+   "/api/sim/confirm",
+   "/api/sub_del",
+   "/api/sub_test",
+   "/api/sub_toggle",
+   "/api/trader_fire",
+   "/chanlun-anno",
+   "/kg/canvas_edit",
+   "/kg/doc/upload",
+   "/kg/lexicon/save"
+  ],
+  "early": [
+   "/api/analysis/",
+   "/api/jev/review/",
+   "/api/factor/"
+  ],
+  "action_gets": [
+   "/api/alert/push",
+   "/api/data/sync",
+   "/sa/start"
+  ]
+ },
+ "routes": [
+  {
+   "path": "/api/agent/learn",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/agent/update",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/ai_duty",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/analysis/",
+   "covered": "early_prefix",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/analysis/internal/",
+   "covered": "early_prefix",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/audit_chat",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/auth/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/batch-backtest",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/bt2_nl",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/bt2_run",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/chanlun/card/feedback",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/chanlun/label/save",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/chanlun/pool/push",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/combo_backtest",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/council/confirm",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/council/simrun",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/ctl/alert",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/customer/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/d1/decision",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/d1/handoff",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/d1/meeting",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/data/update",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/data/update-plan",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/debate/say",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/dw/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/factor/",
+   "covered": "early_prefix",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/flow/rerun",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/jev/review/",
+   "covered": "early_prefix",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/m/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/manager_fire",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/manager_hire",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/monitor/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/my_strategies",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/onboard",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/os/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/paper_direct_open",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/paper_order",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/paper_stop",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_adjust",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_close",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_hire",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_open",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_set",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_subscribe",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/portfolio_undo",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/preview",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/project/preview",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/project/register",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/recv_add",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/register",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/report_push",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/sim/confirm",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/sub_del",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/sub_test",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/sub_toggle",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/trader_fire",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/zhuge/adoption",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/zhuge/brief",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST",
+    "portal_api.py::Handler.do_PUT"
+   ]
+  },
+  {
+   "path": "/api/zhuge/review",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/api/zhuge/review/",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/chanlun-anno",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/feishu/event",
+   "covered": "",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/kg/canvas_edit",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/kg/doc/upload",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  },
+  {
+   "path": "/kg/lexicon/save",
+   "covered": "mutation",
+   "handlers": [
+    "portal_api.py::Handler.do_POST"
+   ]
+  }
+ ]
+}

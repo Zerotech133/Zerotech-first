@@ -1,0 +1,15 @@
+﻿2026-11-08T04:00:54.5535436Z ##[group]Run # fail-fast：闸脚本缺失直接红，不静默跳过（对齐 test_gate.ps1 的 fail-closed 判例）
+2026-11-08T04:00:54.5535850Z [36;1m# fail-fast：闸脚本缺失直接红，不静默跳过（对齐 test_gate.ps1 的 fail-closed 判例）[0m
+2026-11-08T04:00:54.5536177Z [36;1mif (-not (Test-Path tools/test_gate.ps1)) { Write-Host "::error::tools/test_gate.ps1 missing"; exit 1 }[0m
+2026-11-08T04:00:54.5536549Z [36;1mif (-not (Test-Path tools/check_portal_split.py)) { Write-Host "::error::budget tool missing"; exit 1 }[0m
+2026-11-08T04:00:54.5536851Z [36;1mpython -X utf8 -c "import sys; print(sys.version)"[0m
+2026-11-08T04:00:54.5589083Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T04:00:54.5589302Z env:
+2026-11-08T04:00:54.5589429Z   TEST_GATE_PROFILE: ci
+2026-11-08T04:00:54.5589610Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5589863Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T04:00:54.5590544Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5590859Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5591087Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T04:00:54.5591268Z ##[endgroup]
+2026-11-08T04:00:54.8081002Z 3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]

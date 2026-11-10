@@ -18,13 +18,18 @@ WORDC1 词云席位工具（陈琳）——双源词频对比与共振词挖掘�
 
 用法：
   python wordc1_cloud.py            # 默认产出日期 = 今天
+  python wordc1_cloud.py --jev-weighted [--days 90] [--top 30]
+                                    # 追加 jev_weighted 段（工单 WO-INTEL-WORDC1-JEV-20261107-001）
+                                    # 按 news.jev 的 bias 分桶（bull/bear/neutral + 未判对照桶），
+                                    # conf<0.5 判定降权 50%；JSON schema 只增不改
 """
+import argparse
 import json
 import os
 import re
 import sqlite3
 from collections import Counter
-from datetime import date
+from datetime import date, datetime, timedelta
 
 # ---------- 路径 ----------
 BASE = r"C:/项目/老田的AI助手"
@@ -54,6 +59,13 @@ STOPWORDS |= set("""http https www com cn html htm target blank href br amp quot
 index php user status detail""".split())
 
 _RE_TAGS = re.compile(r"<[^>]+>")
+
+# ---------- JEV 加权扩展常量（工单 WO-INTEL-WORDC1-JEV-20261107-001）----------
+# 注意：不进 STOPWORDS（停用词口径冻结）；bias 分桶 3 主桶 + 1 未判对照桶。
+JEV_BIAS_BUCKETS = ("bull", "bear", "neutral")
+JEV_CONF_DOWNWEIGHT = 0.5     # conf<0.5 的判定权重减半，写入 meta 如实上报
+JEV_UNJUDGED_SAMPLE_CAP = 1000  # 未判对照桶抽样上限（按 ts 倒序取，确定性）
+JEV_MALFORMED_IS_COUNTED = True  # JSON 解析失败行计入 malformed，不静默丢
 _RE_URL = re.compile(r"(?:https?://|www\.)\S+")
 _RE_ENTITY = re.compile(r"&[a-zA-Z]+;|&#\d+;")
 _RE_XQ_REF = re.compile(r"\[[^\]]{1,12}\]")  # 雪球 [表情] [赞] 等引用标记
@@ -153,6 +165,130 @@ def count_words(texts, use_jieba):
     return c
 
 
+# ---------- JEV 判定加权扩展（工单 WO-INTEL-WORDC1-JEV-20261107-001）----------
+def load_jev_rows(days=None):
+    """只读取已判新闻 (title, ts, jev)。days=None 取全量；否则按 ts 天数开窗。"""
+    since = None
+    if days:
+        since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    con = sqlite3.connect(f"file:{NEWS_DB}?mode=ro", uri=True)
+    try:
+        cur = con.cursor()
+        sql = ("SELECT title, COALESCE(ts,''), jev FROM news "
+               "WHERE jev IS NOT NULL AND jev!='' "
+               "  AND title IS NOT NULL AND TRIM(title)!=''")
+        args = []
+        if since:
+            sql += " AND ts >= ?"
+            args.append(since)
+        rows = cur.execute(sql, args).fetchall()
+        n_unjudged = cur.execute(
+            "SELECT COUNT(*) FROM news WHERE (jev IS NULL OR jev='') "
+            "  AND title IS NOT NULL AND TRIM(title)!=''"
+        ).fetchone()[0]
+        unjudged = cur.execute(
+            "SELECT title, COALESCE(ts,'') FROM news WHERE (jev IS NULL OR jev='') "
+            "  AND title IS NOT NULL AND TRIM(title)!='' "
+            "  ORDER BY ts DESC LIMIT ?",
+            (JEV_UNJUDGED_SAMPLE_CAP,),
+        ).fetchall()
+    finally:
+        con.close()
+    return rows, n_unjudged, [clean_text(t) for t, _ in unjudged]
+
+
+def compute_jev_weighted(use_jieba, days=None, top_n=30):
+    """bias 分桶词频（conf 降权），3 主桶 + 1 未判对照桶。纯只读。"""
+    rows, n_unjudged_total, unjudged_texts = load_jev_rows(days)
+    buckets = {b: {"count": 0, "words": Counter()} for b in JEV_BIAS_BUCKETS}
+    malformed = 0
+    low_conf = 0
+    for title, _ts, jev_raw in rows:
+        try:
+            d = json.loads(jev_raw)
+            bias = d.get("bias")
+            if bias not in buckets:
+                malformed += 1
+                continue
+        except Exception:
+            malformed += 1
+            continue
+        conf = d.get("conf")
+        weight = 1.0
+        if conf is not None and conf < 0.5:
+            weight = JEV_CONF_DOWNWEIGHT
+            low_conf += 1
+        buckets[bias]["count"] += 1
+        bc = buckets[bias]["words"]
+        for w in (iter_words_jieba(title) if use_jieba else iter_words_2gram(title)):
+            bc[w] += weight
+    uc = Counter()
+    for t in unjudged_texts:
+        uc.update(iter_words_jieba(t) if use_jieba else iter_words_2gram(t))
+    return {
+        "buckets": {
+            b: {
+                "count": v["count"],
+                "top": [{"word": w, "count": round(n, 1)} for w, n in v["words"].most_common(top_n)],
+            }
+            for b, v in buckets.items()
+        },
+        "unjudged": {
+            "total": n_unjudged_total,
+            "sampled": len(unjudged_texts),
+            "top": [{"word": w, "count": n} for w, n in uc.most_common(top_n)],
+        },
+        "meta": {
+            "workorder": "WO-INTEL-WORDC1-JEV-20261107-001",
+            "window_days": days,
+            "judged_rows": len(rows),
+            "malformed": malformed,
+            "low_conf_downweighted": low_conf,
+            "conf_downweight": JEV_CONF_DOWNWEIGHT,
+            "stopwords": len(STOPWORDS),
+            "note": "只读 news.db（mode=ro）；词频为加权值（conf<0.5 计 0.5）；"
+                    "malformed 为 bias 缺失或 JSON 解析失败行，未静默丢弃",
+        },
+    }
+
+
+def jev_weighted_html(jw):
+    """JEV 加权段的自包含 HTML（三主桶 Top15 + 未判对照桶 Top10）。"""
+    colors = {"bull": "#c0392b", "bear": "#1e8449", "neutral": "#7d8790"}
+    panels = []
+    for b in JEV_BIAS_BUCKETS:
+        v = jw["buckets"][b]
+        rows = "\n".join(
+            f'<tr><td class="rk">{i}</td><td class="wd">{w}</td>'
+            f'<td class="num">{n:,}</td></tr>'
+            for i, x in enumerate(v["top"][:15], 1)
+            for w, n in [(x["word"], x["count"])]
+        )
+        if not rows:
+            rows = '<tr><td colspan="3" style="color:#8a919c">（样本不足）</td></tr>'
+        panels.append(
+            f'<div class="panel"><h3 style="color:{colors[b]}">{b}（{v["count"]:,} 条）</h3>'
+            f'<table class="freq">{rows}</table></div>'
+        )
+    u = jw["unjudged"]
+    u_rows = "\n".join(
+        f'<tr><td class="rk">{i}</td><td class="wd">{w}</td><td class="num">{n:,}</td></tr>'
+        for i, x in enumerate(u["top"][:10], 1)
+        for w, n in [(x["word"], x["count"])]
+    )
+    m = jw["meta"]
+    return (
+        '<h2>JEV 判定加权词频（bias 分桶 × conf 降权）</h2>'
+        + '<div class="meta" style="margin-bottom:10px">'
+        + f"已判 {m['judged_rows']:,} 条（malformed {m['malformed']:,}）；"
+        + f"低置信降权 {m['low_conf_downweighted']:,} 条（conf&lt;0.5 计 {m['conf_downweight']}）；"
+        + f"未判对照桶全量 {u['total']:,} 条、抽样 {u['sampled']:,} 条</div>"
+        + '<div class="cols">' + "".join(panels) + "</div>"
+        + '<h3 style="margin-top:18px">未判对照桶 Top10（抽样）</h3>'
+        + f'<table class="ov" style="max-width:480px"><tr><th>#</th><th>词</th><th>频次</th></tr>{u_rows}</table>'
+    )
+
+
 # ---------- 报告 ----------
 def bar_rows_html(counter, topn=30, color="#2f6fdb"):
     items = counter.most_common(topn)
@@ -168,7 +304,7 @@ def bar_rows_html(counter, topn=30, color="#2f6fdb"):
     return "\n".join(rows)
 
 
-def build_html(xq_c, news_c, overlap, meta, method_label):
+def build_html(xq_c, news_c, overlap, meta, method_label, extra_html=""):
     xq50 = xq_c.most_common(50)
     news50 = news_c.most_common(50)
     ov20 = overlap[:20]
@@ -241,6 +377,7 @@ def build_html(xq_c, news_c, overlap, meta, method_label):
     {ov_rows}
   </table>
 
+  {extra_html}
   <div class="foot">WORDC1 · 只读数据库，未写入任何库文件 · 工具：quant_backtest/tools/wordc1_cloud.py</div>
 </div>
 </body>
@@ -249,7 +386,15 @@ def build_html(xq_c, news_c, overlap, meta, method_label):
     return html
 
 
-def main():
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="WORDC1 双源词频对比（只读）")
+    ap.add_argument("--jev-weighted", action="store_true",
+                    help="追加 jev_weighted 段：bias 分桶 × conf 降权（工单 WO-INTEL-WORDC1-JEV-20261107-001）")
+    ap.add_argument("--days", type=int, default=90,
+                    help="JEV 加权统计窗口天数（默认 90；0/负值=全量）")
+    ap.add_argument("--top", type=int, default=30, help="每桶返回词数（默认 30）")
+    args = ap.parse_args(argv)
+
     os.makedirs(OUT_DIR, exist_ok=True)
 
     print("[1/4] 读取两源文本（只读模式）...")
@@ -278,7 +423,20 @@ def main():
     print(f"      雪球词条（去停用词后）{len(xq_c):,} 个 / 新闻 {len(news_c):,} 个 / 双源 Top500 交集 {len(common)} 词")
 
     print("[4/4] 写出产物...")
-    html = build_html(xq_c, news_c, overlap, meta, method_label)
+    jw = None
+    if args.jev_weighted:
+        print(f"      JEV 加权段：窗口 {args.days if args.days and args.days > 0 else '全量'} 天，每桶 Top{args.top}")
+        jw = compute_jev_weighted(use_jieba,
+                                  days=args.days if args.days and args.days > 0 else None,
+                                  top_n=args.top)
+        print(f"      已判 {jw['meta']['judged_rows']:,}（malformed {jw['meta']['malformed']:,}）"
+              f" / 低置信降权 {jw['meta']['low_conf_downweighted']:,}"
+              f" / 未判抽样 {jw['unjudged']['sampled']:,}")
+        for b in JEV_BIAS_BUCKETS:
+            print(f"      {b:8s} {jw['buckets'][b]['count']:>7,} 条  top1: "
+                  f"{jw['buckets'][b]['top'][0]['word'] if jw['buckets'][b]['top'] else '-'}")
+    html = build_html(xq_c, news_c, overlap, meta, method_label,
+                      extra_html=jev_weighted_html(jw) if jw else "")
     with open(HTML_PATH, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -301,6 +459,8 @@ def main():
             "note": "只读两库，未写入任何库文件",
         },
     }
+    if jw is not None:
+        payload["jev_weighted"] = jw  # schema 只增不改：既有键原样保留
     with open(JSON_PATH, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 

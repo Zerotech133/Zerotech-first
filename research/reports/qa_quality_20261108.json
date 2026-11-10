@@ -1,0 +1,373 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-08T18:21:26+08:00",
+ "date": "2026-11-08",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 1,
+  "fallback": 1,
+  "answerable_rate": 0.5,
+  "guard_pass_rate": 0.5,
+  "fallback_rate": 0.5,
+  "avg_citations": 1.0,
+  "avg_citation_resolvable_rate": 0.5,
+  "avg_inference_ratio": 0.25,
+  "avg_elapsed_seconds": 37.885,
+  "avg_completeness_score": 3.0
+ },
+ "alerts": [
+  {
+   "code": "ANSWERABLE_LOW",
+   "level": "warn",
+   "message": "可答率 50% < 80% 阈值"
+  },
+  {
+   "code": "GUARD_LOW",
+   "level": "warn",
+   "message": "guard 通过率 50% < 80% 阈值"
+  },
+  {
+   "code": "FALLBACK_HIGH",
+   "level": "warn",
+   "message": "fallback 率 50% > 20% 阈值"
+  },
+  {
+   "code": "TREND_DOWN",
+   "level": "warn",
+   "message": "可答率较 rolling 7d 均值 100% 下滑 50%（>15%）"
+  }
+ ],
+ "alert_text": "【问答质量告警 2026-11-08】发现 4 项漂移：\n- [ANSWERABLE_LOW] 可答率 50% < 80% 阈值\n- [GUARD_LOW] guard 通过率 50% < 80% 阈值\n- [FALLBACK_HIGH] fallback 率 50% > 20% 阈值\n- [TREND_DOWN] 可答率较 rolling 7d 均值 100% 下滑 50%（>15%）\n当日：可答率 50%、guard 50%、fallback 50%、样本 2 条\nrolling 7d：日均可答率 93%、guard 93%、fallback 7%（7 天）",
+ "rolling_7d": {
+  "n_days": 7,
+  "answerable_rate": 0.9286,
+  "guard_pass_rate": 0.9286,
+  "fallback_rate": 0.0714,
+  "avg_citations": 2.2143,
+  "avg_elapsed_seconds": 16.12,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-08"
+ },
+ "history_entries": 7,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-06",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.2,
+    "avg_elapsed_seconds": 21.9,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_ef78939178",
+     "q2_87eff8d7a3"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-07",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 3.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.195,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_0d7db24320",
+     "q2_4f34cbb059"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-08",
+    "n": 2,
+    "answerable_rate": 0.5,
+    "guard_pass_rate": 0.5,
+    "fallback_rate": 0.5,
+    "avg_citations": 1.0,
+    "avg_citation_resolvable_rate": 0.5,
+    "avg_inference_ratio": 0.25,
+    "avg_elapsed_seconds": 37.885,
+    "avg_completeness_score": 3.0,
+    "guard_pass_count": 1,
+    "sample_ids": [
+     "q2_7274d52791",
+     "q2_1595bd5290"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "FALLBACK_HIGH",
+     "TREND_DOWN"
+    ]
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 7,
+   "answerable_rate": 0.9286,
+   "guard_pass_rate": 0.9286,
+   "fallback_rate": 0.0714,
+   "avg_citations": 2.2143,
+   "avg_elapsed_seconds": 16.12,
+   "window": 7,
+   "date_from": "2026-11-02",
+   "date_to": "2026-11-08"
+  },
+  "updated_at": "2026-11-08T18:21:21+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_7274d52791",
+   "category": "如何识别",
+   "theme": "新能源/电池",
+   "question": "如何识别全球风电市场趋势相关的机会或信号？",
+   "http_status": 200,
+   "elapsed_seconds": 23.8,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "4b6cf5a7158e",
+     "3d627dcc4f13"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】2025 年全球风电新增装机达 165GW（同比增长 40%），亚太地区占据 80% 市场份额（[4b6cf5a7158e] p.3）。\n【事实】国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局（[3d627dcc4f13] p.1）。\n【推断】\n【推断】亚太地区作为全球最大市场且份额高达 80%，将是未来海上风电加速发展的核心区域（依据：[4b6cf5a7158e] p.3）。\n【推断】政策明确支持深远海漂浮式机组及运维母港布局，预示海上风电将从近海向深远海拓展并完善配套体系（依据：[3d627dcc4f13] p.1）。",
+   "answer_length": 300,
+   "citations": [
+    {
+     "unit_id": "4b6cf5a7158e",
+     "book": "rp_AP202609301830015458",
+     "chapter": "前 ⾔",
+     "page": 3,
+     "text": "2025年全球风电新增装机达165GW（同比增长40%），亚太地区占据80%市场份额，预计2026-2030年海上风电将加速发展。 2025年，全球风⼒发电新增了165GW的并⽹容量，同⽐增长达到40%，亚太地区持续保持全球第⼀风电市场的领先地位，占据了全球80%的市场份额...海上风电在经历了⼀段调整期后，即将加速发展。"
+    },
+    {
+     "unit_id": "3d627dcc4f13",
+     "book": "rp_AP202610021830105333",
+     "chapter": "市场研究部 2026 年9 月22 日",
+     "page": 1,
+     "text": "国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局。 海洋新能源产业。发展柔性组网输电等关键技术，开发近海抗台型、深远海漂浮式风电机组以及海上漂浮式结构等关键模块。支持沿海三市统筹推进海上风电场改造升级、融合开发和退役管理，合理布局建设海上风电运维母港。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.5,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_1595bd5290",
+   "category": "是什么",
+   "theme": "金融/资本市场",
+   "question": "区域收入分化的核心结论与主要依据是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 51.97,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": true,
+     "first_units": 1,
+     "second_units": 0,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": false,
+    "guard_action": "fallback",
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid": [],
+    "citation_invalid": [],
+    "citation_total": 0,
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "support_rate": 0.0,
+    "inference_ratio": 0.3333,
+    "distinct_cited_units": 0,
+    "marker_mode": "segment"
+   },
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- 无可核验引用，建议人工复核或补检索。",
+   "answer_length": 59,
+   "citations": [],
+   "citation_count": 0,
+   "citation_resolvable_rate": 0.0,
+   "distinct_cited_units": 0,
+   "support_rate": 0.0,
+   "inference_ratio": 0.0,
+   "guard_passed_recomputed": false,
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units"
+   ],
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "completeness_score": 1,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "attempted": true,
+  "sent": true,
+  "error": null
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261108.json",
+ "elapsed_seconds": 81.42,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

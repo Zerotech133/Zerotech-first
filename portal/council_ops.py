@@ -918,10 +918,13 @@ def notify(title: str, body: str, deep_link: str = "") -> dict:
         )
         import sys as _sys
 
-        _sys.path.insert(0, "C:/项目/老田的AI助手/news_collector")
+        # A8（2026-11-10）：消除两处路径硬编码
+        _aios_root = os.environ.get("AIOS_ROOT", "C:/aios")
+        _news_dir = os.path.join(_aios_root, "news_collector")
+        _sys.path.insert(0, os.path.join(REPO, "news_collector"))
         os.environ.setdefault("LARK_CLI_CHDIR_DONE", "1")
         old_cwd = os.getcwd()
-        os.chdir("C:/aios/news_collector")
+        os.chdir(_news_dir)
         try:
             import feishu_client as _fc
 

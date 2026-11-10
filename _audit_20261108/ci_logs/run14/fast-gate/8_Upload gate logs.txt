@@ -1,0 +1,20 @@
+﻿2026-11-08T06:40:21.6679221Z ##[group]Run actions/upload-artifact@v4
+2026-11-08T06:40:21.6679673Z with:
+2026-11-08T06:40:21.6679933Z   name: gate-logs-42455187931
+2026-11-08T06:40:21.6680242Z   path: D:\a\_temp/test_gate_*.log
+2026-11-08T06:40:21.6680549Z   if-no-files-found: ignore
+2026-11-08T06:40:21.6680825Z   retention-days: 14
+2026-11-08T06:40:21.6681088Z   compression-level: 6
+2026-11-08T06:40:21.6681348Z   overwrite: false
+2026-11-08T06:40:21.6681630Z   include-hidden-files: false
+2026-11-08T06:40:21.6681913Z env:
+2026-11-08T06:40:21.6682140Z   TEST_GATE_PROFILE: ci
+2026-11-08T06:40:21.6682504Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T06:40:21.6683012Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T06:40:21.6683513Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T06:40:21.6683960Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T06:40:21.6684410Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T06:40:21.6684863Z ##[endgroup]
+2026-11-08T06:40:21.8556168Z (node:5032) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-08T06:40:21.8557111Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-08T06:40:21.8616318Z No files were found with the provided path: D:\a\_temp/test_gate_*.log. No artifacts will be uploaded.

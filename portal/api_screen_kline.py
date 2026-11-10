@@ -15,6 +15,11 @@ import sys
 from api_common import STATION, log_exc
 from api_backtest import _bt_jev_news, _bt_resolve
 
+# JEV conf 已弃用（反相关 AUC 0.414）：K 线新闻同日去重改用事件类型分层
+if os.path.join(STATION, "tools") not in sys.path:
+    sys.path.insert(0, os.path.join(STATION, "tools"))
+from jev_signal import event_type_tier
+
 
 def _kline_qy(c):
     """个股季/年线 JSON（K200：K147-F 季/年线级别落地）。
@@ -201,8 +206,12 @@ def _kline_data(q, n=250):
     news = {}
     for it in _bt_jev_news(name, aliases):
         d = (it.get("ts") or "")[:10]
-        if d and (d not in news or it["conf"] > news[d]["c"]):
-            news[d] = {"c": it["conf"], "b": it["bias_cn"]}
+        if d:
+            tier = event_type_tier(it.get("event_type"))
+            cur = news.get(d)
+            # 同日内 strong 事件类型优先（conf 反相关，不再据 conf 选）
+            if cur is None or (tier == "strong" and cur.get("tier") != "strong"):
+                news[d] = {"c": it.get("conf") or 0, "b": it.get("bias_cn"), "tier": tier}
     # K136 笔中枢上墙：全量窗 P3 结构（chanlun_bi，四市场纯几何，
     # 不限 A股）；dt=原始 K 线日期，前端按视窗类目自动过滤
     # K139 周线级别：ISO 周一 groupby 重采样，dt=周内最后交易日

@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/static/tokens.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JEV · 情报工作台（原型）</title>
+<style>
+:root{
+  --bg:#080c13; --panel:#0d1420; --panel2:#101a29; --line:#1d2a3d;
+  --txt:#e2eaf5; --dim:#7d8da6; --dim2:#55657e;
+  --up:#ff5459; --down:#22c08c; --amber:#f0b64b; --cyan:#4bc8e8; --violet:#a98bff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); color:var(--txt); overflow:hidden;
+  font:13px/1.55 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .amber{color:var(--amber)} .cyan{color:var(--cyan)} .dim{color:var(--dim)}
+#app{height:100vh;display:flex;flex-direction:column}
+
+/* ── 顶栏 ── */
+.topbar{height:54px;flex:none;display:flex;align-items:center;gap:18px;padding:0 20px;
+  border-bottom:1px solid var(--line);background:rgba(9,14,22,.92)}
+.brand{font-size:15px;font-weight:700;letter-spacing:.14em;white-space:nowrap}
+.brand i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);
+  box-shadow:0 0 12px var(--amber);margin-right:9px;vertical-align:2px}
+.tag{font-size:10px;letter-spacing:.1em;color:var(--dim2);border:1px solid var(--line);
+  padding:2px 7px;border-radius:3px;white-space:nowrap}
+.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);min-width:0;flex:1}
+.crumb b{color:var(--txt);font-weight:600}
+.crumb .sep{color:var(--dim2)}
+.crumb button{background:none;border:0;color:var(--cyan);cursor:pointer;font-size:12px;padding:0}
+.crumb button:hover{text-decoration:underline}
+.kpis{display:flex;gap:16px;white-space:nowrap}
+.kpi{display:flex;flex-direction:column;line-height:1.15}
+.kpi span{font-size:9px;color:var(--dim2);letter-spacing:.08em}
+.kpi b{font-size:14px;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--dim);padding:5px 11px;font-size:11px;cursor:pointer}
+.seg button.on{background:var(--panel2);color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
+.seg button:hover{color:var(--txt)}
+
+/* ── 主区 ── */
+.main{flex:1;display:flex;min-height:0;position:relative}
+.rail{width:286px;flex:none;border-right:1px solid var(--line);background:rgba(11,17,27,.8);
+  display:flex;flex-direction:column;transition:width .22s ease;overflow:hidden}
+.rail.mini{width:46px}
+.rail-h{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.1em;color:var(--dim)}
+.rail-h button{background:none;border:0;color:var(--dim);cursor:pointer;font-size:14px;line-height:1}
+.rail-b{flex:1;overflow-y:auto;padding:8px 10px 16px}
+.rail.mini .rail-b,.rail.mini .rail-h span,.rail.mini .rail-note{display:none}
+.cluster{margin-bottom:12px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.012)}
+.cluster-h{display:flex;align-items:center;gap:8px;padding:6px 9px;font-size:10px;letter-spacing:.1em;
+  color:var(--dim);border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.cluster-h:hover{color:var(--txt)}
+.cluster-h .dot{width:6px;height:6px;border-radius:50%}
+.cluster-h .num{margin-left:auto;color:var(--dim2)}
+.cluster.collapsed .rows{display:none}
+.rows{padding:3px 0}
+.brow{display:flex;align-items:center;gap:7px;padding:5px 9px;cursor:pointer;border-left:2px solid transparent;
+  transition:background .15s,border-color .15s}
+.brow:hover{background:rgba(75,200,232,.07);border-left-color:var(--cyan)}
+.brow.active{background:rgba(240,182,75,.09);border-left-color:var(--amber)}
+.brow .nm{flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .v{font-size:11px;min-width:44px;text-align:right}
+.brow .bar{height:3px;border-radius:2px;background:var(--line);width:38px;overflow:hidden;flex:none}
+.brow .bar i{display:block;height:100%}
+.brow .lu{font-size:9px;color:var(--up);border:1px solid rgba(255,84,89,.3);border-radius:2px;
+  padding:0 3px;min-width:22px;text-align:center}
+.rail-note{padding:8px 11px;border-top:1px solid var(--line);font-size:10px;color:var(--dim2);line-height:1.5}
+
+/* ── 舞台 ── */
+.stage{flex:1;min-width:0;display:flex;flex-direction:column}
+.stage-h{height:40px;flex:none;display:flex;align-items:center;gap:12px;padding:0 18px;
+  border-bottom:1px solid var(--line);font-size:11px;color:var(--dim)}
+.stage-h b{color:var(--txt);font-size:13px;font-weight:600}
+.stage-h .hint{margin-left:auto;color:var(--dim2)}
+.canvas{flex:1;min-height:0;position:relative;overflow:hidden}
+.canvas svg{width:100%;height:100%;display:block}
+.stage-f{height:30px;flex:none;display:flex;align-items:center;gap:16px;padding:0 18px;
+  border-top:1px solid var(--line);font-size:10px;color:var(--dim2)}
+.stage-f .lg{display:flex;align-items:center;gap:5px}
+.stage-f .sw{width:14px;height:2px;display:inline-block}
+
+/* ── 抽屉 ── */
+.drawer{position:absolute;right:0;top:0;bottom:0;width:390px;background:rgba(10,16,26,.97);
+  border-left:1px solid var(--line);box-shadow:-18px 0 50px rgba(0,0,0,.55);z-index:20;
+  display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s ease}
+.drawer.open{transform:none}
+.dr-h{height:50px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line)}
+.dr-h .t{font-size:16px;font-weight:700}
+.dr-h .x{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px;cursor:pointer}
+.dr-b{flex:1;overflow-y:auto;padding:14px 16px 24px}
+.sect{margin-bottom:16px}
+.sect-t{font-size:10px;letter-spacing:.12em;color:var(--dim2);margin-bottom:7px;
+  border-bottom:1px dashed var(--line);padding-bottom:4px}
+.narr{font-size:12.5px;line-height:1.85;color:#cfdcec;background:rgba(75,200,232,.045);
+  border-left:2px solid var(--cyan);padding:9px 11px;border-radius:0 4px 4px 0}
+.narr em{font-style:normal;color:var(--amber)}
+.ev{display:flex;gap:9px;padding:4px 0;font-size:11.5px;align-items:baseline}
+.ev .tm{color:var(--cyan);min-width:44px}
+.ev .tx{color:var(--dim);flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:10.5px;border:1px solid var(--line);border-radius:3px;padding:3px 7px;color:var(--dim)}
+.chip b{color:var(--txt);font-weight:600}
+.chip.warn{border-color:rgba(255,84,89,.35);color:#ff9a9d}
+.chip.good{border-color:rgba(34,192,140,.35);color:#83e0c0}
+.rel{display:flex;gap:8px;font-size:11px;padding:3px 0;color:var(--dim)}
+.rel .k{color:var(--violet);min-width:52px}
+.relrow{display:flex;gap:7px;font-size:10.5px;padding:4px 0;align-items:baseline;
+  border-bottom:1px dashed rgba(29,42,61,.7);line-height:1.5}
+.relrow .rk{min-width:74px;flex:none;font-size:9.5px;letter-spacing:.02em}
+.relrow .rt{color:var(--cyan);min-width:38px;flex:none}
+.relrow .rl{color:var(--dim);flex:1;min-width:0}
+.relrow a{color:var(--amber);text-decoration:none;cursor:pointer;border-bottom:1px dotted rgba(240,182,75,.5)}
+.relrow a:hover{color:var(--txt);border-bottom-style:solid}
+.relrow b{color:var(--up);font-weight:600}
+.kgcover{position:absolute;right:14px;top:14px;width:360px;max-height:74%;overflow:auto;z-index:8;
+  background:rgba(10,16,26,.98);border:1px solid var(--line);border-left:2px solid var(--cyan);
+  border-radius:5px;padding:11px 13px;font-size:10.5px;box-shadow:-12px 12px 40px rgba(0,0,0,.5)}
+.kgcover h4{margin:0 0 8px;font-size:11px;letter-spacing:.1em;color:var(--cyan)}
+.kgcover table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.kgcover td{padding:2px 4px;border-bottom:1px dashed rgba(29,42,61,.65);color:var(--dim)}
+.kgcover td.n{text-align:right;color:var(--txt)}
+.kgcover td.miss{color:#ff9a9d} .kgcover td.ok{color:#83e0c0}
+.kgcover .x{float:right;cursor:pointer;color:var(--dim2)}
+
+/* ── 底简报 ── */
+.brief{height:88px;flex:none;border-top:1px solid var(--line);background:rgba(12,18,29,.94);
+  display:flex;align-items:center;gap:20px;padding:0 20px}
+.brief .lbl{font-size:9px;letter-spacing:.14em;color:var(--amber);writing-mode:vertical-rl;
+  border-right:1px solid var(--line);padding-right:10px;height:52px;display:flex;align-items:center}
+.brief .txt{flex:1;font-size:12.5px;line-height:1.75;color:#cddae9;min-width:0}
+.brief .txt b{color:var(--txt)}
+.brief .txt .hl{color:var(--amber)}
+.badges{display:flex;gap:6px;flex-wrap:wrap;max-width:290px}
+.badge{font-size:10px;border:1px solid var(--line);padding:3px 7px;border-radius:3px;color:var(--dim);white-space:nowrap}
+.badge.hot{border-color:rgba(255,84,89,.35);color:#ff9a9d}
+.badge.ok{border-color:rgba(34,192,140,.3);color:#83e0c0}
+
+/* ── SVG 通用 ── */
+.hull{fill:rgba(255,255,255,.014);stroke:var(--line);stroke-dasharray:4 4;rx:9}
+.hull:hover{stroke:var(--cyan);fill:rgba(75,200,232,.035)}
+.hull-t{fill:var(--dim);font-size:10px;letter-spacing:.08em}
+.node{cursor:pointer;transition:opacity .2s}
+.node circle{stroke-width:1.5}
+.node text{font-size:10px;fill:var(--txt);pointer-events:none}
+.node:hover circle{filter:drop-shadow(0 0 8px currentColor)}
+.edge{stroke-width:1.2;fill:none;opacity:.55}
+.edge.lead{stroke:var(--up)} .edge.echo{stroke:var(--violet);stroke-dasharray:3 3}
+.edge.cross{stroke:var(--cyan);stroke-dasharray:2 4} .edge.sig{stroke:var(--amber);stroke-dasharray:2 3}
+.axis{stroke:#2a3a52;stroke-width:1}
+.tick{fill:var(--dim2);font-size:9px}
+.stem{stroke-width:1.2;opacity:.7}
+.evdot{cursor:pointer}
+.evlabel{fill:var(--dim);font-size:10px;pointer-events:none}
+.center-ring{fill:none;stroke:rgba(240,182,75,.35);stroke-width:1}
+.pulse{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:.75}}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--dim);font-size:12px;letter-spacing:.1em;background:rgba(8,12,19,.7);z-index:10}
+.err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#ff9a9d;font-size:12px;z-index:10}
+.hidden{display:none}
+/* Step 4：作为生产页 L2/L3 下钻嵌态时，隐藏与 L1 重复的顶栏信息 */
+.embedbar{display:none;height:30px;flex:none;align-items:center;gap:12px;padding:0 14px;
+  background:rgba(12,18,29,.92);border-bottom:1px solid var(--line);font-size:11px;color:var(--dim)}
+body.embed .embedbar{display:flex}
+.embedbar button{background:transparent;border:1px solid var(--line);border-radius:4px;
+  color:var(--amber);padding:3px 10px;font-size:11px;cursor:pointer}
+.embedbar button:hover{border-color:var(--amber)}
+.embedbar .where{color:var(--txt);font-weight:600}
+body.embed .topbar .crumb, body.embed .topbar .kpis{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="embedbar" id="embedbar">
+    <button id="embedBack">← 返回板块总览</button>
+    <span class="where" id="embedWhere">情报下钻</span>
+    <span>点节点走关系 · 右上「收起」或 ESC 回到 L1</span>
+  </div>
+  <header class="topbar">
+    <div class="brand"><i></i>JEV 情报台</div>
+    <div class="tag">RECON / 2026-11-06</div>
+    <div class="crumb" id="crumb"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="seg" id="kindseg">
+      <button data-kind="industry" class="on">行业口径</button>
+      <button data-kind="theme">题材口径</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="rail" id="rail">
+      <div class="rail-h"><span>板块分布 · 密度聚类</span><button id="railbtn" title="收起/展开">◧</button></div>
+      <div class="rail-b" id="railb"></div>
+      <div class="rail-note">色=中位涨幅（红涨绿跌）｜条=上涨占比<br>点击板块 → 中央生成该板块图谱</div>
+    </aside>
+
+    <section class="stage">
+      <div class="stage-h" id="stageh"></div>
+      <div class="canvas" id="canvas"><div class="loading" id="loading">正在聚合情报…</div></div>
+      <div class="stage-f" id="stagef"></div>
+    </section>
+
+    <aside class="drawer" id="drawer">
+      <div class="dr-h"><span class="t" id="drtitle"></span><button class="x" id="drclose">×</button></div>
+      <div class="dr-b" id="drbody"></div>
+    </aside>
+  </div>
+
+  <footer class="brief">
+    <div class="lbl">情报简报</div>
+    <div class="txt" id="brieftxt">载入中…</div>
+    <div class="badges" id="briefbadges"></div>
+  </footer>
+</div>
+
+<script>
+'use strict';
+const S = {
+  day: '20261106', kind: 'industry', board: null, code: null,
+  data: null, overview: null, view: 'overview',
+  collapsed: {}, loading: false, selectedEvent: null,
+  kg: null, path: [], showCover: false, entity: null,
+  kgMode: 'local', kgSource: null, kgNote: '', kgMembers: null
+};
+const KG_MODE = (new URLSearchParams(location.search).get('kg') || 'auto').toLowerCase();
+const KG_SRC = (new URLSearchParams(location.search).get('src') || 'auto').toLowerCase();
+const EMBED = new URLSearchParams(location.search).get('embed') === '1';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+const num = (v, d) => (v == null || isNaN(v)) ? '--' : Number(v).toFixed(d == null ? 2 : d);
+const sign = (v, d) => (v == null || isNaN(v)) ? '--' : (v > 0 ? '+' : '') + Number(v).toFixed(d == null ? 2 : d);
+const cls = (v) => v > 0 ? 'up' : (v < 0 ? 'down' : 'dim');
+const col = (v) => v > 0 ? '#ff5459' : (v < 0 ? '#22c08c' : '#7d8da6');
+const c6 = (code) => String(code || '').replace(/\..*$/, '');
+const H = (h) => { const p = String(h || '').split(':'); return p.length === 2 ? (+p[0]) * 60 + (+p[1]) : null; };
+
+function apiUrl(board) {
+  let u = '/api/jev/graph?day=' + S.day + '&top=12&kind=' + S.kind;
+  if (board) u += '&board=' + encodeURIComponent(board);
+  else {
+    /* ?code= 深链：build() 会把焦点板块定位到该个股所属板块（判例 #28 口径） */
+    const dc = new URLSearchParams(location.search).get('code');
+    if (dc) u += '&code=' + encodeURIComponent(dc);
+  }
+  return u;
+}
+
+/* ══════════ Step 3 · 服务端 KG 适配层 ══════════
+   /api/jev/kg 的响应 → 与 Step 1 compileRelations() 完全同形状的对象，
+   因此 L2 的簇 / 边、L3 的证据与走关系全部零改动，只换数据源。
+   能力探测必须校验 ok + source：重启前该 URL 会返回 200 但内容是
+   /api/jev/ 兜底（schema_version=jev.v2），静默成功比 404 危险（判例 #30）。
+   L1 总览仍读 /api/jev/graph，不动；只在有焦点板块时并取 KG。          */
+const KG_SOURCES = { graph_cache: 'graph 缓存', snapshot: '落盘快照' };
+
+function kgApiUrl(board) {
+  let u = '/api/jev/kg?day=' + encodeURIComponent(S.day) +
+          '&kind=' + encodeURIComponent(S.kind) + '&top=12';
+  if (board) u += '&board=' + encodeURIComponent(board);
+  if (KG_SRC === 'snapshot') u += '&src=snapshot';
+  return u;
+}
+
+function kgUsable(o) {
+  return !!(o && o.ok === true && !o.schema_version &&
+    (o.source === 'graph_cache' || o.source === 'snapshot') &&
+    Array.isArray(o.rels) && o.rels.length > 0 &&
+    Array.isArray(o.cover) && o.n_rel > 0);
+}
+
+function kgFromServer(out) {
+  const rels = (out.rels || []).map((r) => Object.assign({}, r, {
+    refs: (r.refs || [r.subj, r.obj].filter(Boolean)).map(String)
+  }));
+  const ents = out.ents || {};
+  const byRef = {}, byPred = {}, byCode = {}, byTime = {}, bySrc = {}, byId = {};
+  rels.forEach((r) => {
+    byId[r.id] = r;
+    (byPred[r.pred] ||= []).push(r.id);
+    (bySrc[(r.evidence || {}).src || 'unknown'] ||= []).push(r.id);
+    if (r.t) (byTime[r.t] ||= []).push(r.id);
+    r.refs.forEach((k) => {
+      (byRef[k] ||= []).push(r.id);
+      if (/^[0-9]{6}$/.test(c6(k))) (byCode[c6(k)] ||= []).push(r.id);
+    });
+  });
+  const cover = out.cover || [];
+  const api = {
+    day: out.day, board_kind: out.board_kind, board: out.board,
+    rels: rels, ents: ents,
+    idx: { byRef, byPred, byCode, byTime, bySrc }, preds: PRED, cover: cover,
+    src: out.source, server: true, clean: out.clean,
+    warnings: out.warnings || [], members: out.members || null,
+    get: (id) => byId[id],
+    // 6 位码兜底与后端 jev_kg.KG.neighbors 同口径，避免「走关系」断链
+    neighbors: (ref) => {
+      const a = (byRef[String(ref)] || []).map((id) => byId[id]);
+      if (a.length || !/^[0-9]{6}$/.test(c6(String(ref)))) return a;
+      const seen = {}, out2 = [];
+      (byCode[c6(ref)] || []).forEach((id) => {
+        if (!seen[id]) { seen[id] = 1; out2.push(byId[id]); }
+      });
+      return out2;
+    },
+    ofCode: (code) => (byCode[c6(code)] || []).map((id) => byId[id]),
+    ofPred: (p) => (byPred[p] || []).map((id) => byId[id]),
+    ofTime: (t) => (byTime[t] || []).map((id) => byId[id]),
+    label: (ref) => (ents[String(ref)] || {}).label || String(ref),
+    type: (ref) => (ents[String(ref)] || {}).type ||
+      (/^[0-9]{6}$/.test(c6(ref)) ? 'stock' : 'entity'),
+    count: (p) => (byPred[p] || []).length,
+    totalMiss: () => cover.reduce((a, x) => a + x.miss, 0)
+  };
+  return api;
+}
+
+function kgBadge() {
+  if (S.kgMode === 'server')
+    return ['KG 服务端·' + (KG_SOURCES[S.kgSource] || S.kgSource) +
+            ' · ' + (S.kg ? S.kg.rels.length : 0) + ' 关系', 'ok'];
+  return ['KG 本地编译 · 服务端待重启', 'hot'];
+}
+
+async function load(board, keepOverview) {
+  const _deepCode = new URLSearchParams(location.search).get('code');
+  const _deepEntity = new URLSearchParams(location.search).get('entity');
+  S.loading = true;
+  $('loading').classList.remove('hidden');
+  $('loading').textContent = board ? ('正在聚类「' + board + '」…') : '正在聚合全市场情报…';
+  try {
+    const r = await fetch(apiUrl(board), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d.ok === false) throw new Error(d.message || '接口返回失败');
+    S.data = d;
+    /* Step 3：L1 用 graph 响应，L2/L3 优先用服务端真关系。
+       graph 的 focus.name 是权威焦点板块，保证两边口径不错位。 */
+    const kgBoard = board || (d.focus || {}).name || '';
+    let kgOut = null, kgNote = '';
+    if (KG_MODE !== 'local') {
+      try {
+        const kr = await fetch(kgApiUrl(kgBoard), { cache: 'no-store' });
+        const ko = await kr.json();
+        if (kgUsable(ko)) kgOut = ko;
+        else kgNote = (ko && ko.schema_version) ? ('jev.v2 兜底，非 KG')
+          : ((ko && ko.message) ? ko.message : '响应缺 ok / source / rels');
+      } catch (e2) { kgNote = '请求异常 ' + e2.message; }
+    } else kgNote = 'kg=local 强制';
+    if (kgOut) {
+      S.kg = kgFromServer(kgOut);
+      S.kgMode = 'server'; S.kgSource = kgOut.source;
+      S.kgNote = ''; S.kgMembers = kgOut.members || null;
+    } else {
+      S.kg = compileRelations(d);
+      S.kgMode = 'local'; S.kgSource = null;
+      S.kgNote = kgNote; S.kgMembers = null;
+    }
+    S.path = [];
+    S.entity = null;
+    if (!board || !keepOverview) S.overview = d;
+    S.board = board || null;
+    S.view = board ? 'graph' : 'overview';
+    /* 生产页下钻带 code 无 board：背景切到该个股所属板块的 L2 图谱 */
+    if (EMBED && _deepCode && !board) {
+      S.board = (d.focus || {}).name || null;
+      S.view = 'graph';
+    }
+    S.selectedEvent = null;
+        try {
+          const u = new URL(location.href);
+          if (board) u.searchParams.set('board', board);
+          else u.searchParams.delete('board');
+          u.searchParams.set('kind', S.kind);
+          u.searchParams.set('day', S.day);
+          u.searchParams.delete('code');
+          history.replaceState(null, '', u);
+        } catch (_) {}
+        render();
+        if (!board && _deepEntity && S.kg && S.kg.ents[_deepEntity]) {
+          S.entity = _deepEntity; showEntity(_deepEntity);
+        }
+        if (_deepCode) {
+          const _n = (d.network.nodes || []).find((x) =>
+            x.type === 'stock' && c6(x.id) === c6(_deepCode));
+          if (_n) openDrawer(_n);
+          else if (S.kg) {
+            /* NODE_MAX 截断 / 跨板块：视图里没有该股，改从 KG 实体表按 6 位码反查 */
+            const ref = Object.keys(S.kg.ents || {}).find((k) =>
+              S.kg.type(k) === 'stock' && c6(k) === c6(_deepCode));
+            showEntity(ref || _deepCode);
+          }
+        }
+      } catch (e) {
+    $('canvas').innerHTML = '<div class="err">数据链路异常：' + esc(e.message) + '</div>';
+  } finally {
+    S.loading = false;
+    /* catch 分支会替换 #canvas 内容（#loading 在其中被一并销毁），必须判空 */
+    const _L = $('loading');
+    if (_L) _L.classList.add('hidden');
+  }
+}
+
+/* ══════════ 顶栏 / 面包屑 ══════════ */
+function renderHead() {
+  const d = S.data, u = d.universe || {};
+  $('kpis').innerHTML = [
+    ['全市场', u.stocks], ['涨/跌', (u.up || 0) + '/' + (u.down || 0)],
+    ['涨停', u.limit_up], ['中位', sign(u.median_pct) + '%']
+  ].map(([k, v]) =>
+    '<div class="kpi"><span>' + k + '</span><b class="' + (k === '中位' ? cls(u.median_pct) : '') + '">' + esc(v) + '</b></div>'
+  ).join('');
+  const crumb = '<button data-go="overview">总览</button>';
+  const tail = S.board
+    ? '<span class="sep">›</span><b>' + esc(S.board) + '</b>' +
+      '<span class="sep">›</span><span>知识图谱</span>' +
+      (S.code ? '<span class="sep">›</span><b>' + esc(S.code) + '</b>' : '')
+    : '<span class="sep">›</span><span>时空轴 / 板块分布</span>';
+  $('crumb').innerHTML = crumb + tail + '<span style="margin-left:10px;color:var(--dim2)">' +
+    esc(d.day_cn || d.day) + ' · 收盘复盘</span>';
+  $('crumb').querySelector('[data-go]').onclick = () => { closeDrawer(); load(null, true); };
+  [...$('kindseg').children].forEach((b) => b.classList.toggle('on', b.dataset.kind === S.kind));
+  $('kindseg').onclick = (e) => {
+    const k = e.target.dataset.kind;
+    if (!k || k === S.kind) return;
+    S.kind = k; S.collapsed = {}; closeDrawer();
+    load(S.board, false);
+  };
+}
+
+/* ══════════ 左栏：板块分布（成组，不零散） ══════════ */
+function clustersOf(boards) {
+  const g = { lead: [], hold: [], ebb: [] };
+  boards.forEach((b) => {
+    const k = (b.med > 0 && (b.up_ratio || 0) >= 0.6) ? 'lead'
+      : (b.med > 0 ? 'hold' : 'ebb');
+    g[k].push(b);
+  });
+  const meta = [
+    ['lead', '领涨簇', '#ff5459', '中位为正 · 上涨占比≥60%'],
+    ['hold', '抗跌簇', '#4bc8e8', '中位为正 · 内部分化'],
+    ['ebb', '退潮簇', '#22c08c', '中位为负 · 资金退场']
+  ];
+  return meta.filter(([k]) => g[k].length).map(([k, t, c, note]) => ({ k, t, c, note, rows: g[k] }));
+}
+
+function renderRail() {
+  const list = S.kind === 'theme'
+    ? (S.overview.theme.top || []).map((t) => ({
+        name: t.name, n: t.n, med: t.med, up_ratio: t.up_ratio,
+        limit_up: t.limit_up, max_pct: t.max_pct
+      }))
+    : (S.overview.boards || []);
+  const groups = clustersOf(list);
+  $('railb').innerHTML = groups.map((g) => {
+    const key = 'rail:' + g.k;
+    const cp = S.collapsed[key] ? ' collapsed' : '';
+    return '<div class="cluster' + cp + '">' +
+      '<div class="cluster-h" data-fold="' + key + '">' +
+        '<i class="dot" style="background:' + g.c + '"></i>' + g.t +
+        '<span class="num">' + g.rows.length + ' 个 · ' + esc(g.note) + '</span></div>' +
+      '<div class="rows">' + g.rows.map((b) => {
+        const ratio = Math.max(0, Math.min(1, b.up_ratio || 0));
+        const act = (S.board === b.name) ? ' active' : '';
+        return '<div class="brow' + act + '" data-board="' + esc(b.name) + '">' +
+          '<span class="nm">' + esc(b.name) + '</span>' +
+          '<span class="bar"><i style="width:' + (ratio * 100).toFixed(0) + '%;background:' +
+            (b.med > 0 ? '#ff5459' : '#22c08c') + '"></i></span>' +
+          '<span class="v mono ' + cls(b.med) + '">' + sign(b.med) + '</span>' +
+          '<span class="lu">' + (b.limit_up || 0) + '板</span></div>';
+      }).join('') + '</div></div>';
+  }).join('');
+  $('railb').querySelectorAll('[data-board]').forEach((el) =>
+    el.onclick = () => { closeDrawer(); load(el.dataset.board, true); });
+  $('railb').querySelectorAll('[data-fold]').forEach((el) =>
+    el.onclick = () => {
+      const k = el.dataset.fold;
+      S.collapsed[k] = !S.collapsed[k];
+      el.parentElement.classList.toggle('collapsed', !!S.collapsed[k]);
+    });
+}
+
+/* ══════════ L1：双向时空轴 ══════════ */
+function marketEvents(d) {
+  const evs = [];
+  (d.network.cross_summary || []).forEach((e) => evs.push({
+    hm: e.hm, label: e.label, boards: e.boards || [], n_edges: e.n_edges,
+    bear: /领跌|下挫|回调|跳水|净卖|走弱|跌|减持/.test(e.label), kind: '跨板块'
+  }));
+  // 上侧补齐：连板梯队是「接力证据」，无盘中时刻 → 归首波，不假造分钟
+  ((d.chain || {}).ladder || []).slice(0, 5).forEach((x) => evs.push({
+    hm: '09:35', label: x.name + ' ' + x.nums + '板·' + x.style_label,
+    boards: [], n_edges: 0, bear: false, kind: '接力'
+  }));
+  // 下侧补齐：派发 / 退潮是「收盘态证据」，统一归 14:30–15:00，注明无盘中时刻
+  ((d.chain || {}).distribution || []).slice(0, 4).forEach((x) => evs.push({
+    hm: '14:30', label: x.name + ' 涨停净卖 ' + (x.net / 10000).toFixed(2) + '亿',
+    boards: [], n_edges: 0, bear: true, kind: '派发'
+  }));
+  (S.overview.boards || []).filter((b) => b.med < 0).slice(0, 4).forEach((b) => evs.push({
+    hm: '15:00', label: b.name + ' 板块退潮 ' + b.med.toFixed(2) + '%',
+    boards: [b.name], n_edges: 0, bear: true, kind: '退潮'
+  }));
+  return evs;
+}
+
+function renderOverview() {
+  const d = S.overview;
+  const evs = marketEvents(d);
+  const W = 1000, Hh = 560, mid = 278, x0 = 108, x1 = 958;
+  const t2x = (hm) => {
+    const m = H(hm);
+    if (m == null) return x0 + 18;
+    const tt = Math.max(570, Math.min(900, m));
+    return x0 + (tt - 570) / 330 * (x1 - x0);
+  };
+  const ticks = ['09:30', '10:30', '11:30', '13:00', '14:00', '15:00'];
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="xMidYMid meet">';
+  ticks.forEach((tk) => {
+    const x = t2x(tk);
+    svg += '<line x1="' + x + '" y1="46" x2="' + x + '" y2="' + (Hh - 40) +
+      '" stroke="#162232" stroke-dasharray="2 6"/>' +
+      '<text class="tick" x="' + x + '" y="' + (mid + 17) + '" text-anchor="middle">' + tk + '</text>';
+  });
+  svg += '<line class="axis" x1="' + x0 + '" y1="' + mid + '" x2="' + x1 + '" y2="' + mid + '"/>';
+  svg += '<text class="hull-t" x="' + x0 + '" y="42">▲ 上涨 / 领涨 / 接力侧</text>';
+  svg += '<text class="hull-t" x="' + x0 + '" y="' + (Hh - 30) + '">▼ 下跌 / 派发 / 退潮侧（收盘态证据，无盘中时刻）</text>';
+  svg += '<text class="tick" x="' + (x1 - 2) + '" y="' + (mid - 8) + '" text-anchor="end">时间 →</text>';
+
+  // 盘前公告簇：移到左上角，不压轴；点击展开可下钻
+  const batch = (d.focus.events || {}).items || [];
+  const preOpen = !!S.collapsed.pre;
+  svg += '<g class="node" data-pre="1">' +
+    '<rect class="hull" x="14" y="60" width="82" height="96" rx="8" stroke="#a98bff" stroke-opacity=".35"/>' +
+    '<text class="hull-t" x="23" y="78" fill="#a98bff">盘前 00:00</text>' +
+    '<text x="23" y="106" fill="#f0b64b" font-size="23" font-weight="700">' + batch.length + '</text>' +
+    '<text x="23" y="122" fill="#7d8da6" font-size="9">条披露 / 公告</text>' +
+    '<text x="23" y="145" fill="#4bc8e8" font-size="9">' + (preOpen ? '点击收起 −' : '点击展开 +') + '</text></g>';
+
+  // 同一时刻的多条事件「收」成一簇：轴上只留一个点，点开才展开明细
+  const sides = [
+    { arr: evs.filter((x) => !x.bear), dir: -1, c: '#ff5459', tag: 'u' },
+    { arr: evs.filter((x) => x.bear), dir: 1, c: '#22c08c', tag: 'd' }
+  ];
+  const idx = { u: [], d: [] };
+  sides.forEach((sd) => {
+    const buckets = {};
+    sd.arr.forEach((ev) => {
+      const k = Math.round(t2x(ev.hm) / 46);
+      (buckets[k] ||= []).push(ev);
+    });
+    Object.keys(buckets).sort((a, b) => a - b).forEach((k, bi) => {
+      const list = buckets[k];
+      const x = Math.min(x1 - 12, +k * 46);
+      const lane = bi % 3;
+      const y = mid + sd.dir * (52 + lane * 56);
+      const multi = list.length > 1;
+      const rec = {
+        hm: list[0].hm, label: list[0].label, kind: multi ? '事件簇' : list[0].kind,
+        boards: list[0].boards || [], n_edges: list[0].n_edges || 0,
+        items: multi ? list : null, n: list.length
+      };
+      idx[sd.tag].push(rec);
+      const r0 = multi ? 6 + Math.min(3, list.length) : 4.2;
+      svg += '<line class="stem" x1="' + x + '" y1="' + mid + '" x2="' + x + '" y2="' + y +
+        '" stroke="' + sd.c + '" opacity=".3"/>' +
+        '<circle class="evdot" data-ev="' + idx[sd.tag].length + '" data-side="' + sd.tag +
+        '" cx="' + x + '" cy="' + y + '" r="' + r0 + '" fill="' + sd.c +
+        '" fill-opacity="' + (multi ? '.3' : '.9') + '" stroke="' + sd.c + '"><title>' +
+        esc(list[0].hm + ' · ' + (multi ? list.length + ' 条事件，点击展开' : list[0].label)) +
+        '</title></circle>';
+      const raw = multi
+        ? '[' + list.length + ' 事件] ' + list[0].hm + ' 簇 · 点击展开'
+        : '[' + rec.kind + '] ' + String(rec.label).replace(/^\d\d:\d\d\s*/, '').slice(0, 13);
+      const flip = x > x1 - 160;
+      svg += '<text class="evlabel" x="' + (x + (flip ? -10 : 10)) + '" y="' + (y + 3) +
+        '" text-anchor="' + (flip ? 'end' : 'start') + '">' + esc(raw) + '</text>';
+    });
+  });
+
+  const ls = (d.chain || {}).ladder_stat || {};
+  svg += '<g><rect x="' + (x1 - 176) + '" y="56" width="172" height="54" rx="7" class="hull"/>' +
+    '<text class="hull-t" x="' + (x1 - 166) + '" y="74">连板梯队（全市场）</text>' +
+    '<text x="' + (x1 - 166) + '" y="98" fill="#f0b64b" font-size="17" font-weight="700">' +
+      (ls.max_board || 0) + ' 板</text>' +
+    '<text x="' + (x1 - 114) + '" y="98" fill="#7d8da6" font-size="10">' +
+      (ls.n_total || 0) + ' 只 / 最高板 ' + (ls.n_at_max || 0) + ' 只</text></g></svg>';
+
+  // 下钻浮层：事件详情 / 盘前公告列表
+  let pop = '';
+  if (preOpen) {
+    pop += '<div style="position:absolute;left:18px;top:170px;width:300px;max-height:230px;overflow:auto;' +
+      'background:rgba(13,20,32,.97);border:1px solid var(--line);border-left:2px solid var(--violet);' +
+      'border-radius:4px;padding:9px 11px;font-size:10.5px;z-index:6">' +
+      '<div style="color:var(--violet);margin-bottom:6px">盘前披露 / 公告（' + batch.length + ' 条，点击收起）</div>' +
+      batch.slice(0, 12).map((x) => '<div style="color:var(--dim);padding:2px 0;border-bottom:1px dashed #1a2536">' +
+        esc(String(x.title).slice(0, 30)) + '</div>').join('') + '</div>';
+  }
+  if (S.selectedEvent != null) {
+    const e = S.selectedEvent;
+    pop += '<div style="position:absolute;left:18px;right:18px;bottom:12px;background:rgba(13,20,32,.96);' +
+      'border:1px solid var(--line);border-left:2px solid var(--cyan);border-radius:4px;padding:9px 12px;' +
+      'font-size:11.5px;z-index:5">' +
+      '<span class="mono cyan">' + esc(e.hm) + '</span> · <b>' + esc(e.kind) + '</b> · ' + esc(e.label) +
+      (e.items ? '<div style="margin-top:6px;color:var(--txt)">' + e.items.map((z) =>
+        '<div style="padding:2px 0;color:var(--dim)">· <span style="color:var(--cyan)">' +
+        esc(z.hm) + '</span> ' + esc(z.kind) + ' — ' + esc(String(z.label).slice(0, 44)) +
+        '</div>').join('') + '</div>' : '') +
+      '<div style="color:var(--dim);margin-top:4px">跨 ' + (e.boards || []).length +
+      ' 个板块 / ' + (e.n_edges || 0) + ' 条关联边　' +
+      (e.boards || []).slice(0, 6).map((b) =>
+        '<a href="#" data-jump="' + esc(b) + '" style="color:var(--amber);margin-right:8px;text-decoration:none">' +
+        esc(b) + ' ↗</a>').join('') +
+      '</div><div style="position:absolute;right:8px;top:6px;color:var(--dim2);cursor:pointer" data-popclose="1">×</div></div>';
+  }
+  $('canvas').innerHTML = svg + pop;
+
+  $('canvas').querySelectorAll('[data-ev]').forEach((el) => el.onclick = () => {
+    S.selectedEvent = idx[el.dataset.side][+el.dataset.ev - 1];
+    renderOverview();
+  });
+  $('canvas').querySelector('[data-pre]').onclick = () => {
+    S.collapsed.pre = !S.collapsed.pre; renderOverview();
+  };
+  const pc = $('canvas').querySelector('[data-popclose]');
+  if (pc) pc.onclick = () => { S.selectedEvent = null; renderOverview(); };
+  $('canvas').querySelectorAll('[data-jump]').forEach((a) => a.onclick = (e) => {
+    e.preventDefault(); load(a.dataset.jump, true);
+  });
+
+  $('stageh').innerHTML = '<b>全市场 / 双向时空轴</b><span>上侧=上涨与接力，下侧=领跌、派发与退潮；圆点可点开，事件内板块名可直接下钻</span>';
+  $('stagef').innerHTML = '<span class="lg"><i class="sw" style="background:#ff5459"></i>上涨侧 ' +
+    idx.u.length + '</span><span class="lg"><i class="sw" style="background:#22c08c"></i>下跌侧 ' +
+    idx.d.length + '</span><span class="lg"><i class="sw" style="background:#a98bff"></i>盘前披露</span>' +
+    '<span style="margin-left:auto">派发/退潮无盘中时刻，按收盘态归位，不参与 Δmin</span>';
+}
+
+/* ══════════ KG · 关系编译层（Step 1） ══════════
+   四谓词：IN_BOARD / AT_TIME / ACTED_VIA / PRICE_MSG
+   一条关系 = subj -[pred/via]-> obj，统一带 day / board_kind / t / delta_min /
+   ts_kind / priced / evidence{src,key}。UI 只从 KG 取关系，不再各自读散列表。
+   priced=false 的证据（盘前批量公告、社交、收盘态）可查但不参与 Δmin。      */
+const PRED = {
+  IN_BOARD:  { zh: '板块归属 / 共振', c: '#4bc8e8' },
+  AT_TIME:   { zh: '时空定位',       c: '#a98bff' },
+  ACTED_VIA: { zh: '席位 / 资金 / 社交', c: '#f0b64b' },
+  PRICE_MSG: { zh: '消息 ↔ 价格',    c: '#ff5459' }
+};
+const PRED_KEYS = Object.keys(PRED);
+
+function compileRelations(d) {
+  const day = d.day || S.day;
+  const bk = d.board_kind || S.kind;
+  const board = (d.focus || {}).name || S.board || '';
+  const net = d.network || {}, f = d.focus || {};
+  const ch = d.chain || {}, so = d.social || {};
+  const fl = f.flow || {};
+  const nodes = net.nodes || [], edges = net.edges || [];
+  const stocks = nodes.filter((n) => n.type === 'stock');
+  const news = nodes.filter((n) => n.type === 'news');
+  const bn = nodes.find((n) => n.type === 'board');
+  const boardRef = bn ? bn.id : ('board:' + board);
+  const timeline = f.timeline || [];
+  const evItems = (f.events || {}).items || [];
+  const disc = (f.disclosures || {}).items || [];
+  const ladder = ch.ladder || [], dist = ch.distribution || [];
+  const boardItems = (ch.board || {}).items || [];
+  const hot = so.hot || [], posts = so.posts || [], mtop = so.market_top || [];
+  const cross = net.cross_summary || [];
+
+  const rels = [], ents = {}, hits = {};
+  const ACTOR_LABEL = {
+    'flow:main_net': '主力资金 · 全板块', 'flow:list_net': '龙虎榜净额',
+    'flow:relay': '连板接力梯队', 'flow:board_rank': '板块资金排名',
+    'flow:divergence': '资金背离样本', 'flow:board_ladder': '板块内梯队',
+    'social:guba': '股吧人气榜', 'social:xq': '雪球人气榜',
+    'social:board': '板块社交样本', 'social:post_author': '股吧发帖',
+    'social:market_top': '全市场热榜'
+  };
+  const byRef = {}, byPred = {}, byCode = {}, byTime = {}, bySrc = {}, byId = {};
+  let seq = 0;
+
+  function ent(id, type, label, extra) {
+    if (!id) return null;
+    const k = String(id);
+    if (!ents[k]) ents[k] = { id: k, type: type, label: label || k, extra: extra || {} };
+    else if (label && ents[k].label === k) ents[k].label = label;
+    return k;
+  }
+  function hit(src, key) {
+    (hits[src] ||= new Set()).add(String(key));
+  }
+  function rel(o) {
+    const r = Object.assign({
+      id: 'r' + (++seq), day: day, board_kind: bk, board: board,
+      subj: null, subj_type: 'entity', pred: '', obj: null, obj_type: 'entity',
+      via: '', t: null, delta_min: null, ts_kind: null, priced: true,
+      label: '', weight: 1, scope: 'focus', evidence: { src: '', key: '' }
+    }, o);
+    r.refs = [r.subj, r.obj].filter(Boolean).map(String);
+    if (r.subj) ent(r.subj, r.subj_type, ACTOR_LABEL[r.subj]);
+    if (r.obj) ent(r.obj, r.obj_type, ACTOR_LABEL[r.obj]);
+    rels.push(r); byId[r.id] = r;
+    (byPred[r.pred] ||= []).push(r.id);
+    (bySrc[r.evidence.src] ||= []).push(r.id);
+    if (r.t) (byTime[r.t] ||= []).push(r.id);
+    r.refs.forEach((k) => {
+      (byRef[k] ||= []).push(r.id);
+      const c = c6(k);
+      if (/^[0-9]{6}$/.test(c)) (byCode[c] ||= []).push(r.id);
+    });
+    hit(r.evidence.src, r.evidence.key);
+    return r;
+  }
+  const nm = (code, fallback) => {
+    const n = nodes.find((x) => x.type === 'stock' && c6(x.id) === c6(code));
+    return n ? n.label : (fallback || c6(code));
+  };
+  const codeOf = (x) => x.code || x.c6 || '';
+  const pricedT = (hm) => {
+    const m = H(hm);
+    return m != null && m >= 555 && m <= 905;
+  };
+
+  ent(boardRef, 'board', board, { n: (f.n || 0), med: f.med });
+  stocks.forEach((n) => ent(n.id, 'stock', n.label, { pct: n.pct, limit_up: n.limit_up }));
+  news.forEach((n) => ent(n.id, 'event', n.label, { hm: n.hm, ts_kind: n.ts_kind }));
+
+  /* ── P1 IN_BOARD：个股 ∈ 板块；事件 → 跨板块共振 ── */
+  stocks.forEach((n) => rel({
+    subj: n.id, subj_type: 'stock', pred: 'IN_BOARD',
+    obj: boardRef, obj_type: 'board', via: 'member',
+    label: n.label + ' ∈ ' + board,
+    evidence: { src: 'network.nodes.stock', key: n.id }
+  }));
+  cross.forEach((x) => (x.boards || []).forEach((b) => {
+    ent('board:' + b, 'board', b);
+    ent('event:' + (x.event_id || x.hm), 'event', '跨板块事件 ' + x.hm);
+    rel({
+      subj: 'event:' + (x.event_id || x.hm), subj_type: 'event', pred: 'IN_BOARD',
+      obj: 'board:' + b, obj_type: 'board', via: 'cross_event',
+      t: x.hm, ts_kind: 'intraday', label: '共振板块 ' + b,
+      evidence: { src: 'network.cross_summary', key: x.event_id || x.hm }
+    });
+  }));
+
+  /* ── P2 AT_TIME：一切有时刻的证据统一挂到 t:HH:MM ── */
+  timeline.forEach((x, i) => {
+    ent('t:' + x.t, 'time', x.t);
+    rel({
+      subj: x.code, subj_type: 'stock', pred: 'AT_TIME',
+      obj: 't:' + x.t, obj_type: 'time', via: 'timeline_' + (x.kind || 'price'),
+      t: x.t, ts_kind: (x.kind === 'price' ? 'price' : 'intraday'),
+      priced: true, label: x.name + ' · ' + x.text,
+      evidence: { src: 'focus.timeline', key: x.code + '@' + x.t + '#' + i }
+    });
+  });
+  stocks.forEach((n) => {
+    if (!n.seal_time) return;
+    ent('t:' + n.seal_time, 'time', n.seal_time);
+    rel({
+      subj: n.id, subj_type: 'stock', pred: 'AT_TIME',
+      obj: 't:' + n.seal_time, obj_type: 'time', via: 'seal',
+      t: n.seal_time, ts_kind: 'price', priced: true,
+      label: n.label + ' 封板', evidence: { src: 'network.nodes.seal', key: n.id }
+    });
+  });
+  evItems.forEach((x) => {
+    const tk = x.ts_kind || 'batch';
+    const px = tk === 'intraday' && pricedT(x.hm);
+    ent(x.id, 'event', String(x.title || '').slice(0, 20), { ts_kind: tk });
+    ent('t:' + x.hm, 'time', x.hm);
+    rel({
+      subj: x.id, subj_type: 'event', pred: 'AT_TIME',
+      obj: 't:' + x.hm, obj_type: 'time', via: 'event_' + tk,
+      t: x.hm, ts_kind: tk, priced: px,
+      label: (px ? '盘中 ' : '盘前批量 / 不参与 Δmin ') + String(x.title || '').slice(0, 24),
+      evidence: { src: 'focus.events.items', key: x.id }
+    });
+  });
+  disc.forEach((x, i) => {
+    const eid = 'disc:' + c6(x.code) + ':' + i;
+    ent(eid, 'event', String(x.title || '').slice(0, 20), { kind: x.kind, url: x.url });
+    ent('t:00:00', 'time', '00:00');
+    rel({
+      subj: eid, subj_type: 'event', pred: 'AT_TIME',
+      obj: 't:00:00', obj_type: 'time', via: x.kind || 'notice',
+      t: '00:00', ts_kind: 'batch', priced: false,
+      label: (x.name || c6(x.code)) + ' · ' + String(x.title || '').slice(0, 24),
+      evidence: { src: 'focus.disclosures.items', key: eid }
+    });
+    rel({
+      subj: eid, subj_type: 'event', pred: 'ACTED_VIA',
+      obj: x.code, obj_type: 'stock', via: 'disclosure',
+      t: null, ts_kind: 'batch', priced: false,
+      label: '披露主体 ' + (x.name || c6(x.code)),
+      evidence: { src: 'focus.disclosures.items', key: eid }
+    });
+  });
+  posts.forEach((x, i) => {
+    const t = String(x.ts || '').slice(11, 16);
+    const tk = 'social';
+    const eid = 'post:' + c6(x.code) + ':' + i;
+    ent(eid, 'event', String(x.title || '').slice(0, 20));
+    ent('t:' + t, 'time', t);
+    rel({
+      subj: eid, subj_type: 'event', pred: 'AT_TIME',
+      obj: 't:' + t, obj_type: 'time', via: 'post',
+      t: t || null, ts_kind: tk, priced: false,
+      label: (x.name || c6(x.code)) + ' 吧 · ' + String(x.title || '').slice(0, 22),
+      evidence: { src: 'social.posts', key: eid }
+    });
+  });
+  news.forEach((n) => {
+    ent('t:' + n.hm, 'time', n.hm);
+    rel({
+      subj: n.id, subj_type: 'event', pred: 'AT_TIME',
+      obj: 't:' + n.hm, obj_type: 'time', via: 'news_node_' + (n.ts_kind || 'batch'),
+      t: n.hm, ts_kind: n.ts_kind || 'batch',
+      priced: (n.ts_kind === 'intraday' && pricedT(n.hm)),
+      label: String(n.label || '').slice(0, 26),
+      evidence: { src: 'network.nodes.news', key: n.id }
+    });
+  });
+
+  /* ── P3 ACTED_VIA：席位 / 资金 / 社交 主体 → 个股（收盘态，无盘中时刻） ── */
+  ladder.forEach((x) => {
+    const cd = codeOf(x);
+    ent(cd, 'stock', x.name);
+    if (x.top_buyer) {
+      ent('seat:' + x.top_buyer, 'seat', x.top_buyer);
+      rel({
+        subj: 'seat:' + x.top_buyer, subj_type: 'seat', pred: 'ACTED_VIA',
+        obj: cd, obj_type: 'stock', via: 'top_buyer', t: '15:00',
+        ts_kind: 'close', priced: false, weight: x.top_buyer_amt,
+        label: '买方席位 ' + x.top_buyer + ' ' + num(x.top_buyer_amt, 0) + ' 万',
+        evidence: { src: 'chain.ladder', key: cd }
+      });
+    }
+    if (x.top_seller) {
+      ent('seat:' + x.top_seller, 'seat', x.top_seller);
+      rel({
+        subj: 'seat:' + x.top_seller, subj_type: 'seat', pred: 'ACTED_VIA',
+        obj: cd, obj_type: 'stock', via: 'top_seller', t: '15:00',
+        ts_kind: 'close', priced: false, weight: x.top_seller_amt,
+        label: '卖方席位 ' + x.top_seller + ' ' + num(x.top_seller_amt, 0) + ' 万',
+        evidence: { src: 'chain.ladder', key: cd }
+      });
+    }
+    rel({
+      subj: 'flow:relay', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'relay', t: '15:00',
+      ts_kind: 'close', priced: false, weight: x.nums || 1,
+      label: x.name + ' ' + x.nums + '板 · ' + x.style_label + ' · 榜净 ' + num(x.list_net, 0) + '万',
+      evidence: { src: 'chain.ladder', key: cd }
+    });
+  });
+  dist.forEach((x) => {
+    const cd = codeOf(x);
+    ent(cd, 'stock', x.name);
+    rel({
+      subj: 'flow:list_net', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'distribution', t: '15:00',
+      ts_kind: 'close', priced: false, weight: x.net,
+      label: x.name + ' 龙虎榜净额 ' + num(x.net, 0) + '万（' + x.span + ' / ' +
+        (x.reasons || []).join('、') + '）',
+      evidence: { src: 'chain.distribution', key: cd }
+    });
+  });
+  boardItems.forEach((x) => {
+    const cd = codeOf(x);
+    rel({
+      subj: 'flow:board_ladder', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'board_ladder', t: '15:00',
+      ts_kind: 'close', priced: false, label: (x.name || cd) + ' 板块内梯队',
+      evidence: { src: 'chain.board.items', key: cd || x.name }
+    });
+  });
+  stocks.forEach((n) => {
+    rel({
+      subj: 'flow:main_net', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: n.id, obj_type: 'stock', via: 'main_net', t: '15:00',
+      ts_kind: 'close', priced: false, weight: n.main_net,
+      label: n.label + ' 主力净 ' + num(n.main_net, 0) + '万 / 全档净 ' + num(n.net_mf, 0) + '万',
+      evidence: { src: 'network.nodes.fund', key: n.id }
+    });
+  });
+  (fl.top_in || []).concat(fl.top_out || []).forEach((x, i) => {
+    const cd = (stocks.find((n) => n.label === x.name) || {}).id || ('name:' + x.name);
+    rel({
+      subj: 'flow:board_rank', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'flow_rank',
+      t: '15:00', ts_kind: 'close', priced: false, weight: x.main_net,
+      label: x.name + ' 主力净 ' + num(x.main_net, 0) + '万',
+      evidence: { src: 'focus.flow.top_in/out', key: x.name + '#' + i }
+    });
+  });
+  (fl.divergence_names || []).forEach((nmx, i) => {
+    const cd = (stocks.find((n) => n.label === nmx) || {}).id || ('name:' + nmx);
+    rel({
+      subj: 'flow:divergence', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'divergence',
+      t: '15:00', ts_kind: 'close', priced: false,
+      label: nmx + ' 主力净买 / 全档净流出（背离）',
+      evidence: { src: 'focus.flow.divergence_names', key: nmx + '#' + i }
+    });
+  });
+  hot.forEach((x) => {
+    const cd = codeOf(x);
+    ent(cd, 'stock', x.name);
+    if (x.guba_rank != null) rel({
+      subj: 'social:guba', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'guba_rank', t: null,
+      ts_kind: 'social', priced: false, weight: x.posts,
+      label: x.name + ' 股吧第 ' + x.guba_rank + ' 名 / ' + (x.posts || 0) + ' 帖',
+      evidence: { src: 'social.hot', key: cd }
+    });
+    if (x.xq_hot_rank != null) rel({
+      subj: 'social:xq', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'xq_rank', t: null,
+      ts_kind: 'social', priced: false, weight: x.xq_hot,
+      label: x.name + ' 雪球人气第 ' + x.xq_hot_rank + ' 名',
+      evidence: { src: 'social.hot', key: cd }
+    });
+    if (x.guba_rank == null && x.xq_hot_rank == null) rel({
+      subj: 'social:board', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: cd, obj_type: 'stock', via: 'hot_other',
+      t: null, ts_kind: 'social', priced: false,
+      label: x.name + ' 社交样本', evidence: { src: 'social.hot', key: cd }
+    });
+  });
+  mtop.forEach((x, i) => {
+    ent(x.code, 'stock', x.name);
+    rel({
+      subj: 'social:market_top', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: x.code, obj_type: 'stock', via: 'market_hot', t: null,
+      ts_kind: 'social', priced: false, scope: 'market',
+      label: x.name + ' 雪球第 ' + (x.xq_hot_rank || '-') + ' / 股吧第 ' + (x.guba_rank || '-'),
+      evidence: { src: 'social.market_top', key: x.code + '#' + i }
+    });
+  });
+  posts.forEach((x, i) => {
+    ent(x.code, 'stock', x.name || c6(x.code));
+    rel({
+      subj: 'social:post_author', subj_type: 'actor', pred: 'ACTED_VIA',
+      obj: x.code, obj_type: 'stock', via: 'post', t: String(x.ts || '').slice(11, 16) || null,
+      ts_kind: 'social', priced: false,
+      label: (x.name || c6(x.code)) + ' 吧 ' + String(x.title || '').slice(0, 20),
+      evidence: { src: 'social.posts', key: 'post:' + c6(x.code) + ':' + i }
+    });
+  });
+
+  /* ── P4 PRICE_MSG：消息 ↔ 价格，Δmin 带符号（负=价格先行 / 消息追认） ── */
+  edges.forEach((e, i) => {
+    const tk = e.type === 'echo' ? 'echo' : (e.type === 'hit' ? 'hit' : e.type);
+    const dm = (e.lag_min != null ? e.lag_min : (e.gap_min != null ? e.gap_min : null));
+    rel({
+      subj: e.from, subj_type: (c6(e.from) !== e.from ? 'stock' : 'event'),
+      pred: 'PRICE_MSG', obj: e.to,
+      obj_type: (/^[0-9]{6}$/.test(c6(e.to)) ? 'stock' : 'event'),
+      via: (e.same_wave ? 'same_wave' : tk),
+      t: e.hm || null, delta_min: dm,
+      ts_kind: e.ts_kind || (tk === 'cross' ? 'intraday' : 'price'),
+      priced: (tk === 'echo' || tk === 'hit' || tk === 'cross'),
+      label: e.label || tk, evidence: { src: 'network.edges', key: (e.from + '>' + e.to + '#' + i) }
+    });
+  });
+  cross.forEach((x) => {
+    ent('event:' + (x.event_id || x.hm), 'event', '跨板块事件 ' + x.hm);
+    rel({
+      subj: 'event:' + (x.event_id || x.hm), subj_type: 'event', pred: 'PRICE_MSG',
+      obj: 't:' + x.hm, obj_type: 'time', via: 'cross_cluster',
+      t: x.hm, ts_kind: 'intraday', priced: true,
+      label: x.label + ' · 跨 ' + (x.n_boards || 0) + ' 板块 / ' + (x.n_edges || 0) + ' 边',
+      evidence: { src: 'network.cross_summary', key: x.event_id || x.hm }
+    });
+  });
+
+  /* ── 覆盖率：逐源核对，显式列出未被任何谓词捕获的证据 ── */
+  const sources = [
+    ['network.nodes.stock', stocks.length, stocks.map((x) => x.id)],
+    ['network.nodes.news', news.length, news.map((x) => x.id)],
+    ['network.nodes.seal', stocks.filter((x) => x.seal_time).length,
+      stocks.filter((x) => x.seal_time).map((x) => x.id)],
+    ['network.nodes.fund', stocks.length, stocks.map((x) => x.id)],
+    ['network.edges', edges.length, edges.map((e, i) => e.from + '>' + e.to + '#' + i)],
+    ['network.cross_summary', cross.length, cross.map((x) => x.event_id || x.hm)],
+    ['focus.timeline', timeline.length,
+      timeline.map((x, i) => x.code + '@' + x.t + '#' + i)],
+    ['focus.events.items', evItems.length, evItems.map((x) => x.id)],
+    ['focus.disclosures.items', disc.length,
+      disc.map((x, i) => 'disc:' + c6(x.code) + ':' + i)],
+    ['focus.flow.top_in/out', (fl.top_in || []).length + (fl.top_out || []).length,
+      (fl.top_in || []).concat(fl.top_out || []).map((x, i) => x.name + '#' + i)],
+    ['focus.flow.divergence_names', (fl.divergence_names || []).length,
+      (fl.divergence_names || []).map((x, i) => x + '#' + i)],
+    ['chain.ladder', ladder.length, ladder.map(codeOf)],
+    ['chain.distribution', dist.length, dist.map(codeOf)],
+    ['chain.board.items', boardItems.length,
+      boardItems.map((x) => codeOf(x) || x.name)],
+    ['social.hot', hot.length, hot.map(codeOf)],
+    ['social.posts', posts.length, posts.map((x, i) => 'post:' + c6(x.code) + ':' + i)],
+    ['social.market_top', mtop.length, mtop.map((x, i) => x.code + '#' + i)]
+  ];
+  const got = (src) => hits[src] || new Set();
+  const cover = sources.map(([name, total, keys]) => {
+    const g = got(name);
+    const miss = keys.filter((k) => !g.has(String(k)));
+    return { src: name, total: total, hit: total - miss.length, miss: miss.length, sample: miss.slice(0, 3) };
+  });
+
+  const api = {
+    day: day, board_kind: bk, board: board, rels: rels, ents: ents,
+    idx: { byRef, byPred, byCode, byTime, bySrc }, preds: PRED, cover: cover,
+    get: (id) => byId[id],
+    neighbors: (ref) => (byRef[String(ref)] || []).map((id) => byId[id]),
+    ofCode: (code) => (byCode[c6(code)] || []).map((id) => byId[id]),
+    ofPred: (p) => (byPred[p] || []).map((id) => byId[id]),
+    ofTime: (t) => (byTime[t] || []).map((id) => byId[id]),
+    label: (ref) => (ents[String(ref)] || {}).label || String(ref),
+    type: (ref) => (ents[String(ref)] || {}).type || (/^[0-9]{6}$/.test(c6(ref)) ? 'stock' : 'entity'),
+    count: (p) => (byPred[p] || []).length,
+    totalMiss: () => cover.reduce((a, x) => a + x.miss, 0)
+  };
+  return api;
+}
+
+/* ══════════ L2：知识图谱（聚类 + 可收 + 下钻） ══════════ */
+function bucketOf(hm) {
+  const m = H(hm);
+  if (m == null) return '未定价 / 无分钟';
+  if (m < 600) return '09:30–10:00';
+  if (m < 660) return '10:00–11:00';
+  if (m < 690) return '11:00–11:30';
+  if (m < 780) return '13:00–14:00';
+  return '14:00–15:00';
+}
+
+function buildGraph(d) {
+  const K = S.kg, f = d.focus || {};
+  const boardName = f.name || S.board;
+  const stocks = (d.network.nodes || []).filter((n) => n.type === 'stock');
+  const groups = [], seen = {};
+
+  function push(key, title, color, refs, cap) {
+    const items = [];
+    (refs || []).forEach((ref) => {
+      if (!ref || seen[ref]) return;
+      seen[ref] = 1;
+      const e = K.ents[ref] || {}, ex = e.extra || {};
+      items.push({ id: ref, ref: ref, type: (e.type === 'stock' ? 'stock' : 'entity'),
+        label: K.label(ref), pct: ex.pct, limit_up: ex.limit_up,
+        kind: (e.type === 'seat' ? '席' : (e.type === 'time' ? '时' :
+          (e.type === 'board' ? '板' : (e.type === 'event' ? '文' : '信')))) });
+    });
+    if (items.length) groups.push({ key: key, title: title, color: color,
+      items: items.slice(0, cap || 4), n_all: items.length });
+  }
+
+  // ① 时间簇 ← AT_TIME 按时刻分桶
+  const buckets = {};
+  K.ofPred('AT_TIME').forEach((r) => {
+    (buckets[bucketOf(r.t)] ||= []).push(r.subj);
+  });
+  Object.keys(buckets).sort().slice(0, 3).forEach((k) =>
+    push('t:' + k, '时间簇 ' + k, PRED.AT_TIME.c, buckets[k]));
+  // ② 事件簇 ← PRICE_MSG 的事件端 + AT_TIME 的事件主体
+  const evRefs = K.ofPred('PRICE_MSG').map((r) =>
+    (r.obj_type === 'event' ? r.obj : r.subj))
+    .concat(K.ofPred('AT_TIME').filter((r) => r.subj_type === 'event').map((r) => r.subj));
+  push('e:news', '事件簇 · 披露 / 新闻 / 传播', PRED.PRICE_MSG.c, evRefs);
+  // ③ 信号簇 ← ACTED_VIA 的行为主体（席位 / 资金 / 社交）
+  push('e:sig', '信号簇 · 席位 / 资金 / 社交', PRED.ACTED_VIA.c,
+    K.ofPred('ACTED_VIA').map((r) => r.subj));
+  // ④ 板块簇 ← IN_BOARD 的跨板块共振
+  push('e:board', '板块簇 · 跨板块共振', PRED.IN_BOARD.c,
+    K.ofPred('IN_BOARD').filter((r) => r.via === 'cross_event').map((r) => r.obj));
+
+  // 边：只从 KG 关系出，端点必须是图上有位置的实体
+  const clsOf = (via) => {
+    if (['lead', 'same_wave', 'silent', 'spread'].indexOf(via) >= 0) return 'lead';
+    if (['echo', 'hit'].indexOf(via) >= 0) return 'echo';
+    if (['cross', 'cross_event', 'cross_cluster'].indexOf(via) >= 0) return 'cross';
+    return 'sig';
+  };
+  const edges = K.ofPred('PRICE_MSG')
+    .concat(K.ofPred('IN_BOARD').filter((r) => r.via === 'cross_event'))
+    .map((r) => ({ type: clsOf(r.via), from: r.subj, to: r.obj,
+      label: r.label, rid: r.id, pred: r.pred }));
+  return { boardName, groups, edges, stocks, f };
+}
+
+/* 覆盖率面板：逐源核对 chain / social / disclosures 有没有被四谓词漏掉 */
+function coverPanel(K) {
+  if (!S.showCover || !K) return '';
+  const rows = K.cover.map((x) => {
+    const st = x.miss ? 'miss' : 'ok';
+    return '<tr><td>' + esc(x.src) + '</td><td class="n">' + x.total +
+      '</td><td class="n">' + x.hit + '</td><td class="n ' + st + '">' + x.miss +
+      '</td><td>' + (x.sample.length ? esc(x.sample.join(' / ')).slice(0, 40) : '') + '</td></tr>';
+  }).join('');
+  const preds = PRED_KEYS.map((p) => '<span class="chip" style="border-color:' + PRED[p].c +
+    '55;color:' + PRED[p].c + '">' + esc(PRED[p].zh) + ' <b>' + K.count(p) + '</b></span>').join('');
+  const miss = K.totalMiss();
+  return '<div class="kgcover"><span class="x" data-coverclose="1">×</span>' +
+    '<h4>关系覆盖自检 · ' + esc(K.day) + ' / ' + esc(K.board_kind) +
+      ' · ' + esc(K.server ? ('服务端 ' + K.src) : '本地编译') + '</h4>' +
+    '<div class="chips" style="margin-bottom:9px">' + preds + '</div>' +
+    (K.members ? '<div style="border:1px solid rgba(75,200,232,.28);border-radius:3px;' +
+      'padding:6px 8px;margin-bottom:8px;font-size:10.5px;line-height:1.75;color:var(--dim)">' +
+      '全量成分 <b style="color:var(--cyan)">' + esc(K.members.snapshot_total) +
+      '</b> / 当日有行情 <b>' + esc(K.members.graph_focus_n) +
+      '</b> / 视图节点 <b>' + esc(K.members.view_nodes) +
+      '</b> / 补齐 <b style="color:var(--amber)">' + esc(K.members.member_only) +
+      '</b><br><span style="color:var(--dim2)">不许把 NODE_MAX 视图截断当成数据边界' +
+      '（判例 #30）；两者相差 ' +
+      esc(K.members.snapshot_total - K.members.graph_focus_n) +
+      ' 只无当日行情。</span></div>' : '') +
+    '<div style="color:' + (miss ? '#ff9a9d' : '#83e0c0') + ';margin-bottom:7px">' +
+      (miss ? '共 ' + miss + ' 条证据未被任何谓词捕获（见下表红字）'
+            : '全部证据已纳入四谓词，漏项 = 0') + ' · 关系总数 ' + K.rels.length + '</div>' +
+    '<table><tr><td style="color:var(--dim2)">源</td><td class="n">总数</td>' +
+    '<td class="n">命中</td><td class="n">漏</td><td>漏项样例</td></tr>' + rows + '</table>' +
+    '<div style="color:var(--dim2);margin-top:8px;line-height:1.6">口径：一条证据至少产一条 ' +
+    'Relation 即算命中；priced=false（盘前批量 / 社交 / 收盘态）可查但不参与 Δmin。' +
+    '</div></div>';
+}
+
+
+function renderGraph() {
+  const d = S.data, G = buildGraph(d);
+  const W = 1200, Hh = 600, cx = 600, cy = 300;
+  const RX = 390, RY = 200;
+  const pos = {};
+  const n = G.groups.length;
+  G.groups.forEach((g, gi) => {
+    const a = -Math.PI / 2 + gi * 2 * Math.PI / n;
+    const gx = cx + Math.cos(a) * RX, gy = cy + Math.sin(a) * RY;
+    g.x = gx; g.y = gy; g.a = a;
+    const open = !S.collapsed['g:' + g.key];
+    const cols = Math.min(3, Math.max(2, Math.ceil(Math.sqrt(g.items.length))));
+    const rows = Math.ceil(g.items.length / cols);
+    g.items.forEach((it, i) => {
+      const px = gx + ((i % cols) - (cols - 1) / 2) * 62;
+      const py = gy + (Math.floor(i / cols) - (rows - 1) / 2) * 44 + 10;
+      pos[it.id || ('s:' + i)] = { x: px, y: py, item: it, open };
+    });
+  });
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="xMidYMid meet">';
+  // 连边（先画，压在节点下）
+  G.edges.forEach((e) => {
+    const a = pos[e.from], b = pos[e.to];
+    if (!a || !b) return;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 18;
+    svg += '<path class="edge ' + e.type + '" d="M' + a.x + ',' + a.y + ' Q' + mx + ',' + my +
+      ' ' + b.x + ',' + b.y + '"/>';
+  });
+  // 中心 → 各簇
+  G.groups.forEach((g) => {
+    svg += '<line class="edge sig" x1="' + cx + '" y1="' + cy + '" x2="' + g.x + '" y2="' + g.y + '"/>';
+  });
+  // 簇外壳
+  G.groups.forEach((g) => {
+    const open = !S.collapsed['g:' + g.key];
+    const w = 214, h = open ? 136 : 40;
+    const more = Math.max(0, (g.n_all || g.items.length) - g.items.length);
+    svg += '<g class="node" data-fold="g:' + g.key + '">' +
+      '<rect class="hull" x="' + (g.x - w / 2) + '" y="' + (g.y - h / 2) + '" width="' + w +
+      '" height="' + h + '" stroke="' + g.color + '" stroke-opacity=".55" stroke-width="1.2"/>' +
+      '<text class="hull-t" x="' + (g.x - w / 2 + 8) + '" y="' + (g.y - h / 2 + 14) +
+      '" fill="' + g.color + '">' + esc(g.title) + '　' + (open ? '−' : '+') + ' ' +
+      g.items.length + (more ? ' / ' + g.n_all : '') + '</text>';
+    if (!open) svg += '<text x="' + g.x + '" y="' + (g.y + 8) + '" text-anchor="middle" ' +
+      'fill="#55657e" font-size="10">已收起 · 点击展开</text>';
+    else if (more) svg += '<text x="' + g.x + '" y="' + (g.y - h / 2 + 27) +
+      '" text-anchor="middle" fill="#55657e" font-size="9">+' + more +
+      ' 更多 · 抽屉查看</text>';
+    svg += '</g>';
+  });
+  // 节点
+  Object.keys(pos).forEach((id) => {
+    const p = pos[id], it = p.item;
+    if (!p.open) return;
+    const isStock = it.type === 'stock', isSignal = it.type === 'signal';
+    const c = isStock ? col(it.pct) : (isSignal ? '#f0b64b' : '#a98bff');
+    const r = isStock ? 13 : 9;
+    svg += '<g class="node" data-node="' + esc(id) + '">' +
+      (isStock && it.limit_up ? '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (r + 6) +
+        '" fill="none" stroke="#ff5459" stroke-opacity=".45" class="pulse"/>' : '') +
+      '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + r + '" fill="' + c +
+      '" fill-opacity=".16" stroke="' + c + '"/>' +
+      '<text x="' + p.x + '" y="' + (p.y + 3) + '" text-anchor="middle" fill="' + c +
+      '" font-size="9" font-weight="600">' +
+      esc(isStock ? sign(it.pct, 1) : (isSignal ? it.kind.slice(0, 1) : '文')) + '</text>' +
+      '<text x="' + p.x + '" y="' + (p.y + r + 11) + '" text-anchor="middle" class="evlabel">' +
+      esc(String(it.label || it.name || '').slice(0, 4)) + '</text></g>';
+  });
+  // 中心节点
+  svg += '<g><circle class="center-ring pulse" cx="' + cx + '" cy="' + cy + '" r="58"/>' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="48" fill="#0d1420" stroke="#f0b64b" stroke-width="1.5"/>' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="44" fill="#f0b64b" fill-opacity=".06"/>' +
+    '<text x="' + cx + '" y="' + (cy - 10) + '" text-anchor="middle" fill="#f0b64b" ' +
+    'font-size="15" font-weight="700">' + esc(G.boardName) + '</text>' +
+    '<text x="' + cx + '" y="' + (cy + 9) + '" text-anchor="middle" fill="' +
+      col(G.f.med) + '" font-size="11">' + (G.f.n || 0) + ' 只 · ' +
+      sign(G.f.med) + '%</text>' +
+    '<text x="' + cx + '" y="' + (cy + 27) + '" text-anchor="middle" fill="#55657e" font-size="9">' +
+      (G.f.limit_up || 0) + ' 涨停 · ' +
+      esc(S.kind === 'theme' ? '题材口径' : '行业口径') + '</text></g>';
+  svg += '</svg>';
+  $('canvas').innerHTML = svg + coverPanel(S.kg);
+  $('canvas').querySelectorAll('[data-coverclose]').forEach((el) => el.onclick = () => {
+    S.showCover = false; renderGraph();
+  });
+
+  const map = {};
+  Object.keys(pos).forEach((id) => { map[id] = pos[id].item; });
+  $('canvas').querySelectorAll('[data-node]').forEach((el) => el.onclick = () => {
+    const it = map[el.dataset.node];
+    if (it) openAny(it.ref || it.id);
+  });
+  $('canvas').querySelectorAll('[data-fold]').forEach((el) => el.onclick = () => {
+    const k = el.dataset.fold; S.collapsed[k] = !S.collapsed[k]; renderGraph();
+  });
+
+  const KK = S.kg;
+  $('stageh').innerHTML = '<b>' + esc(G.boardName) + ' · 关系图谱</b>' +
+    '<span>四谓词成簇 · 边由 KG 编译 · ' +
+      esc(S.kgMode === 'server' ? ('服务端 ' + S.kgSource) : '本地编译') +
+      ' · 点任意节点沿关系下钻</span>' +
+    '<span class="hint">关系 ' + (KK ? KK.rels.length : 0) + ' 条 · 实体 ' +
+    (KK ? Object.keys(KK.ents).length : 0) + ' 个 · 可见边 ' + G.edges.length + '</span>';
+  $('stagef').innerHTML = PRED_KEYS.map((p) =>
+    '<span class="lg"><i class="sw" style="background:' + PRED[p].c + '"></i>' +
+    esc(PRED[p].zh) + ' ' + (S.kg ? S.kg.count(p) : 0) + '</span>').join('') +
+    '<button data-cover="1" style="background:none;border:1px solid ' +
+      ((S.kg && S.kg.totalMiss()) ? 'rgba(255,84,89,.5)' : 'var(--line)') +
+      ';color:' + ((S.kg && S.kg.totalMiss()) ? '#ff9a9d' : 'var(--cyan)') +
+      ';border-radius:3px;padding:2px 9px;cursor:pointer;font-size:11px">覆盖自检 ' +
+      (S.kg ? (S.kg.totalMiss() ? '漏 ' + S.kg.totalMiss() : '0 漏项') : '-') + '</button>' +
+    '<button data-back="1" style="background:none;border:1px solid var(--line);color:var(--cyan);border-radius:3px;padding:2px 9px;cursor:pointer;font-size:11px">← 返回总览</button>';
+}
+
+/* ══════════ L3：个股叙事抽屉 ══════════ */
+function openDrawer(it, keepPath) {
+  const d = S.data, key = it.id || it.code || it.c6;
+  if (!keepPath) S.path = [];
+  const _kn = (d.network.nodes || []).find((n) =>
+    n.type === 'stock' && c6(n.id) === c6(key));
+  const _ref = (_kn || {}).id || key;
+  S.entity = _ref;
+  const code = it.code || key.replace(/^.*:/, '');
+  const c = c6(code);
+  const stock = (d.network.nodes || []).find((n) => n.type === 'stock' && c6(n.id) === c) || it;
+  const name = stock.label || stock.name || it.label || code;
+  S.code = name;
+  const pct = stock.pct, mainNet = stock.main_net, allNet = stock.net_mf;
+  const diverg = (mainNet > 0 && allNet < 0);
+  const hot = (d.social.hot || []).find((x) => c6(x.code) === c);
+  const dist = (d.chain.distribution || []).find((x) => x.c6 === c);
+  const lad = (d.chain.ladder || []).find((x) => x.c6 === c);
+  const notes = (d.focus.disclosures.items || []).filter((x) => c6(x.code) === c);
+  const posts = (d.social.posts || []).filter((x) => c6(x.code) === c);
+  const edges = (d.network.edges || []).filter((e) => c6(e.from) === c || c6(e.to) === c);
+  const byId = {}; (d.network.nodes || []).forEach((n) => byId[n.id] = n.label || n.name);
+
+  // 结构化叙事：把时间、资金、社交、席位四条证据串成一条因果链
+  const sent = [];
+  if (stock.first_move) sent.push('<em>' + esc(stock.first_move) + '</em> 首次异动');
+  if (stock.seal_time) sent.push('<em>' + esc(stock.seal_time) + '</em> 封板（当天涨幅 ' + sign(pct) + '%）');
+  if (!stock.first_move && !stock.seal_time) sent.push('无分钟级定价，涨幅 ' + sign(pct) + '%，归为未定价样本');
+  if (notes.length) sent.push('盘前有 ' + notes.length + ' 条公告，属事后追认而非盘中驱动');
+  if (hot) sent.push('股吧人气第 ' + (hot.guba_rank || '-') + ' 名、' + (hot.posts || 0) + ' 帖' +
+    (hot.xq_hot_rank ? '，雪球第 ' + hot.xq_hot_rank + ' 名' : '，雪球人气榜缺席'));
+  if (dist) sent.push('涨停当日龙虎榜净卖 <em>' + num(dist.net / 10000, 2) + ' 亿</em>，属涨停板上派发');
+  if (lad) sent.push('连板梯队 ' + lad.nums + ' 板（' + esc(lad.style_label) + '）');
+  let verdict;
+  if (diverg && hot && !hot.xq_hot_rank)
+    verdict = '主力大单在接、全档资金却在流出，散户端热闹而机构圈缺席 —— <em>涨得不实，是接盘不是共识</em>。';
+  else if (dist) verdict = '<em>涨停板出货</em>：盘口看不见，但龙虎榜席位净额已经说明有人在派发。';
+  else if (diverg) verdict = '主力净买与全档净流出<em>方向背离</em>，价格强度需要次日验证。';
+  else verdict = '现有证据未出现明显背离，结论以<em>价格与时间的领先关系</em>为主，勿单独外推。';
+  const chainBoard = d.chain.board || {};
+  if (chainBoard.n_in_ladder === 0) verdict += ' 板块内 0 只连板，全是首板，<em>接力尚未发生</em>。';
+
+  $('drtitle').innerHTML = esc(name) + ' <span class="mono ' + cls(pct) + '" style="font-size:13px">' +
+    sign(pct) + '%</span>';
+  let h = '';
+  h += '<div class="sect"><div class="sect-t">叙事 · 一条因果链</div><div class="narr">' +
+    sent.join('，') + '。' + verdict + '</div></div>';
+  h += '<div class="sect"><div class="sect-t">时空轨迹</div>' +
+    '<div class="ev"><span class="tm">盘前</span><span class="tx">' +
+      (notes.length ? notes.map((x) => esc(x.type || '公告')).slice(0, 2).join(' / ') : '无披露') + '</span></div>' +
+    '<div class="ev"><span class="tm">' + esc(stock.first_move || '--:--') + '</span><span class="tx">首次异动（分钟级）</span></div>' +
+    (stock.seal_time ? '<div class="ev"><span class="tm">' + esc(stock.seal_time) +
+      '</span><span class="tx">封板</span></div>' : '') +
+    (posts[0] ? '<div class="ev"><span class="tm">' + esc(String(posts[0].ts || '').slice(11, 16) || '盘中') +
+      '</span><span class="tx">股吧出现 "' + esc(String(posts[0].title).slice(0, 22)) + '…"</span></div>' : '') +
+    '</div>';
+  h += '<div class="sect"><div class="sect-t">四类证据 · 交叉才成结论</div><div class="chips">' +
+    '<span class="chip">主力净额 <b class="' + cls(mainNet) + '">' + num(mainNet, 0) + '</b> 万</span>' +
+    '<span class="chip">全档净额 <b class="' + cls(allNet) + '">' + num(allNet, 0) + '</b> 万</span>' +
+    (diverg ? '<span class="chip warn">资金背离</span>' : '<span class="chip good">资金同向</span>') +
+    (hot ? '<span class="chip">股吧第 <b>' + (hot.guba_rank || '-') + '</b> 名 / ' +
+      (hot.posts || 0) + ' 帖</span>' : '<span class="chip">社交未进榜</span>') +
+    (lad ? '<span class="chip">' + lad.nums + ' 板 · ' + esc(lad.style_label) + '</span>' :
+      '<span class="chip">不在连板梯队</span>') +
+    (dist ? '<span class="chip warn">龙虎榜净卖</span>' : '') +
+    '<span class="chip">' + notes.length + ' 条披露</span></div></div>';
+  h += entityBody(_ref);
+  h += '<div class="sect"><div class="sect-t">口径与判据</div><div style="font-size:10.5px;color:var(--dim2);line-height:1.7">' +
+    '板块口径：' + (S.kind === 'theme' ? '题材（开盘啦概念，允许重叠）' : '行业（申万行业，互斥）') +
+    '　｜　涨停档位自算、Δmin 带符号、社交面不参与 Δmin（判例 #25/#27/#28）。' +
+    '本叙事为结构化证据链，可在此挂载 LLM 生成更长的分析报告。</div></div>';
+  $('drbody').innerHTML = h;
+  $('drawer').classList.add('open');
+  bindWalk($('drbody'));
+  try {
+    const u = new URL(location.href);
+    u.searchParams.set('code', c);
+    history.replaceState(null, '', u);
+  } catch (_) {}
+  renderHead();
+}
+
+/* ══════════ 走关系：点任一端 → 跳到该实体 → 可回退 ══════════ */
+function stockNodeOf(ref) {
+  return (S.data.network.nodes || []).find((n) =>
+    n.type === 'stock' && c6(n.id) === c6(ref));
+}
+
+function relRow(r, cur) {
+  const K = S.kg;
+  const isSubj = String(r.subj) === String(cur);
+  const other = isSubj ? r.obj : r.subj;
+  const arrow = isSubj ? '→' : '←';
+  const dm = (r.delta_min == null ? '' :
+    ' <b>Δ' + sign(r.delta_min, 0) + 'min</b>');
+  return '<div class="relrow"><span class="rk" style="color:' + PRED[r.pred].c + '">' +
+    esc(r.via) + '</span><span class="rt">' + esc(r.t || '--:--') + '</span>' +
+    '<span class="rl">' + arrow + ' <a href="#" data-walk="' + esc(other) + '">' +
+    esc(K.label(other)) + '</a> · ' + esc(String(r.label || '').slice(0, 46)) +
+    dm + '</span></div>';
+}
+
+function entityBody(ref) {
+  const K = S.kg;
+  const rels = K.neighbors(ref);
+  let h = '';
+  h += '<div class="sect"><div class="sect-t">关系路径 · 点任一端继续走</div>' +
+    '<div class="chips">' +
+    (S.path.length ? '<span class="chip" data-walkback="1" style="cursor:pointer;' +
+      'border-color:rgba(75,200,232,.5);color:var(--cyan)">← 回上一跳</span>' : '') +
+    S.path.map((p) => '<span class="chip">' + esc(K.label(p)) +
+      '</span><span class="chip" style="border:0;color:var(--dim2)">›</span>').join('') +
+    '<span class="chip" style="border-color:rgba(240,182,75,.55);color:var(--amber)"><b>' +
+      esc(K.label(ref)) + '</b></span></div></div>';
+  const byP = {};
+  rels.forEach((r) => (byP[r.pred] ||= []).push(r));
+  PRED_KEYS.forEach((p) => {
+    const arr = byP[p] || [];
+    if (!arr.length) return;
+    const k = 'kg:' + p, cp = !!S.collapsed[k];
+    h += '<div class="sect"><div class="sect-t" data-kgfold="' + k +
+      '" style="cursor:pointer;color:' + PRED[p].c + '">' + esc(PRED[p].zh) +
+      ' · ' + arr.length + ' 条 ' + (cp ? '＋ 展开' : '－ 收起') + '</div>' +
+      (cp ? '' : arr.slice(0, 14).map((r) => relRow(r, ref)).join('')) + '</div>';
+  });
+  if (!rels.length) h += '<div class="dim" style="font-size:11px">该实体暂无关系（孤立节点）</div>';
+  h += '<div class="sect"><div class="sect-t">口径与判据</div>' +
+    '<div style="font-size:10.5px;color:var(--dim2);line-height:1.7">' +
+    '关系由 KG 编译，四谓词共用 day / board_kind / t / delta_min / evidence。' +
+    'Δmin 带符号（负=价格先行、消息追认）；priced=false（盘前批量 / 社交 / 收盘态）' +
+    '只可查、不参与 Δmin。板块口径：' +
+    esc(S.kind === 'theme' ? '题材（允许重叠）' : '行业（互斥）') + '（判例 #25/#27/#28）。' +
+    '</div></div>';
+  return h;
+}
+
+function bindWalk(root) {
+  root.querySelectorAll('[data-walk]').forEach((a) => a.onclick = (ev) => {
+    ev.preventDefault(); walkTo(a.dataset.walk);
+  });
+  root.querySelectorAll('[data-walkback]').forEach((a) => a.onclick = (ev) => {
+    ev.preventDefault(); walkBack();
+  });
+  root.querySelectorAll('[data-kgfold]').forEach((a) => a.onclick = () => {
+    const k = a.dataset.kgfold;
+    S.collapsed[k] = !S.collapsed[k];
+    if (S.entity) showCurrentEntity();
+  });
+}
+
+function showCurrentEntity() {
+  const K = S.kg, ref = S.entity;
+  if (!K || !ref) return;
+  if (K.type(ref) === 'stock')
+    openDrawer(stockNodeOf(ref) || { id: ref, code: ref, label: K.label(ref) }, true);
+  else showEntity(ref);
+}
+
+function openAny(ref) {
+  const K = S.kg;
+  if (!K || !K.ents[ref]) return;
+  S.path = []; S.entity = ref;
+  showCurrentEntity();
+}
+
+function walkTo(ref) {
+  const K = S.kg;
+  if (!K || !K.ents[ref] || String(ref) === String(S.entity)) return;
+  if (S.entity) S.path.push(S.entity);
+  S.entity = ref;
+  showCurrentEntity();
+}
+
+function walkBack() {
+  const prev = S.path.pop();
+  if (!prev) return;
+  S.entity = prev;
+  showCurrentEntity();
+}
+
+function showEntity(ref) {
+  const K = S.kg;
+  if (!K) return;
+  S.entity = ref;
+  const e = K.ents[ref] || {}, t = e.type || 'entity';
+  const badge = { stock: '个股', board: '板块', event: '事件', time: '时刻',
+    seat: '席位', actor: '行为主体', entity: '实体' }[t] || t;
+  S.code = K.label(ref);
+  $('drtitle').innerHTML = esc(K.label(ref)) +
+    ' <span class="chip" style="font-size:10px">' + esc(badge) + '</span>';
+  $('drbody').innerHTML =
+    '<div class="sect"><div class="narr">当前实体 <em>' + esc(K.label(ref)) +
+    '</em>（' + esc(badge) + '）：下面是它在 <em>' + esc(K.day) +
+    '</em> 的全部关系，按谓词分组。点任意一端名称即可沿关系跳过去，路径可回退 —— ' +
+    '这是「走关系」，不是一张静态长图。</div></div>' + entityBody(ref);
+  $('drawer').classList.add('open');
+  bindWalk($('drbody'));
+  try {
+    const u = new URL(location.href);
+    u.searchParams.set('entity', ref);
+    history.replaceState(null, '', u);
+  } catch (_) {}
+  renderHead();
+}
+
+function closeDrawer() {
+  $('drawer').classList.remove('open');
+  S.code = null; S.entity = null; S.path = [];
+  try {
+    const u = new URL(location.href);
+    u.searchParams.delete('code');
+    u.searchParams.delete('entity');
+    history.replaceState(null, '', u);
+  } catch (_) {}
+}
+
+/* ══════════ 底部情报简报 ══════════ */
+function renderBrief() {
+  const d = S.data, f = d.focus || {}, fl = f.flow || {}, cb = d.chain.board || {};
+  const sb = d.social.board || {};
+  let t;
+  if (S.board) {
+    t = '<b>' + esc(f.name) + '</b>：' + (f.n || 0) + ' 只成员、<span class="hl">' +
+      (f.limit_up || 0) + ' 只涨停</span>，中位 <b>' + sign(f.med) + '%</b>；领涨 ' +
+      esc((f.lead || {}).name || '-') + ' 于 ' + esc((f.lead || {}).seal_time || (f.lead || {}).first_move || '--:--') +
+      ' 封板。板块主力净买 <b>' + num(fl.board_main_net, 0) + ' 万</b>，但 ' +
+      (fl.divergence || 0) + ' 只出现「主力净买 / 全档净流出」背离；' +
+      '梯队内 ' + (cb.n_in_ladder || 0) + ' 只连板，' +
+      '股吧 ' + (sb.n_on_guba || 0) + ' 只上榜 / 雪球 ' + (sb.n_on_xq || 0) + ' 只上榜。';
+  } else {
+    const u = d.universe, ls = d.chain.ladder_stat || {};
+    t = '全市场 <b>' + u.stocks + '</b> 只，<span class="hl">' + u.limit_up +
+      ' 只涨停</span>，中位 <b>' + sign(u.median_pct) + '%</b>（' + u.up + ' 涨 / ' + u.down +
+      ' 跌）。最高 ' + (ls.max_board || 0) + ' 板共 ' + (ls.n_at_max || 0) +
+      ' 只；跨板块事件 ' + (d.network.cross_summary || []).length +
+      ' 簇。左侧按「领涨 / 抗跌 / 退潮」成组，点任一板块生成它的知识图谱。';
+  }
+  $('brieftxt').innerHTML = t;
+  const badges = [
+    kgBadge(),
+    ['涨停档位自算', ''], ['Δmin 带符号', ''],
+    ['社交不参与 Δmin', ''],
+    ['题材/行业双轨', 'ok'],
+    [(fl.divergence || 0) > 0 ? '资金背离 ' + fl.divergence + ' 只' : '无资金背离',
+      (fl.divergence || 0) > 0 ? 'hot' : 'ok']
+  ];
+  $('briefbadges').innerHTML = badges.map(([x, c]) =>
+    '<span class="badge ' + c + '">' + esc(x) + '</span>').join('');
+}
+
+function render() {
+  renderHead();
+  renderRail();
+  renderBrief();
+  if (S.view === 'graph') renderGraph(); else renderOverview();
+}
+
+$('drclose').onclick = closeDrawer;
+$('railbtn').onclick = () => $('rail').classList.toggle('mini');
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-back]');
+  if (b) { closeDrawer(); load(null, true); }
+  const cv = e.target.closest && e.target.closest('[data-cover]');
+  if (cv) { S.showCover = !S.showCover; if (S.view === 'graph') renderGraph(); }
+});
+const _q = new URLSearchParams(location.search);
+if (EMBED) {
+  document.body.classList.add('embed');
+  $('embedWhere').textContent = 'L2 板块图谱 · ' + (_q.get('board') || '当日最强')
+    + (_q.get('code') ? ' / L3 个股叙事' : '');
+  $('embedBack').onclick = () => {
+    try { if (parent !== window) parent.postMessage({ jevDrill: 'close' }, '*'); } catch (_) {}
+    if (parent === window) location.href = '/jev_graph.html';
+  };
+}
+S.day = _q.get('day') || S.day;
+S.kind = _q.get('kind') === 'theme' ? 'theme' : 'industry';
+load(_q.get('board') || null);
+</script>
+</body>
+</html>

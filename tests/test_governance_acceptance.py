@@ -929,6 +929,10 @@ def test_AC_E07_no_files_outside_whitelist():
         # 2026-11-08 追加：接力层回归（席位四类、「涨跌幅限制」不判跌、
         # 按买入额定性、梯队断层、席位净额≠龙虎榜净额、涨停净卖=派发）。
         "tests/test_jev_chain.py",
+        # 2026-11-08 追加：题材成分采集回归（行业名≠题材名，判例 #28；
+        # 日期纯净性必须抛、同票多行合并、total 不可信只认本页行数、
+        # 幂等不重拉）。
+        "tests/test_jev_concept.py",
     }
     untracked = set()
     try:

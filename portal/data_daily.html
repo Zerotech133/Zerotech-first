@@ -79,6 +79,7 @@ a{color:var(--link)}
 <section><h2>四 · 判定漂移哨兵（JS 散度 · 周窗口对比）</h2><div class="panel" id="drift"><span class="empty">加载中…</span></div></section>
 
 <section><h2>五 · 管道体检（产物新鲜度）</h2><div class="panel" id="health"><span class="empty">加载中…</span></div></section>
+<section><h2>六 · 市场情绪指数 + 五源情绪分布卡（股吧 / 淘股吧 / 互动易 / 雪球 / 新闻流）</h2><div class="panel" id="market"><span class="empty">加载中…</span></div><div class="panel" id="sent" style="margin-top:10px"><span class="empty">加载中…</span></div></section>
 
 <footer>K-ORG-183 数据日报 M1 · 2026-10-18 · 聚合出口 /api/daily/data（只读）· 上游：sentiment_backtest / jev_impact / jev_drift / xq_daily_report</footer>
 </div>
@@ -129,10 +130,10 @@ function render(d){
   el('dist').innerHTML=
    stackBar([[b.bull||0,'var(--color-up)'],[b.neutral||0,'var(--text-dim)'],[b.bear||0,'var(--color-dn)']])
   +'<div class="legend">利多 <b>'+(b.bull||0)+'</b> · 中性 <b>'+(b.neutral||0)+'</b> · 利空 <b>'+(b.bear||0)+'</b>（共 '+tot+'，坏行 '+esc(ds.bad_jev_rows||0)+'）</div>';
-  var cf=ds.conf_buckets||{};
-  el('dist').innerHTML+='<div class="legend" style="margin-top:12px">置信分层（低&lt;0.7 / 中0.7-0.9 / 高≥0.9，对齐 K-ORG-157）：</div>'
-   +stackBar([[cf.low||0,'var(--color-warn)'],[cf.mid||0,'var(--link)'],[cf.high||0,'var(--color-ok)']])
-   +'<div class="legend">低 <b>'+(cf.low||0)+'</b> · 中 <b>'+(cf.mid||0)+'</b> · 高 <b>'+(cf.high||0)+'</b></div>';
+  var tb=ds.tier_buckets||{};
+  el('dist').innerHTML+='<div class="legend" style="margin-top:12px">事件类型分层（强信号类型 / 弱信号类型 / 未标注，替代已弃用 conf 三桶 · K-ORG-157 升级）：</div>'
+   +stackBar([[tb.strong||0,'var(--color-ok)'],[tb.weak||0,'var(--link)'],[tb.unknown||0,'var(--text-dim)']])
+   +'<div class="legend">强信号类型 <b>'+(tb.strong||0)+'</b> · 弱信号类型 <b>'+(tb.weak||0)+'</b> · 未标注 <b>'+(tb.unknown||0)+'</b></div>';
   if(ds.bias_probs_avg){var p=ds.bias_probs_avg;
    el('dist').innerHTML+='<div class="legend" style="margin-top:12px">bias_probs 全量分布均值（K-ORG-176 · 覆盖 '+esc(ds.bias_probs_n)+' 条）：</div>'
     +stackBar([[p.bull,'var(--color-up)'],[p.neutral,'var(--text-dim)'],[p.bear,'var(--color-dn)']])
@@ -164,10 +165,10 @@ function render(d){
       return '<td class="num">'+sgn(x[f])+'</td>'}).join('')+'</tr>'};
   var html='<table><tr><th>组别</th><th>n</th><th>T+1均值</th><th>vs市场</th><th>T+3均值</th><th>T+5均值</th><th>vs市场5d</th></tr>'
    +row('bull','偏多')+row('bear','偏空')+row('neutral','中性')+'</table>';
-  html+='<div class="legend" style="margin-top:8px">corr(情绪加权分, T+1)=<b>'+esc(bt.corr_score_pct1)+'</b> · 高置信(≥0.8) n='+esc(bt.n_high_conf)+' corr=<b>'+esc(bt.corr_score_pct1_high_conf)+'</b> · 样本窗口 '+esc((bt.news_day_range||[]).join(' ~ '))+'（新闻日期口径）</div>';
+  html+='<div class="legend" style="margin-top:8px">corr(情绪加权分, T+1)=<b>'+esc(bt.corr_score_pct1)+'</b> · 高置信(≥0.8) n='+esc(bt.n_high_conf)+' corr=<b>'+esc(bt.corr_score_pct1_high_conf)+'</b>（conf 已证伪·AUC 0.414 反相关，高置信分段仅为校准审计留痕） · 样本窗口 '+esc((bt.news_day_range||[]).join(' ~ '))+'（新闻日期口径）</div>';
   var tiers=bt.conf_tiers||[];
   if(tiers.length){
-   html+='<div class="legend" style="margin-top:12px">conf 分层（方向样本命中/一致性）· 单调性 <b>'+esc(bt.conf_monotone===true?'是':(bt.conf_monotone===false?'否':'样本不足'))+'</b></div>';
+   html+='<div class="legend" style="margin-top:12px">conf 分层（方向样本命中/一致性）· 单调性 <b>'+esc(bt.conf_monotone===true?'是':(bt.conf_monotone===false?'否':'样本不足'))+'</b> · <b style="color:#d29922">conf 已证伪（反相关），本表为校准审计留痕，不作为质量分</b></div>';
    html+='<table><tr><th>conf 档</th><th>n</th><th>方向n</th><th>T+1命中</th><th>方向vs市场</th><th>corr</th></tr>'
     +tiers.map(function(t){return '<tr><td>'+esc(t.tier)+'</td><td class="num">'+esc(t.n)+'</td><td class="num">'+esc(t.n_dir)+'</td>'
      +'<td class="num">'+(t.hit_pct1==null?'—':t.hit_pct1.toFixed(1)+'%')+'</td>'
@@ -217,6 +218,52 @@ function render(d){
     +'<td class="num dim">'+esc(x.generated_at||'—')+'</td></tr>'}).join('')+'</table>'
   +'<div class="legend" style="margin-top:8px">检查于 '+esc(hl.checked_at||'—')+' · 阈值：&lt;26h 新鲜 / &lt;50h 偏旧 / 其余过期（计划任务节奏：回测盘后、drift 07:10、xq 19:00）</div>'
   :'<span class="empty">（无产物清单）</span>';
+ /* ── 六a 市场级情绪指数 ── */
+ var mk=d.market||{};
+ if(!mk.exists){el('market').innerHTML='<span class="empty">'+esc(mk.error||'market_sentiment.json 未生成（news_collector/market_sentiment.py）')+'</span>'}
+ else if(mk.index==null){el('market').innerHTML='<span class="empty">指数未生成（无极性源数据）</span>'}
+ else{
+  var stc={"极度谨慎":"#1a7f37","谨慎":"#1a7f37","中性":"#57606a","乐观":"#cf222e","极度乐观":"#cf222e"};
+  var col=stc[mk.state]||'#57606a';
+  var mh='<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">'
+   +'<span style="font-size:30px;font-weight:700;color:'+col+'">'+esc(mk.index)+'</span>'
+   +'<span style="font-size:15px;font-weight:600;color:'+col+'">/ 100 · '+esc(mk.state||'—')+'</span>'
+   +'<span class="dim">广度 '+esc(mk.breadth_pct==null?'—':mk.breadth_pct)+'% · 覆盖 '+esc(mk.n_codes)+' 标的 · 样本 '+esc(mk.n_samples)+' 条 · 生成于 '+esc(mk.generated_at||'—')+'</span></div>';
+  mh+='<table style="margin-top:8px"><tr><th>源</th><th>样本</th><th>活跃标的</th><th>多</th><th>中</th><th>空</th><th>n加权极性</th><th>多空比</th><th>标的广度</th></tr>';
+  var order=['股吧','淘股吧','雪球','互动易','e互动','新闻流'];
+  mh+=order.map(function(name){
+   var a=mk.sources[name];
+   if(!a)return '<tr><td>'+esc(name)+'</td><td colspan="8" class="dim">—</td></tr>';
+   function nn(v){return '<td class="num">'+v+'</td>'}
+   return '<tr><td>'+esc(name)+'</td>'+nn(a.n_total)+nn(a.n_active)+nn(a.bullish)+nn(a.neutral)+nn(a.bearish)
+    +'<td class="num">'+(a.polarity_w==null?'<span class="dim">—</span>':a.polarity_w.toFixed(3))+'</td>'
+    +'<td class="num">'+(a.bull_bear_ratio==null?'<span class="dim">—</span>':a.bull_bear_ratio)+'</td>'
+    +'<td class="num">'+(a.breadth_pct==null?'<span class="dim">—</span>':a.breadth_pct+'%')+'</td></tr>'}).join('');
+  mh+='</table>';
+  mh+='<div class="legend" style="margin-top:6px">口径：index=50+50·Σ(w·polarity_w)/Σw（股吧.40/淘股吧.20/雪球.20/互动易.10/e互动.10，缺源归一）；状态机 5 档极端档优先；新闻流仅声量'+(mk.news_volume?('（n='+mk.news_volume.n_total+'）'):'')+'。生成器 market_sentiment.py，日快照见 market_sentiment_history.jsonl</div>';
+  el('market').innerHTML=mh;
+ }
+ /* ── 六b 五源情绪分布卡 ── */
+ var sn=d.sent||{};
+ if(!sn.exists){el('sent').innerHTML='<span class="empty">'+esc(sn.error||'sentiment_cards.json 未生成（news_collector/sentiment_card.py）')+'</span>'}
+ else{
+  var html='<div class="legend">窗口 <b>'+esc(sn.days)+'</b> 天 · 覆盖 '+esc(sn.n_codes)+' 标的（活跃 '+esc(sn.n_active)+'）· 生成于 '+esc(sn.generated_at||'—')
+   +' · 口径：股吧/淘股吧/互动易=引擎打分，雪球=LLM 原生标注，新闻流=声量</div>';
+  html+='<table style="margin-top:8px"><tr><th>标的</th><th>股吧</th><th>淘股吧</th><th>互动易</th><th>雪球</th><th>新闻流</th><th>声量</th></tr>';
+  var fc=function(c){return c?'多'+c.bullish+'/中'+c.neutral+'/空'+c.bearish+' ('+(c.polarity>=0?'+':'')+c.polarity.toFixed(2)+')':'—'};
+  html+=(sn.top||[]).map(function(c){
+   var g=c.src||{},gb=g['股吧'],tg=g['淘股吧'],im=g['互动易'],xq=g['雪球'],nw=g['新闻流'];
+   function cell(x,fn){return '<td class="num">'+(x?fn(x):'<span class="dim">—</span>')+'</td>'}
+   return '<tr><td class="mono"><b>'+esc(c.code)+'</b> '+esc(c.name||'')+'</td>'
+    +cell(gb,function(x){return fc(x)})
+    +cell(tg,function(x){return fc(x)})
+    +cell(im,function(x){return '多'+x.bullish+'/空'+x.bearish+' 答'+x.answered})
+    +cell(xq,function(x){return '多'+x.bullish+'/中'+x.neutral+'/空'+x.bearish})
+    +cell(nw,function(x){return x.n+' 条'})
+    +'<td class="num"><b>'+esc(c.volume)+'</b></td></tr>'}).join('');
+  html+='</table>';
+  el('sent').innerHTML=html;
+ }
 }
 
 if (window.__EMBED__) { /* 公网快照模式：build_daily_data_public.py 注入当日聚合 JSON，不发 fetch */

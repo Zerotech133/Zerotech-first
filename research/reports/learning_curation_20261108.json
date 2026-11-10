@@ -1,0 +1,55 @@
+{
+ "generated_at": "2026-11-08T20:00:18+08:00",
+ "mode": "apply",
+ "exclude_pattern": "指标说明书",
+ "projects": [
+  {
+   "project_id": "laomu_notes",
+   "units_before": 288,
+   "units_after": 286,
+   "effective": 286,
+   "excluded": 0,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "units_before": 1018,
+   "units_after": 800,
+   "effective": 800,
+   "excluded": 0,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "units_before": 1293,
+   "units_after": 1116,
+   "effective": 245,
+   "excluded": 871,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "units_before": 114,
+   "units_after": 108,
+   "effective": 108,
+   "excluded": 0,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "units_before": 3,
+   "units_after": 3,
+   "effective": 3,
+   "excluded": 0,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "视频号学习_全部文案_20261108",
+   "units_before": 24074,
+   "units_after": 11335,
+   "effective": 11335,
+   "excluded": 0,
+   "dedupe_rc": 0
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+{
+  "agent_id": "WORDC1",
+  "dept": "intel",
+  "title": "军情司·文本词云挖掘席",
+  "rank": "E2",
+  "rank_note": "对齐 org.json grade=E2 入编初始档（WO-ORG-215，2026-10-21）",
+  "kind": "runtime",
+  "persona": {"name": "陈琳", "courtesy_name": "孔璋", "dept": "军情司"},
+  "identity": {
+    "upstream_route": "INTEL_UPSTREAM_REPORT",
+    "report_kinds": ["WORDCLOUD_REPORT"],
+    "registry_ref": "agent_platform/registry/org.json#/departments[情报部]/agent_profiles[agent_id=WORDC1]",
+    "registered_at": "2026-11-07T01:55:00+00:00",
+    "valid_until": "2027-05-06T01:55:00+00:00",
+    "valid_until_note": "180 天到期续注（与 WA1/QS1 包 §3-2 同源悬案，续注负责人待拍板）"
+  },
+  "tools_allowed": {
+    "read": ["news_collector/news.db（sqlite mode=ro 只读）", "quant_backtest 雪球语料只读", "quant_backtest/tools/wordc1_cloud.py 与 resonance_v1.py 源码只读"],
+    "write": ["quant_backtest/outputs/WORDC1*", "deliverables/**", "agent/WORDC1/*"],
+    "execute": ["wordc1_cloud.py（含 JEV 加权扩展，工单 WO-INTEL-WORDC1-JEV-20261107-001）"],
+    "danger": "deny"
+  },
+  "write_note": "只落 outputs 词表 JSON（schema 只增不改）+ 自包含 HTML 报告；禁写 news.db/xq 库",
+  "constraints_note": "两库 mode=ro 纪律；不调 JEV 判读链、不碰 ollama_lock；停用词口径冻结，变更须列 delta 经 INTEL0 受理确认；只报词频事实与异动，不解释成因；conf<0.5 判定降权 50% 计入 meta",
+  "supervisor": "INTEL0",
+  "endpoint": "",
+  "onboarded": "2026-10-21",
+  "binding_completed": "2026-11-07",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian",
+    "human_note": "老田 2026-11-07 批「按计划去执行」：补 WORDC1 运行时任命以消空绑席（工单 WO-INTEL-WORDC1-JEV-20261107-001 前置条件）。org.json 的 role_profile/llm_binding/tools 已于 WO-ORG-215 入编时落档，本件补 hr 册封件"
+  }
+}

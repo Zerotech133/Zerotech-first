@@ -33,6 +33,8 @@ r"""Step 5 · 板块联动图（portal/jev_graph.py）单元测试。
 """
 from __future__ import annotations
 
+import io
+import json
 import os
 import sys
 
@@ -44,6 +46,7 @@ if PORTAL not in sys.path:
     sys.path.insert(0, PORTAL)
 
 import jev_graph as G  # noqa: E402
+import jev_theme as T     # noqa: E402
 
 
 def mkrow(code, name, board, pct, board_n=10, rank=1, close=10.0,
@@ -231,3 +234,104 @@ def test_N12_board_rank_requires_min_members():
     for name, lst in by.items():
         if len(lst) < G.MIN_BOARD_N:
             assert name == "微板块"
+
+
+# ══ 题材口径（双轨）—— 2026-11-08，判例 #28 的回归 ══════════
+# 守四件事：
+# 1. 属性标签（地方国资/汇金证金持股…）**不能当选主题材**——否则全市场一半的票
+#    都被归进「地方国资」，板块等于没分。
+# 2. 快照缺失 → has=False 并回落行业，**不能**当成「这只票没有题材」静默放行。
+# 3. rank_board 显式给成员时必须用它，不能回头拿 row["board"] 过滤：题材成员
+#    来自全量成分（允许重叠），row["board"] 只是「主题材」，用它过滤会漏人
+#    （曾把「电力」218 只切成 52 只）。
+# 4. 节点裁剪：涨停票不能被涨幅排序挤掉。
+
+def _snap(tmp_path, day, concepts):
+    os.makedirs(str(tmp_path), exist_ok=True)
+    p = os.path.join(str(tmp_path), "%s.json" % day)
+    with io.open(p, "w", encoding="utf-8") as f:
+        f.write(json.dumps({"day": day, "concepts": concepts},
+                           ensure_ascii=False))
+    return p
+
+
+def _con(name, *pairs):
+    """pairs: (ts_code, hot)"""
+    return {name: {"code": "000001.KP",
+                   "members": {c: {"name": c, "desc": "", "hot": h}
+                               for c, h in pairs}}}
+
+
+def test_N13_primary_theme_skips_generic(monkeypatch, tmp_path):
+    """热度更高的「地方国资」必须被跳过，主题材落到「电力」。"""
+    day = "20261106"
+    concepts = {}
+    concepts.update(_con("地方国资", ("000155.SZ", 9000)))
+    concepts.update(_con("电力", ("000155.SZ", 100)))
+    concepts.update(_con("储能概念", ("000155.SZ", 50)))
+    _snap(tmp_path, day, concepts)
+    monkeypatch.setattr(T, "SNAP_DIR", str(tmp_path))
+    T.clear_cache()
+
+    assert T.load(day)["has"] is True
+    assert T.primary(day, "000155") == ("电力", 100)
+    # 「所属题材」要如实给全部（含属性标签），供页面展示
+    assert T.themes_of(day, "000155") == ["地方国资", "电力", "储能概念"]
+
+
+def test_N13b_primary_none_when_only_generic(monkeypatch, tmp_path):
+    """只挂属性标签的票 → primary=None（由调用方回落行业）。"""
+    day = "20261106"
+    _snap(tmp_path, day, _con("汇金证金持股", ("600795.SH", 800)))
+    monkeypatch.setattr(T, "SNAP_DIR", str(tmp_path))
+    T.clear_cache()
+    assert T.primary(day, "600795") is None
+
+
+def test_N14_missing_snapshot_degrades(monkeypatch, tmp_path):
+    """无快照 / 坏快照 / 日期不符 一律 has=False，不抛。"""
+    monkeypatch.setattr(T, "SNAP_DIR", str(tmp_path / "none"))
+    T.clear_cache()
+    t = T.load("20261106")
+    assert t["has"] is False and t["by_code"] == {} and t["note"]
+    assert T.primary("20261106", "000155") is None
+    assert T.strength("20261106", []) == []
+
+    # 文件名对、内容日期不对 → 当没有（与采集器日期纯净性同一条纪律）
+    p = _snap(tmp_path, "20261105", _con("电力", ("000155.SZ", 1)))
+    monkeypatch.setattr(T, "SNAP_DIR", str(tmp_path))
+    T.clear_cache()
+    assert T.load("20261106")["has"] is False
+    assert os.path.exists(p)
+
+
+def test_N15_rank_board_uses_explicit_members():
+    """显式成员优先：rows 全属「行业A」，但题材成员给的是另一批票。"""
+    a = [{"code": "60000%d.SH" % i, "c6": "60000%d" % i, "name": "甲%d" % i,
+          "board": "行业A", "pct": 1.0 + i, "limit_up": False,
+          "touch_only": False, "pct_rank": i + 1, "board_n": 5,
+          "close": 10.0, "amount": 1000.0}
+         for i in range(5)]
+    b = [{"code": "00000%d.SZ" % i, "c6": "00000%d" % i, "name": "乙%d" % i,
+          "board": "行业A", "pct": 9.0 + i, "limit_up": True,
+          "touch_only": False, "pct_rank": i + 1, "board_n": 3,
+          "close": 11.0, "amount": 2000.0}
+         for i in range(3)]
+    G._BOARD_CACHE["data"] = []
+    out = G.rank_board("题材B", a + b, {}, {}, top=8, members=b)
+    assert out["n"] == 3 and out["limit_up"] == 3
+    assert out["lead"]["name"].startswith("乙")
+    # 不传 members 时退回旧行为（按 board 字段过滤）
+    assert G.rank_board("行业A", a + b, {}, {}, top=8)["n"] == 8
+
+
+def test_N16_cap_members_keeps_limit_up():
+    """裁剪节点时涨停票优先保留，不能被涨幅排序挤掉。"""
+    mem = [{"code": "H%d" % i, "limit_up": False, "touch_only": False,
+            "pct": 9.9} for i in range(3)]
+    mem += [{"code": "L%d" % i, "limit_up": False, "touch_only": False,
+             "pct": 1.0} for i in range(200)]
+    mem.append({"code": "LU", "limit_up": True, "touch_only": False, "pct": 10.0})
+    out = G._cap_members(mem, cap=10)
+    assert len(out) == 10
+    assert "LU" in [z["code"] for z in out]

@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated_at": "2026-11-07T08:35:03+08:00",
+ "generated_at": "2026-11-10T08:35:07+08:00",
  "mode": "run",
  "ok": true,
  "rc": 0,
@@ -10,7 +10,7 @@
   "panel_daily",
   "kb_ingest_status"
  ],
- "duration_seconds": 1.032,
+ "duration_seconds": 4.031,
  "steps": [
   {
    "name": "learning_digest",
@@ -28,18 +28,18 @@
    ],
    "rc": 0,
    "ok": true,
-   "elapsed_seconds": 0.188,
-   "started_at": "2026-11-07T08:35:02+08:00",
+   "elapsed_seconds": 0.172,
+   "started_at": "2026-11-10T08:35:03+08:00",
    "outputs": [
     {
      "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json",
      "exists": true,
-     "mtime": "2026-11-07T08:35:02+08:00",
-     "mtime_epoch": 1794011702.664,
-     "size": 10654
+     "mtime": "2026-11-10T08:35:03+08:00",
+     "mtime_epoch": 1794270903.334,
+     "size": 10949
     }
    ],
-   "stdout_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261107 | cards=5 | highlights=5 | points=10",
+   "stdout_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261110 | cards=5 | highlights=5 | points=10",
    "stderr_tail": "",
    "error": null
   },
@@ -60,17 +60,17 @@
    "rc": 0,
    "ok": true,
    "elapsed_seconds": 0.281,
-   "started_at": "2026-11-07T08:35:02+08:00",
+   "started_at": "2026-11-10T08:35:03+08:00",
    "outputs": [
     {
      "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
      "exists": true,
-     "mtime": "2026-11-07T08:35:02+08:00",
-     "mtime_epoch": 1794011702.867,
+     "mtime": "2026-11-10T08:35:03+08:00",
+     "mtime_epoch": 1794270903.537,
      "size": 13722
     }
    ],
-   "stdout_tail": "[panel_daily] mode=run status=OK elapsed=0.078s\n[panel_daily] candidates=1 rejected=2 reports=3 page_invalid=1 generated_at=2026-11-01T08:09:36+08:00\n[panel_daily] change: 候选 1→1（Δ+0）；页码越界 1→1（Δ+0）\n[panel_daily] status_file=C:\\项目\\老田的AI助手\\research\\reports\\report_panel_daily_status.json",
+   "stdout_tail": "[panel_daily] mode=run status=OK elapsed=0.047s\n[panel_daily] candidates=1 rejected=2 reports=3 page_invalid=1 generated_at=2026-11-01T08:09:36+08:00\n[panel_daily] change: 候选 1→1（Δ+0）；页码越界 1→1（Δ+0）\n[panel_daily] status_file=C:\\项目\\老田的AI助手\\research\\reports\\report_panel_daily_status.json",
    "stderr_tail": "",
    "error": null
   },
@@ -87,14 +87,14 @@
    ],
    "rc": 0,
    "ok": true,
-   "elapsed_seconds": 0.563,
-   "started_at": "2026-11-07T08:35:02+08:00",
+   "elapsed_seconds": 3.578,
+   "started_at": "2026-11-10T08:35:03+08:00",
    "outputs": [
     {
      "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_ingest.json",
      "exists": true,
-     "mtime": "2026-11-07T08:35:03+08:00",
-     "mtime_epoch": 1794011703.459,
+     "mtime": "2026-11-10T08:35:07+08:00",
+     "mtime_epoch": 1794270907.163,
      "size": 21854
     }
    ],
@@ -107,30 +107,30 @@
   "learning_digest": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json",
    "exists": true,
-   "mtime": "2026-11-07T08:35:02+08:00",
-   "mtime_epoch": 1794011702.664,
-   "size": 10654
+   "mtime": "2026-11-10T08:35:03+08:00",
+   "mtime_epoch": 1794270903.334,
+   "size": 10949
   },
   "panel_daily": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
    "exists": true,
-   "mtime": "2026-11-07T08:35:02+08:00",
-   "mtime_epoch": 1794011702.867,
+   "mtime": "2026-11-10T08:35:03+08:00",
+   "mtime_epoch": 1794270903.537,
    "size": 13722
   },
   "kb_ingest_status": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_ingest.json",
    "exists": true,
-   "mtime": "2026-11-07T08:35:03+08:00",
-   "mtime_epoch": 1794011703.459,
+   "mtime": "2026-11-10T08:35:07+08:00",
+   "mtime_epoch": 1794270907.163,
    "size": 21854
   },
   "panel_daily_status": {
    "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_daily_status.json",
    "exists": true,
-   "mtime": "2026-11-07T08:35:02+08:00",
-   "mtime_epoch": 1794011702.906,
-   "size": 20197
+   "mtime": "2026-11-10T08:35:03+08:00",
+   "mtime_epoch": 1794270903.581,
+   "size": 24916
   },
   "kb_qa_samples": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_qa_samples.json",
@@ -147,8 +147,8 @@
    "page": "/kb_reports.html",
    "section": "📚 学习卡（每日 5 张）/ 📰 今日简报",
    "exists": true,
-   "mtime": "2026-11-07T08:35:02+08:00",
-   "size": 10654
+   "mtime": "2026-11-10T08:35:03+08:00",
+   "size": 10949
   },
   {
    "path": "portal/static/report_panel.json",
@@ -156,7 +156,7 @@
    "page": "/selection.html",
    "section": "研报候选（多智能体）",
    "exists": true,
-   "mtime": "2026-11-07T08:35:02+08:00",
+   "mtime": "2026-11-10T08:35:03+08:00",
    "size": 13722
   },
   {
@@ -165,7 +165,7 @@
    "page": "/kb_ingest.html",
    "section": "知识入库状态",
    "exists": true,
-   "mtime": "2026-11-07T08:35:03+08:00",
+   "mtime": "2026-11-10T08:35:07+08:00",
    "size": 21854
   },
   {

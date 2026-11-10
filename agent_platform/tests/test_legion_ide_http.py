@@ -22,7 +22,10 @@ from legion_ide import serve as L  # noqa: E402
 
 
 def _git(cwd, *args):
-    subprocess.run(["git", "-C", str(cwd), *args], check=True,
+    # 2026-11-07 K-PYTEST-TRIAGE：CentOS 7 自带 git 1.8.3.1 不支持 `git` 的 `-C`
+    # 选项（不报"不支持"，只打 usage 并返回非 0），改用 cwd= 传参，Windows/Linux 通用；
+    # 与 test_ide_worktree.py:35 及 13_verify.sh GITPORT 判例同口径。
+    subprocess.run(["git", *args], cwd=str(cwd), check=True,
                    capture_output=True, text=True)
 
 

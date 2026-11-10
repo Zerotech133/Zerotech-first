@@ -1,0 +1,4843 @@
+{
+ "generated_at": "2026-11-08T06:43:03+08:00",
+ "today": "2026-11-08",
+ "catalog": {
+  "version": 43,
+  "tables": 258,
+  "registry": {
+   "physical": 306,
+   "display": 258
+  },
+  "contracts": 10,
+  "qualification_unknown": 0,
+  "manifest": {
+   "closed": 241,
+   "not_applicable": 11,
+   "open": 4,
+   "missing": 2
+  }
+ },
+ "lagging_daily": [
+  {
+   "name": "balancesheet",
+   "label": "Tushare·资产负债表",
+   "lag": 9
+  },
+  {
+   "name": "cashflow",
+   "label": "Tushare·现金流量表",
+   "lag": 9
+  },
+  {
+   "name": "fina_indicator",
+   "label": "Tushare·财务指标",
+   "lag": 9
+  },
+  {
+   "name": "income",
+   "label": "Tushare·利润表",
+   "lag": 9
+  },
+  {
+   "name": "ann_history.db",
+   "label": "公告历史·本地库(SQLite)",
+   "lag": 7
+  }
+ ],
+ "cockpit": {
+  "sources_total": 70,
+  "sources_done": 28,
+  "sources_in_progress": 5,
+  "sources_mining": 37,
+  "sources_pending": 0,
+  "coverage_pct": 40.0,
+  "new_today": 5,
+  "pilot_today": 1,
+  "merged_today": 0,
+  "hypotheses": 53,
+  "hypotheses_by_status": {
+   "rejected": 35,
+   "backtested": 6,
+   "in_progress": 8,
+   "candidate": 1,
+   "validated": 2,
+   "shadow": 1
+  },
+  "reports_total": 40,
+  "reports_today": 20,
+  "approvals_today": 0,
+  "risks": [
+   {
+    "item": "数据契约（ODCS）",
+    "status": "in_progress",
+    "note": "6 份；待扩研究用表"
+   },
+   {
+    "item": "资格取证",
+    "status": "in_progress",
+    "note": "evidence_chain/registry；未全量覆盖"
+   },
+   {
+    "item": "display 展示登记",
+    "status": "in_progress",
+    "note": "92/253"
+   },
+   {
+    "item": "生命周期 lifecycle",
+    "status": "in_progress",
+    "note": "data_lifecycle.yaml 9 条"
+   },
+   {
+    "item": "news 历史沉淀",
+    "status": "in_progress",
+    "note": "不可回填→长期采集+保留365天"
+   },
+   {
+    "item": "watchdog 单实例校验",
+    "status": "pending",
+    "note": "ws 双实例现象，建议互斥加固"
+   },
+   {
+    "item": "approval 回写 devtask/事件",
+    "status": "in_progress",
+    "note": "approvals.jsonl 已落；回写待接"
+   }
+  ],
+  "backup_latest": "2026-11-07_0745",
+  "backup_age_hours": 30.7,
+  "supervisor_red": []
+ },
+ "sources": [
+  {
+   "name": "adj_factor",
+   "label": "Tushare·复权因子",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "日频复权因子",
+   "files": 8749,
+   "size_mb": 234.9,
+   "size_h": "235 MB",
+   "rows": 4295687,
+   "rows_h": "429.6 万",
+   "range": "19910102..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": true,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "anns_d",
+   "label": "Tushare·公告日数据",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "按日公告标题",
+   "files": 1902,
+   "size_mb": 279.6,
+   "size_h": "280 MB",
+   "rows": 12323795,
+   "rows_h": "1232.4 万",
+   "range": "20190102..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H1",
+    "H11",
+    "H12"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "balancesheet",
+   "label": "Tushare·资产负债表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "财报，按股票接口拉取；最新公告日 20261030，报告期 2026-09",
+   "files": 5582,
+   "size_mb": 358.6,
+   "size_h": "359 MB",
+   "rows": 296892,
+   "rows_h": "29.7 万",
+   "range": "000001_SZ..920992_BJ",
+   "last_update": "2026-10-30",
+   "latest_date": "20261030",
+   "report_period": "20260930",
+   "lag_days": 9,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H7"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
+  },
+  {
+   "name": "cashflow",
+   "label": "Tushare·现金流量表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "财报，按股票接口拉取；最新公告日 20261030，报告期 2026-09",
+   "files": 5586,
+   "size_mb": 274.5,
+   "size_h": "274 MB",
+   "rows": 308067,
+   "rows_h": "30.8 万",
+   "range": "000001_SZ..920992_BJ",
+   "last_update": "2026-10-30",
+   "latest_date": "20261030",
+   "report_period": "20260930",
+   "lag_days": 9,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H7"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
+  },
+  {
+   "name": "cb_basic",
+   "label": "Tushare·可转债基础",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 45,
+   "size_mb": 8.6,
+   "size_h": "9 MB",
+   "rows": 1179,
+   "rows_h": "1179",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "cb_daily",
+   "label": "Tushare·可转债日线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 1171,
+   "size_mb": 57.5,
+   "size_h": "58 MB",
+   "rows": 836509,
+   "rows_h": "83.7 万",
+   "range": "100001_SH..145951_SH",
+   "last_update": "2026-11-07",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "cyq_chips",
+   "label": "Tushare·筹码分布",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 23,
+   "size_mb": 0.2,
+   "size_h": "0 MB",
+   "rows": 76374,
+   "rows_h": "7.6 万",
+   "range": "000002_SZ..688356_SH",
+   "last_update": "2026-11-06",
+   "latest_date": "20260930",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "cyq_perf",
+   "label": "Tushare·筹码胜率",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 281,
+   "size_mb": 45.5,
+   "size_h": "46 MB",
+   "rows": 1508210,
+   "rows_h": "150.8 万",
+   "range": "20250901..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "daily",
+   "label": "Tushare·A股日线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "全市场日线，按交易日接口同步",
+   "files": 8749,
+   "size_mb": 962.9,
+   "size_h": "963 MB",
+   "rows": 4270804,
+   "rows_h": "427.1 万",
+   "range": "19910102..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": true,
+   "hypothesis_ids": [
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H7",
+    "H8",
+    "H9",
+    "H11",
+    "H12",
+    "H13",
+    "H14"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "daily_basic",
+   "label": "Tushare·每日指标",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "PE/PB/市值，按交易日同步",
+   "files": 930,
+   "size_mb": 591.7,
+   "size_h": "592 MB",
+   "rows": 4968518,
+   "rows_h": "496.9 万",
+   "range": "20230103..20261106",
+   "last_update": "2026-11-06",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": true,
+   "hypothesis_ids": [
+    "H7",
+    "H10",
+    "H14"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "etf_mins",
+   "label": "Tushare·ETF分钟线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 780,
+   "size_mb": 92.4,
+   "size_h": "92 MB",
+   "rows": 3926432,
+   "rows_h": "392.6 万",
+   "range": "159915_SZ_202309..588000_SH_202611",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "express",
+   "label": "Tushare·业绩快报",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "event",
+   "status": "done",
+   "note": "3 年 5,947 行",
+   "files": 4,
+   "size_mb": 0.3,
+   "size_h": "0 MB",
+   "rows": 5947,
+   "rows_h": "5947",
+   "range": "p0001..p0004",
+   "last_update": "2026-10-28",
+   "latest_date": "20261021",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H2"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261021",
+    "local_latest": "20261021",
+    "verdict": "aligned"
+   }
+  },
+  {
+   "name": "fina_indicator",
+   "label": "Tushare·财务指标",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "5,569 只股票文件，按股票接口拉取（PIT）；最新公告日 20261030，报告期 2026-09",
+   "files": 5586,
+   "size_mb": 418.0,
+   "size_h": "418 MB",
+   "rows": 273644,
+   "rows_h": "27.4 万",
+   "range": "000001_SZ..920992_BJ",
+   "last_update": "2026-10-30",
+   "latest_date": "20261030",
+   "report_period": "20260930",
+   "lag_days": 9,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H7",
+    "H10",
+    "H14"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
+  },
+  {
+   "name": "forecast",
+   "label": "Tushare·业绩预告",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "event",
+   "status": "done",
+   "note": "3 年 21,196 行（含预告类型/幅度）",
+   "files": 18,
+   "size_mb": 23.1,
+   "size_h": "23 MB",
+   "rows": 110471,
+   "rows_h": "11.0 万",
+   "range": "p0001..p0018",
+   "last_update": "2026-11-05",
+   "latest_date": "20261102",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H2",
+    "H11",
+    "H12"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261024",
+    "local_latest": "20261024",
+    "verdict": "aligned"
+   }
+  },
+  {
+   "name": "fx_daily",
+   "label": "汇率·USDCNH/USDHKD（东财源）",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "已换源东财：USDCNH 4,211 行 / USDHKD 4,383 行（2010–2026）",
+   "files": 2,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 5415,
+   "rows_h": "5415",
+   "range": "USDCNH_FXCM..USDHKD_FXCM",
+   "last_update": "2026-11-06",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "hk_balancesheet",
+   "label": "Tushare·港股资产负债表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "period_only",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2773,
+   "size_mb": 37.2,
+   "size_h": "37 MB",
+   "rows": 3169435,
+   "rows_h": "316.9 万",
+   "range": "00001_HK..89988_HK",
+   "last_update": "2026-09-28",
+   "latest_date": "20260630",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "hk_basic",
+   "label": "Tushare·港股基础信息",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 45,
+   "size_mb": 10.0,
+   "size_h": "10 MB",
+   "rows": 2781,
+   "rows_h": "2781",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "20261028",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "hk_cashflow",
+   "label": "Tushare·港股现金流量表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "period_only",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2787,
+   "size_mb": 31.1,
+   "size_h": "31 MB",
+   "rows": 2066455,
+   "rows_h": "206.6 万",
+   "range": "00001_HK..89988_HK",
+   "last_update": "2026-09-28",
+   "latest_date": "20260630",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "hk_daily",
+   "label": "Tushare·港股日线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "726 日/152.7 万行；A/H 研究待开",
+   "files": 1371,
+   "size_mb": 120.0,
+   "size_h": "120 MB",
+   "rows": 1539900,
+   "rows_h": "154.0 万",
+   "range": "20210104..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "726 日/152.7 万行；A/H 研究待开",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "hk_fina_indicator",
+   "label": "Tushare·港股财务指标",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "period_only",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2787,
+   "size_mb": 181.5,
+   "size_h": "182 MB",
+   "rows": 96395,
+   "rows_h": "9.6 万",
+   "range": "00001_HK..89988_HK",
+   "last_update": "2026-09-28",
+   "latest_date": "20260630",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "hk_hold",
+   "label": "港股通持股明细",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "891 个交易日（2023-01~2026-10），约 1,000 只/日",
+   "files": 897,
+   "size_mb": 66.9,
+   "size_h": "67 MB",
+   "rows": 1967275,
+   "rows_h": "196.7 万",
+   "range": "20230103..20261106",
+   "last_update": "2026-11-08",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "hk_income",
+   "label": "Tushare·港股利润表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "period_only",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2785,
+   "size_mb": 27.2,
+   "size_h": "27 MB",
+   "rows": 2238757,
+   "rows_h": "223.9 万",
+   "range": "00001_HK..89988_HK",
+   "last_update": "2026-09-28",
+   "latest_date": "20260630",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "idx_mins",
+   "label": "Tushare·指数分钟线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2030,
+   "size_mb": 397.9,
+   "size_h": "398 MB",
+   "rows": 8243525,
+   "rows_h": "824.4 万",
+   "range": "000001_SH_201001..899050_BJ_202611",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "income",
+   "label": "Tushare·利润表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "财报，按股票接口拉取；最新公告日 20261030，报告期 2026-09",
+   "files": 5586,
+   "size_mb": 216.1,
+   "size_h": "216 MB",
+   "rows": 339698,
+   "rows_h": "34.0 万",
+   "range": "000001_SZ..920992_BJ",
+   "last_update": "2026-10-30",
+   "latest_date": "20261030",
+   "report_period": "20260930",
+   "lag_days": 9,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H7"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
+  },
+  {
+   "name": "index_daily",
+   "label": "Tushare·A股指数日线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "宽基/行业指数日线",
+   "files": 930,
+   "size_mb": 447.8,
+   "size_h": "448 MB",
+   "rows": 9573803,
+   "rows_h": "957.4 万",
+   "range": "20230103..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": true,
+   "hypothesis_ids": [
+    "H1",
+    "H2",
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "index_global",
+   "label": "Tushare·全球指数",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "20 个全球指数（2018+）",
+   "files": 20,
+   "size_mb": 2.6,
+   "size_h": "3 MB",
+   "rows": 44056,
+   "rows_h": "4.4 万",
+   "range": "AS51..XIN9",
+   "last_update": "2026-11-08",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 10,
+   "registered": true,
+   "manifest": "not_applicable",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": null,
+    "local_latest": null,
+    "verdict": "aligned",
+    "filled": null
+   }
+  },
+  {
+   "name": "index_member_all",
+   "label": "Tushare·申万行业历史成分",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "5,922 条 PIT 行业归属",
+   "files": 1,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 5922,
+   "rows_h": "5922",
+   "range": "p0000..p0000",
+   "last_update": "2026-10-29",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "unknown",
+   "contract": false,
+   "hypothesis_ids": [
+    "H8",
+    "H14"
+   ],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "index_weight",
+   "label": "Tushare·指数权重",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 143,
+   "size_mb": 1.5,
+   "size_h": "2 MB",
+   "rows": 112800,
+   "rows_h": "11.3 万",
+   "range": "000906_201501..000906_202611",
+   "last_update": "2026-11-08",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "irm_qa_sh",
+   "label": "Tushare·上证互动问答",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2294,
+   "size_mb": 104.1,
+   "size_h": "104 MB",
+   "rows": 338852,
+   "rows_h": "33.9 万",
+   "range": "600000_SH..p0000",
+   "last_update": "2026-11-07",
+   "latest_date": "20261014",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "irm_qa_sz",
+   "label": "Tushare·深证互动问答",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 3267,
+   "size_mb": 201.2,
+   "size_h": "201 MB",
+   "rows": 924683,
+   "rows_h": "92.5 万",
+   "range": "000001_SZ..p0000",
+   "last_update": "2026-11-07",
+   "latest_date": "20261014",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "limit_list_d",
+   "label": "Tushare·涨跌停列表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 288,
+   "size_mb": 5.5,
+   "size_h": "6 MB",
+   "rows": 28859,
+   "rows_h": "2.9 万",
+   "range": "20250901..20261107",
+   "last_update": "2026-11-07",
+   "latest_date": "20261107",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "major_news",
+   "label": "Tushare·重大新闻",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 45,
+   "size_mb": 2.5,
+   "size_h": "2 MB",
+   "rows": 800,
+   "rows_h": "800",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "20261107",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "margin_detail",
+   "label": "Tushare·融资融券明细",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "两融明细",
+   "files": 930,
+   "size_mb": 197.2,
+   "size_h": "197 MB",
+   "rows": 3680209,
+   "rows_h": "368.0 万",
+   "range": "20230103..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": true,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "moneyflow",
+   "label": "Tushare·个股资金流",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "3 年 923 日，接口同步",
+   "files": 930,
+   "size_mb": 577.8,
+   "size_h": "578 MB",
+   "rows": 4750632,
+   "rows_h": "475.1 万",
+   "range": "20230103..20261106",
+   "last_update": "2026-11-06",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": true,
+   "hypothesis_ids": [
+    "H4",
+    "H13"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "moneyflow_hsgt",
+   "label": "沪深港通资金流（南向/北向）",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "895 日（2023-01-03~2026-10-29），分片拉全",
+   "files": 1,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 901,
+   "rows_h": "901",
+   "range": "moneyflow_hsgt..moneyflow_hsgt",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "news",
+   "label": "Tushare·新闻快讯",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 45,
+   "size_mb": 55.7,
+   "size_h": "56 MB",
+   "rows": 6000,
+   "rows_h": "6000",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "20261107",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "npr",
+   "label": "Tushare·NPR公告",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 45,
+   "size_mb": 57.8,
+   "size_h": "58 MB",
+   "rows": 19098,
+   "rows_h": "1.9 万",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "report_rc",
+   "label": "report_rc",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "已入库/已登记（资产目录）",
+   "files": 202,
+   "size_mb": 141.0,
+   "size_h": "141 MB",
+   "rows": 2910978,
+   "rows_h": "291.1 万",
+   "range": "rc_201001..rc_202610",
+   "last_update": "2026-11-02",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "unknown",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "research_report",
+   "label": "Tushare·研报数据",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 7,
+   "size_mb": 0.6,
+   "size_h": "1 MB",
+   "rows": 61,
+   "rows_h": "61",
+   "range": "p0000..p0006",
+   "last_update": "2026-11-07",
+   "latest_date": "20261107",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "sf_month",
+   "label": "Tushare·月度社会融资",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 43,
+   "size_mb": 0.4,
+   "size_h": "0 MB",
+   "rows": 297,
+   "rows_h": "297",
+   "range": "p0000..p0042",
+   "last_update": "2026-11-07",
+   "latest_date": "202609",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "shibor",
+   "label": "Tushare·Shibor利率",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 10,
+   "size_mb": 0.8,
+   "size_h": "1 MB",
+   "rows": 2000,
+   "rows_h": "2000",
+   "range": "p0000..p0009",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "shibor_lpr",
+   "label": "Tushare·LPR利率",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 44,
+   "size_mb": 0.5,
+   "size_h": "0 MB",
+   "rows": 1532,
+   "rows_h": "1532",
+   "range": "p0000..p0043",
+   "last_update": "2026-11-07",
+   "latest_date": "20260820",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "stk_holdernumber",
+   "label": "Tushare·股东户数",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 5572,
+   "size_mb": 24.3,
+   "size_h": "24 MB",
+   "rows": 454675,
+   "rows_h": "45.5 万",
+   "range": "000001_SZ..920992_BJ",
+   "last_update": "2026-11-06",
+   "latest_date": "20260814",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "stk_managers",
+   "label": "Tushare·高管任职",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 1,
+   "size_mb": 7.2,
+   "size_h": "7 MB",
+   "rows": 575201,
+   "rows_h": "57.5 万",
+   "range": "p0000..p0000",
+   "last_update": "2026-09-30",
+   "latest_date": "20260929",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "stk_mins",
+   "label": "Tushare·个股分钟线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 33998,
+   "size_mb": 3486.4,
+   "size_h": "3.5 GB",
+   "rows": 150146217,
+   "rows_h": "15014.6 万",
+   "range": "000001_SZ_202509..689009_SH_202611",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "stk_pledge",
+   "label": "Tushare·股权质押",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 10,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 3445,
+   "rows_h": "3445",
+   "range": "000001_SZ..600519_SH_detail",
+   "last_update": "2026-10-19",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "stock_basic",
+   "label": "Tushare·股票基础信息",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "代码/行业/上市日等",
+   "files": 45,
+   "size_mb": 11.6,
+   "size_h": "12 MB",
+   "rows": 5579,
+   "rows_h": "5579",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "stock_company",
+   "label": "Tushare·公司基本信息",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 45,
+   "size_mb": 354.8,
+   "size_h": "355 MB",
+   "rows": 6360,
+   "rows_h": "6360",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "sw_classify_l1",
+   "label": "Tushare·申万一级分类字典",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "31 个行业",
+   "files": 45,
+   "size_mb": 0.8,
+   "size_h": "1 MB",
+   "rows": 511,
+   "rows_h": "511",
+   "range": "p0000..p0044",
+   "last_update": "2026-11-07",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "sw_l1_member",
+   "label": "Tushare·申万一级成分（旧）",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "旧成分表，已被历史成分替代",
+   "files": 31,
+   "size_mb": 0.2,
+   "size_h": "0 MB",
+   "rows": 7740,
+   "rows_h": "7740",
+   "range": "801010_SI..801980_SI",
+   "last_update": "2026-09-28",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "旧成分表，已被历史成分替代"
+  },
+  {
+   "name": "sw_l2_member",
+   "label": "sw_l2_member",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "已入库/已登记（资产目录）",
+   "files": 131,
+   "size_mb": 0.5,
+   "size_h": "0 MB",
+   "rows": 8195,
+   "rows_h": "8195",
+   "range": "801011.SI..801995.SI",
+   "last_update": "2026-11-05",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "missing",
+   "date_status": "unknown",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "sw_mins",
+   "label": "Tushare·申万分钟线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 2201,
+   "size_mb": 496.9,
+   "size_h": "497 MB",
+   "rows": 10153928,
+   "rows_h": "1015.4 万",
+   "range": "801010_SI_202101..801980_SI_202611",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "top10_floatholders",
+   "label": "Tushare·十大流通股东",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 9,
+   "size_mb": 15.7,
+   "size_h": "16 MB",
+   "rows": 456121,
+   "rows_h": "45.6 万",
+   "range": "p_20240930..p_20260930",
+   "last_update": "2026-09-30",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "top10_holders",
+   "label": "Tushare·十大股东",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 9,
+   "size_mb": 16.3,
+   "size_h": "16 MB",
+   "rows": 462529,
+   "rows_h": "46.3 万",
+   "range": "p_20240930..p_20260930",
+   "last_update": "2026-09-30",
+   "latest_date": "20260929",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "top_inst",
+   "label": "Tushare·龙虎榜机构席位",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "3 年 760 日席位明细",
+   "files": 767,
+   "size_mb": 19.1,
+   "size_h": "19 MB",
+   "rows": 214233,
+   "rows_h": "21.4 万",
+   "range": "20230904..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H3"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "top_list",
+   "label": "Tushare·龙虎榜",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "3 年 760 日榜单",
+   "files": 767,
+   "size_mb": 10.3,
+   "size_h": "10 MB",
+   "rows": 1584,
+   "rows_h": "1584",
+   "range": "20230904..20261106",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H3"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "trade_cal",
+   "label": "Tushare·交易日历",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "交易日历",
+   "files": 19,
+   "size_mb": 5.9,
+   "size_h": "6 MB",
+   "rows": 13514,
+   "rows_h": "1.4 万",
+   "range": "p0001..p0026",
+   "last_update": "2026-11-07",
+   "latest_date": "20271231",
+   "report_period": "",
+   "lag_days": 0,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "us_balancesheet",
+   "label": "Tushare·美股资产负债表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 22303,
+   "size_mb": 111.1,
+   "size_h": "111 MB",
+   "rows": 4397872,
+   "rows_h": "439.8 万",
+   "range": "035420..ZZZOF",
+   "last_update": "2026-09-28",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "us_basic",
+   "label": "Tushare·美股基础信息",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 40,
+   "size_mb": 39.9,
+   "size_h": "40 MB",
+   "rows": 23662,
+   "rows_h": "2.4 万",
+   "range": "p0000..p0039",
+   "last_update": "2026-11-07",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "us_cashflow",
+   "label": "Tushare·美股现金流量表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 21851,
+   "size_mb": 103.8,
+   "size_h": "104 MB",
+   "rows": 3631909,
+   "rows_h": "363.2 万",
+   "range": "035420..ZZZOF",
+   "last_update": "2026-09-28",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "us_daily",
+   "label": "Tushare·美股日线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "24,211 只股票文件；未用于研究",
+   "files": 24211,
+   "size_mb": 1603.2,
+   "size_h": "1.6 GB",
+   "rows": 37284334,
+   "rows_h": "3728.4 万",
+   "range": "035420..ZZZOF",
+   "last_update": "2026-11-08",
+   "latest_date": "20261105",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 19864,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "24,211 只股票文件；未用于研究"
+  },
+  {
+   "name": "us_fina_indicator",
+   "label": "Tushare·美股财务指标",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 23679,
+   "size_mb": 841.5,
+   "size_h": "842 MB",
+   "rows": 321738,
+   "rows_h": "32.2 万",
+   "range": "035420..ZZZOF",
+   "last_update": "2026-09-28",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "us_income",
+   "label": "Tushare·美股利润表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 23338,
+   "size_mb": 110.0,
+   "size_h": "110 MB",
+   "rows": 2974428,
+   "rows_h": "297.4 万",
+   "range": "035420..ZZZOF",
+   "last_update": "2026-09-28",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "news.db",
+   "label": "新闻快讯·本地库(SQLite)",
+   "method": "爬虫采集",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
+   "files": 1,
+   "size_mb": 162.78,
+   "size_h": "163 MB",
+   "rows": 137523,
+   "rows_h": "137523",
+   "range": "news.db",
+   "last_update": "2026-11-08",
+   "latest_date": "2026-11-08 06:33",
+   "lag_days": 0,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H5",
+    "H6"
+   ],
+   "gap_note": "仅约 1 个月历史；历史无法回填",
+   "next_action": "保留 365 天；历史不可回填（接口深度约 1 周）"
+  },
+  {
+   "name": "xueqiu_info.db",
+   "label": "雪球舆情·本地库(SQLite)",
+   "method": "爬虫采集",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "2012-2026；2021+ 稀疏，已加 3 轮抓取",
+   "files": 1,
+   "size_mb": 30.52,
+   "size_h": "31 MB",
+   "rows": 33466,
+   "rows_h": "33466",
+   "range": "xueqiu_info.db",
+   "last_update": "2026-11-06",
+   "latest_date": "2026-11-06 19:29:56",
+   "lag_days": 1,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H5"
+   ],
+   "gap_note": "2021+ 密度低（月均数十条）",
+   "next_action": "2012-2026；2021+ 稀疏，已加 3 轮抓取"
+  },
+  {
+   "name": "jev_audit.db",
+   "label": "JEV判定账本·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "判定账本；后验/company 覆盖不足（见缺口）",
+   "files": 1,
+   "size_mb": 38.15,
+   "size_h": "38 MB",
+   "rows": 135393,
+   "rows_h": "135393",
+   "range": "jev_audit.db",
+   "last_update": "2026-11-07",
+   "latest_date": "2026-11-07 06:53",
+   "lag_days": 0,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H6"
+   ],
+   "gap_note": "判定 135393 条 / 有后验 28327 条（20.9%）/ companies 空 104530 条（77%）",
+   "next_action": "判定账本；后验/company 覆盖不足（见缺口）"
+  },
+  {
+   "name": "ann_history.db",
+   "label": "公告历史·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "49 万条（2026-02 起）",
+   "files": 1,
+   "size_mb": 1969.86,
+   "size_h": "2.0 GB",
+   "rows": 511872,
+   "rows_h": "511872",
+   "range": "ann_history.db",
+   "last_update": "2026-11-01",
+   "latest_date": "2026-11-01",
+   "lag_days": 7,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H1",
+    "H11"
+   ],
+   "gap_note": "仅 2026-02 起（历史公告需用 anns_d 标题源）",
+   "next_action": "49 万条（2026-02 起）"
+  },
+  {
+   "name": "evidence_chain.db",
+   "label": "证据链·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "资格/取证底账",
+   "files": 1,
+   "size_mb": 2.33,
+   "size_h": "2 MB",
+   "rows": null,
+   "rows_h": "—",
+   "range": "evidence_chain.db",
+   "last_update": "2026-11-07",
+   "latest_date": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "zhice_pg",
+   "label": "智策OS·容器库(PostgreSQL)",
+   "method": "容器库",
+   "layer": "容器库",
+   "status": "done",
+   "note": "生产库：分钟线/日线/决策账本；B 批优化完成",
+   "files": 1,
+   "size_mb": 8379,
+   "size_h": "8.4 GB",
+   "rows": 17382282,
+   "rows_h": "1738.2 万",
+   "range": "2026-08-11 起（分钟线）",
+   "last_update": "2026-11-08",
+   "latest_date": "2026-11-07",
+   "lag_days": 1,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "分钟线自 2026-08-11 起（历史更早数据未采集）",
+   "next_action": "长期沉淀；历史分钟线不在覆盖内"
+  },
+  {
+   "name": "quant_meta_pg",
+   "label": "quant元数据·容器库(PostgreSQL)",
+   "method": "容器库",
+   "layer": "容器库",
+   "status": "done",
+   "note": "元数据/因子库；B 批清理 613MB",
+   "files": 1,
+   "size_mb": 415,
+   "size_h": "415 MB",
+   "rows": null,
+   "rows_h": "—",
+   "range": "元数据表 0 张",
+   "last_update": "2026-11-08",
+   "latest_date": "",
+   "lag_days": null,
+   "today_new": 0,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  }
+ ],
+ "method_counts": {
+  "接口同步": 63,
+  "爬虫采集": 2,
+  "本地库": 3,
+  "容器库": 2,
+  "文件导入": 0
+ },
+ "new_today_sources": [
+  {
+   "name": "hk_hold",
+   "label": "港股通持股明细",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "891 个交易日（2023-01~2026-10），约 1,000 只/日",
+   "files": 897,
+   "size_mb": 66.9,
+   "size_h": "67 MB",
+   "rows": 1967275,
+   "rows_h": "196.7 万",
+   "range": "20230103..20261106",
+   "last_update": "2026-11-08",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "index_global",
+   "label": "Tushare·全球指数",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "20 个全球指数（2018+）",
+   "files": 20,
+   "size_mb": 2.6,
+   "size_h": "3 MB",
+   "rows": 44056,
+   "rows_h": "4.4 万",
+   "range": "AS51..XIN9",
+   "last_update": "2026-11-08",
+   "latest_date": "20261106",
+   "report_period": "",
+   "lag_days": 2,
+   "today_new": 10,
+   "registered": true,
+   "manifest": "not_applicable",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": null,
+    "local_latest": null,
+    "verdict": "aligned",
+    "filled": null
+   }
+  },
+  {
+   "name": "index_weight",
+   "label": "Tushare·指数权重",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 143,
+   "size_mb": 1.5,
+   "size_h": "2 MB",
+   "rows": 112800,
+   "rows_h": "11.3 万",
+   "range": "000906_201501..000906_202611",
+   "last_update": "2026-11-08",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "us_daily",
+   "label": "Tushare·美股日线",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "unused",
+   "status": "mining",
+   "note": "24,211 只股票文件；未用于研究",
+   "files": 24211,
+   "size_mb": 1603.2,
+   "size_h": "1.6 GB",
+   "rows": 37284334,
+   "rows_h": "3728.4 万",
+   "range": "035420..ZZZOF",
+   "last_update": "2026-11-08",
+   "latest_date": "20261105",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 19864,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "24,211 只股票文件；未用于研究"
+  },
+  {
+   "name": "news.db",
+   "label": "新闻快讯·本地库(SQLite)",
+   "method": "爬虫采集",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
+   "files": 1,
+   "size_mb": 162.78,
+   "size_h": "163 MB",
+   "rows": 137523,
+   "rows_h": "137523",
+   "range": "news.db",
+   "last_update": "2026-11-08",
+   "latest_date": "2026-11-08 06:33",
+   "lag_days": 0,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H5",
+    "H6"
+   ],
+   "gap_note": "仅约 1 个月历史；历史无法回填",
+   "next_action": "保留 365 天；历史不可回填（接口深度约 1 周）"
+  }
+ ],
+ "hypotheses": [
+  {
+   "id": "H1",
+   "title": "公告类型的事件超额（CAR）",
+   "status": "rejected",
+   "question": "哪类公告在披露后 1/3/5 交易日有显著超额收益？",
+   "data_sources": "ann_history + tushare daily",
+   "method": "事件研究：市场调整 AR，CAR[0,1]/[0,5]，按类型/市场分层",
+   "conclusion": "三关结论：IS +0.54% → OOS raw +0.02% → OOS 市值中性 -1.23% → 成本后净 -1.53%（t=-3.3,n=168）；IS 正向未通过样本外/中性/成本三关，判定 rejected（v1 正向疑为小盘+特定区间效应）；仅『其他』类通过但不可操作",
+   "evidence": "research/reports/H1_announcement_car_v2_20261028.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-28T10:51:01"
+  },
+  {
+   "id": "H10",
+   "title": "数据质量对回测结论的影响",
+   "status": "backtested",
+   "question": "剔除低可信度表后回测结论是否改变？",
+   "data_sources": "catalog/registry + 回测",
+   "method": "前后对比实验",
+   "conclusion": "6类数据质量扰动（缺失/PIT错位/价格异常/幸存者/字段空/行业错分）对质量因子结论稳健性：OOS IC 全部保持负向（-0.024~-0.030，t<-5.5）→ 结论不翻转；最敏感=字段空30%（t 从-7.0→-5.6）、PIT错位会放大信号（前视风险）、价格异常/幸存者影响有限；门槛建议：字段完整率≥90%、严格PIT、价格清洗",
+   "evidence": "research/reports/H10_quality_sensitivity_20261029.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-29T17:09:23"
+  },
+  {
+   "id": "H11",
+   "title": "三年公告 CAR（行业+规模中性）",
+   "status": "rejected",
+   "question": "2023-2026 业绩预告在行业+规模中性后是否有可交易 CAR？",
+   "data_sources": "tushare anns_d + daily + stock_basic + daily_basic",
+   "method": "事件研究：3 年窗口、样本外 60/40、行业×规模双中性、双边 15bps",
+   "conclusion": "3 年/3.29 万可算事件：5 日 CAR IS -3.28%、OOS -0.52%（t=-6.77，未通过）；同日事件日敏感性 -0.77%（仍负）；负值主要来自 2024Q1 小盘崩盘区间+预告季节性，非可交易信号。数据发现：ann_history 仅 2026-02 起，3 年历史须用 anns_d 标题源",
+   "evidence": "research/reports/H11_announcement_car_3y_20261028.md",
+   "created_at": "2026-10-28T17:11:50",
+   "updated_at": "2026-10-28T17:11:50"
+  },
+  {
+   "id": "H12",
+   "title": "盈余方向事件研究（预增/预盈 vs 预减/预亏）",
+   "status": "rejected",
+   "question": "方向可提取的业绩预告是否产生可交易多空差？",
+   "data_sources": "tushare anns_d 标题（3 年） + daily + stock_basic/daily_basic",
+   "method": "方向按标题词解析；3 年窗口、行业×规模中性、OOS 60/40、双边 15bps",
+   "conclusion": "5,512 条方向可辨事件：预增/预盈 OOS -0.24%（t=-0.87）、预减/预亏 OOS -0.30%（t=-1.13）；多空差 IS +2.09% → OOS +0.07%（≈0，未覆盖 30bp 成本）→ 方向信号样本外衰减，rejected；需真实盈余惊喜幅度（forecast/express）才能做幅度型 PEAD",
+   "evidence": "research/reports/H11dir_earnings_direction_20261028.md",
+   "created_at": "2026-10-28T17:28:45",
+   "updated_at": "2026-10-28T17:28:45"
+  },
+  {
+   "id": "H13",
+   "title": "资金流动量因子（净流入分位→未来收益）",
+   "status": "rejected",
+   "question": "净流入截面分位的正向 IC 能否构成可用因子（多空/组合）？",
+   "data_sources": "tushare moneyflow 3年 + daily + stock_basic",
+   "method": "截面 IC / 分位组合 / 行业规模中性 / 成本后",
+   "conclusion": "多因子合成（flow+反转+市值+价值+质量规避，月度调仓/成本后）：IS 多空 +3.13%(t=3.91)、OOS 仅 +0.44%(t=0.19) → 样本外无 alpha，单因子 OOS 亦弱；H13 rejected（多因子复核不通过）",
+   "evidence": "research/reports/H13_multifactor_20261029.md",
+   "created_at": "2026-10-28T17:38:43",
+   "updated_at": "2026-10-29T23:26:50"
+  },
+  {
+   "id": "H14",
+   "title": "质量反向（高ROE跑输）规避候选",
+   "status": "backtested",
+   "question": "高 ROE 组合在 3/5 年 OOS 均显著跑输（IC -0.033~-0.038），是否可构造规避/低配规则？",
+   "data_sources": "tushare fina_indicator + daily_basic + daily（PIT，2019-2026）",
+   "method": "月度调仓；质量因子五分位；OOS 12-24 月；行业×规模中性；成本30bp；稳健性（3/5年、按市值/行业分组）",
+   "conclusion": "估值分层内质量反向**成立**（负向规则）：5年窗口 62 调仓月/16.7万观测，OOS PE 三分位内 ROE Q5-Q1 全负（低/中/高 PE：-0.83/-1.35/-1.83）；高ROE+高PE 质量陷阱 OOS -0.60% vs 高ROE+低PE +0.57%（差 -1.17%，IS -3.37%）；3年窗口同向（差 -1.24%，hi组 -1.45%, t=-4.08）。结论：H7 负 IC 由估值交互驱动；可制定「高ROE+高估值低配/规避」风控规则（待例会议决）；影子盘（A）已初始化：46 月回测约束版年化 -5.13% vs 无约束 -6.31%，回撤 -36.85% vs -38.37%；决策（2026-10-30 确认）：选 A（组合层陷阱组权重上限 5%），验收门槛确认=影子≥3次调仓/回撤≤无约束/夏普不劣/年化降幅≤0.5pct/权重执行≤5.5%；每月1",
+   "evidence": "research/reports/H14_quality_reversal_20261029.md",
+   "created_at": "2026-10-29T08:24:58",
+   "updated_at": "2026-10-30T11:25:00"
+  },
+  {
+   "id": "H15",
+   "title": "A/H 溢价收敛（汇率换算后）",
+   "status": "backtested",
+   "question": "A/H 溢价水平（z-score）能否预测未来相对收益（收敛）？",
+   "data_sources": "daily+hk_daily+fx_daily(东财 USDCNH/USDHKD 2010-2026)+stock_basic+hk_basic",
+   "method": "名称配对156对（收益相关≥0.3）；溢价=A/(H×HKDCNY)-1；60日z；T收盘信号T+1收盘执行；5/20日远期相对收益；IS 2023-09-18..2025-06-30 / OOS 2025-07-01..2026-10-29；成本0.3%/次",
+   "conclusion": "A/H 溢价收敛 OOS IC t=-11.77",
+   "evidence": "research/reports/AH_premium_20261030.md",
+   "created_at": "2026-10-30T06:27:51",
+   "updated_at": "2026-10-30T06:27:51"
+  },
+  {
+   "id": "H16",
+   "title": "A/H 溢价收敛的横截面结构（行业/市值/流动性）",
+   "status": "backtested",
+   "question": "H15 的 A/H 收敛 alpha 集中在哪些行业/市值/流动性分组？",
+   "data_sources": "daily+hk_daily+fx_daily+daily_basic+index_member_all",
+   "method": "H15 同口径；20 日远期相对收益；行业(SW L1)/市值三分位/换手三分位/溢价离散度分层；OOS 2025-07 起；成本0.3%",
+   "conclusion": "全样本 OOS IC t=-11.77；分层见报告",
+   "evidence": "research/reports/H16_ah_strat_20261030.md",
+   "created_at": "2026-10-30T09:21:05",
+   "updated_at": "2026-10-30T09:21:05"
+  },
+  {
+   "id": "H17",
+   "title": "港股通南向资金对 H 股折价的领先性",
+   "status": "rejected",
+   "question": "南向资金净流入是否领先 A/H 溢价收敛？",
+   "data_sources": "港股通资金流（需补 Tushare hk 通数据）+ hk_daily + fx + A/H 配对",
+   "method": "计划：日频南向净流入/持仓变化 → 分组 H 股 → 与溢价 z 的领先滞后检验；IS/OOS 同 H15",
+   "conclusion": "南向持股 5 日变化→20 日溢价变化 OOS t=1.57；时间序列 Spearman=0.5349929418894936；状态 rejected",
+   "evidence": "research/reports/H17_hsgt_leadlag_20261030.md",
+   "created_at": "2026-10-30T10:25:00",
+   "updated_at": "2026-10-30T11:24:18"
+  },
+  {
+   "id": "H18",
+   "title": "业绩预告修订动量（同公司同报告期二次公告）",
+   "status": "backtested",
+   "question": "同一公司同报告期的预告修订（类型/幅度变化）是否产生可交易动量？",
+   "data_sources": "forecast(2023-2026)+daily",
+   "method": "同 ts_code+end_date 第 2 次及以后 ann_date=修订；type 极性 Δ；T+1 入场；5/10/20 日相对等权市场 CAR；成本30bp；IS2023-24/OOS2025-26",
+   "conclusion": "修订事件 493；OOS 20日 改善组 {'n': 61, 'mean_pct': -2.915, 't': -2.0} / 恶化组 {'n': 185, 'mean_pct': -3.04, 't': -3.06}",
+   "evidence": "research/reports/H18_forecast_revision.md",
+   "created_at": "2026-11-01T00:54:29",
+   "updated_at": "2026-11-01T00:54:29"
+  },
+  {
+   "id": "H19",
+   "title": "公告标题情绪（关键词极性）→ 短期收益",
+   "status": "rejected",
+   "question": "公告标题正/负面关键词是否伴随/领先短期收益？",
+   "data_sources": "anns_d（2019-2026 标题）+ daily",
+   "method": "关键词极性（单极性）；T+1 入场；1/3/5/10/20 日相对等权市场 CAR；成本30bp；IS≤2023/OOS≥2024",
+   "conclusion": "事件 255772；OOS 5日 正面 t=19.45 / 负面 t=20.24 → rejected",
+   "evidence": "research/reports/H19_announcement_sentiment_20261030.md",
+   "created_at": "2026-10-30T12:44:21",
+   "updated_at": "2026-10-30T12:44:21"
+  },
+  {
+   "id": "H2",
+   "title": "业绩预告/快报的 PEAD",
+   "status": "rejected",
+   "question": "盈余公告后是否存在持续漂移？",
+   "data_sources": "tushare forecast/express + daily",
+   "method": "分位数组合 + 持有 5/10/20 日，样本外验证",
+   "conclusion": "H2 v2（真实惊喜=forecast type×p_change，3年，IS阈值→OOS）：OOS 高惊喜组 20日 +2.99%(t=10.8)、低组 +3.68%(t=13.7)，多空差 -0.69%（5/10日同样为负）→ 无 PEAD，反而低惊喜组更强（反转）；两组整体正收益为窗口/样本选择特征，非漂移 alpha → rejected（维持）",
+   "evidence": "research/reports/H2v2_earnings_surprise_pead_20261029.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-29T07:31:07"
+  },
+  {
+   "id": "H20",
+   "title": "港股通持仓变化 × A/H 价差",
+   "status": "rejected",
+   "question": "南向持仓增加 × A/H 高溢价 → 后续 A 股相对 H 跑输？",
+   "data_sources": "hk_hold(南向 ratio)+daily+hk_daily+fx_daily",
+   "method": "周频；Δratio 5周 × 溢价横截面 rank；未来 5/10/20 日 A 相对 H 收益；IS≤2024/OOS≥2025；30bp",
+   "conclusion": "配对 155 / 周频 298 期；10日 OOS 价差 0.15%(t=0.41,n=141)，高溢价+高持仓增组 OOS -1.32%(t=-3.6,n=141) → rejected",
+   "evidence": "research/reports/H20_hkhold_ah_v2_20261030.md",
+   "created_at": "2026-10-30T17:22:17",
+   "updated_at": "2026-10-30T17:22:17"
+  },
+  {
+   "id": "H21",
+   "title": "负面公告 × 主力净流出（复合规避）",
+   "status": "rejected",
+   "question": "负面公告叠加事件前主力净流出，是否显著弱于净流入组（可作规避规则）？",
+   "data_sources": "anns_d + moneyflow + daily",
+   "method": "负面标题事件；前5日主力净流入比横截面分位；5/10/20日 CAR；IS≤2023/OOS≥2024；30bp",
+   "conclusion": "事件 81668 / 观测 184868；10日 流出 vs 流入差 OOS 0.01%(t=0.03,n=671) → rejected",
+   "evidence": "research/reports/H21_negative_ann_moneyflow_20261030.md",
+   "created_at": "2026-10-30T16:58:09",
+   "updated_at": "2026-10-30T16:58:09"
+  },
+  {
+   "id": "H22",
+   "title": "A/H 高离散 regime 择时",
+   "status": "rejected",
+   "question": "A/H 溢价横截面离散高时再做「空A/多H」溢价收敛，能否提升风险收益？",
+   "data_sources": "daily+hk_daily+fx_daily",
+   "method": "PIT 250日离散分位 rank>=0.5 择时；60日z top-tercile 空A/多H；IS<=2024/OOS>=2025；30bp切换成本",
+   "conclusion": "OOS 择时 年化 16.38% / 夏普 1.43 / MDD -7.89% / t=1.86；Always-on OOS 夏普 2.45；择时未更优 → rejected",
+   "evidence": "research/reports/H22_ah_regime_timing_20261030.md",
+   "created_at": "2026-10-30T16:46:18",
+   "updated_at": "2026-10-30T16:46:18"
+  },
+  {
+   "id": "H23",
+   "title": "南向增持 → A 相对 H 走强（20日）",
+   "status": "rejected",
+   "question": "港股通持仓增加（Δratio 高分位）是否预示未来 20 日 A 股相对 H 股走强？",
+   "data_sources": "hk_hold + daily + hk_daily(2021回补) + fx",
+   "method": "周频 Δratio 5周 分位；20日 A-H 相对收益；非重叠抽样(4偏移)+block bootstrap 修正；IS≤2023/OOS≥2024；30bp",
+   "conclusion": "周频 OOS {'n': 136, 'mean_pct': 1.276, 't': 2.35}；非重叠 OOS 平均 t=1.25；bootstrap P(≤0)=0.026 → rejected",
+   "evidence": "research/reports/H23_southbound_ah_momentum_20261030.md",
+   "created_at": "2026-10-30T17:23:39",
+   "updated_at": "2026-10-30T17:23:39"
+  },
+  {
+   "id": "H24",
+   "title": "倍量柱（量比5≥1.9收阳）后续收益",
+   "status": "rejected",
+   "question": "量学形态（倍量柱（量比5≥1.9收阳）后续收益）是否带来可交易超额？",
+   "data_sources": "daily 2021-2026",
+   "method": "特征事件研究；T+1 入场；5/10/20 日 CAR；相对等权市场；IS≤2023/OOS≥2024；30bp；按日聚合 t + block bootstrap",
+   "conclusion": "事件 169211；10日 OOS {\"n\": 671, \"mean_pct\": -1.778, \"t\": -16.03}；bootstrap p=1.0 → rejected",
+   "evidence": "research/reports/H24-26_liangxue_features_20261031.md",
+   "created_at": "2026-10-31T18:04:59",
+   "updated_at": "2026-10-31T18:04:59"
+  },
+  {
+   "id": "H25",
+   "title": "价升量缩后续反转",
+   "status": "rejected",
+   "question": "量学形态（价升量缩后续反转）是否带来可交易超额？",
+   "data_sources": "daily 2021-2026",
+   "method": "特征事件研究；T+1 入场；5/10/20 日 CAR；相对等权市场；IS≤2023/OOS≥2024；30bp；按日聚合 t + block bootstrap",
+   "conclusion": "事件 739383；10日 OOS {\"n\": 670, \"mean_pct\": -0.618, \"t\": -6.72}；bootstrap p=1.0 → rejected",
+   "evidence": "research/reports/H24-26_liangxue_features_20261031.md",
+   "created_at": "2026-10-31T18:04:59",
+   "updated_at": "2026-10-31T18:04:59"
+  },
+  {
+   "id": "H26",
+   "title": "极阴次阳反弹",
+   "status": "rejected",
+   "question": "量学形态（极阴次阳反弹）是否带来可交易超额？",
+   "data_sources": "daily 2021-2026",
+   "method": "特征事件研究；T+1 入场；5/10/20 日 CAR；相对等权市场；IS≤2023/OOS≥2024；30bp；按日聚合 t + block bootstrap",
+   "conclusion": "事件 19850；10日 OOS {\"n\": 634, \"mean_pct\": -3.632, \"t\": -9.78}；bootstrap p=1.0 → rejected",
+   "evidence": "research/reports/H24-26_liangxue_features_20261031.md",
+   "created_at": "2026-10-31T18:04:59",
+   "updated_at": "2026-10-31T18:04:59"
+  },
+  {
+   "id": "H27",
+   "title": "兵临城下（近20日高+放量）",
+   "status": "rejected",
+   "question": "量学形态（兵临城下（近20日高+放量））是否带来可交易超额？",
+   "data_sources": "daily 2021-2026",
+   "method": "特征事件研究；T+1 入场；5/10/20 日 CAR；相对等权市场；IS≤2023/OOS≥2024；30bp；按日聚合 t + block bootstrap",
+   "conclusion": "事件 308515；10日 OOS {\"n\": 671, \"mean_pct\": -1.841, \"t\": -17.82}；bootstrap p=1.0 → rejected",
+   "evidence": "research/reports/H24-26_liangxue_features_20261031.md",
+   "created_at": "2026-10-31T18:04:59",
+   "updated_at": "2026-10-31T18:04:59"
+  },
+  {
+   "id": "H28",
+   "title": "量价形态反向规避（倍量柱/价升量缩/极阴次阳/兵临城下）",
+   "status": "in_progress",
+   "question": "量学看涨形态出现后 10/20 日显著跑输（已观测），规避组合能否带来超额？",
+   "data_sources": "daily 2021-2026",
+   "method": "等权全市场 vs 剔除触发股；日频超额；IS/OOS；换手/容量",
+   "conclusion": "规避组合年化超额 -1.52%（日频 t=-0.84；IS t=0.37 / OOS t=-3.19）；日均规避 788.9 只；有超额但需成本/容量评估",
+   "evidence": "research/reports/H29_liangxue_refined_20261031.md",
+   "created_at": "2026-10-31T18:14:05",
+   "updated_at": "2026-10-31T18:14:05"
+  },
+  {
+   "id": "H29",
+   "title": "严格版量学形态（黄金柱/倍量确认/极阴次阳严格/缩量回踩）",
+   "status": "rejected",
+   "question": "按原书严格确认规则，量学形态是否带来正超额？",
+   "data_sources": "daily 2021-2026",
+   "method": "严格定义+确认日入场；β调整CAR；IS≤2023/OOS≥2024；30bp；block bootstrap",
+   "conclusion": "PIT 修正后：黄金柱 5日 OOS -0.34%(t=-2.62)、可交易组 -0.51%(t=-4.98)；参数网格 0/81 通过；先前 backtested 为前视假阳性，已撤回 → rejected",
+   "evidence": "research/reports/H29_liangxue_refined_20261031.md",
+   "created_at": "2026-10-31T18:14:05",
+   "updated_at": "2026-10-31T18:15:41"
+  },
+  {
+   "id": "H3",
+   "title": "龙虎榜机构席位跟单",
+   "status": "rejected",
+   "question": "机构席位净买入是否预示次日/5 日超额？",
+   "data_sources": "tushare top_list/top_inst + daily",
+   "method": "席位分类事件研究 + 成本后",
+   "conclusion": "3年48,688上榜样本：机构净买 OOS5 -1.17%(t=-6.96)、净卖 -2.02%(t=-11.78)、全部上榜同样显著负 → 跟单不可做（上榜后整体下跌，疑高位炒作退潮/风险信号）；相对多空差 +0.85%（净买少跌），可作规避/反向候选但非多头 alpha → rejected",
+   "evidence": "research/reports/H3_dragon_tiger_inst_20261029.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-29T07:36:08"
+  },
+  {
+   "id": "H30",
+   "title": "存贷双高（货币资金高+有息负债高）→ 未来 60 日跑输？",
+   "status": "rejected",
+   "question": "存贷双高（货币资金高+有息负债高）→ 未来 60 日跑输？",
+   "data_sources": "income/balancesheet/cashflow（年报）+ daily",
+   "method": "年报特征→公告日后 T+1 入场→60日 CAR（相对等权、β未调整、30bp）；月度 cohort 控制组；IS≤2023/OOS≥2024；block bootstrap",
+   "conclusion": "触发 1266；spread IS -4.17%(t=-1.0,n=10) / OOS -3.20%(t=-2.46,n=8) → rejected | walk-forward: regime-dependent（命中率0.571；2024-2025符合预期、2026反向）→ OOS-only 现象为 regime 翻转，维持 rejected",
+   "evidence": "research/reports/H30-32_quality_redflags_20261031.md",
+   "created_at": "2026-10-31T18:24:22",
+   "updated_at": "2026-10-31T19:12:55"
+  },
+  {
+   "id": "H31",
+   "title": "商誉/净资产>30% → 未来 60 日跑输？",
+   "status": "rejected",
+   "question": "商誉/净资产>30% → 未来 60 日跑输？",
+   "data_sources": "income/balancesheet/cashflow（年报）+ daily",
+   "method": "年报特征→公告日后 T+1 入场→60日 CAR（相对等权、β未调整、30bp）；月度 cohort 控制组；IS≤2023/OOS≥2024；block bootstrap",
+   "conclusion": "触发 1301；spread IS 2.69%(t=0.61,n=13) / OOS n=7 → rejected",
+   "evidence": "research/reports/H30-32_quality_redflags_20261031.md",
+   "created_at": "2026-10-31T18:24:22",
+   "updated_at": "2026-10-31T18:24:22"
+  },
+  {
+   "id": "H32",
+   "title": "经营现金流/净利润<0.7 → 未来 60 日跑输？",
+   "status": "rejected",
+   "question": "经营现金流/净利润<0.7 → 未来 60 日跑输？",
+   "data_sources": "income/balancesheet/cashflow（年报）+ daily",
+   "method": "年报特征→公告日后 T+1 入场→60日 CAR（相对等权、β未调整、30bp）；月度 cohort 控制组；IS≤2023/OOS≥2024；block bootstrap",
+   "conclusion": "触发 8648；spread IS -3.62%(t=-1.63,n=16) / OOS 2.91%(t=0.96,n=9) → rejected",
+   "evidence": "research/reports/H30-32_quality_redflags_20261031.md",
+   "created_at": "2026-10-31T18:24:22",
+   "updated_at": "2026-10-31T18:24:22"
+  },
+  {
+   "id": "H33",
+   "title": "存贷双高（季度公告扩展版）",
+   "status": "rejected",
+   "question": "存贷双高公司，在每次定期报告公告后 60 日是否跑输（季度扩展提高功效）？",
+   "data_sources": "income/balancesheet/cashflow + daily（季度公告事件）",
+   "method": "最近已知年报特征 PIT；公告后 T+1 入场；60日 CAR；月度 cohort 控制组 + 年度 Fama-MacBeth；IS≤2023/OOS≥2024；30bp",
+   "conclusion": "触发 3935；cohorts IS/OOS={'IS': 35, 'OOS': 18, 'total': 53}；spread IS 3.23%(t=0.47,n=35) / OOS 4.07%(t=0.65,n=18)；FM {'beta_pct': None, 't': None, 'years': 0}",
+   "evidence": "research/reports/H33_quarterly_redflags_20261031.md",
+   "created_at": "2026-10-31T18:29:27",
+   "updated_at": "2026-10-31T18:29:27"
+  },
+  {
+   "id": "H34",
+   "title": "研报评级上调 → 未来 20 日跑赢？",
+   "status": "rejected",
+   "question": "研报评级上调 → 未来 20 日跑赢？",
+   "data_sources": "report_rc + daily",
+   "method": "月度聚合评级/净利预测/机构数；月末次一交易日入场；20/60日 CAR；月度 cohort 控制组；IS≤2023/OOS≥2024；30bp；block bootstrap",
+   "conclusion": "事件 19123；20日 spread IS -0.27%(t=-1.53,n=59) / OOS -0.18%(t=-0.74,n=32)；最佳窗口 None → rejected | walk-forward: regime-dependent（命中率0.714；2022-2023/2025反向）→ 维持 rejected",
+   "evidence": "research/reports/H34-36_report_rc_factors_20261031.md",
+   "created_at": "2026-10-31T19:09:58",
+   "updated_at": "2026-10-31T19:12:55"
+  },
+  {
+   "id": "H35",
+   "title": "盈利预测上修（净利润预测上调≥5%）→ 未来 20 日跑赢？",
+   "status": "rejected",
+   "question": "盈利预测上修（净利润预测上调≥5%）→ 未来 20 日跑赢？",
+   "data_sources": "report_rc + daily",
+   "method": "月度聚合评级/净利预测/机构数；月末次一交易日入场；20/60日 CAR；月度 cohort 控制组；IS≤2023/OOS≥2024；30bp；block bootstrap",
+   "conclusion": "事件 28676；20日 spread IS -0.15%(t=-0.88,n=59) / OOS 0.61%(t=2.25,n=32)；最佳窗口 None → rejected | walk-forward: regime-dependent（命中率0.429）→ OOS-only 为 regime 翻转，维持 rejected",
+   "evidence": "research/reports/H34-36_report_rc_factors_20261031.md",
+   "created_at": "2026-10-31T19:09:58",
+   "updated_at": "2026-10-31T19:12:55"
+  },
+  {
+   "id": "H36",
+   "title": "研报机构广度（≥3家）→ 未来 20 日拥挤反转？",
+   "status": "rejected",
+   "question": "研报机构广度（≥3家）→ 未来 20 日拥挤反转？",
+   "data_sources": "report_rc + daily",
+   "method": "月度聚合评级/净利预测/机构数；月末次一交易日入场；20/60日 CAR；月度 cohort 控制组；IS≤2023/OOS≥2024；30bp；block bootstrap",
+   "conclusion": "事件 61493；20日 spread IS -0.59%(t=-1.96,n=60) / OOS -0.43%(t=-1.19,n=32)；最佳窗口 None → rejected | walk-forward: **regime-robust**（命中率0.857，最近3年同向，2021起方向稳定）；但 OOS t=-1.19 弱、spread 约0.4%/年 → 观察候选，维持 rejected（待更严格定义/容量） | 深挖（阈值3/5/8×持有10/20/40×行业市值中性化）：最佳=org>=3；通过需影子盘/容量复核 | 深挖（阈值3/5/8×持有10/20/40×行业市值中性化）：最佳=org>=3|hold=40；通过需影子盘/容量复核 | 深挖结论：仅 org>=3|hold=40 通过精炼条件（full -0.99%% t=-2.18，OOS -0.95%% t=-1",
+   "evidence": "research/reports/H34-36_report_rc_factors_20261031.md",
+   "created_at": "2026-10-31T19:09:58",
+   "updated_at": "2026-10-31T19:21:51"
+  },
+  {
+   "id": "H37",
+   "title": "低波动（20日波动率倒数）→ 月频多空/多头跑赢？",
+   "status": "rejected",
+   "question": "低波动异象在 A 股 2019+ 是否稳健？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "月频十分位；多空+多头 vs 等权市场；四关",
+   "conclusion": "四关 FAIL：多空净 9.7% 但多头组净超额 -0.6%（不可只做多）→ 不入库",
+   "evidence": "research/reports/four_gate_*.md",
+   "created_at": "2026-11-01T15:50:47",
+   "updated_at": "2026-11-01T15:50:47"
+  },
+  {
+   "id": "H38",
+   "title": "短期反转（-20日收益）→ 月频多空/多头跑赢？",
+   "status": "rejected",
+   "question": "短期反转在 A 股 2019+ 是否稳健？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "月频十分位；多空+多头 vs 等权市场；四关",
+   "conclusion": "PIT修正后四关：FAIL（G1 一致性未过；净多空 14.4%）→ 由 candidate 降为 rejected",
+   "evidence": "research/reports/four_gate_*.md",
+   "created_at": "2026-11-01T15:50:47",
+   "updated_at": "2026-11-01T22:34:22"
+  },
+  {
+   "id": "H39",
+   "title": "长期反转（-120日收益）→ 月频多空/多头跑赢？",
+   "status": "candidate",
+   "question": "长期反转在 A 股 2019+ 是否稳健？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "月频十分位；多空+多头 vs 等权市场；四关",
+   "conclusion": "PIT修正后四关仍 PASS：净多空 13.2%/容量 36.91亿；G1-G4 全过 → 维持 candidate | 2026-11-02 幸存者偏差复核：PIT 全池下 mom_120 多头 CAGR 11.18%、t=0.39 → 原四关 PASS 基于当前池，实盘预期应大幅下调",
+   "evidence": "research/reports/four_gate_*.md",
+   "created_at": "2026-11-01T15:50:47",
+   "updated_at": "2026-11-01T23:44:27"
+  },
+  {
+   "id": "H4",
+   "title": "资金流与价格背离",
+   "status": "rejected",
+   "question": "量价/资金流背离是否预示反转？",
+   "data_sources": "tushare moneyflow + daily",
+   "method": "条件分组 + 反转收益检验",
+   "conclusion": "3年1,576,764 OOS观测：背离组（高流入+当日跌）OOS 净 -0.85%（t=-13.5）→ 反转假设不成立；IC(净流入分位 vs 未来5日) IS 0.007 / OOS +0.0164(t=4.53) → 弱正向（动量而非反转）；高流入 vs 高流出 OOS 差 +0.23% < 30bp 成本 → 不可交易",
+   "evidence": "research/reports/H4_flow_divergence_20261028.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-28T17:38:43"
+  },
+  {
+   "id": "H40",
+   "title": "5日反转（-5日收益）→ 月频跑赢？",
+   "status": "rejected",
+   "question": "5 日反转是否可月度交易？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "月频十分位；四关",
+   "conclusion": "四关 FAIL：年度方向仅 5/8、多头净 -2.3% → 不入库",
+   "evidence": "research/reports/four_gate_*.md",
+   "created_at": "2026-11-01T15:50:47",
+   "updated_at": "2026-11-01T15:50:47"
+  },
+  {
+   "id": "H41",
+   "title": "反转组合（-20日+ -120日）top20 等权月频 → 跑赢市场？",
+   "status": "rejected",
+   "question": "单因子四关 PASS，组合是否可交易？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "组合分数 z(-ret20)+z(-ret120)；top20 等权月频；成本0.15%单边",
+   "conclusion": "PIT修正后：CAGR 14.67%、MDD -39.69%、G4 未过（up -0.314%/月）→ 结论不变 rejected",
+   "evidence": "research/reports/s06_backtest_*.json",
+   "created_at": "2026-11-01T16:15:42",
+   "updated_at": "2026-11-01T22:44:45"
+  },
+  {
+   "id": "H42",
+   "title": "mom_20 多头 top50 小仓位是否可交易？",
+   "status": "rejected",
+   "question": "单因子四关 PASS（LS），多头 top50 是否还有超额？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "月频 top50 等权；成本0.15%单边×换手",
+   "conclusion": "long-only top50 无超额（t≈0），换手成本吞噬 → 不启动影子",
+   "evidence": "research/reports/s07s08_backtest_*.json",
+   "created_at": "2026-11-01T16:18:55",
+   "updated_at": "2026-11-01T16:18:55"
+  },
+  {
+   "id": "H43",
+   "title": "mom_120 多头 top50 小仓位是否可交易？",
+   "status": "in_progress",
+   "question": "长期反转多头 top50 是否可观察？",
+   "data_sources": "daily+adj（2019-2026）",
+   "method": "月频 top50 等权；成本0.15%单边×换手",
+   "conclusion": "S08 小仓位影子启动（2026-10-30 初始持仓），3 个月后复核",
+   "evidence": "research/shadow/s08/",
+   "created_at": "2026-11-01T16:18:55",
+   "updated_at": "2026-11-01T16:18:55"
+  },
+  {
+   "id": "H44",
+   "title": "Trend Template 8 条组合（20仓×5%）→ 跑赢 A 股市场？",
+   "status": "rejected",
+   "question": "书版 TT 在 A 股 2019+ 是否可交易？",
+   "data_sources": "daily+adj 2019-2026",
+   "method": "月末 TT 信号，20仓×5%，RS 双口径×3 股票池×4 退出规则对照；成本0.15%单边",
+   "conclusion": "PIT修正后重跑：TT 月频 top20 CAGR -18.35%/MDD -90.29%（空基线 -9.83%）；仅 C7 承重（Δ-2.57pp）；TT v1.1 最佳 13.9%/-47.18% → 结论不变：TT 不是 A 股选股 alpha",
+   "evidence": "research/reports/trend_template_v11_*.json",
+   "created_at": "2026-11-01T16:50:32",
+   "updated_at": "2026-11-01T22:44:45"
+  },
+  {
+   "id": "H45",
+   "title": "S08 改进：行业中性 K20 分数加权是否更优？",
+   "status": "in_progress",
+   "question": "K/权重/中性化/频率哪项改进稳健？",
+   "data_sources": "daily+adj 2019-2026；stock_basic industry",
+   "method": "48 组合（频率×K×权重×中性化×行业上限）+ v2 验证（年度/regime/容量）",
+   "conclusion": "代码审查后重算：S08 基线 CAGR 19.59%/t1.3；v2 行业中性 CAGR 28.38%/MDD -23.62/t1.9；仍未过 G1（t<2）→ 仅研究候选",
+   "evidence": "research/reports/s08_research_*.json; s08_v2_verify_*.json",
+   "created_at": "2026-11-01T17:07:57",
+   "updated_at": "2026-11-01T23:29:23"
+  },
+  {
+   "id": "H46",
+   "title": "米勒维尼 SEPA 完整体系（TT+VCP+突破+风险定仓）→ A 股可交易？",
+   "status": "in_progress",
+   "question": "整体系（不是单因子/单模板）在 A 股 2019-2026 是否有效？",
+   "data_sources": "daily+adj 2019-2026（OHLCV）",
+   "method": "周扫 TT+VCP 设置（2-4次收缩/缩量/枢轴），每日盯放量突破，T+1开盘入场；风险2%，止损8%，10仓；退出变体 A/B/C；市场过滤可选",
+   "conclusion": "补基本面成长过滤（PIT：净利yoy≥15/营收yoy≥10/ROE≥8）后：growth+双周扫：B 7.29%/MDD -35.81%/PF 2.85；C+市场过滤 5.15%/MDD -23.6%/PF 3.04；市场 CAGR 9.44%/MDD -29.31%/vol 19.95% → 绝对收益仍低于市场、风险调整接近（CAGR/vol 0.49 vs 0.47）。下一步：每日扫描、金字塔加仓、2015+长样本、阈值预注册检验 | 2026-11-01 追加：每日扫描 B 变体 CAGR 7.81%/MDD -26.47%/PF 2.06（优于周/双周扫回撤）；金字塔提升收益但降质量。",
+   "evidence": "research/reports/sepa_backtest_20261101*.{json,md}",
+   "created_at": "2026-11-01T17:22:03",
+   "updated_at": "2026-11-01T21:50:04"
+  },
+  {
+   "id": "H47",
+   "title": "基本面成长过滤能否把 SEPA 从跑输修成可交易？",
+   "status": "in_progress",
+   "question": "加入净利/营收/ROE 过滤后体系是否改善？",
+   "data_sources": "fina_indicator(PIT)+daily+adj 2019-2026",
+   "method": "SEPA 原流程 + PIT 过滤（净利yoy>=15、营收yoy>=10、ROE>=8；加速版另要求环比改善）；周扫/双周扫对照",
+   "conclusion": "改善显著但未跑赢市场：PF 1.35→2.85-3.44，CAGR→7.29%；风险调整接近市场；加速版过滤过严(13信号)无效 → 待每日扫描/加仓/长样本",
+   "evidence": "research/reports/sepa_backtest_20261101_fund_*.{json,md}",
+   "created_at": "2026-11-01T17:39:11",
+   "updated_at": "2026-11-01T17:39:11"
+  },
+  {
+   "id": "H48",
+   "title": "SEPA 每日扫描 + 金字塔加仓是否改善体系？",
+   "status": "in_progress",
+   "question": "扫描频率与加仓对收益/回撤/盈亏比的影响？",
+   "data_sources": "fina PIT + daily+adj 2019-2026",
+   "method": "对比 weekly/twice/daily 扫描 × 金字塔开/关；成本+滑点；T+1入场",
+   "conclusion": "每日扫描改善稳健性（B 变体 -35.8%→-26.5% MDD、PF 2.06）；金字塔提高绝对收益（C 12.04%）但回撤/盈亏比恶化 → 杠杆效应而非 edge，不采纳",
+   "evidence": "research/reports/sepa_backtest_20261101_fund_growth_daily*.json",
+   "created_at": "2026-11-01T21:50:04",
+   "updated_at": "2026-11-01T21:50:04"
+  },
+  {
+   "id": "H49",
+   "title": "基准条件依据审查：TT 8条与基本面阈值是否有实证依据？",
+   "status": "in_progress",
+   "question": "选股基准条件本身对不对、有没有依据（而非层层加条件）？",
+   "data_sources": "daily+adj+fina(PIT) 2019-2026",
+   "method": "TT 逐条消融（去一条/单条）+ 基本面 IC/阈值分档",
+   "conclusion": "基准条件多数缺乏依据：TT 8条在A股为负向筛选（唯C7正向、C1/C6/C8冗余、C5有害）；基本面阈值无横截面预测力；有证据的因子是低波/反转/低换手（与TT相反）→ 基准应重建",
+   "evidence": "research/reports/tt_ablation_*.json; fund_evidence_*.json",
+   "created_at": "2026-11-01T21:57:48",
+   "updated_at": "2026-11-01T21:57:48"
+  },
+  {
+   "id": "H5",
+   "title": "舆情情绪领先价格",
+   "status": "in_progress",
+   "question": "新闻/雪球情绪是否领先价格 1–2 小时？",
+   "data_sources": "news.db + xueqiu_info.db + zhice minute",
+   "method": "lead-lag 互相关 + 事件窗口",
+   "conclusion": "pilot 完成（64 帖/75 观测）：bullish 1日 {'n': 20, 'mean_pct': -0.851, 't': -1.65}、bearish 1日 {'n': 5}；**数据不足**（xq 分类情绪 2026-09 前每月<20 条、news 仅 1 个月），保持 in_progress 数据积累，2027-02 前后重评",
+   "evidence": "research/reports/H5_sentiment_pilot_20261030.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-30T12:19:26"
+  },
+  {
+   "id": "H50",
+   "title": "证据基准（低波+反转+低换手行业中性）四关是否通过？",
+   "status": "rejected",
+   "question": "用有证据的因子重建基准能否过四关？",
+   "data_sources": "daily+adj+daily_basic(PIT) 2019-2026",
+   "method": "C2：z(-vol20)+z(-ret20)+z(-ret120)+z(-turnover20) 均值，行业内 z 中性，top20 等权，月频；成本0.15%×换手；四关",
+   "conclusion": "**作废**：修正上市天数 PIT bug 后 C2 CAGR 19.85%/MDD -25.99%/t=1.24（G1 未过）→ 原「四关全过」由次新股前视导致，回滚",
+   "evidence": "research/reports/evidence_baseline_*.json; research/shadow/s10/",
+   "created_at": "2026-11-01T22:09:52",
+   "updated_at": "2026-11-01T22:24:24"
+  },
+  {
+   "id": "H51",
+   "title": "上市天数 PIT bug 的影响面与修复",
+   "status": "validated",
+   "question": "历史回测中「上市≥250日」用最新日计算导致次新股污染，影响哪些结论？",
+   "data_sources": "全部月频回测脚本（tools/research）",
+   "method": "代码审计 + 修正 evidence_baseline 并重跑 + 影响面清单",
+   "conclusion": "修复 12 脚本（listed_at(dt) PIT）并全部重跑：因子级证据不变；mom_120 仍过四关；mom_20/S10/TT/S06 结论维持否定；长样本 2015-2026 显示 S10 3f 12.09%（市场 22.43%）→ 无长期稳定优势",
+   "evidence": "research/reports/evidence_baseline_*.json",
+   "created_at": "2026-11-01T22:24:24",
+   "updated_at": "2026-11-01T22:44:45"
+  },
+  {
+   "id": "H52",
+   "title": "mom_120 long-only 加 regime 过滤/权重/中性化后能否交易？",
+   "status": "shadow",
+   "question": "四关 LS 通过但 long-only 薄利，找稳健可交易配置",
+   "data_sources": "daily+adj 2019-2026（PIT）",
+   "method": "32 组合网格：K/权重/中性化/频率/regime；long-only 超额 t/容量/回撤",
+   "conclusion": "排除BJ后：网格最佳 K20/score/M/down CAGR 23.89%/MDD -22.36%/t=2.15/容量 1.47亿；选定 60日/-2%（活跃28%）t=2.35；2026-10-30 建20仓非BJ影子（容量5.52亿，上限1.5亿）",
+   "evidence": "research/reports/s11_mom120_robust_*.{json,md}",
+   "created_at": "2026-11-01T22:51:29",
+   "updated_at": "2026-11-01T23:17:09"
+  },
+  {
+   "id": "H53",
+   "title": "幸存者偏差量级：当前股票池 vs 含退市全池",
+   "status": "validated",
+   "question": "current stock_basic 的选择偏差对策略收益影响多大？",
+   "data_sources": "daily+adj 2019-2026（全历史出现代码）",
+   "method": "同一 mom_120 top20 月频，分别用当前池与全池（首次出现日代理上市日；全池无ST过滤）",
+   "conclusion": "PIT 全池（含退市+历史名称/list_date）：CAGR 11.18%、t=0.39；当前池 25.89%、t=1.84；无ST全池 11.18%、t=0.39 → 幸存者偏差约 +14.7pp/年，mom_120 边际优势在 PIT 口径下消失",
+   "evidence": "research/reports/survivorship_*.json",
+   "created_at": "2026-11-01T23:34:59",
+   "updated_at": "2026-11-01T23:44:27"
+  },
+  {
+   "id": "H6",
+   "title": "JEV 决策归因",
+   "status": "backtested",
+   "question": "哪些 bias/playbook/regime 在系统性赚钱或亏钱？",
+   "data_sources": "jev_audit.db + zhice aw_decision",
+   "method": "分组统计（收益/胜率/样本量）+ 决策规则改进",
+   "conclusion": "回填管线健康：成熟且有代码行已填 94%（6658/7102）；总覆盖 7.5% 的瓶颈是 82% 行 companies 为空（上游抽取）；空公司行市场方向兜底准确率 50.2%（无 alpha）；aw_decision 10.6万条非零胜率 50.6%，SELL 组方向正确但样本小",
+   "evidence": "research/reports/H6_jev_attribution_20261028.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-28T17:11:50"
+  },
+  {
+   "id": "H7",
+   "title": "财务因子分层有效性",
+   "status": "rejected",
+   "question": "9 维财务因子在哪些市值/行业分层有效？",
+   "data_sources": "tushare nine_dim/财报 + daily",
+   "method": "IC / 分层 / 正交化",
+   "conclusion": "PIT 财务因子：价值/质量/成长均未通过（3年与5年一致）。5年复验：质量因子 OOS IC -0.0331(t=-2.11) 与3年 -0.0384(t=-2.1) 同向且显著 → 高ROE跑输是稳健负向异象（非噪声）；价值 5年 IC +0.017(t=0.82) 不稳定；成长 -0.014 弱负。rejected（不采纳为正向因子）；质量反向作为 H14 规避候选",
+   "evidence": "research/reports/H7_factor_strat_20261029v_5y_20261029.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-29T08:24:58"
+  },
+  {
+   "id": "H8",
+   "title": "行业资金轮动",
+   "status": "rejected",
+   "question": "行业资金流是否存在 3–5 日动量？",
+   "data_sources": "tushare sector + moneyflow",
+   "method": "行业截面动量回测",
+   "conclusion": "PIT 行业归属（index_member_all）复验：IS IC +0.056(t=1.83)、Q5−Q1 +5.62%(t=2.89)；OOS IC -0.002(t=-0.06)、Q5−Q1 +1.94%(t=0.98) → 样本内强、样本外消失，行业资金轮动无 OOS alpha → rejected（此前快照版 OOS IC +0.0165 的弱信号同样不稳健）",
+   "evidence": "research/reports/H8_industry_rotation_pit_20261029.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-29T14:16:41"
+  },
+  {
+   "id": "H9",
+   "title": "跨市场映射",
+   "status": "rejected",
+   "question": "美股/港股事件是否领先 A 股映射标的？",
+   "data_sources": "us/hk 行情 + A 股 daily",
+   "method": "跨市场 lead-lag",
+   "conclusion": "可交易性检验：外盘隔夜与 A 股开盘缺口 OOS corr 0.53–0.57(t=12–13)，但日内收益 corr ≈0/微负 → 信号在开盘价一次性吸收，开盘执行不可获利 → H9 作为交易 alpha rejected；保留「外盘→缺口」风控参考用途（非交易）",
+   "evidence": "research/reports/H9_tradability_20261029.md",
+   "created_at": "2026-10-28T07:54:22",
+   "updated_at": "2026-10-29T16:28:47"
+  }
+ ],
+ "reports": [
+  {
+   "name": "learning_gate_20261108_intake.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.4,
+   "date": "2026-11-08",
+   "time": "06:33",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261108_intake.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.2,
+   "date": "2026-11-08",
+   "time": "06:33",
+   "hid": ""
+  },
+  {
+   "name": "learning_intake_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 3.5,
+   "date": "2026-11-08",
+   "time": "06:33",
+   "hid": ""
+  },
+  {
+   "name": "card_routine_state.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.3,
+   "date": "2026-11-08",
+   "time": "06:30",
+   "hid": ""
+  },
+  {
+   "name": "card_precheck_status_视频号学习_8博主_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 46.1,
+   "date": "2026-11-08",
+   "time": "06:30",
+   "hid": ""
+  },
+  {
+   "name": "card_candidates_视频号学习_8博主_v2_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 773.7,
+   "date": "2026-11-08",
+   "time": "06:30",
+   "hid": ""
+  },
+  {
+   "name": "card_review_top_视频号学习_8博主_routine_20261108.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 18.9,
+   "date": "2026-11-08",
+   "time": "06:30",
+   "hid": ""
+  },
+  {
+   "name": "card_proposals_视频号学习_8博主_routine_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 666.5,
+   "date": "2026-11-08",
+   "time": "06:30",
+   "hid": ""
+  },
+  {
+   "name": "card_proposals_v3_20261101.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 16.8,
+   "date": "2026-11-08",
+   "time": "02:30",
+   "hid": ""
+  },
+  {
+   "name": "card_proposals_v3_20261101.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 62.4,
+   "date": "2026-11-08",
+   "time": "02:30",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261108_candidates.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.5,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261108_candidates.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.2,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_governance_all_20261108.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.8,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_governance_all_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.7,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "governance_conclusions_20261108.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 9.2,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_governance_20261108.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 9.0,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_governance_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 11.7,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "governance_baseline_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.4,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_governance_20261108.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.1,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_governance_20261108.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.0,
+   "date": "2026-11-08",
+   "time": "02:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261107_intake.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.2,
+   "date": "2026-11-07",
+   "time": "23:33",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261107_intake.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.4,
+   "date": "2026-11-07",
+   "time": "23:33",
+   "hid": ""
+  },
+  {
+   "name": "learning_intake_20261107.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 3.5,
+   "date": "2026-11-07",
+   "time": "23:33",
+   "hid": ""
+  },
+  {
+   "name": "daily_screening_20261106.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 3.5,
+   "date": "2026-11-07",
+   "time": "20:50",
+   "hid": ""
+  },
+  {
+   "name": "daily_screening_20261106.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 9.5,
+   "date": "2026-11-07",
+   "time": "20:50",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261107_units.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.4,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_gate_20261107_units.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.2,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_curation_20261107.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.5,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "learning_curation_20261107.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.9,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.9,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.3,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_公开投教_布林线.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.3,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_公开投教_布林线.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.9,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_视频号学习_北斗股术1688.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 2.9,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_视频号学习_北斗股术1688.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 1.3,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_视频号学习_第二期.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 12.9,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_视频号学习_第二期.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 2.2,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_视频号学习_8博主.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 2.4,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_视频号学习_8博主.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 19.5,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  },
+  {
+   "name": "knowledge_dedupe_20261103_laomu_notes.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 1.0,
+   "date": "2026-11-07",
+   "time": "20:00",
+   "hid": ""
+  }
+ ],
+ "tasks": {
+  "doing": [
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "status": "review",
+    "owner": "DEV6",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
+   },
+   {
+    "id": "WO-UI-CONSIST-20261103",
+    "status": "review",
+    "owner": "DEV5",
+    "desc": "技术框架前端UI一致性：tokens/nav/shortscreen/字体统一 + 页面审计"
+   },
+   {
+    "id": "WO-IFS-STD-20261103",
+    "status": "review",
+    "owner": "ARCH1",
+    "desc": "IFS规范/接口登记表/ID/envelope/契约测试骨架"
+   },
+   {
+    "id": "WO-HERMES-CONTRACT-20261103",
+    "status": "review",
+    "owner": "DEV6",
+    "desc": "Hermes契约审计修复 [UNOWNED]"
+   },
+   {
+    "id": "UI-UNIFY-P0FIX-20261103",
+    "status": "review",
+    "owner": "DEV5",
+    "desc": "UI P0快捷修复：selection重复nav.js+缺失viewport/lang页补齐+回归测试"
+   },
+   {
+    "id": "UI-UNIFY-TOKENS-20261103",
+    "status": "review",
+    "owner": "DEV5",
+    "desc": "tokens单一真源+漂移门：3副本hash校验工具/测试/说明"
+   },
+   {
+    "id": "UI-UNIFY-BATCH-20261103",
+    "status": "review",
+    "owner": "DEV8",
+    "desc": "合并列车批量集成：8张UI单一次门禁合并（窗口容量）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-MON-20261104",
+    "status": "review",
+    "owner": "DEV2",
+    "desc": "批量监控引擎：规则评估/池管理/告警持久化/CLI/测试（analysis/monitor.py）"
+   },
+   {
+    "id": "UI-MOBILE-RESIDUAL-20261104",
+    "status": "doing",
+    "owner": "DEV3",
+    "desc": "UI残余收口：学习项目/回测页短屏化+methods/screening等390横向溢出修复"
+   },
+   {
+    "id": "UI-GATECHECK-20261104",
+    "status": "doing",
+    "owner": "DEV3",
+    "desc": "UI门禁聚合器：standalone ui_gate_checks.py（tokens/page_manifest/page_shell changed/visual）不接merge闸"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-F2-20261104",
+    "status": "review",
+    "owner": "DOC1",
+    "desc": "F2 条件选股前端页 /sa/screen：NL输入→条件预览→结果表→批量分析（栈在 MONPAGE 分支）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-NORTH-20261104",
+    "status": "doing",
+    "owner": "DEV2",
+    "desc": "数据P1 北向资金维度：analysis/northbound.py 接入 extras/snapshot/报告（栈在 P2.9 分支）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-MONSCHED-20261104",
+    "status": "doing",
+    "owner": "DEV1",
+    "desc": "批量监控运营化：15:40 批后自动跑监控 + 飞书告警推送（栈在 MONPAGE 分支）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-F3-20261104",
+    "status": "doing",
+    "owner": "DOC1",
+    "desc": "F3 策略工作室前端页 /sa/strategy：Spec 编辑→校验→预览→保存，演示降级（栈 F2）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-MONCFG-20261104",
+    "status": "doing",
+    "owner": "DEV1",
+    "desc": "监控规则配置化：阈值/规则按池配置 + /api/monitor/config + 页面规则面板（栈 MONSCHED）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-DATA2-20261104",
+    "status": "doing",
+    "owner": "DEV6",
+    "desc": "数据P1续：limit_list_d 上游空分区诊断修复 + 龙虎榜 top_list/top_inst extras 接入（栈 NORTH）"
+   },
+   {
+    "id": "UI-A11Y2-20261104",
+    "status": "doing",
+    "owner": "DEV3",
+    "desc": "a11y第三波：10个未触碰active页focus/aria/表格语义深修（无视觉变化）"
+   },
+   {
+    "id": "W1-PILOT-TOOLFIX-20261104",
+    "status": "doing",
+    "owner": "ARCH1",
+    "desc": "修composition裸id/resolver --manifest --strict，锁131分母"
+   },
+   {
+    "id": "CATALOG-PERSIST-20261104",
+    "status": "doing",
+    "owner": "ARCH1",
+    "desc": "Catalog外部资产持久化修复(方案A):external_assets_registry+build_catalog合并+回归测试 [UNOWNED]"
+   },
+   {
+    "id": "UI-BRIEF-H5-20261105",
+    "status": "review",
+    "owner": "DEV8",
+    "desc": "信息采集今日简报 H5 落地页视觉升级（深空 Signal Desk）"
+   },
+   {
+    "id": "OPS-ALERT-CLARITY-20261105",
+    "status": "review",
+    "owner": "OPS1",
+    "desc": "黄忠每日验收告警通知统一四段式：是什么/为什么/是否需处理/下一步，固定[观察项]/[需处理]标签，保留机器字段"
+   },
+   {
+    "id": "K-KG-BRIEF-STYLE-20261105",
+    "status": "review",
+    "owner": "DEV4",
+    "desc": "KG 每日情报简报卡面 P0：飞书浅色情报卡（态势+KPI+四段+证据按钮），先真机预览，不直接全量"
+   },
+   {
+    "id": "K-MORNING-BRIEF-STYLE-20261105",
+    "status": "review",
+    "owner": "DEV4",
+    "desc": "盘前晨报多源融合卡面 P0 灰度接入"
+   },
+   {
+    "id": "K-POS-ALERT-STYLE-20261105",
+    "status": "review",
+    "owner": "OPS1",
+    "desc": "持仓异动提醒模板统一与内容治理（标题/统计口径/条目/新闻行/去重）"
+   },
+   {
+    "id": "K-SEARCH-P0-20261105",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "集团统一搜索 P0：内部多源检索 API + H5/网页入口 + 评测"
+   },
+   {
+    "id": "WO-GUANYU-DATASEED-20261106",
+    "status": "review",
+    "owner": "GUANYU",
+    "desc": "[P2] worktree 数据种子化 + dataset_registry.REPO 测试路径统一：devtask new 后复制缺失的 quant_backtest/data/{catalog.json,warehouse_regist"
+   },
+   {
+    "id": "WO-DEV7-L1L4-EVID-20261106",
+    "status": "doing",
+    "owner": "DEV7",
+    "desc": "T27 DEV7 L1-L4 证据补证（4 文件+4/4；截止 11-09 18:00；详见 work/dev7-learning-closeout-20261106/remediation_dispatch.md）"
+   },
+   {
+    "id": "WO-DEV7-PRACTICE-ACC-20261106",
+    "status": "doing",
+    "owner": "DEV7",
+    "desc": "T27 DEV7 实践单验收归档（WIKI/LS10 重跑+归档；截止 11-09 18:00；详见 work/dev7-learning-closeout-20261106/remediation_dispatch.md）"
+   },
+   {
+    "id": "WO-DEVBUS-V2-20261106",
+    "status": "review",
+    "owner": "exec-devtask",
+    "desc": "P0-A 总线可读性：workorder_bus 增量字段 title/due/seat_owner/reviewer/returned_at/group + workorder_bus_meta(total/active/truncate"
+   },
+   {
+    "id": "WO-DEVBUS-ROUTE-20261106",
+    "status": "doing",
+    "owner": "DEV1",
+    "desc": "P0-B 席位路由与WIP上限：dev_routing_rules v2 + dev_bus_route（audit/plan/apply/dry-run）+ wip_check 扩展；34条路由计划，apply默认不执行；只读复核/测试 "
+   },
+   {
+    "id": "legion-1106093009",
+    "status": "doing",
+    "owner": "T1",
+    "desc": "[T1] 盘前 weak 池三线扫描"
+   },
+   {
+    "id": "WO-TEST-HZ-CLOCK-20261106",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "HZ defect classify CLI tests: freeze clock to NOW, fix time-bomb"
+   },
+   {
+    "id": "legion-1106234248",
+    "status": "doing",
+    "owner": "A0A",
+    "desc": "[A0A] 每日复盘三问汇总"
+   },
+   {
+    "id": "legion-1106234809",
+    "status": "doing",
+    "owner": "A0A",
+    "desc": "[A0A] 每日复盘三问汇总"
+   },
+   {
+    "id": "legion-1106234909",
+    "status": "doing",
+    "owner": "A0A",
+    "desc": "[A0A] 每日复盘三问汇总"
+   },
+   {
+    "id": "K-STOCK-ENTITY-REG-20261107",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "P2 实体解析复核判错负例回归：L065/L072/L075/L090/L091/B116/B126 七组（来源：桌面《P2实体解析_200组人工复核打分表_2026-11-07_已复核.md》，200 组抽检 193✓/7✗）固化为负例回"
+   },
+   {
+    "id": "K-DIALOG-C1-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "个股分析对话式研究助手 C1：对话内核（会话/意图/反问/动作）+ PC 对话页 /sa/chat"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-T2FIX-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "盘后批 T2 修复：run_id 冲突幂等修复 + 批启动迟到告警（analysis/db.py、analysis/batch.py）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-TR1-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "TR1 事件—价格影响跟踪：行业加权基准 + track.db + 每日盘后 Top 列表（analysis/track_review/）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-TR2-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "TR2a 一致预期自建（ts_report_rc PIT 快照+修正事件+consensus.db）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-CLEANUP-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "代码清理与BUG修复：重复测试类F811、死代码F841、废弃文件清理（不改行为，测试证明）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-GATEHEALTH-20261107",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "质量闸健康：closeout 动态基线 + 冻结文件拆分回基线 + analysis/commercial 纳入 fast 门"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-GATEHEALTH2-20261108",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "GATEHEALTH2：门禁四红一次性修复（mixin/closeout/analysis/commercial）+ fast 9 套件"
+   },
+   {
+    "id": "WO-NGINX-R7-BASELINE-20261108",
+    "status": "doing",
+    "owner": "OPS1",
+    "desc": "nginx/R7 门禁基线修复：同步 round7 测试与 pending-r8 到当前 nginx 语义；不改生产 nginx、不 reload；OPS1 owner，QA1 验收"
+   },
+   {
+    "id": "WO-PORTAL-SPLIT-BUDGET-20261108",
+    "status": "doing",
+    "owner": "DEV1",
+    "desc": "portal-split 预算基线修复：api_chanlun_pages.py 2411>2328，回收至基线或按拆分事实更新基线并留证；DEV1 owner，QA1 验收"
+   },
+   {
+    "id": "K-PUSH-20261108-HUBTIMEOUT",
+    "status": "doing",
+    "owner": "Trae·A",
+    "desc": "jev verify hub send timeout 8s false negative fix [UNOWNED]"
+   }
+  ],
+  "doing_data": [
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "status": "review",
+    "owner": "DEV6",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
+   },
+   {
+    "id": "UI-GATECHECK-20261104",
+    "status": "doing",
+    "owner": "DEV3",
+    "desc": "UI门禁聚合器：standalone ui_gate_checks.py（tokens/page_manifest/page_shell changed/visual）不接merge闸"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-NORTH-20261104",
+    "status": "doing",
+    "owner": "DEV2",
+    "desc": "数据P1 北向资金维度：analysis/northbound.py 接入 extras/snapshot/报告（栈在 P2.9 分支）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-DATA2-20261104",
+    "status": "doing",
+    "owner": "DEV6",
+    "desc": "数据P1续：limit_list_d 上游空分区诊断修复 + 龙虎榜 top_list/top_inst extras 接入（栈 NORTH）"
+   },
+   {
+    "id": "W1-PILOT-TOOLFIX-20261104",
+    "status": "doing",
+    "owner": "ARCH1",
+    "desc": "修composition裸id/resolver --manifest --strict，锁131分母"
+   },
+   {
+    "id": "CATALOG-PERSIST-20261104",
+    "status": "doing",
+    "owner": "ARCH1",
+    "desc": "Catalog外部资产持久化修复(方案A):external_assets_registry+build_catalog合并+回归测试 [UNOWNED]"
+   },
+   {
+    "id": "K-POS-ALERT-STYLE-20261105",
+    "status": "review",
+    "owner": "OPS1",
+    "desc": "持仓异动提醒模板统一与内容治理（标题/统计口径/条目/新闻行/去重）"
+   },
+   {
+    "id": "WO-GUANYU-DATASEED-20261106",
+    "status": "review",
+    "owner": "GUANYU",
+    "desc": "[P2] worktree 数据种子化 + dataset_registry.REPO 测试路径统一：devtask new 后复制缺失的 quant_backtest/data/{catalog.json,warehouse_regist"
+   },
+   {
+    "id": "K-DIALOG-C1-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "个股分析对话式研究助手 C1：对话内核（会话/意图/反问/动作）+ PC 对话页 /sa/chat"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-T2FIX-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "盘后批 T2 修复：run_id 冲突幂等修复 + 批启动迟到告警（analysis/db.py、analysis/batch.py）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-TR1-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "TR1 事件—价格影响跟踪：行业加权基准 + track.db + 每日盘后 Top 列表（analysis/track_review/）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-TR2-20261107",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "TR2a 一致预期自建（ts_report_rc PIT 快照+修正事件+consensus.db）"
+   },
+   {
+    "id": "K-PUSH-20261108-HUBTIMEOUT",
+    "status": "doing",
+    "owner": "Trae·A",
+    "desc": "jev verify hub send timeout 8s false negative fix [UNOWNED]"
+   }
+  ],
+  "today_pilot": [
+   {
+    "id": "K-STOCK-ANALYSIS-GATEHEALTH2-20261108",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "GATEHEALTH2：门禁四红一次性修复（mixin/closeout/analysis/commercial）+ fast 9 套件"
+   },
+   {
+    "id": "WO-NGINX-R7-BASELINE-20261108",
+    "status": "doing",
+    "owner": "OPS1",
+    "desc": "nginx/R7 门禁基线修复：同步 round7 测试与 pending-r8 到当前 nginx 语义；不改生产 nginx、不 reload；OPS1 owner，QA1 验收"
+   },
+   {
+    "id": "WO-PORTAL-SPLIT-BUDGET-20261108",
+    "status": "doing",
+    "owner": "DEV1",
+    "desc": "portal-split 预算基线修复：api_chanlun_pages.py 2411>2328，回收至基线或按拆分事实更新基线并留证；DEV1 owner，QA1 验收"
+   },
+   {
+    "id": "K-PUSH-20261108-HUBTIMEOUT",
+    "status": "doing",
+    "owner": "Trae·A",
+    "desc": "jev verify hub send timeout 8s false negative fix [UNOWNED]"
+   }
+  ],
+  "today_pilot_data": [
+   {
+    "id": "K-PUSH-20261108-HUBTIMEOUT",
+    "status": "doing",
+    "owner": "Trae·A",
+    "desc": "jev verify hub send timeout 8s false negative fix [UNOWNED]"
+   }
+  ],
+  "today_merged": [],
+  "today_merged_data": [],
+  "counts": {
+   "aborted": 140,
+   "done": 2010,
+   "parked": 10,
+   "review": 20,
+   "doing": 26
+  }
+ },
+ "governance": [
+  {
+   "item": "catalog/registry 一致性",
+   "status": "done",
+   "note": "v16 / 253 表 / sha 一致",
+   "date": "2026-10-29"
+  },
+  {
+   "item": "manifest 覆盖",
+   "status": "done",
+   "note": "closed 239 / not_applicable 12 / open 1 / missing 1",
+   "date": "2026-10-29"
+  },
+  {
+   "item": "数据契约（ODCS）",
+   "status": "in_progress",
+   "note": "6 份；待扩研究用表",
+   "date": "2026-10-28"
+  },
+  {
+   "item": "资格取证",
+   "status": "in_progress",
+   "note": "evidence_chain/registry；未全量覆盖",
+   "date": "2026-10-28"
+  },
+  {
+   "item": "display 展示登记",
+   "status": "in_progress",
+   "note": "92/253",
+   "date": "2026-10-28"
+  },
+  {
+   "item": "生命周期 lifecycle",
+   "status": "in_progress",
+   "note": "data_lifecycle.yaml 9 条",
+   "date": "2026-10-28"
+  },
+  {
+   "item": "新鲜度 freshness",
+   "status": "done",
+   "note": "DW-Daily 06:30 + run_all",
+   "date": "2026-10-28"
+  },
+  {
+   "item": "staging 生命周期",
+   "status": "done",
+   "note": "retention 30d / 锁 7d",
+   "date": "2026-10-27"
+  },
+  {
+   "item": "备份链 BackupDaily",
+   "status": "done",
+   "note": "7 产物 + 异地校验 + 新增 DB section7",
+   "date": "2026-10-29"
+  },
+  {
+   "item": "可重拉策略",
+   "status": "done",
+   "note": "_source_reclaim.json 11 类",
+   "date": "2026-10-29"
+  },
+  {
+   "item": "汇率数据源缺失",
+   "status": "done",
+   "note": "已换源东财（USDCNH 4,211 / USDHKD 4,383 行，2010–2026）",
+   "date": "2026-10-30"
+  },
+  {
+   "item": "news 历史沉淀",
+   "status": "in_progress",
+   "note": "不可回填→长期采集+保留365天",
+   "date": "2026-10-29"
+  },
+  {
+   "item": "xq 近端抓取频率",
+   "status": "done",
+   "note": "单次 3 轮（240s）",
+   "date": "2026-10-29"
+  },
+  {
+   "item": "watchdog 单实例校验",
+   "status": "pending",
+   "note": "ws 双实例现象，建议互斥加固",
+   "date": "2026-10-30"
+  },
+  {
+   "item": "approval 回写 devtask/事件",
+   "status": "in_progress",
+   "note": "approvals.jsonl 已落；回写待接",
+   "date": "2026-10-30"
+  }
+ ],
+ "roadmap": [
+  {
+   "phase": "D0 家底盘清",
+   "status": "done",
+   "date": "2026-10-28",
+   "note": "catalog/registry 基线、db health、备份链"
+  },
+  {
+   "phase": "D1 元数据治理收尾",
+   "status": "done",
+   "date": "2026-10-28",
+   "note": "manifest/freshness/staging/lifecycle"
+  },
+  {
+   "phase": "D2–D3 Supervisor + 签字卡",
+   "status": "done",
+   "date": "2026-10-30",
+   "note": "L1/L3/L4 dry-run；approval:* 接线"
+  },
+  {
+   "phase": "D4–D5 M4/v1.1 S2 签字",
+   "status": "done",
+   "date": "2026-10-30",
+   "note": "卡片→点击→approvals 落账"
+  },
+  {
+   "phase": "数据补强批（Tushare）",
+   "status": "done",
+   "date": "2026-10-28~29",
+   "note": "forecast/express/top_*/moneyflow/hk_daily/index_member_all"
+  },
+  {
+   "phase": "09:30 节点检查",
+   "status": "pending",
+   "date": "2026-10-30",
+   "note": "T19/DEV7/交接 + 签字回写验证"
+  },
+  {
+   "phase": "H14 质量陷阱决策 A/B/C",
+   "status": "pending",
+   "date": "2026-10-30 例会",
+   "note": "组合层回测→影子盘"
+  },
+  {
+   "phase": "A/H 横截面比价研究",
+   "status": "in_progress",
+   "date": "2026-10-30+",
+   "note": "hk_daily 已入库；汇率缺源不阻塞"
+  },
+  {
+   "phase": "fx 汇率换源",
+   "status": "pending",
+   "date": "P2",
+   "note": "东财/央行中间价"
+  },
+  {
+   "phase": "备份覆盖补洞",
+   "status": "in_progress",
+   "date": "2026-10-30",
+   "note": "quant_meta+thunder_model 已接入；03:00 首跑验回执"
+  }
+ ],
+ "ops": {
+  "backup": {
+   "latest": "2026-11-07_0745",
+   "products": [
+    {
+     "name": "jev_eval.tar.gz",
+     "mb": 4.4
+    },
+    {
+     "name": "neo4j_kg.tar.gz",
+     "mb": 520.9
+    },
+    {
+     "name": "quant_code.tar.gz",
+     "mb": 906.1
+    },
+    {
+     "name": "quant_data.tar.gz",
+     "mb": 570.3
+    },
+    {
+     "name": "jev_eval.tar.gz",
+     "mb": 4.4
+    },
+    {
+     "name": "neo4j_kg.tar.gz",
+     "mb": 520.9
+    },
+    {
+     "name": "quant_code.tar.gz",
+     "mb": 906.1
+    },
+    {
+     "name": "quant_data.tar.gz",
+     "mb": 570.3
+    },
+    {
+     "name": "zhice_db.sql.gz.enc",
+     "mb": 907.4
+    }
+   ],
+   "receipt": "offsite_remote_receipt.txt",
+   "age_hours": 30.7
+  },
+  "supervisor": {
+   "red": [],
+   "generated_at": "2026-11-08T06:43:03"
+  },
+  "approvals": {
+   "count": 4,
+   "today": 0,
+   "latest": [
+    {
+     "ts": "2026-10-30T00:48:38",
+     "schema": "approval/v1",
+     "task": "M4/v1.1 验收签字（试点）",
+     "action": "approve",
+     "operator": "ou_50a95455c7dffec1090ade400886d0d4",
+     "level": "S2",
+     "evidence_hash": "0e2cb4aff",
+     "source": "feishu_card",
+     "revocable": true
+    },
+    {
+     "ts": "2026-10-30T00:51:51",
+     "schema": "approval/v1",
+     "task": "M4/v1.1 正式验收签字",
+     "action": "approve",
+     "operator": "ou_50a95455c7dffec1090ade400886d0d4",
+     "level": "S2",
+     "evidence_hash": "0e2cb4aff",
+     "source": "feishu_card",
+     "revocable": true
+    },
+    {
+     "ts": "2026-10-30T10:17:10",
+     "schema": "approval/v1",
+     "task": "M4/v1.1",
+     "action": "annotate",
+     "operator": "DSH-Lead",
+     "note": "2026-10-30 00:48/00:51 两条 approve 为早期/试点点击，缺 QA1/GUANYU/VERIFY1 三方签字，不构成 M4 正式验收；M4 仍待 10-31 正式签字",
+     "refs": [
+      "2026-10-30T00:48:38",
+      "2026-10-30T00:51:51"
+     ]
+    },
+    {
+     "ts": "2026-11-01T12:57:28",
+     "schema": "approval/v1",
+     "task": "M4/v1.1 正式验收签字",
+     "action": "approve",
+     "operator": "ou_50a95455c7dffec1090ade400886d0d4",
+     "level": "S2",
+     "evidence_hash": "m4-policy-b-owner",
+     "source": "feishu_card",
+     "revocable": true
+    }
+   ]
+  }
+ },
+ "sync": {
+  "started_at": "2026-10-30T02:08:00+08:00",
+  "finished_at": "2026-10-30T02:12:20+08:00",
+  "ok": true,
+  "failed": [],
+  "steps": [
+   {
+    "step": "guard",
+    "desc": "六表增量守护（increment_guard，补齐最近交易窗口）",
+    "rc": 0,
+    "duration_s": 9.4,
+    "tail": [
+     "[manifest] margin_detail: +1 单元 +4485 行 → file=d_20261028.parquet rows=3666750",
+     "[manifest] index_daily: +2 单元 +19873 行 → file=d_20261029.parquet rows=9523510",
+     "[manifest] moneyflow: +1 单元 +5577 行 → file=d_20261029.parquet rows=4733899",
+     "[git] manifest 无变更",
+     "[done] status=OK passed=7 held=0",
+     "[report] work/increment_guard_20261030T020800.json"
+    ]
+   },
+   {
+    "step": "hk",
+    "desc": "港股日线导出（HK R1 Daily --append）",
+    "rc": 0,
+    "duration_s": 17.3,
+    "tail": [
+     "  \"snap_reconcile\": \"OK\"",
+     " },",
+     " \"skipped\": false,",
+     " \"log\": \"C:\\\\项目\\\\_reviews_20261026\\\\hk_r1_logs\\\\hk_r1_20261030_020809.log\",",
+     " \"ledger\": \"C:\\\\项目\\\\_reviews_20261026\\\\hk_r1_observation_v1.md\"",
+     "}"
+    ]
+   },
+   {
+    "step": "ann",
+    "desc": "公告近月增量回填（ann_history_sync --apply）",
+    "rc": 0,
+    "duration_s": 205.6,
+    "tail": [
+     "[02:08:26] START mode=apply since=2026-10-01 universe=300 db=C:\\项目\\zerobound-kg\\data\\ann_history\\ann_history.db",
+     "[02:08:27] BEFORE {'ann': 493448, 'ann_stock': 493491, 'date_min': '2026-02-01', 'date_max': '2026-10-27'}",
+     "[02:10:47] PROGRESS 200/300 rows=1176 new=814 fails=0 ETA=1.2min",
+     "[02:11:52] PROGRESS 300/300 rows=1715 new=1192 fails=0 ETA=0.0min",
+     "[02:11:52] AFTER {'ann': 494044, 'ann_stock': 494087, 'date_min': '2026-02-01', 'date_max': '2026-10-30'}",
+     "[02:11:52] DONE mode=apply rows=1715 new=1192 fails=0 elapsed=205.1s"
+    ]
+   },
+   {
+    "step": "snapshot",
+    "desc": "刷新驾驶舱快照（dw_snapshot.json）",
+    "rc": 0,
+    "duration_s": 28.5,
+    "tail": [
+     "snapshot: C:\\项目\\老田的AI助手\\portal\\static\\dw_snapshot.json size= 118932",
+     "cockpit: {\"sources_total\": 66, \"sources_done\": 23, \"sources_in_progress\": 6, \"sources_mining\": 37, \"sources_pending\": 0, \"coverage_pct\": 34.8, \"new_today\": 30, \"pilot_today\": 4, \"merged_today\": 8, \"hypotheses\": 14, \"hypotheses_by_status\": {\"rejected\": 10, \"backtested\": 3, \"idea\": 1}, \"reports_total\": 34, \"re"
+    ]
+   }
+  ],
+  "log": "C:\\项目\\老田的AI助手\\work\\data_sync\\sync_20261030_020800.log",
+  "how_to": "python tools/data_sync_manual.py（或指定 --steps tushare,hk,snapshot）"
+ },
+ "ah_signal": {
+  "generated_at": "2026-10-30T15:30:19+08:00",
+  "date": "20261029",
+  "pairs": 152,
+  "window": 60,
+  "dispersion": {
+   "value": 0.7580621697791818,
+   "rank_250d": 0.98,
+   "regime": "high"
+  },
+  "gate": {
+   "rule": "高离散 regime(rank>=0.5) 才输出强信号；低离散仅观察",
+   "active": true
+  },
+  "strength": "strong",
+  "high_premium_z": [
+   {
+    "name": "青岛银行",
+    "premium": 50.37,
+    "z": 4.24
+   },
+   {
+    "name": "蓝思科技",
+    "premium": 125.36,
+    "z": 3.36
+   },
+   {
+    "name": "光大证券",
+    "premium": 149.25,
+    "z": 3.32
+   },
+   {
+    "name": "中集集团",
+    "premium": 53.69,
+    "z": 3.29
+   },
+   {
+    "name": "申万宏源",
+    "premium": 139.61,
+    "z": 3.27
+   },
+   {
+    "name": "美的集团",
+    "premium": 10.24,
+    "z": 3.24
+   },
+   {
+    "name": "交通银行",
+    "premium": 18.87,
+    "z": 3.12
+   },
+   {
+    "name": "宁德时代",
+    "premium": -20.33,
+    "z": 3.09
+   },
+   {
+    "name": "邮储银行",
+    "premium": 22.52,
+    "z": 3.06
+   },
+   {
+    "name": "中芯国际",
+    "premium": 164.69,
+    "z": 2.95
+   },
+   {
+    "name": "招商证券",
+    "premium": 51.97,
+    "z": 2.93
+   },
+   {
+    "name": "安克创新",
+    "premium": 40.0,
+    "z": 2.91
+   }
+  ],
+  "low_premium_z": [
+   {
+    "name": "药明康德",
+    "premium": -11.9,
+    "z": -1.94
+   },
+   {
+    "name": "大唐发电",
+    "premium": 117.63,
+    "z": -1.48
+   },
+   {
+    "name": "百济神州",
+    "premium": 34.52,
+    "z": -1.29
+   },
+   {
+    "name": "中远海能",
+    "premium": 28.3,
+    "z": -1.27
+   },
+   {
+    "name": "金隅集团",
+    "premium": 166.39,
+    "z": -0.97
+   },
+   {
+    "name": "复旦张江",
+    "premium": 255.22,
+    "z": -0.91
+   },
+   {
+    "name": "华新建材",
+    "premium": 71.64,
+    "z": -0.74
+   },
+   {
+    "name": "荣昌生物",
+    "premium": 74.13,
+    "z": -0.73
+   },
+   {
+    "name": "滨化股份",
+    "premium": 126.94,
+    "z": -0.72
+   },
+   {
+    "name": "君正股份",
+    "premium": 58.5,
+    "z": -0.71
+   },
+   {
+    "name": "广发证券",
+    "premium": 37.17,
+    "z": -0.65
+   },
+   {
+    "name": "龙源电力",
+    "premium": 230.23,
+    "z": -0.42
+   }
+  ],
+  "median_premium_pct": 72.17,
+  "note": "高 z=溢价处 60 日高位（A 相对贵，收敛方向：空 A/多 H）；低 z 反之。仅信号不做交易。"
+ },
+ "audit": {
+  "generated_at": "2026-10-30T03:25:09+08:00",
+  "trading_days": [
+   "20261016",
+   "20261019",
+   "20261020",
+   "20261021",
+   "20261022",
+   "20261023",
+   "20261026",
+   "20261027",
+   "20261028",
+   "20261029"
+  ],
+  "dry_run": false,
+  "stores": {
+   "daily": {
+    "store": "daily",
+    "api": "daily",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 5567,
+      "local_rows": 5567,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 5564,
+      "local_rows": 5564,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 5572,
+      "local_rows": 5572,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     }
+    ]
+   },
+   "daily_basic": {
+    "store": "daily_basic",
+    "api": "daily_basic",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 5567,
+      "local_rows": 5567,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 5564,
+      "local_rows": 5564,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 5572,
+      "local_rows": 5572,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     }
+    ]
+   },
+   "moneyflow": {
+    "store": "moneyflow",
+    "api": "moneyflow",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 5575,
+      "local_rows": 5575,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 5575,
+      "local_rows": 5575,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 5576,
+      "local_rows": 5576,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 5576,
+      "local_rows": 5576,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     }
+    ]
+   },
+   "top_list": {
+    "store": "top_list",
+    "api": "top_list",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 66,
+      "local_rows": 66,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 80,
+      "local_rows": 80,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 82,
+      "local_rows": 82,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 69,
+      "local_rows": 69,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 75,
+      "local_rows": 75,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 101,
+      "local_rows": 101,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 89,
+      "local_rows": 89,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 88,
+      "local_rows": 88,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 78,
+      "local_rows": 78,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 75,
+      "local_rows": 75,
+      "action": "ok"
+     }
+    ]
+   },
+   "top_inst": {
+    "store": "top_inst",
+    "api": "top_inst",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 660,
+      "local_rows": 660,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 800,
+      "local_rows": 800,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 820,
+      "local_rows": 820,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 690,
+      "local_rows": 690,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 750,
+      "local_rows": 750,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 1010,
+      "local_rows": 1010,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 890,
+      "local_rows": 890,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 880,
+      "local_rows": 880,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 780,
+      "local_rows": 780,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 750,
+      "local_rows": 750,
+      "action": "ok"
+     }
+    ]
+   },
+   "limit_list_d": {
+    "store": "limit_list_d",
+    "api": "limit_list_d",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 120,
+      "local_rows": 120,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 89,
+      "local_rows": 89,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 89,
+      "local_rows": 89,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 74,
+      "local_rows": 74,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 104,
+      "local_rows": 104,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 100,
+      "local_rows": 100,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 104,
+      "local_rows": 104,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 91,
+      "local_rows": 91,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 146,
+      "local_rows": 146,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 105,
+      "local_rows": 105,
+      "action": "ok"
+     }
+    ]
+   },
+   "hk_daily": {
+    "store": "hk_daily",
+    "api": "hk_daily",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 2234,
+      "local_rows": 2234,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 0,
+      "local_rows": null,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 2267,
+      "local_rows": 2267,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 2225,
+      "local_rows": 2225,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 2331,
+      "local_rows": 2331,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 2235,
+      "local_rows": 2235,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 2187,
+      "local_rows": 2187,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 2181,
+      "local_rows": 2181,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 2201,
+      "local_rows": 2201,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 2153,
+      "local_rows": 2153,
+      "action": "ok"
+     }
+    ]
+   },
+   "anns_d": {
+    "store": "anns_d",
+    "api": "anns_d",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 6000,
+      "local_rows": 6000,
+      "action": "ok"
+     }
+    ]
+   },
+   "index_global": {
+    "store": "index_global",
+    "codes": 20,
+    "new_rows": 0,
+    "verdict": "aligned"
+   }
+  },
+  "financials": {
+   "income": {
+    "source_rows": 7606,
+    "source_codes": 4939,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 270,
+    "coverage_pct": 90.0,
+    "verdict": "aligned"
+   },
+   "balancesheet": {
+    "source_rows": 7000,
+    "source_codes": 4836,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 252,
+    "coverage_pct": 84.0,
+    "verdict": "aligned"
+   },
+   "cashflow": {
+    "source_rows": 4943,
+    "source_codes": 4939,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 270,
+    "coverage_pct": 90.0,
+    "verdict": "aligned"
+   },
+   "fina_indicator": {
+    "source_rows": 5996,
+    "source_codes": 4939,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 270,
+    "coverage_pct": 90.0,
+    "verdict": "aligned"
+   }
+  },
+  "fx": {
+   "USDCNH": {
+    "local_latest": "20261029",
+    "local_close": 6.6568,
+    "source": "ECB",
+    "source_date": "2026-10-29",
+    "source_rate": 6.6616,
+    "close_diff_pct": 0.072,
+    "tolerance_pct": 1.5,
+    "verdict": "aligned"
+   },
+   "USDHKD": {
+    "local_latest": "20261029",
+    "local_close": 7.8462,
+    "source": "ECB",
+    "source_date": "2026-10-29",
+    "source_rate": 7.8464,
+    "close_diff_pct": 0.003,
+    "tolerance_pct": 0.5,
+    "verdict": "aligned"
+   }
+  },
+  "events": {
+   "forecast": {
+    "store": "forecast",
+    "api": "forecast_vip",
+    "local_latest": "20261024",
+    "source_latest": "20261024",
+    "verdict": "aligned"
+   },
+   "express": {
+    "store": "express",
+    "api": "express_vip",
+    "local_latest": "20261021",
+    "source_latest": "20261021",
+    "verdict": "aligned"
+   }
+  }
+ },
+ "layers": [
+  "原始层",
+  "采集流",
+  "生产库",
+  "研究库",
+  "治理库"
+ ],
+ "status_order": [
+  "done",
+  "in_progress",
+  "mining",
+  "pending"
+ ]
+}
