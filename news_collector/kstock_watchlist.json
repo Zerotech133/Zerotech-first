@@ -1,0 +1,87 @@
+{
+  "source": "k_stock/data/paper.db",
+  "asof": "2026-11-10T08:23:36",
+  "recent_days": 14,
+  "held": [
+    "000011.SZ",
+    "000993.SZ",
+    "01299.HK",
+    "01810.HK",
+    "03690.HK",
+    "300740.SZ",
+    "600593.SH",
+    "600613.SH",
+    "600887.SH",
+    "603188.SH",
+    "gb_be",
+    "gb_mrvl",
+    "gb_panw",
+    "gb_pltr",
+    "gb_tsla",
+    "gb_tsm"
+  ],
+  "recent_buy_valid": [
+    "01299.HK",
+    "01810.HK",
+    "03690.HK",
+    "603667.SH"
+  ],
+  "new_recent": [
+    "603667.SH"
+  ],
+  "watchlist": [
+    "000011.SZ",
+    "000993.SZ",
+    "01299.HK",
+    "01810.HK",
+    "03690.HK",
+    "300740.SZ",
+    "600593.SH",
+    "600613.SH",
+    "600887.SH",
+    "603188.SH",
+    "603667.SH",
+    "gb_be",
+    "gb_mrvl",
+    "gb_panw",
+    "gb_pltr",
+    "gb_tsla",
+    "gb_tsm"
+  ],
+  "breakdown": {
+    "ashare": [
+      "000011.SZ",
+      "000993.SZ",
+      "300740.SZ",
+      "600593.SH",
+      "600613.SH",
+      "600887.SH",
+      "603188.SH",
+      "603667.SH"
+    ],
+    "hk": [
+      "01299.HK",
+      "01810.HK",
+      "03690.HK"
+    ],
+    "us": [
+      "gb_be",
+      "gb_mrvl",
+      "gb_panw",
+      "gb_pltr",
+      "gb_tsla",
+      "gb_tsm"
+    ]
+  },
+  "collected_ashare": [
+    "000011",
+    "000993",
+    "300740",
+    "600593",
+    "600613",
+    "600887",
+    "603188",
+    "603667"
+  ],
+  "coverage_note": "自动覆盖 A股 irm(深交所互动易)/sse(上证e互动)/taoguba(淘股吧); 股吧 guba_pw 为 Playwright headed 需桌面会话，暂跳过自动; 雪球 xq 由 XqTimelineDaily(07:00 全队列) 覆盖; 港股/美股无对应采集器，仅登记不抓取"
+}
