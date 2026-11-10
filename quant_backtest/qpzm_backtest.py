@@ -1046,6 +1046,38 @@ def run_backtest(args):
             }
         gate_ab["variants"].append(_gv)
 
+    # ---- P63 「硬地板 + 加权排序」：在现行买入上叠加 RPS 地板（2026-11-11）----
+    # 与上面的门控变体不是同一件事：门控变体放弃 score 阈值（纯双阈值判定），
+    # 本组保留 score>=buy_th 的排序，只额外要求 RPS 不低于地板值。
+    # 这才是「RPS 由权重分量改为硬地板」的真实形态 —— P61 网格从未覆盖它。
+    # floor=0 必须与 base 完全一致（自带验证）。
+    FLOOR_GRID = (0, 50, 70, 90)
+    floor_ab = {
+        "note": "地板变体：buy = buy_in & (RPS >= floor)；"
+        "buy_in 已含 score>=buy_th 与 env_safe，故 floor=0 应与 base 完全一致；"
+        "对照组 = variants 里的 w_cur_th7550_gate_on",
+        "variants": [],
+    }
+    for _f in FLOOR_GRID:
+        _fm = buy_in if _f <= 0 else (buy_in & (mix_in >= _f))
+        _fv = {
+            "label": "floor_r%d" % _f,
+            "rps_floor": _f,
+            "n_buy": int(_fm.sum().sum()),
+            "holds": {},
+        }
+        for _n in holds:
+            _fr, _ = trade_returns(
+                _fm, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            _fv["holds"][str(_n)] = {
+                "n_trades": int(len(_fr)),
+                "mean": round(float(_fr.mean()), 6) if len(_fr) else None,
+                "median": round(float(_fr.median()), 6) if len(_fr) else None,
+                "win_rate": round(float((_fr > 0).mean()), 4) if len(_fr) else None,
+            }
+        floor_ab["variants"].append(_fv)
+
     # ---- P61 时间稳定性：逐月 T+5/T+10（防单期行情主导结论）----
     # 关键：buy 掩码用全窗口 open/close 计算出场，月掩码只作用于「信号日」，
     # 避免月末 5 日内的信号因切片而丢失出场价（否则每月末被系统性剔除）。
@@ -1064,6 +1096,10 @@ def run_backtest(args):
         ("gate_t70_r70", (tech_in >= 70) & (mix_in >= 70) & elig_in & safe_mat),
         ("gate_t70_r90", (tech_in >= 70) & (mix_in >= 90) & elig_in & safe_mat),
         ("gate_t50_r90", (tech_in >= 50) & (mix_in >= 90) & elig_in & safe_mat),
+        # P63：硬地板形态（保留 score 排序，只加 RPS 下限）
+        ("floor_r50", buy_in & (mix_in >= 50)),
+        ("floor_r70", buy_in & (mix_in >= 70)),
+        ("floor_r90", buy_in & (mix_in >= 90)),
     ]
     gate_ab["monthly"] = {
         "note": "逐月按信号日分组；出场用全窗口价格，月末信号不丢出场价；"
@@ -1164,6 +1200,7 @@ def run_backtest(args):
         },
         "rps_split": rps_split,
         "gate_ab": gate_ab,
+        "floor_ab": floor_ab,
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
