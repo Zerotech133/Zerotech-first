@@ -5,12 +5,15 @@ rumor_verification.py — OSINT 方法论结合方案 M4 落地：传闻-澄清�
 
 设计依据：docs/OSINT方法论结合方案_2026-11-10.md（2026-11-10 老田批准按计划实施，L2）
 范本映射：表 6「关键说法 | 本地依据 | 外部核验来源 | 核验结论」→ 本席两端数据接闭环。
+2026-11-11 L2 增强（老田批准）：核验栏加 admiralty_code 占位（NATO 格式，保持 null）；
+每 code 加 post_volume（传闻端总条数）+ rumor_by_source/official_by_source（按源分列发帖量）；
+官方端记录补 src 字段（irm/sse 分离）。
 
 本脚本产出的是【对账底表】，不是核验结论：
 - 官方端（tier=1）：data/{irm,sse}/{code6}.jsonl 中 reply_content 非空的记录
 - 传闻端（tier=3）：data/taoguba、news_collector/data/xq_timeline 帖文，
   以及 irm/sse 中【无官方回复】的投资者提问（疑问本身属参照层）
-- 每个 code 列出两端计数与最新 N 条引用（quote + 源 id + 时间 + 链接），
+- 每个 code 列出两端计数与最新 N 条引用（quote + 源 id + 时间 + 链接 + src），
   附 fact_type 词法分布（来自 fact_type_annotate 的同一词表，行内即算）。
 - 「核验结论」一栏一律留空待人工/分析岗填写——本席止于数据与判据，不裁事实。
 
@@ -75,6 +78,15 @@ def quote_item(rec, fld, lineno, path):
     }
 
 
+def _count_by_source(items):
+    """按 src 聚合发帖量（code 级发帖量统计，L2）。"""
+    d = {}
+    for _, it in items:
+        s = it.get("src", "unknown")
+        d[s] = d.get(s, 0) + 1
+    return d
+
+
 def scan():
     """返回 {code6: {"official":[(ts,item)...], "rumor":[(ts,item)...]}}"""
     acc = {}
@@ -95,9 +107,13 @@ def scan():
                 reply = (rec.get("reply_content") or "").strip()
                 q = (rec.get("content") or "").strip()
                 if reply:
-                    put(code, "official", rec.get("reply_date") or rec.get("ts"), quote_item(rec, "reply_content", lineno, path))
+                    it = quote_item(rec, "reply_content", lineno, path)
+                    it["src"] = src
+                    put(code, "official", rec.get("reply_date") or rec.get("ts"), it)
                 if q and not reply:
-                    put(code, "rumor", rec.get("ts"), quote_item(rec, "content", lineno, path))
+                    it = quote_item(rec, "content", lineno, path)
+                    it["src"] = src
+                    put(code, "rumor", rec.get("ts"), it)
 
     # 传闻端：taoguba / xq_timeline
     for src, d, flds in (("taoguba", DATA_ROOT / "taoguba", ("title", "content")),
@@ -140,8 +156,13 @@ def main():
             "rumor_count": len(rum),
             "official_latest": [it for _, it in off[: args.latest]],
             "rumor_latest": [it for _, it in rum[: args.latest]],
+            # code 级发帖量统计（L2）：传闻端按源分列 + 总发帖量
+            "official_by_source": _count_by_source(off),
+            "rumor_by_source": _count_by_source(rum),
+            "post_volume": len(rum),
             # 核验结论栏：留空待人工/分析岗填写（本席不裁事实）
-            "verification": {"status": "pending", "by": None, "note": None},
+            # admiralty_code 按 NATO Admiralty 格式占位（如 "B2"），本席保持 null
+            "verification": {"status": "pending", "by": None, "note": None, "admiralty_code": None},
         })
 
     both = sum(1 for c in codes if c["official_count"] and c["rumor_count"])
