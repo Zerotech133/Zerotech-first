@@ -8,6 +8,7 @@ S4 cap 口径下所有对照样本数必须完全相同（同一批票同一观�
 S5 cap 口径下不存在「窗口末仍在跑」的样本被当成完整交易
 S6 退化：把 beta 全置 1，alpha 必须系统性变大（证明 beta 调整确实在起作用）
 S7 配对口径 n 一致，且配对差 = 两口径均值之差
+S8 成本只扣一次：ann_net == ann_alpha == ann_gross − ann_cost
 
 用法::
     python -X utf8 tools/research/hf_sell_exit_selfcheck.py
@@ -103,6 +104,22 @@ def main():
     a2 = deg["table"]["hold20"]["avg_alpha"]
     chk("S6", a2 > a1,
         "beta→1 后 hold20 笔均超额 %.3f%% → %.3f%%（变大=beta 调整有效）" % (a1, a2))
+
+    # ── S8 成本只扣一次 ──
+    # 旧版 ann_net = ann_alpha − ann_cost，但 ann_alpha 已经是净值 → 扣两遍。
+    # 断言三条恒等式同时成立，任一条破了就说明成本又算重了。
+    for m in ("hold20", "hold60", "hold250"):
+        s = tab[m]
+        gap = s["ann_net"] - s["ann_alpha"]
+        gap2 = s["ann_net"] - (s["ann_gross"] - s["ann_cost"])
+        if not (abs(gap) < 0.06 and abs(gap2) < 0.06):
+            chk("S8", False, "%s 净年化 %.2f / 毛−成本 %.2f / 旧 ann_alpha %.2f"
+                % (m, s["ann_net"], s["ann_gross"] - s["ann_cost"], s["ann_alpha"]))
+            break
+    else:
+        s = tab["hold250"]
+        chk("S8", True, "hold250 毛 %.2f%% − 成本 %.2f%% = 净 %.2f%%（ann_alpha 同值）"
+            % (s["ann_gross"], s["ann_cost"], s["ann_net"]))
 
     print()
     print("通过 %d / 失败 %d" % (len(OK), len(FAIL)))

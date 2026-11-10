@@ -27,7 +27,7 @@ import pyarrow.parquet as pq
 import logging
 
 ROOT = Path(r"C:\项目\老田的AI助手")
-NEWS_DB = Path(r"C:\aios\news_collector\news.db")
+NEWS_DB = ROOT / "news_collector" / "news.db"
 CURATED = ROOT / "quant_backtest" / "data" / "tushare_curated"
 REPORT_DIR = ROOT / "quant_backtest" / "reports"
 BENCH_CODE = "000300.SH"

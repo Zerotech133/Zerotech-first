@@ -1,0 +1,33 @@
+﻿2026-11-08T03:59:25.1770551Z Current runner version: '2.338.2'
+2026-11-08T03:59:25.1813987Z ##[group]Runner Image Provisioner
+2026-11-08T03:59:25.1814486Z Hosted Compute Agent
+2026-11-08T03:59:25.1814804Z Version: 20261103.629
+2026-11-08T03:59:25.1815137Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+2026-11-08T03:59:25.1815527Z Build Date: 2026-11-03T17:26:59Z
+2026-11-08T03:59:25.1815885Z Worker ID: {f04ec7b4-4567-4e74-9204-aa74e0ef2c6e}
+2026-11-08T03:59:25.1816284Z Region: westus2
+2026-11-08T03:59:25.1816643Z Cloud: Azure
+2026-11-08T03:59:25.1816911Z ##[endgroup]
+2026-11-08T03:59:25.1817552Z ##[group]Operating System
+2026-11-08T03:59:25.1817864Z Microsoft Windows Server 2025
+2026-11-08T03:59:25.1818182Z 10.0.26100
+2026-11-08T03:59:25.1818446Z Datacenter
+2026-11-08T03:59:25.1818719Z ##[endgroup]
+2026-11-08T03:59:25.1819013Z ##[group]Runner Image
+2026-11-08T03:59:25.1819306Z Image: windows-2025-vs2026
+2026-11-08T03:59:25.1819623Z Version: 20261103.298.1
+2026-11-08T03:59:25.1820201Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20261103.298/images/windows/Windows2025-VS2026-Readme.md
+2026-11-08T03:59:25.1821284Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20261103.298
+2026-11-08T03:59:25.1821773Z ##[endgroup]
+2026-11-08T03:59:25.1822336Z ##[group]GITHUB_TOKEN Permissions
+2026-11-08T03:59:25.1823364Z Contents: read
+2026-11-08T03:59:25.1823669Z Metadata: read
+2026-11-08T03:59:25.1824260Z ##[endgroup]
+2026-11-08T03:59:25.1825443Z Secret source: Actions
+2026-11-08T03:59:25.1825901Z Cache mode: write
+2026-11-08T03:59:25.1826297Z Prepare workflow directory
+2026-11-08T03:59:25.2055418Z Prepare all required actions
+2026-11-08T03:59:25.2087188Z Getting action download info
+2026-11-08T03:59:25.5037907Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-08T03:59:25.5845150Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-11-08T03:59:25.7663452Z Complete job name: fast-gate

@@ -1,0 +1,12 @@
+﻿2026-11-08T08:09:15.0726838Z ##[group]Run Write-Host "=== gate done（rc=$LASTEXITCODE）==="
+2026-11-08T08:09:15.0727539Z [36;1mWrite-Host "=== gate done（rc=$LASTEXITCODE）==="[0m
+2026-11-08T08:09:15.0801713Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T08:09:15.0802236Z env:
+2026-11-08T08:09:15.0802518Z   TEST_GATE_PROFILE: ci
+2026-11-08T08:09:15.0802912Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T08:09:15.0803447Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T08:09:15.0803956Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T08:09:15.0804476Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T08:09:15.0804936Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T08:09:15.0805304Z ##[endgroup]
+2026-11-08T08:09:15.4309260Z === gate done（rc=）===

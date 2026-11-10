@@ -1,0 +1,7658 @@
+{
+ "root": "CowAgent",
+ "excludes": [
+  "venv"
+ ],
+ "items": [
+  {
+   "file": "CowAgent/app.py",
+   "line": 95,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 483,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 514,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 522,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 557,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 582,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 627,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 646,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 654,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 671,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 707,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 747,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 793,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 861,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 295,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 364,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 402,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 533,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 566,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 612,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 231,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 336,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 740,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 786,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/app.py",
+   "line": 269,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 471,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 488,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 936,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 395,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 417,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 428,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 749,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 547,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/config.py",
+   "line": 589,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/admin.py",
+   "line": 264,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/admin.py",
+   "line": 444,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/admin.py",
+   "line": 615,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/admin.py",
+   "line": 627,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/admin.py",
+   "line": 635,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/admin.py",
+   "line": 861,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/routing.py",
+   "line": 46,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/team_addressing.py",
+   "line": 105,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/team_addressing.py",
+   "line": 128,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/team_addressing.py",
+   "line": 43,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 423,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 554,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 568,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 582,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 587,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 685,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 741,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 757,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 781,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 791,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 806,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 815,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 829,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 845,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 862,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 439,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/service.py",
+   "line": 253,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 78,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 183,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 256,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 289,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 330,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 349,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 398,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 411,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 421,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 426,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 455,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 547,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/chat/session_service.py",
+   "line": 357,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/backup.py",
+   "line": 74,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/backup.py",
+   "line": 116,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/backup.py",
+   "line": 130,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/config.py",
+   "line": 62,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/config.py",
+   "line": 68,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 86,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 598,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 636,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 673,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 254,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 266,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 278,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/executor.py",
+   "line": 585,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/prompts.py",
+   "line": 155,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/record.py",
+   "line": 54,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/trigger.py",
+   "line": 55,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/evolution/trigger.py",
+   "line": 75,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/trigger.py",
+   "line": 90,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/trigger.py",
+   "line": 116,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/evolution/trigger.py",
+   "line": 158,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 146,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 223,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 240,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 725,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 114,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 362,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 651,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/knowledge/service.py",
+   "line": 569,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 321,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2591,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2672,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2743,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2773,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2832,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2973,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 454,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 460,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1190,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1287,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1765,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2270,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2289,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2343,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2471,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2848,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 681,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1114,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1267,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1838,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2231,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2404,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2411,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2418,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2425,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2437,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2444,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2455,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2462,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2637,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2665,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2788,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2867,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 709,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1258,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2278,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2297,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 946,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1434,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 2870,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1387,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/conversation_store.py",
+   "line": 1045,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 328,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 400,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 809,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 199,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 424,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 470,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 507,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 570,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/manager.py",
+   "line": 478,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/reranker.py",
+   "line": 83,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/service.py",
+   "line": 201,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 173,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 212,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 261,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 313,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 377,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 497,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 525,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 653,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 916,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 995,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 1019,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 1090,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 1217,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 462,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 708,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 760,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 1008,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/memory/storage.py",
+   "line": 1082,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 167,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 329,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 387,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 424,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 601,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 494,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 572,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 609,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 708,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/summarizer.py",
+   "line": 382,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/factory.py",
+   "line": 141,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/factory.py",
+   "line": 58,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/factory.py",
+   "line": 75,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/provider.py",
+   "line": 250,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/rebuild.py",
+   "line": 101,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/rebuild.py",
+   "line": 108,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/rebuild.py",
+   "line": 121,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/state.py",
+   "line": 31,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/state.py",
+   "line": 58,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/memory/embedding/state.py",
+   "line": 74,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/inbound.py",
+   "line": 65,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/inbound.py",
+   "line": 206,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/inbound.py",
+   "line": 286,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/inbound.py",
+   "line": 320,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/inbound.py",
+   "line": 267,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/inbound.py",
+   "line": 192,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/transport.py",
+   "line": 213,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/multiagent/transport.py",
+   "line": 223,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/permission/policy.py",
+   "line": 85,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/permission/policy.py",
+   "line": 407,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 402,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 449,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 618,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 932,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 168,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 998,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 1090,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/builder.py",
+   "line": 1102,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/prompt/workspace.py",
+   "line": 286,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/prompt/workspace.py",
+   "line": 675,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/workspace.py",
+   "line": 173,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/workspace.py",
+   "line": 186,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/workspace.py",
+   "line": 271,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/prompt/workspace.py",
+   "line": 149,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 283,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 326,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 538,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 557,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 823,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 234,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 308,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 370,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 945,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 963,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent.py",
+   "line": 172,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 193,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 473,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 483,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 528,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 538,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1289,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1386,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1460,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1486,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1512,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1564,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1775,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 2001,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 2365,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 2411,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 2438,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 505,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 588,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 923,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 2245,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 231,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1265,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 2169,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/agent_stream.py",
+   "line": 1867,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 138,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 143,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 163,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 205,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 444,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 463,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 436,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/artifact.py",
+   "line": 418,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/step_writer.py",
+   "line": 65,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/protocol/step_writer.py",
+   "line": 76,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/frontmatter.py",
+   "line": 37,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/loader.py",
+   "line": 113,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/skills/loader.py",
+   "line": 289,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/loader.py",
+   "line": 193,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/skills/manager.py",
+   "line": 45,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/manager.py",
+   "line": 129,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/manager.py",
+   "line": 148,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/manager.py",
+   "line": 427,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/skills/service.py",
+   "line": 283,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/skills/service.py",
+   "line": 422,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/subagent/runner.py",
+   "line": 146,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/subagent/runner.py",
+   "line": 177,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/subagent/runner.py",
+   "line": 197,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/subagent/runner.py",
+   "line": 233,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/subagent/runner.py",
+   "line": 217,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/base_tool.py",
+   "line": 45,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/base_tool.py",
+   "line": 57,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/base_tool.py",
+   "line": 128,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/base_tool.py",
+   "line": 145,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/base_tool.py",
+   "line": 166,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 203,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 290,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 596,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 716,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 733,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 258,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 346,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 418,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 480,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 485,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 772,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 580,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 195,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 256,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/tool_manager.py",
+   "line": 193,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 59,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 72,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 81,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 90,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 99,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 124,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/__init__.py",
+   "line": 138,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/agent_delegate/agent_delegate.py",
+   "line": 291,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/agent_delegate/agent_delegate.py",
+   "line": 566,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/agent_delegate/agent_delegate.py",
+   "line": 644,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/agent_delegate/agent_delegate.py",
+   "line": 343,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 393,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 402,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 413,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 116,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 198,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 213,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/bash.py",
+   "line": 309,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/bash/decode.py",
+   "line": 18,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_env.py",
+   "line": 93,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 314,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 573,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 642,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 691,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 805,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 846,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 862,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 873,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 906,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 947,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 963,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1061,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1074,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1095,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1104,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1111,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1115,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1131,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1140,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1144,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1199,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1218,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1238,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1265,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1281,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1300,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1319,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1330,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1341,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1361,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 511,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 608,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1293,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1297,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1312,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1316,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 580,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 935,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_service.py",
+   "line": 1348,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_tool.py",
+   "line": 256,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/browser_tool.py",
+   "line": 301,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/chrome_launcher.py",
+   "line": 185,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/chrome_launcher.py",
+   "line": 350,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/browser/chrome_launcher.py",
+   "line": 307,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/current_time/current_time.py",
+   "line": 31,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/edit/edit.py",
+   "line": 257,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/edit/edit.py",
+   "line": 246,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/env_config/env_config.py",
+   "line": 313,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/env_config/env_config.py",
+   "line": 153,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/evolution_undo/evolution_undo.py",
+   "line": 57,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/ls/ls.py",
+   "line": 133,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/ls/ls.py",
+   "line": 98,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 68,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 85,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 114,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 172,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 193,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 205,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 336,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 398,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 484,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 580,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 605,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 660,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 665,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 943,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 991,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 235,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 241,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 260,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 404,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 640,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 1054,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 1093,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 761,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 789,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 922,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 244,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 747,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_client.py",
+   "line": 928,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_oauth.py",
+   "line": 57,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_oauth.py",
+   "line": 74,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_oauth.py",
+   "line": 151,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_oauth.py",
+   "line": 355,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_oauth.py",
+   "line": 398,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_oauth.py",
+   "line": 447,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/mcp_tool.py",
+   "line": 31,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/service.py",
+   "line": 344,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/service.py",
+   "line": 282,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/service.py",
+   "line": 355,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/mcp/tool_retrieval.py",
+   "line": 231,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/memory/memory_get.py",
+   "line": 156,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/memory/memory_search.py",
+   "line": 115,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/memory/memory_search.py",
+   "line": 139,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/read/read.py",
+   "line": 246,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/read/read.py",
+   "line": 435,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/read/read.py",
+   "line": 482,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/read/read.py",
+   "line": 492,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/read/read.py",
+   "line": 615,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 141,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 163,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 338,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 381,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 457,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 512,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 632,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 691,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 745,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 889,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 975,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 1055,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 1159,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 193,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 204,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 301,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 534,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 883,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 963,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 1043,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 1107,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 1147,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 106,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 561,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 763,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 871,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/integration.py",
+   "line": 290,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 273,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 358,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 112,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 124,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 162,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 305,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_service.py",
+   "line": 326,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 162,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 495,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 570,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 613,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 605,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 595,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/scheduler_tool.py",
+   "line": 556,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/task_store.py",
+   "line": 96,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/task_store.py",
+   "line": 101,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/task_store.py",
+   "line": 109,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/task_store.py",
+   "line": 149,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/task_store.py",
+   "line": 261,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/scheduler/task_store.py",
+   "line": 135,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/search_files/search_files.py",
+   "line": 418,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/send/send.py",
+   "line": 121,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/subagent/subagent.py",
+   "line": 246,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/utils/memory_path.py",
+   "line": 46,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/utils/syntax_check.py",
+   "line": 48,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/utils/syntax_check.py",
+   "line": 60,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/utils/syntax_check.py",
+   "line": 97,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/utils/url_safety.py",
+   "line": 37,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 188,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 577,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 679,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 694,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 220,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 397,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 458,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/vision/vision.py",
+   "line": 514,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/web_fetch/web_fetch.py",
+   "line": 440,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/web_fetch/web_fetch.py",
+   "line": 172,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/web_fetch/web_fetch.py",
+   "line": 258,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/web_fetch/web_fetch.py",
+   "line": 265,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/tools/web_search/web_search.py",
+   "line": 330,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/tools/write/write.py",
+   "line": 115,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/agent/workspace/project_store.py",
+   "line": 74,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/workspace/project_store.py",
+   "line": 94,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/workspace/service.py",
+   "line": 340,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/workspace/service.py",
+   "line": 466,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/agent/workspace/session_prefs.py",
+   "line": 62,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/agent/workspace/session_prefs.py",
+   "line": 78,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 500,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 573,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 625,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 632,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 815,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 884,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 908,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 917,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 988,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1009,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1021,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1051,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1096,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1188,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1203,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1330,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1346,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1393,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1476,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1483,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1880,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2104,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2149,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2170,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2242,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2502,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 765,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 861,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1439,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1594,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1755,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1776,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1926,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2025,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2061,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 2254,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 666,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1786,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1839,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1801,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1891,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1897,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1672,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_bridge.py",
+   "line": 1678,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_event_handler.py",
+   "line": 121,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 320,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 345,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 363,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 863,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 910,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1123,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 126,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 380,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 821,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 927,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1028,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1115,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1168,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1214,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1250,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1319,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1338,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 304,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 407,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1281,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/bridge/agent_initializer.py",
+   "line": 1083,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/channel.py",
+   "line": 176,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/channel_instances.py",
+   "line": 389,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/channel_instances.py",
+   "line": 415,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 21,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 447,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 504,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 557,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 603,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 674,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 472,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 634,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 438,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 619,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 245,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/chat_channel.py",
+   "line": 255,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 174,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 342,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 383,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 429,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 504,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 563,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 628,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 677,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 1118,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 1176,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 264,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 305,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 475,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 555,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 1168,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 245,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 291,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_channel.py",
+   "line": 1035,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_message.py",
+   "line": 289,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_message.py",
+   "line": 310,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_stream_card.py",
+   "line": 233,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/dingtalk/dingtalk_stream_card.py",
+   "line": 315,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 274,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 293,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 335,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 445,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 492,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 89,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 152,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 161,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/discord/discord_channel.py",
+   "line": 95,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 125,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 185,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 201,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 240,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 181,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 211,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 369,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1900,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1962,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2053,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2114,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2221,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2355,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 391,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 398,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 446,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 457,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 469,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 548,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 822,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1149,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1244,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1275,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1297,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1497,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1619,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1650,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 1702,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2088,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2180,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 533,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2001,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2062,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 2122,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_channel.py",
+   "line": 832,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_message.py",
+   "line": 22,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_message.py",
+   "line": 226,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/feishu/feishu_static_card.py",
+   "line": 108,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/feishu/lark_install.py",
+   "line": 38,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/feishu/lark_install.py",
+   "line": 179,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/feishu/lark_install.py",
+   "line": 213,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/feishu/lark_install.py",
+   "line": 156,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 190,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 226,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 500,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 706,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 771,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 820,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 841,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 873,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 158,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 293,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 322,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 387,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_channel.py",
+   "line": 395,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/qq/qq_message.py",
+   "line": 56,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 101,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 149,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 188,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 287,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 307,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 351,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 452,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 117,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/slack/slack_channel.py",
+   "line": 154,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 161,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 280,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 397,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 464,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 593,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 776,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 111,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 138,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 174,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 213,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 254,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 117,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 236,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/telegram/telegram_channel.py",
+   "line": 284,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/terminal/terminal_channel.py",
+   "line": 82,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/terminal/terminal_channel.py",
+   "line": 92,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/terminal/terminal_channel.py",
+   "line": 328,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/terminal/terminal_channel.py",
+   "line": 315,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/terminal/terminal_channel.py",
+   "line": 322,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 78,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 140,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 156,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 169,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 260,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 277,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 301,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 456,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 254,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/agents.py",
+   "line": 296,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/artifacts.py",
+   "line": 136,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/artifacts.py",
+   "line": 177,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/artifacts.py",
+   "line": 202,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/artifacts.py",
+   "line": 228,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/artifacts.py",
+   "line": 248,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/auth.py",
+   "line": 68,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/auth.py",
+   "line": 78,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/auth.py",
+   "line": 110,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 173,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 370,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 422,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 830,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 875,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 949,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 966,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 981,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 1201,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 1245,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 483,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 541,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 567,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 606,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 673,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 686,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 788,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 1140,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/channels.py",
+   "line": 723,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/config.py",
+   "line": 167,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/config.py",
+   "line": 308,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/config.py",
+   "line": 125,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/config.py",
+   "line": 246,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/config.py",
+   "line": 278,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/config.py",
+   "line": 304,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 51,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 118,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 163,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 186,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 218,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 245,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 384,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/files.py",
+   "line": 159,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/knowledge.py",
+   "line": 58,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/knowledge.py",
+   "line": 83,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/knowledge.py",
+   "line": 99,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/knowledge.py",
+   "line": 120,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/knowledge.py",
+   "line": 185,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/logs.py",
+   "line": 81,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/logs.py",
+   "line": 40,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/logs.py",
+   "line": 59,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/memory.py",
+   "line": 35,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/memory.py",
+   "line": 57,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/menu.py",
+   "line": 170,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/menu.py",
+   "line": 193,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 480,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 666,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 1494,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 1523,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 2263,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 2387,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 689,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/models.py",
+   "line": 2100,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/openai_compat.py",
+   "line": 292,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/openai_compat.py",
+   "line": 393,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/openai_compat.py",
+   "line": 278,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/pages.py",
+   "line": 129,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 77,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 143,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 175,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 205,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 234,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 262,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 417,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 437,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 504,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 540,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 565,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 692,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/scheduler.py",
+   "line": 72,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 281,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 592,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 637,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 168,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 292,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 398,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 468,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 499,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 693,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 735,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 807,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 835,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 861,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 883,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 917,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 972,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1044,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1074,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1111,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 426,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 443,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 451,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 460,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 799,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 960,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1026,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1107,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1001,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/sessions.py",
+   "line": 1036,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 58,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 221,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 251,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 279,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 309,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 392,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 443,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 475,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 506,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 439,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 55,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/api/skills.py",
+   "line": 352,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/api/update.py",
+   "line": 43,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/update.py",
+   "line": 65,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 206,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 71,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 90,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 150,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 163,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 230,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 284,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 321,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 357,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 391,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 410,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 434,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 450,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 533,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 351,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/api/workspace.py",
+   "line": 385,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 159,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 317,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 599,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 622,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 700,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 747,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 770,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 797,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 938,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1008,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1193,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1455,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1516,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1636,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 732,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1402,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1663,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1272,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 1589,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 251,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/channel.py",
+   "line": 304,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 194,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 319,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 740,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 792,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 835,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 856,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 420,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 452,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 768,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/web/core/_common.py",
+   "line": 460,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_channel.py",
+   "line": 107,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_channel.py",
+   "line": 230,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_channel.py",
+   "line": 166,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_channel.py",
+   "line": 179,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_client.py",
+   "line": 30,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_message.py",
+   "line": 30,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatcom/wechatcomapp_message.py",
+   "line": 46,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/active_reply.py",
+   "line": 74,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/common.py",
+   "line": 32,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/passive_reply.py",
+   "line": 266,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/wechatmp_channel.py",
+   "line": 155,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/wechatmp_channel.py",
+   "line": 324,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/wechatmp_message.py",
+   "line": 34,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechatmp/wechatmp_message.py",
+   "line": 53,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_channel.py",
+   "line": 137,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_channel.py",
+   "line": 487,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_channel.py",
+   "line": 506,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_channel.py",
+   "line": 132,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_channel.py",
+   "line": 329,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_channel.py",
+   "line": 375,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_cursor_store.py",
+   "line": 40,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_cursor_store.py",
+   "line": 59,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_cursor_store.py",
+   "line": 56,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_cursor_store.py",
+   "line": 64,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_message.py",
+   "line": 37,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_message.py",
+   "line": 85,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_message.py",
+   "line": 102,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wechat_kf/wechat_kf_message.py",
+   "line": 128,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 300,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 592,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 947,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 955,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1207,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1243,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1497,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1519,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 210,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 219,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 236,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 264,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 707,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1018,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1127,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1261,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1308,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 1322,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 489,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_channel.py",
+   "line": 985,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_crypt.py",
+   "line": 52,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_crypt.py",
+   "line": 98,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_crypt.py",
+   "line": 106,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_crypt.py",
+   "line": 115,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_crypt.py",
+   "line": 137,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_crypt.py",
+   "line": 189,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_message.py",
+   "line": 126,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_message.py",
+   "line": 182,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_message.py",
+   "line": 156,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/wecom_bot/wecom_bot_message.py",
+   "line": 200,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_api.py",
+   "line": 439,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_api.py",
+   "line": 86,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_api.py",
+   "line": 171,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_api.py",
+   "line": 89,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 96,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 109,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 333,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 339,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 359,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 386,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 447,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 461,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 478,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 731,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 954,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 978,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 1001,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 507,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 638,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 903,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 913,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 1040,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 250,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 635,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_channel.py",
+   "line": 544,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/channel/weixin/weixin_message.py",
+   "line": 200,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/update_service.py",
+   "line": 549,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/utils.py",
+   "line": 73,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/utils.py",
+   "line": 89,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/utils.py",
+   "line": 101,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 43,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 65,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 77,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 135,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 284,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 355,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 395,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/install.py",
+   "line": 145,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/knowledge.py",
+   "line": 21,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/process.py",
+   "line": 454,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/process.py",
+   "line": 50,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 136,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 152,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 188,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 331,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 415,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 444,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 454,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 497,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 836,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 889,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1267,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1463,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1502,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1580,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1694,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1730,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 386,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 786,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1472,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1573,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1686,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 394,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1295,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1309,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1354,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/cli/commands/skill.py",
+   "line": 1390,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/common/atomic_write.py",
+   "line": 77,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 91,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1797,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1830,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1967,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 2003,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 76,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 537,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 550,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 575,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 594,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 605,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 618,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 725,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 860,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 985,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1077,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1087,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1193,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1232,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1272,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1314,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1433,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1449,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1463,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1486,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1504,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1519,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1530,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1666,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1696,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1723,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 137,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 254,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 285,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 298,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 311,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 324,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 338,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 350,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 694,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 814,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1403,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1545,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 1565,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/cloud_client.py",
+   "line": 590,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/i18n.py",
+   "line": 113,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/i18n.py",
+   "line": 189,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/i18n.py",
+   "line": 204,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/media_download.py",
+   "line": 113,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/common/package_manager.py",
+   "line": 31,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/utils.py",
+   "line": 79,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/common/utils.py",
+   "line": 150,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/utils.py",
+   "line": 241,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/common/utils.py",
+   "line": 287,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/common/utils.py",
+   "line": 342,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/model_catalog.py",
+   "line": 145,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/model_catalog.py",
+   "line": 173,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/openai_compatible_bot.py",
+   "line": 181,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai_compatible_bot.py",
+   "line": 282,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai_compatible_bot.py",
+   "line": 300,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai_compatible_bot.py",
+   "line": 339,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai_compatible_bot.py",
+   "line": 379,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai_compatible_bot.py",
+   "line": 620,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/session_manager.py",
+   "line": 71,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/session_manager.py",
+   "line": 82,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/baidu/baidu_wenxin.py",
+   "line": 103,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/baidu/baidu_wenxin_session.py",
+   "line": 24,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/chatgpt/chat_gpt_bot.py",
+   "line": 282,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/chatgpt/chat_gpt_bot.py",
+   "line": 335,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/chatgpt/chat_gpt_bot.py",
+   "line": 276,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/chatgpt/chat_gpt_bot.py",
+   "line": 428,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/chatgpt/chat_gpt_bot.py",
+   "line": 465,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/chatgpt/chat_gpt_session.py",
+   "line": 25,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/claudeapi/claude_api_bot.py",
+   "line": 23,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/claudeapi/claude_api_bot.py",
+   "line": 211,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/claudeapi/claude_api_bot.py",
+   "line": 377,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/claudeapi/claude_api_bot.py",
+   "line": 451,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/claudeapi/claude_api_bot.py",
+   "line": 849,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/claudeapi/claude_api_bot.py",
+   "line": 703,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_bot.py",
+   "line": 173,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_bot.py",
+   "line": 229,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_bot.py",
+   "line": 334,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_bot.py",
+   "line": 416,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_bot.py",
+   "line": 523,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_bot.py",
+   "line": 564,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/dashscope/dashscope_session.py",
+   "line": 15,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/deepseek/deepseek_bot.py",
+   "line": 216,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/deepseek/deepseek_bot.py",
+   "line": 311,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/deepseek/deepseek_bot.py",
+   "line": 438,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/deepseek/deepseek_bot.py",
+   "line": 505,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/deepseek/deepseek_bot.py",
+   "line": 714,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/deepseek/deepseek_session.py",
+   "line": 15,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/doubao/doubao_bot.py",
+   "line": 144,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/doubao/doubao_bot.py",
+   "line": 192,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/doubao/doubao_bot.py",
+   "line": 268,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/doubao/doubao_bot.py",
+   "line": 408,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/doubao/doubao_bot.py",
+   "line": 470,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/doubao/doubao_session.py",
+   "line": 16,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 98,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 184,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 282,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 524,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 663,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 850,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 984,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 228,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 825,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/gemini/google_gemini_bot.py",
+   "line": 435,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 71,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 525,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 670,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 710,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 777,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 253,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 280,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 292,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 317,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 382,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 422,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 441,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 471,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 480,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 509,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 544,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 633,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 196,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/linkai/link_ai_bot.py",
+   "line": 730,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_bot.py",
+   "line": 203,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_bot.py",
+   "line": 290,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_bot.py",
+   "line": 416,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_bot.py",
+   "line": 482,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_bot.py",
+   "line": 680,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_bot.py",
+   "line": 183,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/mimo/mimo_session.py",
+   "line": 15,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/minimax/minimax_bot.py",
+   "line": 177,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/minimax/minimax_bot.py",
+   "line": 233,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/minimax/minimax_bot.py",
+   "line": 300,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/minimax/minimax_bot.py",
+   "line": 524,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/minimax/minimax_bot.py",
+   "line": 707,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/minimax/minimax_session.py",
+   "line": 33,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 165,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 238,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 344,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 480,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 743,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 668,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 505,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_bot.py",
+   "line": 719,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/modelscope/modelscope_session.py",
+   "line": 15,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/moonshot/moonshot_bot.py",
+   "line": 186,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/moonshot/moonshot_bot.py",
+   "line": 231,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/moonshot/moonshot_bot.py",
+   "line": 317,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/moonshot/moonshot_bot.py",
+   "line": 460,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/moonshot/moonshot_bot.py",
+   "line": 527,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/moonshot/moonshot_session.py",
+   "line": 15,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai/openai_http_client.py",
+   "line": 77,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/openai/openai_http_client.py",
+   "line": 450,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai/openai_http_client.py",
+   "line": 88,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/openai/open_ai_bot.py",
+   "line": 129,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/openai/open_ai_image.py",
+   "line": 60,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/openai/open_ai_session.py",
+   "line": 35,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/qianfan/qianfan_bot.py",
+   "line": 149,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/qianfan/qianfan_bot.py",
+   "line": 199,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/qianfan/qianfan_session.py",
+   "line": 15,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/xunfei/xunfei_spark_bot.py",
+   "line": 87,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipuai_bot.py",
+   "line": 131,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipuai_bot.py",
+   "line": 202,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipuai_bot.py",
+   "line": 293,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipuai_bot.py",
+   "line": 371,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipuai_bot.py",
+   "line": 461,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipu_ai_image.py",
+   "line": 34,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/models/zhipuai/zhipu_ai_session.py",
+   "line": 17,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin.py",
+   "line": 42,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 178,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 370,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 402,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 411,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 437,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 461,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 392,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 244,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/plugin_manager.py",
+   "line": 206,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/banwords/banwords.py",
+   "line": 72,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 108,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 616,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 645,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 862,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 883,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 944,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1035,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1124,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1137,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1156,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1203,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1251,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1320,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1425,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1526,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1666,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1726,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1754,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1763,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1779,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1870,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1983,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 347,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 525,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1311,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1489,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1509,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/cow_cli/cow_cli.py",
+   "line": 1708,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/godcmd/godcmd.py",
+   "line": 313,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/godcmd/godcmd.py",
+   "line": 333,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/hello/hello.py",
+   "line": 41,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/plugins/hello/hello.py",
+   "line": 127,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/keyword/keyword.py",
+   "line": 45,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/plugins/linkai/linkai.py",
+   "line": 296,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/linkai/midjourney.py",
+   "line": 435,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/linkai/midjourney.py",
+   "line": 291,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/linkai/utils.py",
+   "line": 40,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/linkai/utils.py",
+   "line": 63,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/plugins/role/role.py",
+   "line": 78,
+   "kind": "R",
+   "detail": "raise"
+  },
+  {
+   "file": "CowAgent/plugins/role/role.py",
+   "line": 103,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/plugins/tool/tool.py",
+   "line": 120,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 630,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 645,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 157,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 1318,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 281,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 477,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 582,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 776,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 909,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/image-generation/scripts/generate.py",
+   "line": 1027,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/skills/skill-creator/scripts/init_skill.py",
+   "line": 217,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/skills/skill-creator/scripts/init_skill.py",
+   "line": 232,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/skills/skill-creator/scripts/init_skill.py",
+   "line": 259,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/skills/skill-creator/scripts/package_skill.py",
+   "line": 86,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/tests/trajectory_eval.py",
+   "line": 127,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/voice/ali/ali_voice.py",
+   "line": 46,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/ali/ali_voice.py",
+   "line": 63,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/ali/ali_voice.py",
+   "line": 92,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/azure/azure_voice.py",
+   "line": 56,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/baidu/baidu_voice.py",
+   "line": 63,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/baidu/baidu_voice.py",
+   "line": 163,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/baidu/baidu_voice.py",
+   "line": 191,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/custom/custom_voice.py",
+   "line": 88,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/custom/custom_voice.py",
+   "line": 134,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/dashscope/dashscope_voice.py",
+   "line": 73,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/dashscope/dashscope_voice.py",
+   "line": 106,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/dashscope/dashscope_voice.py",
+   "line": 119,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/voice/dashscope/dashscope_voice.py",
+   "line": 133,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/dashscope/dashscope_voice.py",
+   "line": 171,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/voice/dashscope/dashscope_voice.py",
+   "line": 146,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/edge/edge_voice.py",
+   "line": 50,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/elevent/elevent_voice.py",
+   "line": 34,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/google/google_voice.py",
+   "line": 33,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/google/google_voice.py",
+   "line": 47,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/voice/linkai/linkai_voice.py",
+   "line": 66,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/linkai/linkai_voice.py",
+   "line": 107,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/linkai/linkai_voice.py",
+   "line": 43,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/linkai/linkai_voice.py",
+   "line": 58,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/linkai/linkai_voice.py",
+   "line": 91,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/mimo/mimo_voice.py",
+   "line": 106,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/mimo/mimo_voice.py",
+   "line": 91,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/minimax/minimax_voice.py",
+   "line": 124,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/minimax/minimax_voice.py",
+   "line": 78,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/minimax/minimax_voice.py",
+   "line": 88,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/openai/openai_voice.py",
+   "line": 70,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/openai/openai_voice.py",
+   "line": 111,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/pytts/pytts_voice.py",
+   "line": 79,
+   "kind": "V",
+   "detail": "soft-default"
+  },
+  {
+   "file": "CowAgent/voice/tencent/tencent_voice.py",
+   "line": 34,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/tencent/tencent_voice.py",
+   "line": 82,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/tencent/tencent_voice.py",
+   "line": 117,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/xunfei/xunfei_asr.py",
+   "line": 127,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/xunfei/xunfei_tts.py",
+   "line": 115,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/xunfei/xunfei_voice.py",
+   "line": 56,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/xunfei/xunfei_voice.py",
+   "line": 76,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/xunfei/xunfei_voice.py",
+   "line": 88,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/zhipuai/zhipuai_voice.py",
+   "line": 76,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/zhipuai/zhipuai_voice.py",
+   "line": 152,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/zhipuai/zhipuai_voice.py",
+   "line": 182,
+   "kind": "L",
+   "detail": "has-logging"
+  },
+  {
+   "file": "CowAgent/voice/zhipuai/zhipuai_voice.py",
+   "line": 121,
+   "kind": "V",
+   "detail": "soft-default"
+  }
+ ]
+}

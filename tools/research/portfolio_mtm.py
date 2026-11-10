@@ -165,12 +165,28 @@ class Engine(object):
         self.buy_cost = buy_cost
         self.sell_cost = sell_cost
 
-    def run(self, picks, budget_frac=None, max_slots=None, verbose=False):
+    def run(self, picks, budget_frac=None, max_slots=None, verbose=False,
+            budget_fn=None, per_name_cap=None, record_daily=False,
+            min_ticket=None):
         """picks: {开仓日8位: [Pick, ...]}，开仓日必须在 axis 内。
 
         budget_frac: 每日投入权益比例，默认 1/hold
         max_slots  : 同时在途笔数上限，None=不限；超限则按给定顺序截断
                      （调用方负责先排序，引擎不重排）
+        budget_fn  : 可选，(开仓日8位, 基准budget_frac) -> 当日实际budget_frac。
+                     用于「择势调仓」：同一套信号，不同日子投不同比例。
+                     返回 0 表示当日不投（该批计入 n_skip）。默认 None = 不干预。
+        per_name_cap: 可选，单票占总权益上限（如 0.05）。信号少的日子会把当日
+                     预算集中到一两只票上，这时"日批等权"等价于单票重仓，不可执行。
+                     设了上限后投不满的部分留在现金里，util 会下降——这正是
+                     可执行版本的真实代价，必须一起报。
+        record_daily: 可选，True 时返回 "daily" 逐日流水（开/平/在途/现金），
+                     供影子盘按天核对。逐日记录只增加内存与耗时，不改变任何
+                     净值、笔数或统计口径——该开关关闭时行为与旧版逐位一致。
+        min_ticket : 可选，单笔最小金额占权益比例（如 0.003）。信号扎堆的日子
+                     日预算被切成几十份，单笔小到买不到一手（100 万本金下
+                     0.17% ≈ 1700 元 < 一手），这种"成交"只存在于回测里。
+                     低于门槛的当日批次整批不投，计入 n_tiny。
         """
         n = len(self.axis)
         budget_frac = (1.0 / self.hold) if budget_frac is None else float(budget_frac)
@@ -186,50 +202,109 @@ class Engine(object):
         live = []          # [amt, entry_i, exit_i, ratio]
         curve = np.empty(n, dtype=float)
         util = np.empty(n, dtype=float)
+        daily = [] if record_daily else None
         n_batch = 0
         n_skip = 0
         n_drop = 0
+        n_tiny = 0
 
         for i in range(n):
+            closed_today = []
             # 1) 先结算：今日到期（exit_i == i）的持仓按净值比回收
             if live:
                 keep = []
                 for h in live:
                     if h[2] == i:
                         cash += h[0] * (1.0 + h[3][i])
+                        if daily is not None:
+                            tg = h[4]
+                            closed_today.append({
+                                "tag": tg, "amt": h[0],
+                                "ret_pct": (h[3][i]) * 100.0,
+                                # 标签里带 status=open 的，表示这笔还没走完，
+                                # 是数据到日被强行按收盘价估值平仓的，不是真出场
+                                "status": (tg.get("status")
+                                           if isinstance(tg, dict) else None),
+                            })
                     else:
                         keep.append(h)
                 live = keep
 
             # 2) 再建仓：今日开仓，投入 1/hold 权益，日内等权
+            opened_today = []
             xs = by_day.get(i)
+            skip_today = 0
+            drop_today = 0
             if xs:
                 if max_slots is not None:
                     room = max_slots - len(live)
                     if room <= 0:
                         n_drop += len(xs)
+                        drop_today += len(xs)
                         xs = None
                     elif len(xs) > room:
                         n_drop += len(xs) - room
+                        drop_today += len(xs) - room
                         xs = xs[:room]
                 if xs:
                     eq_now = cash + sum(h[0] * (1.0 + h[3][i]) for h in live)
-                    amt = min(budget_frac * eq_now, cash)
+                    bf = budget_frac
+                    if budget_fn is not None:
+                        bf = float(budget_fn(self.axis[i], budget_frac))
+                    amt = min(bf * eq_now, cash)
                     if amt > 1e-9:
                         per = amt / len(xs)
-                        for pk in xs:
-                            live.append([per, i, pk.exit_i, pk.ratio])
-                            cash -= per
-                        n_batch += 1
+                        if per_name_cap is not None:
+                            # 单票上限：超限则整批等比缩小，差额留现金
+                            per = min(per, float(per_name_cap) * eq_now)
+                        if min_ticket is not None and per < float(min_ticket) * eq_now:
+                            # 碎单：整批不投，钱留现金。一张都买不到的单子不该
+                            # 出现在账户里——回测里它是一条记录，实盘里是废单。
+                            n_tiny += len(xs)
+                            n_skip += 1
+                            skip_today += len(xs)
+                        else:
+                            for pk in xs:
+                                live.append([per, i, pk.exit_i, pk.ratio,
+                                             getattr(pk, "tag", pk.code)])
+                                cash -= per
+                                if daily is not None:
+                                    opened_today.append({
+                                        "tag": getattr(pk, "tag", pk.code),
+                                        "amt": per,
+                                        "w_pct": (per / eq_now * 100.0)
+                                        if eq_now > 0 else 0.0})
+                            n_batch += 1
                     else:
                         n_skip += 1
+                        skip_today = len(xs)
 
             # 3) 收盘盯市
             eq = cash + sum(h[0] * (1.0 + h[3][i]) for h in live)
             curve[i] = eq
             util[i] = (eq - cash) / eq if eq > 0 else 0.0
 
-        return self._stats(curve, util, n_batch, n_skip, n_drop, live, cash)
+            if daily is not None:
+                daily.append({
+                    "d": self.axis[i],
+                    "eq": round(float(eq), 6),
+                    "cash": round(float(cash), 6),
+                    "util": round(float(util[i]), 6),
+                    "n_live": len(live),
+                    "open": opened_today,
+                    "close": closed_today,
+                    "skip": skip_today,
+                    "drop": drop_today,
+                    "pos": [{"tag": h[4], "amt": h[0],
+                             "upnl_pct": h[3][i] * 100.0,
+                             "exit_i": h[2]} for h in live],
+                })
+
+        out = self._stats(curve, util, n_batch, n_skip, n_drop, live, cash)
+        out["n_tiny"] = n_tiny
+        if daily is not None:
+            out["daily"] = daily
+        return out
 
     def _stats(self, curve, util, n_batch, n_skip, n_drop, live, cash):
         e = curve

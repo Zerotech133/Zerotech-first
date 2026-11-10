@@ -1,0 +1,165 @@
+﻿2026-11-08T09:11:27.6244508Z ##[group]Run python -m pip install --upgrade pip
+2026-11-08T09:11:27.6244844Z [36;1mpython -m pip install --upgrade pip[0m
+2026-11-08T09:11:27.6245043Z [36;1mpython -m pip install -r requirements-dev.txt[0m
+2026-11-08T09:11:27.6245300Z [36;1mpython -m pip install numpy pandas pyyaml jsonschema pyjwt cryptography lark-oapi[0m
+2026-11-08T09:11:27.6245767Z [36;1m# 2026-11-08 首轮实跑补齐（run 42442700503）：datawarehouse 套件[0m
+2026-11-08T09:11:27.6246003Z [36;1m# test_dataset_query.py 顶部 `import pyarrow`，缺包导致整个 datawarehouse[0m
+2026-11-08T09:11:27.6246216Z [36;1m# 目录 rc=2 收集失败（日志：pytest 异常退出 rc=2）；requests 为[0m
+2026-11-08T09:11:27.6246521Z [36;1m# xq_crawl_trust_env 等用例所需；python-docx 供 learning_intake 类用例[0m
+2026-11-08T09:11:27.6246788Z [36;1m# （仅 tools 全量触发，fast 不跑，但缺包同样会收集失败）。[0m
+2026-11-08T09:11:27.6246978Z [36;1mpython -m pip install pyarrow requests python-docx[0m
+2026-11-08T09:11:27.7109438Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-08T09:11:27.7109683Z env:
+2026-11-08T09:11:27.7109864Z   TEST_GATE_PROFILE: ci
+2026-11-08T09:11:27.7110028Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T09:11:27.7110298Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T09:11:27.7110564Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T09:11:27.7110774Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T09:11:27.7110980Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T09:11:27.7111148Z ##[endgroup]
+2026-11-08T09:11:31.8323675Z Requirement already satisfied: pip in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (26.3)
+2026-11-08T09:11:33.5028168Z Collecting pytest>=9.0 (from -r requirements-dev.txt (line 2))
+2026-11-08T09:11:33.6706274Z   Downloading pytest-9.2.0-py3-none-any.whl.metadata (7.9 kB)
+2026-11-08T09:11:33.7147056Z Collecting pytest-timeout>=2.3 (from -r requirements-dev.txt (line 3))
+2026-11-08T09:11:33.7270553Z   Downloading pytest_timeout-2.4.0-py3-none-any.whl.metadata (20 kB)
+2026-11-08T09:11:34.0700186Z Collecting ruff>=0.15 (from -r requirements-dev.txt (line 4))
+2026-11-08T09:11:34.0815793Z   Downloading ruff-0.17.4-py3-none-win_amd64.whl.metadata (21 kB)
+2026-11-08T09:11:34.3161991Z Collecting duckdb==1.5.6 (from -r requirements-dev.txt (line 5))
+2026-11-08T09:11:34.3285289Z   Downloading duckdb-1.5.6-cp311-cp311-win_amd64.whl.metadata (4.2 kB)
+2026-11-08T09:11:34.3724817Z Collecting colorama>=0.4 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T09:11:34.3831999Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2026-11-08T09:11:34.4245158Z Collecting iniconfig>=2 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T09:11:34.4352874Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+2026-11-08T09:11:34.4795436Z Collecting packaging>=24 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T09:11:34.4903411Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+2026-11-08T09:11:34.5564064Z Collecting pluggy<2,>=1.6 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T09:11:34.5683032Z   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+2026-11-08T09:11:34.6136104Z Collecting pygments>=2.15 (from pytest>=9.0->-r requirements-dev.txt (line 2))
+2026-11-08T09:11:34.6254624Z   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+2026-11-08T09:11:34.6612590Z Downloading duckdb-1.5.6-cp311-cp311-win_amd64.whl (13.2 MB)
+2026-11-08T09:11:34.8728079Z    ---------------------------------------- 13.2/13.2 MB 75.1 MB/s  0:00:00
+2026-11-08T09:11:34.8837010Z Downloading pytest-9.2.0-py3-none-any.whl (411 kB)
+2026-11-08T09:11:34.9131833Z Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+2026-11-08T09:11:34.9395992Z Downloading pytest_timeout-2.4.0-py3-none-any.whl (14 kB)
+2026-11-08T09:11:34.9670871Z Downloading ruff-0.17.4-py3-none-win_amd64.whl (10.3 MB)
+2026-11-08T09:11:35.0955722Z    ---------------------------------------- 10.3/10.3 MB 80.2 MB/s  0:00:00
+2026-11-08T09:11:35.1077697Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2026-11-08T09:11:35.1375885Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+2026-11-08T09:11:35.1606743Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+2026-11-08T09:11:35.1858371Z Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+2026-11-08T09:11:35.2148086Z    ---------------------------------------- 1.3/1.3 MB 61.8 MB/s  0:00:00
+2026-11-08T09:11:35.2950451Z Installing collected packages: ruff, pygments, pluggy, packaging, iniconfig, duckdb, colorama, pytest, pytest-timeout
+2026-11-08T09:11:38.2173123Z 
+2026-11-08T09:11:38.2182806Z Successfully installed colorama-0.4.6 duckdb-1.5.6 iniconfig-2.3.1 packaging-26.3 pluggy-1.7.0 pygments-2.21.0 pytest-9.2.0 pytest-timeout-2.4.0 ruff-0.17.4
+2026-11-08T09:11:39.5220688Z Collecting numpy
+2026-11-08T09:11:39.6600814Z   Downloading numpy-2.4.6-cp311-cp311-win_amd64.whl.metadata (6.6 kB)
+2026-11-08T09:11:39.7822415Z Collecting pandas
+2026-11-08T09:11:39.7939770Z   Downloading pandas-3.1.1-cp311-cp311-win_amd64.whl.metadata (16 kB)
+2026-11-08T09:11:39.8666893Z Collecting pyyaml
+2026-11-08T09:11:39.8779938Z   Downloading pyyaml-6.0.3-cp311-cp311-win_amd64.whl.metadata (2.4 kB)
+2026-11-08T09:11:39.9339605Z Collecting jsonschema
+2026-11-08T09:11:39.9451208Z   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+2026-11-08T09:11:40.0032807Z Collecting pyjwt
+2026-11-08T09:11:40.0139446Z   Downloading pyjwt-2.15.1-py3-none-any.whl.metadata (3.5 kB)
+2026-11-08T09:11:40.1898037Z Collecting cryptography
+2026-11-08T09:11:40.2010161Z   Downloading cryptography-50.0.2-cp311-abi3-win_amd64.whl.metadata (4.4 kB)
+2026-11-08T09:11:40.3468638Z Collecting lark-oapi
+2026-11-08T09:11:40.3591828Z   Downloading lark_oapi-1.7.5-py3-none-any.whl.metadata (15 kB)
+2026-11-08T09:11:40.4106512Z Collecting python-dateutil>=2.9.0 (from pandas)
+2026-11-08T09:11:40.4219724Z   Downloading python_dateutil-4.0.0-py3-none-any.whl.metadata (7.3 kB)
+2026-11-08T09:11:40.4710899Z Collecting tzdata (from pandas)
+2026-11-08T09:11:40.4821405Z   Downloading tzdata-2026.6-py2.py3-none-any.whl.metadata (1.4 kB)
+2026-11-08T09:11:40.5297406Z Collecting attrs>=22.2.0 (from jsonschema)
+2026-11-08T09:11:40.5405546Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+2026-11-08T09:11:40.5921249Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema)
+2026-11-08T09:11:40.6026206Z   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+2026-11-08T09:11:40.6479519Z Collecting referencing>=0.28.4 (from jsonschema)
+2026-11-08T09:11:40.6587869Z   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+2026-11-08T09:11:40.9174426Z Collecting rpds-py>=0.25.0 (from jsonschema)
+2026-11-08T09:11:40.9326443Z   Downloading rpds_py-2026.9.1-cp311-cp311-win_amd64.whl.metadata (4.2 kB)
+2026-11-08T09:11:41.0514611Z Collecting cffi>=2.0.0 (from cryptography)
+2026-11-08T09:11:41.0631726Z   Downloading cffi-2.1.1-cp311-cp311-win_amd64.whl.metadata (2.6 kB)
+2026-11-08T09:11:41.1140371Z Collecting requests>=2.25 (from lark-oapi)
+2026-11-08T09:11:41.1258701Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-11-08T09:11:41.1697088Z Collecting requests_toolbelt>=0.9 (from lark-oapi)
+2026-11-08T09:11:41.1805708Z   Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl.metadata (14 kB)
+2026-11-08T09:11:41.2728956Z Collecting pycryptodome>=3.9 (from lark-oapi)
+2026-11-08T09:11:41.2884596Z   Downloading pycryptodome-4.4.0-cp39-abi3-win_amd64.whl.metadata (6.3 kB)
+2026-11-08T09:11:41.4069354Z Collecting websockets<16,>=11 (from lark-oapi)
+2026-11-08T09:11:41.4188046Z   Downloading websockets-15.0.1-cp311-cp311-win_amd64.whl.metadata (7.0 kB)
+2026-11-08T09:11:41.4662613Z Collecting httpx<1.0,>=0.24 (from lark-oapi)
+2026-11-08T09:11:41.4767840Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2026-11-08T09:11:41.5238000Z Collecting anyio (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T09:11:41.5344199Z   Downloading anyio-4.16.0-py3-none-any.whl.metadata (4.7 kB)
+2026-11-08T09:11:41.5844341Z Collecting certifi (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T09:11:41.5953982Z   Downloading certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+2026-11-08T09:11:41.6572940Z Collecting httpcore==1.* (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T09:11:41.6678133Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2026-11-08T09:11:41.7144007Z Collecting idna (from httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T09:11:41.7248749Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-11-08T09:11:41.7724032Z Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0,>=0.24->lark-oapi)
+2026-11-08T09:11:41.7863022Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-11-08T09:11:41.8394363Z Collecting pycparser (from cffi>=2.0.0->cryptography)
+2026-11-08T09:11:41.8535031Z   Downloading pycparser-3.12-py3-none-any.whl.metadata (9.7 kB)
+2026-11-08T09:11:41.9074953Z Collecting typing-extensions>=4.4.0 (from referencing>=0.28.4->jsonschema)
+2026-11-08T09:11:41.9187784Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-11-08T09:11:42.0353076Z Collecting charset_normalizer<4,>=2 (from requests>=2.25->lark-oapi)
+2026-11-08T09:11:42.0465067Z   Downloading charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl.metadata (47 kB)
+2026-11-08T09:11:42.1058672Z Collecting urllib3<3,>=1.26 (from requests>=2.25->lark-oapi)
+2026-11-08T09:11:42.1184421Z   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+2026-11-08T09:11:42.1749996Z Downloading numpy-2.4.6-cp311-cp311-win_amd64.whl (12.6 MB)
+2026-11-08T09:11:42.3818846Z    ---------------------------------------- 12.6/12.6 MB 65.7 MB/s  0:00:00
+2026-11-08T09:11:42.3937853Z Downloading pandas-3.1.1-cp311-cp311-win_amd64.whl (11.0 MB)
+2026-11-08T09:11:42.5288186Z    ---------------------------------------- 11.0/11.0 MB 85.8 MB/s  0:00:00
+2026-11-08T09:11:42.5474120Z Downloading pyyaml-6.0.3-cp311-cp311-win_amd64.whl (158 kB)
+2026-11-08T09:11:42.5739046Z Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+2026-11-08T09:11:42.6001164Z Downloading pyjwt-2.15.1-py3-none-any.whl (33 kB)
+2026-11-08T09:11:42.6254907Z Downloading cryptography-50.0.2-cp311-abi3-win_amd64.whl (3.8 MB)
+2026-11-08T09:11:42.6804653Z    ---------------------------------------- 3.8/3.8 MB 77.4 MB/s  0:00:00
+2026-11-08T09:11:42.6920335Z Downloading lark_oapi-1.7.5-py3-none-any.whl (7.7 MB)
+2026-11-08T09:11:42.7910898Z    ---------------------------------------- 7.7/7.7 MB 79.3 MB/s  0:00:00
+2026-11-08T09:11:42.8019255Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+2026-11-08T09:11:42.8282038Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+2026-11-08T09:11:42.8520351Z Downloading websockets-15.0.1-cp311-cp311-win_amd64.whl (176 kB)
+2026-11-08T09:11:42.8783631Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-11-08T09:11:42.9017047Z Downloading cffi-2.1.1-cp311-cp311-win_amd64.whl (185 kB)
+2026-11-08T09:11:42.9370757Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-11-08T09:11:42.9641300Z Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+2026-11-08T09:11:42.9930108Z Downloading pycryptodome-4.4.0-cp39-abi3-win_amd64.whl (1.7 MB)
+2026-11-08T09:11:43.3526121Z    ---------------------------------------- 1.7/1.7 MB 4.0 MB/s  0:00:00
+2026-11-08T09:11:43.3636484Z Downloading python_dateutil-4.0.0-py3-none-any.whl (92 kB)
+2026-11-08T09:11:43.3896835Z Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+2026-11-08T09:11:43.4151608Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+2026-11-08T09:11:43.4462439Z Downloading charset_normalizer-3.5.2-cp311-cp311-win_amd64.whl (214 kB)
+2026-11-08T09:11:43.4772703Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-11-08T09:11:43.5047910Z Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+2026-11-08T09:11:43.5453618Z Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+2026-11-08T09:11:43.5773602Z Downloading requests_toolbelt-1.0.0-py2.py3-none-any.whl (54 kB)
+2026-11-08T09:11:43.6014511Z Downloading rpds_py-2026.9.1-cp311-cp311-win_amd64.whl (226 kB)
+2026-11-08T09:11:43.6306730Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-11-08T09:11:43.6539527Z Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+2026-11-08T09:11:43.6808287Z Downloading pycparser-3.12-py3-none-any.whl (62 kB)
+2026-11-08T09:11:43.7053614Z Downloading tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+2026-11-08T09:11:43.9433420Z Installing collected packages: websockets, urllib3, tzdata, typing-extensions, rpds-py, pyyaml, pyjwt, pycryptodome, pycparser, numpy, idna, h11, charset_normalizer, certifi, attrs, requests, referencing, python-dateutil, httpcore, cffi, anyio, requests_toolbelt, pandas, jsonschema-specifications, httpx, cryptography, lark-oapi, jsonschema
+2026-11-08T09:12:22.3925577Z 
+2026-11-08T09:12:22.3941786Z Successfully installed anyio-4.16.0 attrs-26.1.0 certifi-2026.10.23 cffi-2.1.1 charset_normalizer-3.5.2 cryptography-50.0.2 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 lark-oapi-1.7.5 numpy-2.4.6 pandas-3.1.1 pycparser-3.12 pycryptodome-4.4.0 pyjwt-2.15.1 python-dateutil-4.0.0 pyyaml-6.0.3 referencing-0.37.0 requests-2.34.2 requests_toolbelt-1.0.0 rpds-py-2026.9.1 typing-extensions-4.16.0 tzdata-2026.6 urllib3-2.8.0 websockets-15.0.1
+2026-11-08T09:12:23.7007391Z Collecting pyarrow
+2026-11-08T09:12:23.8536962Z   Downloading pyarrow-26.0.1-cp311-cp311-win_amd64.whl.metadata (3.0 kB)
+2026-11-08T09:12:23.8705785Z Requirement already satisfied: requests in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (2.34.2)
+2026-11-08T09:12:23.8966351Z Collecting python-docx
+2026-11-08T09:12:23.9074284Z   Downloading python_docx-1.2.0-py3-none-any.whl.metadata (2.0 kB)
+2026-11-08T09:12:23.9295170Z Requirement already satisfied: charset_normalizer<4,>=2 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (3.5.2)
+2026-11-08T09:12:23.9298271Z Requirement already satisfied: idna<4,>=2.5 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (3.20)
+2026-11-08T09:12:23.9301445Z Requirement already satisfied: urllib3<3,>=1.26 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (2.8.0)
+2026-11-08T09:12:23.9303562Z Requirement already satisfied: certifi>=2023.5.7 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from requests) (2026.10.23)
+2026-11-08T09:12:24.1223259Z Collecting lxml>=3.1.0 (from python-docx)
+2026-11-08T09:12:24.1343552Z   Downloading lxml-6.1.3-cp311-cp311-win_amd64.whl.metadata (3.4 kB)
+2026-11-08T09:12:24.1541277Z Requirement already satisfied: typing_extensions>=4.9.0 in C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages (from python-docx) (4.16.0)
+2026-11-08T09:12:24.1674207Z Downloading pyarrow-26.0.1-cp311-cp311-win_amd64.whl (29.0 MB)
+2026-11-08T09:12:25.1106267Z    ---------------------------------------- 29.0/29.0 MB 32.3 MB/s  0:00:00
+2026-11-08T09:12:25.1218224Z Downloading python_docx-1.2.0-py3-none-any.whl (252 kB)
+2026-11-08T09:12:25.1506325Z Downloading lxml-6.1.3-cp311-cp311-win_amd64.whl (4.0 MB)
+2026-11-08T09:12:25.2195029Z    ---------------------------------------- 4.0/4.0 MB 48.3 MB/s  0:00:00
+2026-11-08T09:12:25.3037091Z Installing collected packages: pyarrow, lxml, python-docx
+2026-11-08T09:12:27.8029207Z 
+2026-11-08T09:12:27.8044082Z Successfully installed lxml-6.1.3 pyarrow-26.0.1 python-docx-1.2.0
