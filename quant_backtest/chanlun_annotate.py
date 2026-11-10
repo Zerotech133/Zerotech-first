@@ -91,6 +91,7 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime, timezone
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -365,11 +366,9 @@ def _write_rows(path, rows):
 
 
 def _write_meta(path, meta):
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with atomic_io.replacing(path) as f:
         json.dump(meta, f, ensure_ascii=False, indent=1, sort_keys=True)
         f.write("\n")
-    os.replace(tmp, path)
 
 
 def _summarize(acc, elapsed):

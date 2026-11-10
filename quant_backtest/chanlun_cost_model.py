@@ -42,6 +42,7 @@ import statistics
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -480,9 +481,8 @@ def main():
                         "fm_t": (c["fm_net"] or {}).get("t"),
                         "annual_drag": c["annual_drag"],
                     })
-    with open(a.out + ".tmp", "w", encoding="utf-8") as f:
+    with atomic_io.replacing(a.out) as f:
         json.dump({"main": out, "summary": summary}, f, ensure_ascii=False, indent=1)
-    os.replace(a.out + ".tmp", a.out)
     print("\n-> %s" % a.out)
 
 

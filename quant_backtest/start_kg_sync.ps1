@@ -31,6 +31,10 @@
 #         (E: drive does not exist on this machine; junction not viable).
 #       - new step intel_xq_guba inserted after intel_link (registry-based
 #         xueqiu+guba intel backfill/increment, MERGE idempotent).
+#       - 2026-11-08 郑玄(KGMAP1) P1 老田批: new step intel_author inserted
+#         after intel_xq_guba (IntelAuthor 博主实体层全量幂等重算+AUTHORED_BY
+#         挂边; author_key 索引先行, 秒级). rollback: restore
+#         C:\项目\backups\start_kg_sync.ps1.bak-kgmapP1-20261108
 #       - KG env credentials loaded from .env.local (KG_* keys only,
 #         machine-level env intentionally not used, fail-closed).
 #       - KG_DATA_ROOT degrades to KG_DATA_ROOT_FALLBACK when the new-root
@@ -115,6 +119,7 @@ try {
         @{name='kg_evt_sync';      script='kg_build_p3_evt.py';     arg=''},
         @{name='intel_link';       script="$kg_root\kg_intel_link.py";       arg='--write'},
         @{name='intel_xq_guba';    script="$kg_root\kg_intel_xq_guba.py";    arg=''},
+        @{name='intel_author';     script="$kg_root\kg_intel_author.py";     arg=''},
         @{name='mentions_rebuild'; script="$kg_root\kg_mentions_rebuild.py"; arg='--live --src daily-chain'},
         @{name='cl1_sync';         script='kg_build_cl1.py';        arg=''},
         @{name='m2_drive_sync';    script='kg_build_m2.py';         arg=''},

@@ -32,9 +32,15 @@ import re
 import time
 import glob
 import warnings
-from typing import Optional, Iterable, Dict, List, Tuple, Any
+from typing import Optional, Iterable, Dict, List, Tuple, Any, TYPE_CHECKING
 
 import duckdb
+
+if TYPE_CHECKING:  # 2026-11-08 审计修复：两处返回注解写 "pd.DataFrame"，但 pandas
+    # 是函数内延迟导入（read_daily 等，见 L305/L486），静态检查报 F821
+    # undefined-name。此处仅在类型检查/IDE 解析期提供名字，运行时零导入代价，
+    # 不改变"延迟导入 pandas"的既有意图。
+    import pandas as pd
 
 # ---------------------------------------------------------------------------
 # 异常

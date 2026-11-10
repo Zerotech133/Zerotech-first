@@ -52,6 +52,7 @@ from stock_council import (
     _vote_verdict,
 )
 import logging
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 
 SIM_PROPOSALS = os.path.join(REPORTS, "council_sim_proposals.jsonl")
 SCORE = os.path.join(REPORTS, "council_sim_score.json")
@@ -599,10 +600,8 @@ def compare():
         "role_agree_rate": role_rate,
         "rows": rows,
     }
-    tmp = SCORE + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with atomic_io.replacing(SCORE) as f:
         json.dump(score, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, SCORE)
     print(
         "[COUNCIL-SIM] 对照：sim=%d real=%d 对齐=%d verdict一致率=%s%%"
         " 平均|Δk|=%s → %s"

@@ -122,6 +122,9 @@ def run_compare(req_id, doc, vip=None):
     with _LOCK:  # 进程内串行，防数据装载/回测资源竞争
         t0 = time.time()
         base = dict(eng.DEFAULTS)
+        # 2026-11-10：引擎默认预设改为 v2 后，此处的「baseline」必须钉死旧口径，
+        # 否则对比的基准会随默认预设漂移（本脚本的 baseline 语义=未调参的产线配置）。
+        base.setdefault("preset", "none")
         # 上次部署配置覆盖 baseline（vip 含引擎键时）
         cust = (doc or {}).get("customer") or ""
         cust_vip = (vip or {}).get(cust) or {}

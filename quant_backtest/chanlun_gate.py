@@ -43,6 +43,7 @@ import statistics
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -453,9 +454,8 @@ def main():
                   % (k, v["mine"], v["ref"], v["diff"],
                      "OK" if v["within_0.05pp"] else "**偏差>0.05pp**"))
 
-    with open(a.out + ".tmp", "w", encoding="utf-8") as f:
+    with atomic_io.replacing(a.out) as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
-    os.replace(a.out + ".tmp", a.out)
     print("\n-> %s" % a.out)
 
 

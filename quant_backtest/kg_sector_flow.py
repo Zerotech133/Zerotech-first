@@ -22,7 +22,8 @@
 用法：
   python kg_sector_flow.py                     # 默认跑最近一个交易日
   python kg_sector_flow.py --date 20260929
-  python kg_sector_flow.py --replay 250        # 历史回放定标（只打印统计）
+  python kg_sector_flow.py --replay 250        # 历史回放定标（频次+行业/月份两维分布）
+  python kg_sector_flow.py --replay 250 --dryrun   # 只打印，不写 calib 档案
   python kg_sector_flow.py --nmin 5 --mmin 3   # 临时阈值
 """
 
@@ -406,9 +407,54 @@ def notify(doc):
 # ────────────────────────────────────────────────
 # 阈值定标：历史回放
 # ────────────────────────────────────────────────
-def replay(n_days=250):
-    """近 n_days 个交易日回放：不同 (n_min, m_min) 组合的
-    触发频次分布 → 定标建议（输出到 stdout，不写文件）。"""
+CALIB_F = os.path.join(REPORTS, "sector_flow_calib.json")
+
+
+def ym_of(d):
+    """'20260929' → '202609'。非 yyyymmdd（缺省/异常/短串）归 'unknown'，
+    不做猜测性截断——截断会把 '2026' 当成月份，静默污染分布。"""
+    s = str(d or "")
+    return s[:6] if (len(s) == 8 and s.isdigit()) else "unknown"
+
+
+def dist_of(pairs, topk=10):
+    """[(date, industry)] → 两维分布。
+
+    行业维：按触发单数降序取 topk，其余合并为「其他」（industry_tail_n
+    记被合并的行业个数，不丢量级信息）；
+    月份维：yyyymm 全量计数，按月升序（时间序，不用频次序——频次序会让
+    「哪个月热」难以按月对比）。
+    口径说明：一律按**触发单数**计（一单一行），不是按上榜股数；
+    去重行业日已在 hit/ind_days 里单独给，两者不可混读。
+    """
+    ic, mc = {}, {}
+    for d, ind in pairs:
+        ic[ind] = ic.get(ind, 0) + 1
+        k = ym_of(d)
+        mc[k] = mc.get(k, 0) + 1
+    order = sorted(ic.items(), key=lambda kv: (-kv[1], kv[0]))
+    head = order[:topk]
+    tail = order[topk:]
+    return {
+        "industry_dist": {
+            "top": [{"industry": k, "n": v} for k, v in head],
+            "other_n": sum(v for _, v in tail),
+            "industry_tail_n": len(tail),
+            "industry_total_n": len(ic),
+            "total": sum(ic.values()),
+        },
+        "month_dist": [{"ym": k, "n": v} for k, v in sorted(mc.items())],
+    }
+
+
+def replay(n_days=250, topk=10, dryrun=False):
+    """近 n_days 个交易日回放：不同 (n_min, m_min) 组合的触发频次，
+    外加默认阈值口径的**行业/月份两维分布**（L-08）。
+
+    输出：stdout 明细 + reports/sector_flow_calib.json（定标档案，机读；
+    dryrun=True 只打印不落盘）。该文件与 sector_flow_latest.json 是不同
+    生产者、不同用途，不互相覆盖。
+    """
     ds = [
         r["d"]
         for r in KP._q(
@@ -424,6 +470,7 @@ def replay(n_days=250):
     grid = [(n, m) for n in (3, 4, 5, 6) for m in (2, 3, 4)]
     hit = {(n, m): 0 for n, m in grid}
     ind_days = {(n, m): set() for n, m in grid}  # 去重口径备用
+    pairs = {(n, m): [] for n, m in grid}  # 两维分布的原始 (date, industry)
     for d in ds:
         rows = load_day(d)
         for n, m in grid:
@@ -431,6 +478,7 @@ def replay(n_days=250):
             hit[(n, m)] += len(ts)
             for t in ts:
                 ind_days[(n, m)].add((d, t["industry"]))
+                pairs[(n, m)].append((d, t["industry"]))
     for n, m in sorted(grid):
         # 2026-11-07 审计修复：原 `len(ind_days[(n, m)])` 结果被丢弃（无副作用），
         # 读者会误以为已用上"去重行业日"口径；改为随同输出，口径可见。
@@ -439,7 +487,62 @@ def replay(n_days=250):
             % (n, m, hit[(n, m)], hit[(n, m)] / max(1, len(ds)),
                len(ind_days[(n, m)]))
         )
-    # TODO：输出按行业分布 top、月份分布，辅助窗口选择
+    # 两维明细只给默认口径（当前生产阈值），避免 12 组合刷屏；
+    # 全组合分布全部写进 calib 档案。
+    cur = (N_MIN, M_MIN)
+    dists = {("%d/%d" % k): dist_of(v, topk) for k, v in pairs.items()}
+    cd = dists.get("%d/%d" % cur) or dist_of([], topk)
+    ind = cd["industry_dist"]
+    if ind["top"]:
+        print(
+            "  行业 top%d（n_min=%d m_min=%d）：%s（共 %d 行业，其他 %d 单/%d 行业）"
+            % (
+                min(topk, len(ind["top"])),
+                cur[0],
+                cur[1],
+                " · ".join("%s %d" % (x["industry"], x["n"]) for x in ind["top"]),
+                ind["industry_total_n"],
+                ind["other_n"],
+                ind["industry_tail_n"],
+            )
+        )
+    if cd["month_dist"]:
+        peak = max(cd["month_dist"], key=lambda x: x["n"])
+        print(
+            "  月份分布：%s ｜ 峰 %s %d 单"
+            % (
+                " · ".join("%s %d" % (x["ym"], x["n"]) for x in cd["month_dist"]),
+                peak["ym"],
+                peak["n"],
+            )
+        )
+    doc = {
+        "generated_at": _now(),
+        "n_days": len(ds),
+        "window": [ds[-1], ds[0]] if ds else [],
+        "rule": {"n_min": N_MIN, "m_min": M_MIN},
+        "topk": topk,
+        "grid": [
+            {
+                "n_min": n,
+                "m_min": m,
+                "n_tickets": hit[(n, m)],
+                "per_day": round(hit[(n, m)] / max(1, len(ds)), 4),
+                "n_ind_days": len(ind_days[(n, m)]),
+            }
+            for n, m in sorted(grid)
+        ],
+        "dist_by_rule": dists,
+        "industry_dist": ind,  # 默认口径两维，置顶方便消费方直取
+        "month_dist": cd["month_dist"],
+        "count_basis": "tickets（一单一行；非上榜股数）",
+    }
+    if not dryrun:
+        os.makedirs(REPORTS, exist_ok=True)
+        with open(CALIB_F, "w", encoding="utf-8") as f:
+            json.dump(doc, f, ensure_ascii=False, indent=1)
+        print("  已写 reports/sector_flow_calib.json")
+    return doc
 
 
 def main():
@@ -451,7 +554,7 @@ def main():
     ap.add_argument("--dryrun", action="store_true")
     a = ap.parse_args()
     if a.replay:
-        replay(a.replay)
+        replay(a.replay, dryrun=a.dryrun)
         return
     d = a.date or last_trade_date()
     if not d:

@@ -1,0 +1,343 @@
+{
+ "schema": "houfeng.backlog/v1",
+ "generated_at": "2026-11-07 23:45",
+ "source_report": "deliverables/2026-11-07_候风代码审查与遗留清单_v1.md",
+ "baseline_verify": "PASS",
+ "engine_files_untouched": true,
+ "fixed": [
+  {
+   "id": "B-01",
+   "pri": "P1",
+   "file": "paper/paper_daily.py",
+   "what": "A6 净值未链接（nav=1+窗口收益，prev_nav 死变量）",
+   "fix": "nav_t=nav_{t-1}×(1+daily_ret)；幂等只认 nav_basis=chain",
+   "evidence": "端到端 nav=1.0000 / window_return=-0.174859 / execution_ledger 仍 3843 行"
+  },
+  {
+   "id": "B-02",
+   "pri": "P1",
+   "file": "paper/guardian_agent_v1.0.4.py",
+   "what": "报告 SL/TP 用含当日高点，执行用截至昨日，两套数字",
+   "fix": "统一 hi_prior",
+   "evidence": "7 笔可比：v1.0.3 不一致 2 笔 → v1.0.4 0 笔"
+  },
+  {
+   "id": "B-03",
+   "pri": "P1",
+   "file": "paper/guardian_agent_v1.0.4.py",
+   "what": "TP 触发门槛用当日高点（日内前视）+ 用 round 后值当阈值",
+   "fix": "改用 hi_prior>ep*1.02",
+   "evidence": "同 B-02 回归"
+  },
+  {
+   "id": "B-04",
+   "pri": "P1",
+   "file": "paper/guardian_agent_v1.0.4.py",
+   "what": "账本重写裸 json.loads，一行坏即崩且静默丢行",
+   "fix": "_ledger_keep_others：坏行保留+告警",
+   "evidence": "test_ledger_keep_others_unit"
+  },
+  {
+   "id": "B-05",
+   "pri": "P1",
+   "file": "paper/_dividend_defense.py",
+   "what": "换仓成本只收单边（应卖出+买入双边）",
+   "fix": "cost_mult=1(首期)/2(换仓)",
+   "evidence": "B 档 18.82%→18.09%，DD -13.09→-13.43，sweep 9.67~19.27%"
+  },
+  {
+   "id": "B-06",
+   "pri": "P1",
+   "file": "paper/_json_safe.py",
+   "what": "4 个页面 JSON 生产者无 NaN 防具（整页白屏）",
+   "fix": "NaN/Inf→null + allow_nan=False",
+   "evidence": "3 例单测 + node JSON.parse"
+  },
+  {
+   "id": "B-07",
+   "pri": "P1",
+   "file": "paper/_hold_grid.py",
+   "what": "v1/v2 schema 写同一 houfeng_holdgrid.json，互相覆盖",
+   "fix": "旧脚本改写 houfeng_holdgrid_v1.json",
+   "evidence": "页面仍读 v2"
+  },
+  {
+   "id": "B-08",
+   "pri": "P1",
+   "file": "test_qpzm_backtest.py",
+   "what": "test_load_wide_eligibility 长期红（夹具缺 low 列）",
+   "fix": "夹具补 low",
+   "evidence": "12/12 通过"
+  },
+  {
+   "id": "B-09",
+   "pri": "P2",
+   "file": "paper/_volq_det.py",
+   "what": "random.seed 污染全局 RNG；每 entry 重扫 listdir",
+   "fix": "random.Random(seed) + 目录缓存",
+   "evidence": "逐笔 volq 一致 [5,5,5,5,1]；全局 RNG 未变"
+  },
+  {
+   "id": "B-10",
+   "pri": "P2",
+   "file": "paper/_pick_live.py",
+   "what": "--drop-p1 永远为真；字段名写死 1106",
+   "fix": "--no-drop-p1；close/chg_pct/one_word_board",
+   "evidence": "py_compile + 与页面 schema 对齐"
+  },
+  {
+   "id": "B-11",
+   "pri": "P2",
+   "file": "(cleanup)",
+   "what": "85 项零引用探针/垃圾",
+   "fix": "备份→回收站→逐批复核",
+   "evidence": "maintenance/cleanup_manifest.json；84/84 已不在原路径"
+  }
+ ],
+ "backlog": [
+  {
+   "id": "L-01",
+   "pri": "P1",
+   "title": "portfolio_sim.py 不在基线锁内（裁判不受审计）",
+   "impact": "改裁判不会被 verify 发现",
+   "action": "纳入 engine_files 或单列 judge_files 并重冻 v4 锁；需老田确认",
+   "accept": "verify --rerun 能报 CHANGED",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "portfolio_sim.py 已入锁，role=judge，md5 b6336ce8…；verify_baseline 输出首行 JUDGE，篡改即 FAIL 并提示「历史收益/回撤须重算」",
+   "residual_note": "择日重冻时把 judge 项一并复核（当前 md5 已按 11-07 状态固化）",
+   "evidence": "test_houfeng_e2e.py::test_judge_file_is_frozen_in_lock / ::test_verify_flags_judge_change"
+  },
+  {
+   "id": "L-02",
+   "pri": "P1",
+   "title": "execution_ledger 跨 v1.0.3/v1.0.4 两套规则（3843 行/126 日）",
+   "impact": "跨版本比较把规则变化读成策略变化",
+   "action": "加 rule_version 字段；用 v1.0.4 回放并并列，不覆盖原账",
+   "accept": "TP 笔数差异逐笔可解释",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "3843 行回填 rule_version=v1.0.3（行数守恒、坏行 0）；v1.0.4 起行内自写版本；v1.0.4 并列回放 execution_ledger_v104.jsonl（不覆盖原账），差异 2 笔（均 TP→hold）",
+   "residual_note": "跨版本聚合须先按 rule_version 分组",
+   "evidence": "test_houfeng_e2e.py::test_ledger_rows_carry_rule_version / ::test_v104_replay_is_parallel_not_overwrite"
+  },
+  {
+   "id": "L-03",
+   "pri": "P1",
+   "title": "红利档行业集中 50%（银行6+建筑4/20）",
+   "impact": "名义分散实为单一风格 beta",
+   "action": "加 max_per_industry（建议 25%），二维敏感性重标定，先告知再改",
+   "accept": "单行业≤上限；与无上限版并列三项差值",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "实现 --industry-cap（默认 0=关闭）。实测 ≤3 只：年化 18.09→13.43、回撤 −13.43→−17.70、Sharpe 1.17→0.90、换手 36.0→42.8，最大行业 9.9→3.0 只。结论：不加",
+   "residual_note": "若未来改默认，需整段重算并同步页面/报告",
+   "evidence": "页面「行业上限」面板 + industry_cap_compare"
+  },
+  {
+   "id": "L-04",
+   "pri": "P1",
+   "title": "A6 净值序列起点（11-09 起才是真链接净值）",
+   "impact": "误读历史段",
+   "action": "账本加 rule_version；页面标注起点 nav=1.0",
+   "accept": "任取两行满足 nav_t/nav_{t-1}=1+daily_ret",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "账本行自带 nav_seed_date/nav_seed_value，起点日附 nav_note；卡片页显示「自 20261106 起链式」",
+   "residual_note": "起点前的段不可当净值读",
+   "evidence": "test 覆盖于 paper_daily 相关用例 + 页面渲染"
+  },
+  {
+   "id": "L-05",
+   "pri": "P2",
+   "title": "gold_signal_shadow 结算前视（dt vs detect_date）",
+   "impact": "虚增 d20 0.80pp；已有 fail-fast 守卫、任务停用",
+   "action": "重启前改按 detect_date 定位 + 滞后敏感性",
+   "accept": "守卫不触发；d20 降幅与 0.80pp 同量级",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "settle_anchor() 按 detect_date 定位入场（非交易日取其后第一根），旧行缺字段回退 dt 并标 legacy_dt；面板加 settle_rule",
+   "residual_note": "重启影子期须重新起算，旧面板数字不可混读",
+   "evidence": "test_gold_settle.py（6 例，含前视量对比）"
+  },
+  {
+   "id": "L-06",
+   "pri": "P2",
+   "title": "guardian/arena/holdgrid/dividend 缺端到端与契约测试",
+   "impact": "下次改动易静默改坏",
+   "action": "3 日快照测试 + pool_at 边界 + schema 键集合契约",
+   "accept": "pytest test_houfeng_*.py 全绿且 <60s",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "新增 test_houfeng_e2e.py（8 例）+ test_gold_settle.py（6 例）；全量 59 passed",
+   "residual_note": "arena/holdgrid 的数值契约仍只覆盖 schema 与合法性，未做逐值回归",
+   "evidence": "pytest 59 passed"
+  },
+  {
+   "id": "L-07",
+   "pri": "P2",
+   "title": "固定 .tmp 临时名扩散 50+ 处",
+   "impact": "单写者无害，并发即互相覆盖（已踩 454/480 失败）",
+   "action": "抽 atomic_io.write_json，优先迁移会并发的脚本",
+   "accept": "并发压测 8×50 次 0 失败、无残留",
+   "status": "closed",
+   "closed_at": "2026-11-07",
+   "resolution": "atomic_io.py 统一原子写（mkstemp+replace+退避）；迁移 10 文件 19 处；仓内固定 .tmp 172→153；候风链路 0 处；_json_safe 走统一实现",
+   "residual_note": "剩余 153 处为其他子系统，按 P2 排期；新代码禁止固定 .tmp（有测试拦）",
+   "evidence": "test_houfeng_e2e.py::test_atomic_io_replacing_threads / ::test_houfeng_chain_has_no_fixed_tmp"
+  },
+  {
+   "id": "L-08",
+   "pri": "P3",
+   "title": "kg_sector_flow 缺行业/月份分布输出",
+   "impact": "展示层",
+   "action": "补输出",
+   "accept": "报告含两维分布",
+   "status": "closed",
+   "closed_at": "2026-11-08",
+   "resolution": "replay 增 ym_of()/dist_of() 纯函数 + 两维分布：行业维（top10 + 其他合并，记 industry_total_n/industry_tail_n）与月份维（yyyymm 升序）；stdout 明细 + reports/sector_flow_calib.json 机读档案（12 格阈值矩阵 + 两维分布 + 口径 footgun 说明）；--dryrun 保持『只打印不落盘』语义。250 日实跑：88 单与既有 5/4 定标注释逐值一致（口径未漂移）；行业 top 电气设备 33/元器件 15/软件服务 10；月份峰 202603 17 单",
+   "residual_note": "计数口径唯一：按触发单数（一单一行），不是上榜股数、不是去重行业日；消费方读 industry_dist.total 时勿与 grid.n_ind_days 混读",
+   "evidence": "tests/test_kg_sector_flow_dist.py（18 例：ym_of 边界 8、dist 口径 6、replay 编排 2、档案契约 1、strict-json 1）"
+  },
+  {
+   "id": "L-09",
+   "pri": "P3",
+   "title": "文档债与结构债（portfolio_sim 过期 TODO、guardian 5 版并存、根级 790 文件扁平）",
+   "impact": "维护成本",
+   "action": "注释订正；抽 guardian_core；按 pipeline/research/tools 分区",
+   "accept": "新文件不再堆根级",
+   "status": "partial",
+   "closed_at": "2026-11-08",
+   "resolution": "① 注释订正：portfolio_sim.py 第 5 条『待办优先级』三项已由 A1~A3 结清→改为『已结清』并给证据路径；guardian_VERSION.json 顶层 version/entry 原误指 v1.0.0→订正为 v1.0.4 并补 entry_caller/file_states。/② 版本收敛：guardian_agent.py（与 v1.0.2 逐字节相同、全仓零引用）归档为 _archive/guardian_agent_v1.0.2_dup.py（移动非删除）；5 版并存→1 生产(v1.0.4)+1 对照(v1.0.3)+3 历史(登记在册)。/③ 根级分区：不搬迁（76 个 .ps1、计划任务、跨文件 import 全按根级路径引用），改为冻结存量+管住增量——repo_layout_baseline.json(577 条)+4 条准入测试",
+   "residual_note": "未做：抽 guardian_core（改生产裁判结构，收益仅维护性，转 L-10 并附等价性判据）；根级 14 个 .bak-* 垃圾与 36 个 .log 待按 P2 清理",
+   "accept_note": "『新文件不再堆根级』已可机器验证：根级新增 .py 一律判红",
+   "evidence": "tests/test_repo_layout.py（6 例：根级增量/基线形状/测试分区 + guardian 入口一致/登记齐全/无重复副本/生产唯一）；portfolio_sim.py AST 等价证明（non_comment_lines=0）"
+  },
+  {
+   "id": "L-10",
+   "pri": "P3",
+   "title": "guardian_core 抽取（v1.0.4 与 v1.0.3 共享逻辑模块化）",
+   "impact": "维护性：两版并存 350 行重复，改一处须同步两处",
+   "action": "把日期缓存/ATR/guard_one/账本 IO 抽到 guardian_core.py，v1.0.4 改薄壳；v1.0.3 保持独立不抽（旧账复现基线）",
+   "accept": "抽取前后用同一交易日跑 v1.0.4：execution_ledger 逐字节相同；test_houfeng_e2e.py 8 例全绿；v1.0.3 未改一字",
+   "status": "open",
+   "blocked_by": "需先有可复现的 3 日账本快照（guardian 依赖分钟数据与实时持仓，无快照则等价性无法证明）"
+  },
+  {
+   "id": "L-11",
+   "pri": "P1",
+   "title": "data/ashare 为前复权(qfq)，绝对价被用于手数/资金分配（违反 PIT_RULE 的 qfq 禁用）",
+   "impact": "同窗口同参数（36m/exact/c30/inv_vol+recycle）：qfq 池 +117.71% vs bfq 池 +88.29%，差 29.4pp。差异不在涨跌停判定（skip_unfill 72 vs 73），而在 skip_lot 2210→2381：qfq 历史价被除权因子缩小（600795 折价约 10.5%），同样资金买到更多手，组合构建路径改变后被复利放大",
+   "action": "立项评估影响面；候选方案为生产池改 bfq+adj_factor（或 hfq）。改数据层会使全部历史 total_return/max_drawdown 重算，须与基线重冻同一窗口完成，不能顺手改",
+   "accept": "两套数据源同窗口收益差 ≤5pp；skip_lot 差异逐笔可解释；重冻后 verify_baseline.py PASS 且五窗口结论不翻转",
+   "status": "open",
+   "evidence": "deliverables/2026-11-08_十年期回测_v1.md §5；600795 两套价之比 0.8952→1.0000（qfq 特征），688806 恒 1.0；reports/_src_check_36m.json vs a2_final/_a4_check_36m_combo.json"
+  },
+  {
+   "id": "L-12",
+   "pri": "P1",
+   "title": "窗口起点单点报数：同一三年窗口仅起点偏移 1 个交易日，累计收益差 15.9pp",
+   "impact": "统计口径：三年 20231106/07/09/13/21 与 20231204 六个起点 → +117.71/+101.81/+114.27/+112.23/+109.09/+113.14%，年化 26.4%~29.6%，极差 15.9pp。机制为建仓日整体错位一天后逐日持仓集合不同，经复利放大（非随机、非数据错误）。任何单点窗口收益都带 ±8pp 起点噪声",
+   "action": "把\"多起点取区间\"写进报数流程：任一窗口的收益结论必须给出 ≥3 个起点偏移（0/1/3/5 日）的区间，单点数字只作参考；历史已发布的 36m 基线需补标起点与区间",
+   "accept": "报告模板含 start_sensitivity 字段；新窗口回测默认输出 3~5 个起点的区间；对外口径改为区间而非单值",
+   "status": "open",
+   "evidence": "deliverables/2026-11-08_三年期回测_v1.md §2；reports/_startchk_202311{09,13,21}.json、_startchk_20231204.json、_d1check_qfq_1106.json、portfolio_3y_prodqfq.json"
+  }
+ ],
+ "constraints": {
+  "engine_files": [
+   "qpzm_backtest.py",
+   "rps_resonance.py",
+   "qpzm_daily_batch.py",
+   "backtest.py",
+   "strategies.py",
+   "config.json",
+   "news_collector/news_config.json",
+   "k_stock/paper/qpzm_adapter.py"
+  ],
+  "cost_roundtrip_bp": 30,
+  "audit_window": [
+   20251015,
+   20261014
+  ],
+  "pit_rule": "qfq 禁用；hfq 或 bfq+adj_factor",
+  "judge": "portfolio_sim.py 真净值",
+  "root_py_baseline": 577,
+  "root_py_policy": "根级 .py 只减不增（maintenance/repo_layout_baseline.json + tests/test_repo_layout.py）；新测试进 quant_backtest/tests/，链路进 pipeline/，一次性研究进 research/，运维工具进 tools/",
+  "guardian_entry": "paper/guardian_agent_v1.0.4.py（paper_daily.py 调用；版本表 entry 与代码一致性有测试钉死）",
+  "m2_frozen": {
+   "rank": "score",
+   "weight": "inv_vol",
+   "lot_fill": "recycle",
+   "top_n": 30,
+   "hold": 5,
+   "limit_mode": "exact",
+   "cost": 0.003
+  },
+  "python": "C:/Program Files/Python311/python.exe (pandas 3.0.1 / numpy 2.4.4)",
+  "delete_policy": "备份→回收站(recycle_del.py)→每批≤10→os.path.exists 复核"
+ },
+ "acceptance_rules": [
+  "五窗口 ≥4/5 收益不恶化，回撤不恶化 >2pp",
+  "30bp 与 50bp 结论不翻转",
+  "组合层真净值，满仓折算并列",
+  "新因子无未来信息，qfq 禁用",
+  "beta 判据仅新因子/排序键：相关性变化 ≤±0.05 且回撤不恶化",
+  "改动前 count==1、改动后新串存在；引擎改动重冻并 verify",
+  "页面 JSON 必须能被严格 JSON.parse（Python json.load 不作为判据）",
+  "一个页面一个 JSON 一个生产者，多脚本不同文件名",
+  "展示价位与落账价位同一 as-of 口径"
+ ],
+ "execution_log": {
+  "executed_at": "2026-11-08 00:52",
+  "scope": "L-08（closed）｜L-09（partial：注释订正+版本收敛+准入机制三项落地，guardian_core 转 L-10）",
+  "closed": 1,
+  "partial": 1,
+  "still_open": [
+   "L-09",
+   "L-10",
+   "L-11",
+   "L-12"
+  ],
+  "prev_round": {
+   "executed_at": "2026-11-07 23:59:17",
+   "scope": "L-01 L-02 L-03 L-04 L-05(P2-a) L-06(P2-b) L-07(P2-c)",
+   "closed": 7
+  },
+  "regression": {
+   "tests_passed": 51,
+   "tests_failed": 0,
+   "baseline_verify": "PASS",
+   "engine_files_untouched": true,
+   "judge_refrozen": "portfolio_sim.py b6336ce8→57de37c6（AST 相等、7 行差异全为注释，历史收益/回撤数字继续有效）",
+   "note": "本轮未改动任何已发布数字；新增的 sector_flow_calib.json 为全新档案，不覆盖 latest/hist"
+  },
+  "ten_year_backtest": {
+   "run_at": "2026-11-08 01:10",
+   "window": ["20161107", "20261106"],
+   "data": "data/ashare10y（从 quant_lake.duckdb 导出 5835 只 / 1133.96 万行 / 2016-2026）",
+   "result": "累计 −20.83%，年化 −2.30%，最大回撤 −70.35%，Sharpe −0.01，28237 笔，换手 281.8x",
+   "window_sensitivity": "近1年 +26.22%｜近3年 +106.15%｜近5年 +32.52%｜近6.8年 +12.27%｜全10年 −20.83%（单调递减）",
+   "robustness": "exact 6.8 年 +17.75%/年化 2.42%/回撤 −55.61%；equal+strict 10 年 −27.94%；36m 同窗口 bfq 源 +88.29% vs 生产 qfq 源 +117.71%",
+   "conclusion": "36m +117.71% 是窗口产物，正收益只从 2024 年起（2023 仍 −19.07%）；10 年超额 +0.04%（≈0）",
+   "report": "deliverables/2026-11-08_十年期回测_v1.md",
+   "new_backlog": "L-11"
+  },
+  "three_year_backtest": {
+   "run_at": "2026-11-08 01:47",
+   "window": ["20231107", "20261106"],
+   "window_days": 727,
+   "window_years": 3.0,
+   "primary_result": "bfq 原始价 + approx：累计 +97.18%，年化 +25.36%，最大回撤 −20.44%，Sharpe 1.09，8492 笔，单笔均值 +0.763%，胜率 44.6%",
+   "result_band": "同窗口四口径：bfq+approx +97.18%｜bfq+exact +88.29%｜qfq+exact（20231107 起）+101.81%｜qfq+exact（20231106 起）+117.71%",
+   "yearly": "2023(39日) −4.34%｜2024 +31.58%｜2025 +28.70%｜2026(203日) +21.72%",
+   "exposure": "空仓日 287/727 = 39.5%，12 段 >3 日空仓（最长 49 日 20260527~20260804）；在场年化 +45.3%",
+   "start_sensitivity": "起点偏移 0/1/3/5/10/20 日 → +117.71/+101.81/+114.27/+112.23/+109.09/+113.14%，年化 26.4%~29.6%，极差 15.9pp；机制 = 建仓日整体错位一天后复利放大，非随机",
+   "source_gap": "同窗口 20231106 起：qfq +117.71% vs bfq +96.80%，差 20.9pp 全落在 skip_lot（2210 vs 2381），qfq 溢价方向为高估",
+   "vs_slice": "十年曲线切片同期 +106.15% vs 独立三年 +97.18%，差 8.97pp：切片带既有持仓，独立跑从空仓起",
+   "engine_layer": "hold5 均值 +0.49%/超额 +0.17%（十年同口径仅 +0.04%）；hold10 +1.23%；hold20 +1.54%；闸门开 +0.49% vs 关 +0.27%",
+   "conclusion": "三年是十年里最好的一段连续区间；对外报 +88%~+102%（年化 23%~26%），不报 +117.71%，并必须并列十年 −20.83%",
+   "report": "deliverables/2026-11-08_三年期回测_v1.md"
+  }
+ }
+}

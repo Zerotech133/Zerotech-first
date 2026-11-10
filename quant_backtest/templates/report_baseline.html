@@ -1,0 +1,76 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>【报告标题】</title>
+<!-- 候风/分析报告基线模板 · 2026-11-10 P2 定版（源自 fp c4ab8b5c 盘后复盘，已转 tokens 语义变量）
+     用法：新报告生成器以本文件为骨架，替换标题与 <main> 内容；禁止另起炉灶写内联配色。
+     依赖：页面与 /static/tokens.css 同站部署（独立 H5 无 portal static 时，把 tokens.css 一并发布或保留下方 fallback）。 -->
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+/* —— 基线层：全部读 tokens 语义变量，禁止硬编码 hex（t-neu 混合底除外）—— */
+body{background:var(--bg-page);color:var(--gray-6);font:14px/1.6 system-ui;
+margin:0;padding:24px}
+h1{font-size:20px;color:var(--blu-500);margin:0 0 6px}
+h2{font-size:15px;color:var(--blu-500);margin:26px 0 8px}
+table{border-collapse:collapse;width:100%;margin-top:8px}
+td,th{border:1px solid var(--gray-4);padding:6px 10px;font-size:13px;
+text-align:left}
+th{background:var(--gray-2);color:var(--gray-5)}
+.env{border:1px solid var(--gray-4);border-radius:8px;padding:12px 16px;
+background:var(--gray-2);margin-top:8px}
+.env-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dim{font-size:11px;color:var(--gray-5)}
+/* 涨红跌绿语义（2026-10-01 拍板）：buy=多=红，avoid=空=绿 */
+.buy{color:var(--color-up)}.watch{color:var(--color-warn)}.avoid{color:var(--color-dn)}
+a{color:var(--blu-500);text-decoration:none}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.nav a,.nav span{display:inline-block;padding:6px 13px;border:1px solid
+var(--gray-4);border-radius:16px;color:var(--blu-500);text-decoration:none;
+font-size:12.5px;background:var(--gray-2)}
+.nav span{color:var(--gray-7);border-color:var(--blu-500)}
+.jev-item{border:1px solid var(--gray-4);border-radius:8px;padding:8px 12px;
+background:var(--gray-2);margin-top:6px;font-size:13px}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;
+font-size:11.5px;margin-right:8px}
+.t-bull{background:var(--color-up-bg);color:var(--color-up)}
+.t-bear{background:var(--color-dn-bg);color:var(--color-dn)}
+.t-neu{background:#2b2f1a;color:var(--color-warn)} /* 混合底：tokens 无对应阶，保留 */
+.b-long{color:var(--color-up);font-weight:600}
+.b-flat{color:var(--gray-5)}
+.b-short{color:var(--color-dn);font-weight:600}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;
+margin:8px 0 4px;background:var(--gray-3);max-width:420px}
+.bar i{display:block;height:100%}
+.module{border:1px solid var(--gray-4);border-radius:10px;background:var(--gray-2);
+margin:14px 0;overflow:hidden}
+.mod-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+padding:10px 16px;border-bottom:1px solid var(--gray-4);background:var(--gray-1)}
+.mod-head b{font-size:15px}
+.mod-head .enter{margin-left:auto;font-size:12.5px;white-space:nowrap}
+.mod-env{padding:6px 16px 0;font-size:12px}
+.badge{display:inline-block;padding:1px 9px;border-radius:10px;
+font-size:11.5px}
+.bd-buy{background:var(--color-up-bg);color:var(--color-up)}
+.bd-watch{background:#2b2f1a;color:var(--color-warn)}
+.bd-avoid{background:var(--color-dn-bg);color:var(--color-dn)}
+.bd-none{background:var(--gray-3);color:var(--gray-5)}
+.module table{margin-top:4px}
+.module td,.module th{font-size:12.5px;padding:5px 9px}
+</style>
+</head><body>
+<!-- pf-nav 导航条由 platform_pages.py 打包时统一注入，此处不需要手写 -->
+<h1>【报告标题】</h1>
+<div class="dim">【生成时间 · 数据 asof · 一句人话结论】</div>
+
+<div class="env">
+  <div class="env-grid">【环境块：闸门状态 / 市场宽度 / 关键数字（每个数字带参照物）】</div>
+</div>
+
+<div class="module">
+  <div class="mod-head"><b>【模块标题：一句人话】</b><span class="enter enter-buy buy">【入口判语】</span></div>
+  <div class="mod-env">【模块级环境/条件说明】</div>
+  <table>
+    <tr><th>【列（人话）】</th><th>【列】</th></tr>
+    <tr><td>【数据】</td><td class="buy">【带参照物的数字】</td></tr>
+  </table>
+</div>
+
+<div class="dim">模拟盘数据 · 不构成投资建议 · 证据抽屉按《H5 对外输出可读性规范》用 &lt;details&gt; 承载字段名/路径/原式</div>
+</body></html>
