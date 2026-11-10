@@ -2,8 +2,10 @@
 """K-STOCK 策略中台持仓/出票标的 · 开源情报驱动采集（每日自动）。
 
 每次运行：
-  1) 动态读取 k_stock/data/paper.db 的 positions(持仓) + 近 N 天有效 BUY 订单(pending/filled)
-     → 独特代码，即"策略中台更新的数据"；
+  1) 动态读取 k_stock/data/paper.db 的 positions(持仓) + orders 有效信号池
+     （side='BUY' AND status IN('pending','filled')，排除 cancelled/rejected 已撤单/拒单）
+     → 独特代码，即"策略中台选股宇宙"；
+     （R17 老田裁定：不再按 plan_date 近 N 日裁剪，消除 274 只 A股真实选股盲区从未进队列的问题）
   2) 分离 A股(.SZ/.SH/.BJ) / 港股(.HK) / 美股(gb_)；
   3) A股(去后缀) 按市场分流调用现有采集器（均为 requests 无头友好，计划任务可跑）：
        .SZ -> irm_collector.py         深交所互动易（官方问答维度）
@@ -23,7 +25,7 @@ import json
 import time
 import subprocess
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -32,7 +34,6 @@ PY = r"C:\Program Files\Python311\python.exe"
 WATCHLIST = os.path.join(HERE, "kstock_watchlist.json")
 LOG = os.path.join(HERE, "logs", "kstock_intel_daily.log")
 SSE_UIDMAP = os.path.join(REPO, "data", "sse", "uid_map.json")
-RECENT_DAYS = 14  # 近 N 天内的有效 BUY 订单视为"近期出的票"
 
 os.makedirs(os.path.dirname(LOG), exist_ok=True)
 
@@ -42,24 +43,31 @@ def log(msg):
 
 
 def build_watchlist():
+    """选股来源 = positions(持仓) ∪ orders 有效信号池。
+
+    有效信号池口径（R17 老田裁定）：
+      orders WHERE side='BUY' AND status IN ('pending','filled')
+      排除 cancelled/rejected（已撤单/拒单，策略已放弃的票），
+      避免把无情报价值的代码拉进采集队列、放大盲区噪声。
+    不再按 plan_date 近 N 日裁剪（此前仅取近14日有效BUY，导致 274 只 A股
+    真实选股盲区从未进队列）。
+    """
     con = sqlite3.connect(KSTOCK_DB)
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     cur.execute("SELECT DISTINCT stock FROM positions")
     held = sorted(r["stock"] for r in cur.fetchall())
-    since = (datetime.now() - timedelta(days=RECENT_DAYS)).strftime("%Y%m%d")
     cur.execute(
         "SELECT DISTINCT stock FROM orders "
-        "WHERE side='BUY' AND status IN ('pending','filled') AND plan_date>=?",
-        (since,),
+        "WHERE side='BUY' AND status IN ('pending','filled')"
     )
-    recent = sorted(r["stock"] for r in cur.fetchall())
+    signal = sorted(r["stock"] for r in cur.fetchall())
     con.close()
-    allset = sorted(set(held) | set(recent))
+    allset = sorted(set(held) | set(signal))
     ash = [c for c in allset if c.endswith((".SZ", ".SH", ".BJ"))]
     hk = [c for c in allset if c.endswith(".HK")]
     us = [c for c in allset if c.startswith("gb_")]
-    return held, recent, allset, ash, hk, us
+    return held, signal, allset, ash, hk, us
 
 
 def run_collector(script, codes, extra=None):
@@ -90,10 +98,10 @@ def main():
     if not os.path.exists(KSTOCK_DB):
         log("!! k_stock 数据库缺失: %s" % KSTOCK_DB)
         return
-    held, recent, allset, ash, hk, us = build_watchlist()
-    new_recent = sorted(set(recent) - set(held))
-    log("持仓 %d | 近期有效BUY %d (新增 %d) | 监控合计 %d (A股 %d / 港股 %d / 美股 %d)"
-        % (len(held), len(recent), len(new_recent), len(allset), len(ash), len(hk), len(us)))
+    held, signal, allset, ash, hk, us = build_watchlist()
+    new_signal = sorted(set(signal) - set(held))
+    log("持仓 %d | 有效信号池(pending/filled) %d (新增 %d) | 监控合计 %d (A股 %d / 港股 %d / 美股 %d)"
+        % (len(held), len(signal), len(new_signal), len(allset), len(ash), len(hk), len(us)))
 
     sz = [c[:-3] for c in ash if c.endswith(".SZ")]
     sh = [c[:-3] for c in ash if c.endswith(".SH")]
@@ -117,10 +125,11 @@ def main():
     out = {
         "source": "k_stock/data/paper.db",
         "asof": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "recent_days": RECENT_DAYS,
+        "scope": "effective_signal",
+        "scope_note": "选股来源=orders 有效信号池(pending/filled)，排除 cancelled/rejected 已撤单/拒单（R17 老田裁定）",
         "held": held,
-        "recent_buy_valid": recent,
-        "new_recent": new_recent,
+        "signal_universe": signal,
+        "new_signal": new_signal,
         "watchlist": allset,
         "breakdown": {"ashare": ash, "hk": hk, "us": us},
         "collected_ashare": ash6,
@@ -128,7 +137,8 @@ def main():
             "自动覆盖 A股 irm(深交所互动易)/sse(上证e互动)/taoguba(淘股吧); "
             "股吧 guba_pw 为 Playwright headed 需桌面会话，暂跳过自动; "
             "雪球 xq 由 XqTimelineDaily(07:00 全队列) 覆盖; "
-            "港股/美股无对应采集器，仅登记不抓取"
+            "港股/美股无对应采集器，仅登记不抓取; "
+            "选股来源=orders 有效信号池(pending/filled)，排除 cancelled/rejected"
         ),
     }
     with open(WATCHLIST, "w", encoding="utf-8") as f:
