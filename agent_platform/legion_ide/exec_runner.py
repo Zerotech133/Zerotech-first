@@ -74,6 +74,8 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
     wt = Path(worktree)
 
     if prog == "git":
+        # 2026-11-07 K-PR6：run() 已通过 cwd=str(worktree) 指定工作目录，
+        # argv 不再带 "-C"；CentOS 7 自带 git 1.8.3.1 无 -C 选项（不报错，只打 usage 并返回非 0）。
         if len(tokens) < 2:
             return _err("bad_command", "git 需要子命令")
         sub = tokens[1]
@@ -96,7 +98,7 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
                 )
             if any(not _inside(wt, p) for p in paths):
                 return _err("denied", "git status 路径越出 worktree")
-            return {"ok": True, "argv": ["git", "-C", str(wt), "status", *rest]}
+            return {"ok": True, "argv": ["git", "status", *rest]}
         if sub == "diff":
             paths = []
             i = 0
@@ -113,7 +115,7 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
                     )
             if any(not _inside(wt, p) for p in paths):
                 return _err("denied", "git diff 路径越出 worktree")
-            return {"ok": True, "argv": ["git", "-C", str(wt), "diff", *rest]}
+            return {"ok": True, "argv": ["git", "diff", *rest]}
         if sub == "log":
             args = ["--oneline"]
             if rest:
@@ -125,11 +127,11 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
                     args = ["--oneline", rest[0]]
                 else:
                     return _err("denied", "git log 仅允许 --oneline [-n N| -N]")
-            return {"ok": True, "argv": ["git", "-C", str(wt), "log", *args]}
+            return {"ok": True, "argv": ["git", "log", *args]}
         if sub == "branch" and rest == ["--show-current"]:
             return {
                 "ok": True,
-                "argv": ["git", "-C", str(wt), "branch", "--show-current"],
+                "argv": ["git", "branch", "--show-current"],
             }
         return _err("denied", "git 子命令不在白名单：%s" % sub)
 

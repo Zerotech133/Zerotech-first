@@ -501,6 +501,7 @@ def _model_secret(d: dict, seat: str, want: str):
         try:
             return k, _decrypt(k.get("secret_enc") or "")
         except Exception:
+            logging.getLogger(__name__).debug("swallowed exception at line 503")
             continue
     return None, None
 

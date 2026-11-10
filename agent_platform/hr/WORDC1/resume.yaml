@@ -15,5 +15,9 @@ experience:
     role: 文本词云挖掘席
     span: 2026-10~
     kpi: 入编初始，尚无考核记录
-skills: []
-self_statement: （入编骨架——待本人与田丰补充）
+skills:
+  - jieba 中文分词与词频统计（wordc1_cloud.py 实证产出）
+  - 双源词表对比（雪球 × news.db）与共振词捕捉（overlap_top20 词云锚）
+  - 自包含 HTML 词云报告产出（outputs/WORDC1*）
+  - 停用词/同义词表维护（口径冻结，变更走 INTEL0 受理）
+self_statement: 2026-11-07 补绑定时由治理线代填：产出型席位，遵守 mode=ro 纪律、词表 JSON schema 只增不改、不调 JEV 判读链（工单 WO-INTEL-WORDC1-JEV-20261107-001 验收判据）；首个 JEV 判定加权词云任务已派发。

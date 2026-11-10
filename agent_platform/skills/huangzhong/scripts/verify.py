@@ -2,6 +2,7 @@
 """verify: 黄忠验收守门技能（只读；缺件 fail-visible）。"""
 from __future__ import annotations
 
+import logging
 import json
 import subprocess
 from pathlib import Path
@@ -21,6 +22,7 @@ def _main_repo() -> Path:
                 common = (HERE.parent / common).resolve()
             return common.parent
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 23")
         pass
     return next((q for q in HERE.parents
                  if (q / 'agent_platform').is_dir() and (q / 'tools').is_dir()),

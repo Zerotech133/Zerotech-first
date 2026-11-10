@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import logging
 import math
 
 METHODS = {
@@ -329,6 +330,7 @@ def auto_kline(code, days=250):
         if bars:
             return bars
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 331")
         pass
     return local_kline(code, days)
 

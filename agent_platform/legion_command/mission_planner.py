@@ -44,6 +44,7 @@ def _path_config() -> dict:
         if isinstance(d, dict) and isinstance(d.get("routes"), dict) and d["routes"]:
             return d
     except Exception:
+        logging.getLogger(__name__).exception("swallowed exception at line 46")
         pass
     return {"routes": DEFAULT_ROUTES, "keywords": {}}
 

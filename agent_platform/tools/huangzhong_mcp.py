@@ -34,6 +34,7 @@ Tools（全部只读，无写/无触发）：
 """
 from __future__ import annotations
 
+import logging
 import glob
 import json
 import os
@@ -330,6 +331,7 @@ def _audit(tool: str, detail: str) -> None:
                      detail="%s %s" % (tool, detail))
         return
     except Exception:  # noqa: BLE001 —— fallback 直写（同 schema）
+        logging.getLogger(__name__).exception("swallowed exception at line 332")
         pass
     try:
         p = REPO / "portal" / "data" / "dev_events.jsonl"
@@ -343,6 +345,7 @@ def _audit(tool: str, detail: str) -> None:
         with p.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except Exception:  # noqa: BLE001 —— 审计永远 fail-open
+        logging.getLogger(__name__).exception("swallowed exception at line 345")
         pass
 
 

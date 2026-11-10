@@ -196,6 +196,7 @@ def _team_facts(aid: str):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
         except Exception:
+            logging.getLogger(__name__).debug("swallowed exception at line 198")
             continue
         for a in data.get("agents", []):
             if isinstance(a, dict) and a.get("agent_id") == aid:

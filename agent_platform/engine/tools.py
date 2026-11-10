@@ -131,6 +131,7 @@ def kline_daily(code, n=30):
         if bars:
             return bars
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 133")
         pass
     return _local_kline(code, n)
 
@@ -247,6 +248,7 @@ def make_context(code):
             for _k in ("market_technical", "fundamental", "news_event", "final_decision"):
                 out[_k] = out[_k] + "\n\n[Hermes stock-data 只读补充]\n" + extra
     except Exception:  # noqa: BLE001 数据桥失败不影响主链
+        logging.getLogger(__name__).exception("swallowed exception at line 249")
         pass
     return out
 

@@ -564,9 +564,11 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     return self._json(400, G.err("bad_action", "仅 diff/add/commit"))
                 env = dict(os.environ)
                 env.update({"GIT_PAGER": "cat", "GIT_TERMINAL_PROMPT": "0"})
+                # 2026-11-07 K-PR6：git 1.8.3.1 不支持 -C，改用 cwd= 指定 worktree。
                 try:
                     proc = subprocess.run(
-                        ["git", "-C", str(wt), *args],
+                        ["git", *args],
+                        cwd=str(wt),
                         capture_output=True, text=True, encoding="utf-8",
                         errors="replace", timeout=60, env=env,
                     )
@@ -743,6 +745,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                                 W.write_file(wt, f["path"], f["old_content"])
                             rolled.append(f["path"])
                         except Exception:  # noqa: BLE001
+                            logging.getLogger(__name__).debug("swallowed exception at line 747")
                             pass
                     G.audit(repo, "code_action", task, owner,
                             "patchset confirm FAIL %s rolled=%s" % (str(exc)[:160], ",".join(rolled)))
@@ -766,6 +769,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     })
                     EV.finalize(run_id, mode="patchset", ok=True, task=task)
                 except Exception:  # noqa: BLE001
+                    logging.getLogger(__name__).exception("swallowed exception at line 770")
                     pass
                 G.audit(repo, "code_action", task, owner,
                         "patchset confirm %d files ok" % len(applied))
@@ -817,6 +821,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     EV.append(run_id, "patchset_rollback", {"restored": restored})
                     EV.finalize(run_id, mode="rollback", ok=True, task=task)
                 except Exception:  # noqa: BLE001
+                    logging.getLogger(__name__).exception("swallowed exception at line 821")
                     pass
                 G.audit(repo, "code_action", task, owner,
                         "patchset rollback %d files" % len(restored))
@@ -847,6 +852,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     _EV.finalize(_run_id, mode="test", ok=_ok,
                                  task=_ttask, run_id=_run_id)
                 except Exception:  # noqa: BLE001
+                    logging.getLogger(__name__).exception("swallowed exception at line 851")
                     pass
                 G.audit(repo, "code_observation", _ttask, owner,
                         "test %s -> %s" % (_cmd[:80], "ok" if _ok else "fail"))

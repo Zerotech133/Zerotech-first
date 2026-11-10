@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import logging
 import json
 import time
 from copy import deepcopy
@@ -44,6 +45,7 @@ def _accepted_records() -> list:
         try:
             d = json.loads(ln)
         except Exception:
+            logging.getLogger(__name__).debug("swallowed exception at line 46")
             continue
         if isinstance(d, dict) and d.get("status") == "accepted" and str(d.get("signed_by") or "").strip():
             out.append(d)

@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import logging
 import concurrent.futures as cf
 import datetime
 import json
@@ -120,6 +121,7 @@ def autorun(case_id: str, case_root: Path | None = None, meetings: Path | None =
                 if rr.get("text"):
                     out = [x for x in out if x["seat"] != seat] + [rr]
             except Exception:
+                logging.getLogger(__name__).debug("swallowed exception at line 122")
                 pass
         out.sort(key=lambda x: [r[0] for r in ROLES].index(x["seat"]))
         case["opinions"] = out

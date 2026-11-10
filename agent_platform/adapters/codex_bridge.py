@@ -31,6 +31,7 @@ H6（2026-11-01）后主进程零 exec 插件代码——插件只在一次性�
 Job Object/AppContainer 待独立架构单，本单未接入）。
 """
 
+import logging
 import ast
 import json
 import os
@@ -528,6 +529,7 @@ def _close_sandbox_job(job) -> None:
             from agent_platform.legion_ide.exec_sandbox import close_job
         close_job(job)
     except Exception:  # noqa: BLE001 - 清理失败不覆盖主结果
+        logging.getLogger(__name__).exception("swallowed exception at line 530")
         pass
 
 

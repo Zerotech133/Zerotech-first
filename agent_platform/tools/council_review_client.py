@@ -13,6 +13,7 @@ from __future__ import annotations
 
 
 
+import logging
 import argparse
 import json
 import urllib.request
@@ -35,6 +36,7 @@ try:  # Phase B1: 8787 密码认证后自动带 hermes_session
     _sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
     from agent_platform.legion_command.hermes_auth import auth_urlopen as safe_urlopen  # noqa: E402
 except Exception:  # noqa: BLE001
+    logging.getLogger(__name__).exception("swallowed exception at line 37")
     pass
 
 BASE = "http://127.0.0.1:8787"

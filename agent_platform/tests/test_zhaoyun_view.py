@@ -446,7 +446,11 @@ def test_pending_signatures_archived_dir_is_not_pending(tmp_path):
 
 def test_default_sign_requests_root_is_real_vault():
     """默认扫描根仍是真实 _vault\\sign_requests（测试通过注入 tmp 目录隔离）。"""
-    assert V.DEFAULT_SIGN_REQUESTS_ROOT == Path(r"C:\项目\_vault\sign_requests")
+    # 2026-11-07 K-PYTEST-TRIAGE：模块常量用双反斜杠 raw 字面量，此处用单反斜杠。
+    # WindowsPath 折叠重复分隔符（故 Windows 相等），PosixPath 不折叠（故 Linux 假失败）。
+    # 改为比较规范化后的字符串，保留「默认根指向真实 vault」语义且双端一致。
+    expected = str(Path(r"C:\项目\_vault\sign_requests"))
+    assert str(V.DEFAULT_SIGN_REQUESTS_ROOT).replace('\\\\', '\\') == expected
 
 
 def test_static_page_contract():

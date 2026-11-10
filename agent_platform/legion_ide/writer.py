@@ -133,13 +133,15 @@ def write_file(worktree: Path, rel: str, content: str,
 
 def diff_stat(worktree: Path, rel: str = "") -> dict:
     """git diff --stat（只读；失败返回空，不挡写）。"""
-    args = ["git", "-C", str(worktree), "diff", "--stat"]
+    # 2026-11-07 K-PR6：git 1.8.3.1 不支持 -C，改用 subprocess 的 cwd=。
+    args = ["git", "diff", "--stat"]
     if rel:
         args.append("--")
         args.append(str(Path(rel).as_posix()))
     try:
         proc = subprocess.run(
             args,
+            cwd=str(worktree),
             capture_output=True,
             text=True,
             encoding="utf-8",

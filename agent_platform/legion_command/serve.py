@@ -1600,6 +1600,7 @@ class Handler(BaseHTTPRequestHandler):
                             str(route["vk_id"]), ok=bool(res.get("ok")),
                             model=str(route.get("model") or _model_req or route.get("alias") or ""))
                     except Exception:
+                        logging.getLogger(__name__).exception("swallowed exception at line 1602")
                         pass
             except Exception as e:  # noqa: BLE001
                 res = {
