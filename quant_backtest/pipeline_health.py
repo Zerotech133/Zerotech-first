@@ -197,7 +197,8 @@ def main():
         for p in today_logs[-2:]:
             txt = open(p, encoding="utf-8", errors="replace").read().strip()
             last = txt.splitlines()[-1] if txt else ""
-            if "缓存已生成" in last and "rc=0" in last:
+            if ("缓存已生成" in last and "rc=0" in last) or last.startswith("DONE {"):
+                # DONE 行是 market_scan 自身产出（ensure_sig_cache 11-11 起才追加结论行）
                 log("OK", "缓存自愈重扫成功（%s）" % os.path.basename(p))
             elif "缓存仍缺失" in last or "自愈失败" in last:
                 log("WARN", "缓存自愈重扫未产出缓存（%s 末行：%s）"
@@ -235,6 +236,34 @@ def main():
                             % os.path.basename(last_fp))
         except Exception as e:
             log("WARN", "106 课影子产物解析失败：%s" % e)
+
+    # 9. W2 影子腿（T3 · DIF 三态仓位，2026-11-11 落地）
+    #    产物 data/shadow/w2_<date>.json；与六腿台账同目录但独立文件。
+    w2_files = sorted(glob.glob(os.path.join(HERE, "data", "shadow", "w2_*.json")),
+                      key=os.path.getmtime)
+    if not w2_files:
+        log("WARN", "W2 影子腿无产物（data/shadow/w2_*.json）——"
+                    "影子期从 11-11 起每天应有，人工跑 shadow_w2.py 排查")
+    else:
+        w2_fp = w2_files[-1]
+        mt2 = datetime.fromtimestamp(os.path.getmtime(w2_fp)).date()
+        try:
+            d2 = json.load(open(w2_fp, encoding="utf-8"))
+            fid = (d2.get("fidelity") or {})
+            lim1 = prev_trading_day(today)
+            lim2 = prev_trading_day(lim1)
+            if mt2 >= lim1:
+                log("OK", "W2 影子最新 %s（corr=%s max日差=%s%%）"
+                          % (os.path.basename(w2_fp),
+                             fid.get("corr"), fid.get("max_daily_diff_pct")))
+            elif mt2 >= lim2:
+                log("INFO", "W2 影子停在 %s（隔日，影子允许滞后）"
+                            % os.path.basename(w2_fp))
+            else:
+                log("WARN", "W2 影子落后两天以上（%s）——soft 调用在静默挂"
+                            % os.path.basename(w2_fp))
+        except Exception as e:
+            log("WARN", "W2 影子产物解析失败：%s" % e)
 
     print("== 汇总：ALERT %d / WARN %d ==" % (len(ALERTS), len(WARNS)))
     return 2 if ALERTS else (1 if WARNS else 0)

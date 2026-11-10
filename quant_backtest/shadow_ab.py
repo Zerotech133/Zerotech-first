@@ -57,6 +57,30 @@ SIG_DIR = os.path.join(BASE, "data", "sig_events")
 RESCAN_LOG = os.path.join(BASE, "reports", "market_scan_rescan_%s.log")
 
 
+def _cache_stale(cache_fp, d1):
+    """缓存新鲜度门（2026-11-11 隐患实锤后的加固）。
+
+    事件缓存对 d1=D 完整的前提是生成时刻晚于 D 日数据同步（日线 ~16:47）。
+    生成时刻早于 D 日 16:40 的缓存必然缺 D 日事件（数据还没同步），
+    名字却带着 D——六腿会静默用旧缓存漏掉 D 日信号。判 stale 重扫。
+    历史/隔日窗口（gday > d1）不受影响。解析失败按不 stale（fail-open，
+    保持 soft 语义，别让守卫本身打断流水线）。
+    """
+    try:
+        d = json.load(open(cache_fp, encoding="utf-8"))
+        gen = str((d.get("meta") or {}).get("generated_at") or "")
+        gday, gtime = gen[:10].replace("-", ""), gen[11:16]
+        if not (len(gday) == 8 and gday.isdigit()):
+            return False
+        if gday < d1:
+            return True
+        if gday == d1 and gtime < "16:40":
+            return True
+        return False
+    except Exception:
+        return False
+
+
 def ensure_sig_cache(d0, d1):
     """日期滚动自愈：v3 事件缓存缺失则自动重扫 market_scan（11-10 判例）。
 
@@ -69,8 +93,11 @@ def ensure_sig_cache(d0, d1):
     """
     cache_fp = os.path.join(SIG_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
     try:
-        if os.path.exists(cache_fp):
+        if os.path.exists(cache_fp) and not _cache_stale(cache_fp, d1):
             return True, cache_fp
+        if os.path.exists(cache_fp):
+            print("[rescan] 缓存存在但早于 d1 当日数据同步（判 stale）：%s" % cache_fp,
+                  flush=True)
         log_fp = RESCAN_LOG % d1
         print("[rescan] 缓存缺失：%s" % cache_fp, flush=True)
         print("[rescan] 自动重扫 market_scan --d0 %s --d1 %s（输出 %s）"
@@ -84,6 +111,14 @@ def ensure_sig_cache(d0, d1):
         ok = os.path.exists(cache_fp)
         print("[rescan] rc=%s 用时 %.1fs 缓存%s"
               % (rc, time.time() - t0, "已生成" if ok else "仍缺失"), flush=True)
+        # 结论行追加进日志文件（2026-11-11 勘误：此前只打 stdout，
+        # pipeline_health 第 7 项检查读日志末行永远看不到结论 → 误报 WARN）
+        try:
+            with open(log_fp, "a", encoding="utf-8") as lf:
+                lf.write("[rescan] rc=%s 用时 %.1fs 缓存%s\n"
+                         % (rc, time.time() - t0, "已生成" if ok else "仍缺失"))
+        except Exception:
+            pass
         return ok, cache_fp
     except Exception as e:  # 自愈失败不影响主链（soft 语义）
         print("[rescan] 自愈失败（不阻断，六腿将各自报缓存错误）：%r" % e,
@@ -255,6 +290,14 @@ def daily():
             print("  %-9s 末日 %s 持仓 %d 只 累计 %+.2f%%"
                   % (leg, v["last_day"], len(v["holdings"]),
                      v["summary"]["ret_pct"]))
+
+    # 第 7 腿 W2（T3 · DIF 三态仓位，2026-11-11）：v3 持仓 × 动态乘数的
+    # 后处理叠加，独立产物 data/shadow/w2_<date>.json。soft —— 失败不影响六腿。
+    try:
+        import shadow_w2
+        shadow_w2.daily_w2(today=today)
+    except Exception as e:
+        print("[w2] soft 失败（不影响六腿台账）：%r" % e, flush=True)
     return out
 
 
