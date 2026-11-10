@@ -20,8 +20,9 @@
 
 两种模式：
   --diag   逐笔成交价诊断（历史三年，立刻出结论）
-  --daily  写当日影子台账（四腿：v3 现役 / d_legacy 旧方案 /
-           A3 slot_score / D1 score+cap25 候选池，供连续一周累积）
+  --daily  写当日影子台账（六腿：v3 现役 / d_legacy 旧方案 /
+           F1 v3+止损−12% 固化主腿候选 / W1 C6 组合观察腿 /
+           A3 slot_score / D1 score+cap25，供连续累积）
 
 用法：
   python shadow_ab.py --diag
@@ -134,11 +135,12 @@ def diag():
 
 
 def daily():
-    """当日影子台账：同一批信号，四条腿各自的持仓与动作快照。
+    """当日影子台账：同一批信号，六条腿各自的持仓与动作快照。
 
-    四腿 = 现役 v3 / 旧 d_legacy（20日强平+移动止损）/ 候选池 A3（评分定仓）
-    / 候选池 D1（评分定仓+单票帽 25%）。候选池腿只记账不交易，连续累积
-    动作差；一周后按 note 与实际次日开盘价核对成交。
+    六腿 = 现役 v3 / 旧 d_legacy / 固化主腿候选 F1（v3+止损−12%）/
+    观察腿 W1（C6 组合）/ 候选池 A3（评分定仓）/ 候选池 D1（评分定仓
+    +单票帽 25%）。候选腿只记账不交易，连续累积动作差；一周后按 note
+    与实际次日开盘价核对成交。固化口径定义见 bt10m_frozen.py。
     """
     os.makedirs(SHADOW_DIR, exist_ok=True)
     today = time.strftime("%Y%m%d")
@@ -146,11 +148,15 @@ def daily():
     d0 = str(int(today[:4]) - 1) + today[4:]  # 滚动一年
 
     # 2026-11-10 固化 DEFAULT_PRESET=v3 后主腿是 v3；d_legacy 继续留作对照；
-    # A3/D1 是当日入场侧探索产生的候选池（reports/bt10m_entry_grid.json /
-    # bt10m_sscore_cap.json），在影子期做无成本平行记账。
+    # 2026-11-10 口径固化 v1（bt10m_frozen.py）：新增 F1（v3+止损−12%，固化
+    # 主腿候选）与 W1（C6 组合，观察腿）。六腿并行无成本记账，
+    # F1 通过影子验证期（核对成交价）后转正为唯一主腿。
+    import bt10m_frozen
     LEGS = [
         ("v3", {"preset": "v3"}),
         ("d_legacy", {"preset": "d_legacy"}),
+        (bt10m_frozen.F1[0], dict(bt10m_frozen.F1[1])),
+        (bt10m_frozen.W1[0], dict(bt10m_frozen.W1[1])),
         ("A3_slot_score", {"preset": "v3", "slot_mode": "score"}),
         ("D1_score_cap25", {"preset": "v3", "slot_mode": "score",
                             "slot_score_cap": 0.25}),
