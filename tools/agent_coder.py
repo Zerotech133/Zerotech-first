@@ -217,6 +217,15 @@ def _glm_key():
     时须经 ORG_AI_HOME（主仓根，K-ORG-112 同款归账）定位；直接跑主仓走 _HERE/..
     （主仓 tools/.. = 主仓根）；worktree 跑且未注入 ORG_AI_HOME 时逐级上溯
     （.worktrees/<TID>/tools/.. = worktree 根、../.. = .worktrees、../../.. = 主仓根）。"""
+    _vault_cfg = (os.environ.get("AUDIT_AI_CONFIG_PATH")
+                  or r"C:\项目\_vault\secrets\portal_audit_ai_config.json")
+    if os.path.exists(_vault_cfg):
+        try:
+            zk = json.load(open(_vault_cfg, encoding="utf-8")).get("zhipu_key", "")
+            if zk:
+                return zk
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_coder.py", exc)
     candidates = []
     if os.environ.get("ORG_AI_HOME"):
         candidates.append(os.environ["ORG_AI_HOME"])

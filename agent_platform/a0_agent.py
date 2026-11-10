@@ -63,11 +63,14 @@ def _glm_key():
         import json as _json
         from pathlib import Path as _P
 
-        p = _P(__file__).resolve().parent.parent / "portal" / "audit_ai_config.json"
-        if p.exists():
-            zk = _json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
-            if zk:
-                return zk
+        _vault = _P(os.environ.get("AUDIT_AI_CONFIG_PATH")
+                    or r"C:\项目\_vault\secrets\portal_audit_ai_config.json")
+        for _p in (_vault,
+                   _P(__file__).resolve().parent.parent / "portal" / "audit_ai_config.json"):
+            if _p.exists():
+                zk = _json.loads(_p.read_text(encoding="utf-8")).get("zhipu_key", "")
+                if zk:
+                    return zk
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/a0_agent.py", exc)
     return os.environ.get("GLM_API_KEY", "")

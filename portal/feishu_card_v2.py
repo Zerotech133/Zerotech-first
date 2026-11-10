@@ -15,6 +15,7 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+VAULT_DIR = r"C:\项目\_vault\secrets"
 NEWS = os.path.join(os.path.dirname(HERE), "news_collector")
 sys.path.insert(0, NEWS)
 from send_feishu import USER_ID  # noqa: E402
@@ -58,13 +59,17 @@ def _load_portal_key():
     env_k = os.environ.get("PORTAL_KEY")
     if env_k:
         return env_k
-    try:
-        with open(os.path.join(HERE, "work", "portal_key.json"), encoding="utf-8") as f:
-            k = (json.load(f).get("key") or "").strip()
-            if k:
-                return k
-    except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_card_v2.py", exc)
+    for p in (os.path.join(VAULT_DIR, "portal_key.json"),
+              os.path.join(HERE, "work", "portal_key.json")):
+        try:
+            with open(p, encoding="utf-8") as f:
+                k = (json.load(f).get("key") or "").strip()
+                if k:
+                    return k
+        except FileNotFoundError:
+            continue
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_card_v2.py", exc)
     return ""
 
 
