@@ -1,0 +1,63 @@
+{
+ "generated_at": "2026-11-09T10:00:02+08:00",
+ "dirs": [
+  {
+   "dir": "laomu_notes",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  },
+  {
+   "dir": "公开投教_布林线",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  },
+  {
+   "dir": "抖音学习_20261106",
+   "meta": false,
+   "meta_ok": false,
+   "manifest": false
+  },
+  {
+   "dir": "视频号学习_8博主",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  },
+  {
+   "dir": "视频号学习_全部文案_20261108",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  },
+  {
+   "dir": "视频号学习_北斗股术1688",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  },
+  {
+   "dir": "视频号学习_第二期",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  }
+ ],
+ "issues": [
+  {
+   "level": "medium",
+   "code": "META_MISSING",
+   "project": "抖音学习_20261106"
+  },
+  {
+   "level": "high",
+   "code": "MANIFEST_MISSING",
+   "project": "抖音学习_20261106"
+  }
+ ],
+ "summary": {
+  "dirs": 7,
+  "issues": 2
+ }
+}

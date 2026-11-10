@@ -4,16 +4,17 @@
 与 test_provider_plugin.py 的区别：不 monkeypatch 桥读侧，
 read_cow_memory 直打真实 ~/cow 的 index.db（K273 部署后已有数据）。
 
-运行：C:/Users/Administrator/.hermes/venv/Scripts/python.exe verify_provider_realdata.py
+运行：python verify_provider_realdata.py   # 须在 hermes venv 内执行（HERMES_HOME 默认 ~/.hermes）
 """
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
-AGENT_DIR = Path(r"C:\Users\Administrator\.hermes\hermes-agent")
+AGENT_DIR = Path(os.getenv("HERMES_AGENT_DIR") or os.getenv("HERMES_HOME") or str(Path.home() / ".hermes")) / "hermes-agent"
 if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 

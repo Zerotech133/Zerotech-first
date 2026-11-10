@@ -1,14 +1,14 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-06T23:48:19+08:00",
+ "generated_at": "2026-11-09T20:00:06+08:00",
  "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
  "mode": "apply",
  "dry_run": false,
  "project": "视频号学习_北斗股术1688",
  "source": {
   "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_北斗股术1688_units_draft.jsonl",
-  "sha256": "93a8d153b3537bbf33806e2d7ac8e13dc75646b54c6fb6b6e5b8f4f95e54d2db",
+  "sha256": "4c0896c5dcdd0feff8c9174e15568a3789d230def05dca339deb7e8b86fa7fdc",
   "bytes": 505884
  },
  "policy": {
@@ -29,7 +29,7 @@
    "4": 1,
    "2": 1
   },
-  "output_sha256": "e0a35f4a0f001a8f8120aa0d31129c8aef78916e7c7af0fc01fc949dedcce3a8"
+  "output_sha256": "28cd5d7067ed67d6450e7a50ffd37401fbd0452c8ad39ff7e23fde68b35e8733"
  },
  "duplicates": [
   {
@@ -79,7 +79,7 @@
   "learn_视频号学习_北斗股术1688_0013"
  ],
  "notes": [],
- "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_北斗股术1688_units_draft.jsonl.20261106_234819.v1bak",
+ "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_北斗股术1688_units_draft.jsonl.20261109_200006.v1bak",
  "applied": true,
  "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。",
  "idempotent_noop": false

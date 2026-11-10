@@ -2,7 +2,7 @@
   "source": "portal/houfeng/houfeng_pick_*.json (pool_off.picks)",
   "pick_file": "houfeng_pick_20261106.json",
   "signal_date": "20261106",
-  "asof": "2026-11-10T09:03:58",
+  "asof": "2026-11-10T09:18:30",
   "gate_safe": false,
   "note": "关闸期影子池/观察名单，paper 模式只记录不下场，实持仓 0；补齐的是选股清单公开情报",
   "picks": [

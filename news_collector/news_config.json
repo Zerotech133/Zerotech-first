@@ -1,541 +1,598 @@
 {
-  "_secrets_note": "2026-10-25 SEC 收口（EXEC-R14）：portal_url/doc_url/jev_* 为敏感或内部字段，真值已移出本文件；优先读环境变量（NEWS_PORTAL_URL/NEWS_DOC_URL/JEV_DOC_URL/JEV_BASE_URL/JEV_BASE_TOKEN/NEWS_SA_FORM_URL）或本地私有文件 C:\\项目\\_vault\\secrets\\news_config_private.json（见 news_collector/config_local.py）。禁止把真值写回本文件。",
-  "portal_url": "",
-  "doc_url": "",
-  "k266_export": true,
-  "watch_keywords": [
-    "美联储",
-    "降息",
-    "加息",
-    "非农",
-    "CPI",
-    "关税",
-    "证监会",
-    "央行",
-    "比特币",
-    "黄金",
-    "原油",
-    "人民币",
-    "半导体",
-    "芯片",
-    "人工智能",
-    "算力",
-    "英伟达",
-    "OpenAI",
-    "国家队",
-    "中央汇金",
-    "社保基金",
-    "北向资金",
-    "两融",
-    "政治局会议",
-    "国务院",
-    "财政政策",
-    "货币宽松",
-    "印花税",
-    "新能源",
-    "军工",
-    "医药",
-    "地产",
-    "白酒",
-    "稀土",
-    "机器人",
-    "Federal Reserve",
-    "FOMC",
-    "OPEC+",
-    "rate cut",
-    "Rate Cut",
-    "rate hike",
-    "Rate Hike",
-    "tariff",
-    "Tariff",
-    "Bitcoin ETF",
-    "bitcoin ETF",
-    "stablecoin",
-    "Stablecoin"
-  ],
-  "watch_stocks": [],
-  "watchlist": [
-    {
-      "code": "sz301047",
-      "name": "义翘神州",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz300684",
-      "name": "中石科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh603580",
-      "name": "艾艾精工",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz301234",
-      "name": "五洲医疗",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh688112",
-      "name": "鼎阳科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz300489",
-      "name": "光智科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh688046",
-      "name": "药康生物",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh600641",
-      "name": "先导基电",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh603268",
-      "name": "松发股份",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz301520",
-      "name": "万邦医药",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz000993",
-      "name": "闽东电力",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh688600",
-      "name": "皖仪科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz300464",
-      "name": "星徽股份",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh688536",
-      "name": "思瑞浦",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz301046",
-      "name": "能辉科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh603995",
-      "name": "甬金股份",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh688025",
-      "name": "杰普特",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh688004",
-      "name": "博汇科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz000782",
-      "name": "恒申新材",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz300151",
-      "name": "昌红科技",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh600400",
-      "name": "红豆股份",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sz300688",
-      "name": "创业黑马",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh603120",
-      "name": "肯特催化",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "sh603175",
-      "name": "超颖电子",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "bj920028",
-      "name": "新恒泰",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_sndk",
-      "name": "闪迪",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_be",
-      "name": "Bloom Energy",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_pltr",
-      "name": "Palantir",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_tsm",
-      "name": "台积电",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_tsla",
-      "name": "特斯拉",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_lite",
-      "name": "Lumentum",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_mrvl",
-      "name": "迈威尔",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_nbis",
-      "name": "Nebius",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_panw",
-      "name": "派拓网络",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "gb_nvda",
-      "name": "英伟达",
-      "aliases": [],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "BTC/USDT",
-      "name": "比特币",
-      "aliases": [
-        "BTC"
-      ],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "ETH/USDT",
-      "name": "以太坊",
-      "aliases": [
-        "ETH"
-      ],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "SOL/USDT",
-      "name": "Solana",
-      "aliases": [
-        "SOL"
-      ],
-      "added": "2026-10-05",
-      "note": "0930盘后入选"
-    },
-    {
-      "code": "rt_hk00700",
-      "name": "腾讯控股",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk09988",
-      "name": "阿里巴巴-W",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00005",
-      "name": "汇丰控股",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk01299",
-      "name": "友邦保险",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00941",
-      "name": "中国移动",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk03690",
-      "name": "美团-W",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk09618",
-      "name": "京东集团-SW",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk01810",
-      "name": "小米集团-W",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk09888",
-      "name": "百度集团-SW",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk02800",
-      "name": "盈富基金",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00388",
-      "name": "香港交易所",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk02318",
-      "name": "中国平安",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00939",
-      "name": "建设银行",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk01398",
-      "name": "工商银行",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk03968",
-      "name": "招商银行",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk02822",
-      "name": "恒生银行",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00016",
-      "name": "新鸿基地产",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00001",
-      "name": "长和",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00002",
-      "name": "中电控股",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    },
-    {
-      "code": "rt_hk00386",
-      "name": "中国石油化工股份",
-      "aliases": [],
-      "added": "2026-10-20",
-      "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
-    }
-  ],
-  "push_max_per_run": 6,
-  "collect_page_size": 30,
-  "digest_hour": 8,
-  "ai_model": "qwen3.5:9b",
-  "ai_window_hours": 14,
-  "ai_max_news": 50,
-  "review_hour": 15,
-  "review_window_hours": 7,
-  "digest_sections": {
-    "wallstreetcn": "🌍 全球财经",
-    "sina": "🇨🇳 市场要闻",
-    "eastmoney": "⚡ 7x24 快讯",
-    "govpolicy": "🏛 国务院政策",
-    "chinanews": "📰 中新社"
+ "_secrets_note": "2026-10-25 SEC 收口（EXEC-R14）：portal_url/doc_url/jev_* 为敏感或内部字段，真值已移出本文件；优先读环境变量（NEWS_PORTAL_URL/NEWS_DOC_URL/JEV_DOC_URL/JEV_BASE_URL/JEV_BASE_TOKEN/NEWS_SA_FORM_URL）或本地私有文件 C:\\项目\\_vault\\secrets\\news_config_private.json（见 news_collector/config_local.py）。禁止把真值写回本文件。",
+ "degraded_sources": {
+  "sina": "C9A-CX-001 2026-11-08 老田批: TDX为主(ts_news 250万)-自采兜底, 恢复=删本键",
+  "eastmoney": "C9A-CX-001 2026-11-08 老田批: TDX为主(ts_news+stock_news)-自采兜底, 恢复=删本键"
+ },
+ "portal_url": "",
+ "doc_url": "",
+ "k266_export": true,
+ "watch_keywords": [
+  "美联储",
+  "降息",
+  "加息",
+  "非农",
+  "CPI",
+  "关税",
+  "证监会",
+  "央行",
+  "比特币",
+  "黄金",
+  "原油",
+  "人民币",
+  "半导体",
+  "芯片",
+  "人工智能",
+  "算力",
+  "英伟达",
+  "OpenAI",
+  "国家队",
+  "中央汇金",
+  "社保基金",
+  "北向资金",
+  "两融",
+  "政治局会议",
+  "国务院",
+  "财政政策",
+  "货币宽松",
+  "印花税",
+  "新能源",
+  "军工",
+  "医药",
+  "地产",
+  "白酒",
+  "稀土",
+  "机器人",
+  "Federal Reserve",
+  "FOMC",
+  "OPEC+",
+  "rate cut",
+  "Rate Cut",
+  "rate hike",
+  "Rate Hike",
+  "tariff",
+  "Tariff",
+  "Bitcoin ETF",
+  "bitcoin ETF",
+  "stablecoin",
+  "Stablecoin"
+ ],
+ "watch_stocks": [],
+ "watchlist": [
+  {
+   "code": "sz301047",
+   "name": "义翘神州",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
   },
-  "policy_keywords": [
-    "国务院",
-    "国常会",
-    "央行",
-    "中国人民银行",
-    "证监会",
-    "金融监管总局",
-    "发改委",
-    "财政部",
-    "工信部",
-    "商务部",
-    "政治局",
-    "人行",
-    "部委",
-    "条例",
-    "管理办法",
-    "指导意见",
-    "工作要点",
-    "白皮书"
-  ],
-  "policy_authority_sources": [
-    "govpolicy",
-    "chinanews"
-  ],
-  "intel_page_url": "http://127.0.0.1:8734/news_intel.html",
-  "quote_alert_pct": 3.0,
-  "quote_alert_cooldown_min": 30,
-  "quote_keep_days": 30,
-  "jev_doc_url": "",
-  "jev_base_url": "",
-  "jev_base_token": "",
-  "sa_table_id": "tblu9YmZsDixWKAV",
-  "sa_form_url": "",
-  "push_targets": [
-    {
-      "name": "个人",
-      "type": "open_id",
-      "app": "cli_aa3e4f1b58f85cdd",
-      "id": "ou_50a95455c7dffec1090ade400886d0d4"
-    },
-    {
-      "name": "内部测试",
-      "type": "chat_id",
-      "app": "cli_aa3e4f1b58f85cdd",
-      "id": "oc_6b97bee8b5340e071d0fc10cc6c8569f"
-    },
-    {
-      "name": "量化群",
-      "type": "chat_id",
-      "app": "cli_aa3e4f1b58f85cdd",
-      "id": "oc_16ed759795430734a90a7850ba33bec1"
-    }
-  ],
-  "news_keep_days": 365,
-  "news_backfill_note": "新浪直播 feed 支持分页可回填；东财 fast news/华尔街见闻仅为最新列表（不可深度回填）。保留策略：news_keep_days=365，禁止滚动删除。"
+  {
+   "code": "sz300684",
+   "name": "中石科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603580",
+   "name": "艾艾精工",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz301234",
+   "name": "五洲医疗",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688112",
+   "name": "鼎阳科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300489",
+   "name": "光智科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688046",
+   "name": "药康生物",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh600641",
+   "name": "先导基电",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603268",
+   "name": "松发股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz301520",
+   "name": "万邦医药",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz000993",
+   "name": "闽东电力",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688600",
+   "name": "皖仪科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300464",
+   "name": "星徽股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688536",
+   "name": "思瑞浦",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz301046",
+   "name": "能辉科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603995",
+   "name": "甬金股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688025",
+   "name": "杰普特",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688004",
+   "name": "博汇科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz000782",
+   "name": "恒申新材",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300151",
+   "name": "昌红科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh600400",
+   "name": "红豆股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300688",
+   "name": "创业黑马",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603120",
+   "name": "肯特催化",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603175",
+   "name": "超颖电子",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "bj920028",
+   "name": "新恒泰",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_sndk",
+   "name": "闪迪",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_be",
+   "name": "Bloom Energy",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_pltr",
+   "name": "Palantir",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_tsm",
+   "name": "台积电",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_tsla",
+   "name": "特斯拉",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_lite",
+   "name": "Lumentum",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_mrvl",
+   "name": "迈威尔",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_nbis",
+   "name": "Nebius",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_panw",
+   "name": "派拓网络",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_nvda",
+   "name": "英伟达",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "BTC/USDT",
+   "name": "比特币",
+   "aliases": [
+    "BTC"
+   ],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "ETH/USDT",
+   "name": "以太坊",
+   "aliases": [
+    "ETH"
+   ],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "SOL/USDT",
+   "name": "Solana",
+   "aliases": [
+    "SOL"
+   ],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "rt_hk00700",
+   "name": "腾讯控股",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk09988",
+   "name": "阿里巴巴-W",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00005",
+   "name": "汇丰控股",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk01299",
+   "name": "友邦保险",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00941",
+   "name": "中国移动",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk03690",
+   "name": "美团-W",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk09618",
+   "name": "京东集团-SW",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk01810",
+   "name": "小米集团-W",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk09888",
+   "name": "百度集团-SW",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk02800",
+   "name": "盈富基金",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00388",
+   "name": "香港交易所",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk02318",
+   "name": "中国平安",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00939",
+   "name": "建设银行",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk01398",
+   "name": "工商银行",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk03968",
+   "name": "招商银行",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk02822",
+   "name": "恒生银行",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00016",
+   "name": "新鸿基地产",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00001",
+   "name": "长和",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00002",
+   "name": "中电控股",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  },
+  {
+   "code": "rt_hk00386",
+   "name": "中国石油化工股份",
+   "aliases": [],
+   "added": "2026-10-20",
+   "note": "H-D2 P-1 恒指蓝筹灰度放水（2 周观察）"
+  }
+ ],
+ "push_max_per_run": 6,
+ "collect_page_size": 30,
+ "digest_hour": 8,
+ "ai_model": "qwen3.5:9b",
+ "ai_window_hours": 14,
+ "ai_max_news": 50,
+ "review_hour": 15,
+ "review_window_hours": 7,
+ "digest_sections": {
+  "wallstreetcn": "🌍 全球财经",
+  "sina": "🇨🇳 市场要闻",
+  "eastmoney": "⚡ 7x24 快讯",
+  "govpolicy": "🏛 国务院政策",
+  "chinanews": "📰 中新社"
+ },
+ "policy_keywords": [
+  "国务院",
+  "国常会",
+  "央行",
+  "中国人民银行",
+  "证监会",
+  "金融监管总局",
+  "发改委",
+  "财政部",
+  "工信部",
+  "商务部",
+  "政治局",
+  "人行",
+  "部委",
+  "条例",
+  "管理办法",
+  "指导意见",
+  "工作要点",
+  "白皮书"
+ ],
+ "policy_authority_sources": [
+  "govpolicy",
+  "chinanews"
+ ],
+ "intel_page_url": "http://127.0.0.1:8734/news_intel.html",
+ "quote_alert_pct": 3.0,
+ "quote_alert_cooldown_min": 30,
+ "quote_keep_days": 30,
+ "jev_doc_url": "",
+ "jev_base_url": "",
+ "jev_base_token": "",
+ "sa_table_id": "tblu9YmZsDixWKAV",
+ "sa_form_url": "",
+ "push_targets": [
+  {
+   "name": "个人",
+   "type": "open_id",
+   "app": "cli_aa3e4f1b58f85cdd",
+   "id": "ou_50a95455c7dffec1090ade400886d0d4"
+  },
+  {
+   "name": "内部测试",
+   "type": "chat_id",
+   "app": "cli_aa3e4f1b58f85cdd",
+   "id": "oc_6b97bee8b5340e071d0fc10cc6c8569f"
+  },
+  {
+   "name": "量化群",
+   "type": "chat_id",
+   "app": "cli_aa3e4f1b58f85cdd",
+   "id": "oc_16ed759795430734a90a7850ba33bec1"
+  }
+ ],
+ "news_keep_days": 365,
+ "news_backfill_note": "新浪直播 feed 支持分页可回填；东财 fast news/华尔街见闻仅为最新列表（不可深度回填）。保留策略：news_keep_days=365，禁止滚动删除。",
+ "wechat_kol_feeds": [
+  {
+   "name": "长赢指数投资",
+   "url": "https://wechat2rss.xlab.app/feed/1f35edb36dfda13906f958fc3047e59ce9c234fe.xml"
+  },
+  {
+   "name": "集思录",
+   "url": "https://wechat2rss.xlab.app/feed/f75bbb0bffd9fd6e0dda725282202ccc23a2bdff.xml"
+  },
+  {
+   "name": "42章经",
+   "url": "https://wechat2rss.xlab.app/feed/31436fcc3bba8c2c2a9337a163afcb3b5a57a0a0.xml"
+  },
+  {
+   "name": "辉哥奇谭",
+   "url": "https://wechat2rss.xlab.app/feed/1b01bd297483509251779f1a02bb90223786a923.xml"
+  },
+  {
+   "name": "也谈钱",
+   "url": "https://wechat2rss.xlab.app/feed/f2fd5af8dc3590b99509f0c501de09066d063028.xml"
+  },
+  {
+   "name": "从零开始定投日记",
+   "url": "https://wechat2rss.xlab.app/feed/0d2c5982deb01d2295ecf8f4891c9cb75d8d8ba3.xml"
+  },
+  {
+   "name": "逻辑与现实经济",
+   "url": "https://wechat2rss.xlab.app/feed/07cd3971227a35b5c35cd94d1961790dad9a87c7.xml"
+  },
+  {
+   "name": "经济学人双语精读",
+   "url": "https://wechat2rss.xlab.app/feed/3db1babbdeeb84327cf6b5315e98d5f40925ae13.xml"
+  },
+  {
+   "name": "绿盟科技金融事业部",
+   "url": "https://wechat2rss.xlab.app/feed/0628f5f1764e0d79813846e7706daef229f464a7.xml"
+  }
+ ],
+ "xq_kol_users": [
+  {"user_id": "3802738237", "note": "B1 银行红利价值派"},
+  {"user_id": "8601813520", "note": "B2 高互动"},
+  {"user_id": "5124430882", "note": "B3 AI硬件/费半资讯"},
+  {"user_id": "2927890800", "note": "B4 AI板块复盘"},
+  {"user_id": "3037882447", "note": "B5 云蒙基金"},
+  {"user_id": "1062883669", "note": "B6 公众号同步号旁证"},
+  {"user_id": "8152922548", "note": "B7 ETF投资逻辑"},
+  {"user_id": "1760673340", "note": "B8 互动型"},
+  {"user_id": "7810790448", "note": "B9 生活+投资混合"},
+  {"user_id": "8592131633", "note": "B10 茅台/消费"},
+  {"user_id": "1340904670", "note": "B11 老股民视角"}
+ ],
+ "_xq_kol_note": "C9A-KOL-001 v2 影子源 2026-11-08 老田批: B组11个独一作者(B12与B3重复已并)取自雪球存量近90天高互动名单, 与wechat_kol 9号合计20号; 收录=专栏文章(title非空)或长帖(纯文本>=300字), 转发丢弃; 链路复用 C:/aios/quant_backtest/xueqiu_common 四级cookie链; 增删号=改本键",
+ "_wechat_kol_note": "C9A-KOL-001 2026-11-08 老田批: v1=wechat2rss 公共实例; 修订版9号(去卢瑟双号404死feed+有价值炮灰误判号, 补集思录/42章经/辉哥奇谭/也谈钱/定投日记); 增删号=改本键; v2 雪球影子源已挂 xq_kol_users 键"
 }

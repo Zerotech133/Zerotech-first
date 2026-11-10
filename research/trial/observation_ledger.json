@@ -105,11 +105,69 @@
         "obs_negative": 0,
         "day_number": 2
       },
-      "final": null
+      "final": {
+        "generated_at": "2026-11-09T10:05:04+08:00",
+        "overall_status": "FAIL",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "PASS",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 14,
+        "report_on_time": 14,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 0,
+        "obs_total": 0,
+        "obs_negative": 0,
+        "day_number": 2
+      }
+    },
+    "2026-11-09": {
+      "preliminary": {
+        "generated_at": "2026-11-09T18:10:10+08:00",
+        "overall_status": "PRELIMINARY_AT_RISK",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "PENDING",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 0,
+        "report_on_time": 0,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 22,
+        "obs_negative": 2,
+        "day_number": 3
+      },
+      "final": {
+        "generated_at": "2026-11-10T10:05:04+08:00",
+        "overall_status": "FAIL",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "PASS",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 10,
+        "report_on_time": 10,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 22,
+        "obs_negative": 2,
+        "day_number": 3
+      }
     }
   },
-  "consecutive_fail_days": 1,
-  "max_consecutive_fail_days": 1,
-  "stop_recommended": false,
-  "updated_at": "2026-11-06T23:48:59+08:00"
+  "consecutive_fail_days": 3,
+  "max_consecutive_fail_days": 3,
+  "stop_recommended": true,
+  "updated_at": "2026-11-10T10:05:06+08:00"
 }

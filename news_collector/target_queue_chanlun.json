@@ -1,0 +1,4377 @@
+{
+ "asof": "2026-11-06",
+ "generated_at": "2026-11-09T09:03:00",
+ "regime": "RED",
+ "total": 489,
+ "all": [
+  {
+   "code": "301563.SZ",
+   "name": "云汉芯城",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "new",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "920870.BJ",
+   "name": "恒进感应",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "new",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "605003.SH",
+   "name": "众望布艺",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-17"
+  },
+  {
+   "code": "301508.SZ",
+   "name": "中机认检",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "002381.SZ",
+   "name": "双箭股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "301515.SZ",
+   "name": "港通医疗",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "301103.SZ",
+   "name": "何氏眼科",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "301408.SZ",
+   "name": "华人健康",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "603214.SH",
+   "name": "爱婴室",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "688113.SH",
+   "name": "联测科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-14"
+  },
+  {
+   "code": "600743.SH",
+   "name": "华远控股",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600930.SH",
+   "name": "华电新能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-29"
+  },
+  {
+   "code": "688235.SH",
+   "name": "百济神州",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-14"
+  },
+  {
+   "code": "000543.SZ",
+   "name": "皖能电力",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-30"
+  },
+  {
+   "code": "000423.SZ",
+   "name": "东阿阿胶",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "920091.BJ",
+   "name": "大鹏工业",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "002901.SZ",
+   "name": "大博医疗",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "300251.SZ",
+   "name": "光线传媒",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "688165.SH",
+   "name": "埃夫特",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "601800.SH",
+   "name": "中国交建",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "920885.BJ",
+   "name": "星辰科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "301221.SZ",
+   "name": "光庭信息",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "600422.SH",
+   "name": "昆药集团",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "002294.SZ",
+   "name": "信立泰",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "605189.SH",
+   "name": "富春染织",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-12"
+  },
+  {
+   "code": "001286.SZ",
+   "name": "陕西能源",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-24"
+  },
+  {
+   "code": "600055.SH",
+   "name": "万东医疗",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "300984.SZ",
+   "name": "金沃股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-14"
+  },
+  {
+   "code": "688196.SH",
+   "name": "卓越新能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-30"
+  },
+  {
+   "code": "920237.BJ",
+   "name": "力佳科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "300486.SZ",
+   "name": "东杰智能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "301459.SZ",
+   "name": "丰茂股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "920207.BJ",
+   "name": "众诚科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "002766.SZ",
+   "name": "索菱股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "601916.SH",
+   "name": "浙商银行",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-24"
+  },
+  {
+   "code": "300143.SZ",
+   "name": "盈康生命",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "002791.SZ",
+   "name": "坚朗五金",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "920522.BJ",
+   "name": "纳科诺尔",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-14"
+  },
+  {
+   "code": "300712.SZ",
+   "name": "永福股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "600661.SH",
+   "name": "昂立教育",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "603565.SH",
+   "name": "中谷物流",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-09"
+  },
+  {
+   "code": "603858.SH",
+   "name": "步长制药",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-01"
+  },
+  {
+   "code": "002226.SZ",
+   "name": "江南化工",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-10"
+  },
+  {
+   "code": "002354.SZ",
+   "name": "天娱数科",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-04-28"
+  },
+  {
+   "code": "300022.SZ",
+   "name": "吉峰科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "688143.SH",
+   "name": "长盈通",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2025-12-26"
+  },
+  {
+   "code": "600064.SH",
+   "name": "南京高科",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "001227.SZ",
+   "name": "兰州银行",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "601233.SH",
+   "name": "桐昆股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2025-07-09"
+  },
+  {
+   "code": "688131.SH",
+   "name": "皓元医药",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-05-11"
+  },
+  {
+   "code": "603289.SH",
+   "name": "泰瑞机器",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "603311.SH",
+   "name": "金海高科",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2025-10-17"
+  },
+  {
+   "code": "001207.SZ",
+   "name": "联科科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "001388.SZ",
+   "name": "信通电子",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "603382.SH",
+   "name": "海阳科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-07"
+  },
+  {
+   "code": "002141.SZ",
+   "name": "贤丰控股",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "688519.SH",
+   "name": "南亚新材",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-01-14"
+  },
+  {
+   "code": "600827.SH",
+   "name": "百联股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "605080.SH",
+   "name": "浙江自然",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-07"
+  },
+  {
+   "code": "603596.SH",
+   "name": "伯特利",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "301088.SZ",
+   "name": "戎美股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "002096.SZ",
+   "name": "易普力",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "301215.SZ",
+   "name": "中汽股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002745.SZ",
+   "name": "木林森",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-04-14"
+  },
+  {
+   "code": "002423.SZ",
+   "name": "中粮资本",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-17"
+  },
+  {
+   "code": "002953.SZ",
+   "name": "日丰股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-14"
+  },
+  {
+   "code": "002540.SZ",
+   "name": "亚太科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600866.SH",
+   "name": "星湖科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "000715.SZ",
+   "name": "中兴商业",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "601601.SH",
+   "name": "中国太保",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-17"
+  },
+  {
+   "code": "300999.SZ",
+   "name": "金龙鱼",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "600976.SH",
+   "name": "健民集团",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "000921.SZ",
+   "name": "海信家电",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-04-14"
+  },
+  {
+   "code": "000957.SZ",
+   "name": "中通客车",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-14"
+  },
+  {
+   "code": "600829.SH",
+   "name": "人民同泰",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "603708.SH",
+   "name": "家家悦",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "603926.SH",
+   "name": "铁流股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600031.SH",
+   "name": "三一重工",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-14"
+  },
+  {
+   "code": "600320.SH",
+   "name": "振华重工",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600569.SH",
+   "name": "安阳钢铁",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "301361.SZ",
+   "name": "众智科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "920436.BJ",
+   "name": "大地电气",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "601872.SH",
+   "name": "招商轮船",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2025-05-26"
+  },
+  {
+   "code": "600685.SH",
+   "name": "中船防务",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "301456.SZ",
+   "name": "盘古智能",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "688428.SH",
+   "name": "诺诚健华",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-03"
+  },
+  {
+   "code": "920556.BJ",
+   "name": "雅达股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "002094.SZ",
+   "name": "青岛金王",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002239.SZ",
+   "name": "奥特佳",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-09"
+  },
+  {
+   "code": "920374.BJ",
+   "name": "云里物里",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "000703.SZ",
+   "name": "恒逸石化",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-10"
+  },
+  {
+   "code": "603209.SH",
+   "name": "兴通股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-28"
+  },
+  {
+   "code": "600855.SH",
+   "name": "航天长峰",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600262.SH",
+   "name": "北方股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "603836.SH",
+   "name": "海程邦达",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-06"
+  },
+  {
+   "code": "600527.SH",
+   "name": "江南高纤",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002486.SZ",
+   "name": "嘉麟杰",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-05"
+  },
+  {
+   "code": "920454.BJ",
+   "name": "同心传动",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-27"
+  },
+  {
+   "code": "603205.SH",
+   "name": "健尔康",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "002553.SZ",
+   "name": "南方精工",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "300281.SZ",
+   "name": "金明精机",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "300872.SZ",
+   "name": "天阳科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "600017.SH",
+   "name": "日照港",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "688209.SH",
+   "name": "英集芯",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-06-08"
+  },
+  {
+   "code": "301516.SZ",
+   "name": "中远通",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "002880.SZ",
+   "name": "卫光生物",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "301585.SZ",
+   "name": "蓝宇股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "002389.SZ",
+   "name": "航天彩虹",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "603739.SH",
+   "name": "蔚蓝生物",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "002108.SZ",
+   "name": "沧州明珠",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "605138.SH",
+   "name": "盛泰集团",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "603195.SH",
+   "name": "公牛集团",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002841.SZ",
+   "name": "视源股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-06-11"
+  },
+  {
+   "code": "600611.SH",
+   "name": "大众交通",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "000558.SZ",
+   "name": "天府文旅",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-14"
+  },
+  {
+   "code": "600131.SH",
+   "name": "国网信通",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "600022.SH",
+   "name": "山东钢铁",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "920433.BJ",
+   "name": "大唐药业",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "600358.SH",
+   "name": "国旅联合",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "603619.SH",
+   "name": "中曼石油",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-31"
+  },
+  {
+   "code": "603088.SH",
+   "name": "宁波精达",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002026.SZ",
+   "name": "山东威达",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "002788.SZ",
+   "name": "鹭燕医药",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-29"
+  },
+  {
+   "code": "002519.SZ",
+   "name": "银河电子",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600588.SH",
+   "name": "用友网络",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-17"
+  },
+  {
+   "code": "300158.SZ",
+   "name": "振东制药",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "002583.SZ",
+   "name": "海能达",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "002204.SZ",
+   "name": "大连重工",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "301023.SZ",
+   "name": "奕帆传动",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "920870.BJ",
+   "name": "恒进感应",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "002917.SZ",
+   "name": "金奥博",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "920527.BJ",
+   "name": "夜光明",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "603171.SH",
+   "name": "税友股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "002988.SZ",
+   "name": "豪美新材",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300045.SZ",
+   "name": "华力创通",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "688667.SH",
+   "name": "菱电电控",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "600592.SH",
+   "name": "龙溪股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002209.SZ",
+   "name": "达意隆",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300891.SZ",
+   "name": "惠云钛业",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "600320.SH",
+   "name": "振华重工",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-09"
+  },
+  {
+   "code": "300709.SZ",
+   "name": "精研科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "300713.SZ",
+   "name": "英可瑞",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "688099.SH",
+   "name": "晶晨股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-20"
+  },
+  {
+   "code": "301361.SZ",
+   "name": "众智科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300652.SZ",
+   "name": "雷迪克",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "600557.SH",
+   "name": "康缘药业",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "688755.SH",
+   "name": "汉邦科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-23"
+  },
+  {
+   "code": "002434.SZ",
+   "name": "万里扬",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-22"
+  },
+  {
+   "code": "688292.SH",
+   "name": "浩瀚深度",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "688357.SH",
+   "name": "建龙微纳",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002214.SZ",
+   "name": "大立科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300687.SZ",
+   "name": "赛意信息",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "301189.SZ",
+   "name": "奥尼电子",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "000910.SZ",
+   "name": "大亚圣象",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "605222.SH",
+   "name": "起帆电缆",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "605259.SH",
+   "name": "绿田机械",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002633.SZ",
+   "name": "申科股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "603776.SH",
+   "name": "永安行",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "000069.SZ",
+   "name": "华侨城A",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-06-29"
+  },
+  {
+   "code": "601177.SH",
+   "name": "杭齿前进",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "000829.SZ",
+   "name": "天音控股",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-06-29"
+  },
+  {
+   "code": "600303.SH",
+   "name": "曙光股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "688132.SH",
+   "name": "邦彦技术",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "301199.SZ",
+   "name": "迈赫股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002899.SZ",
+   "name": "英派斯",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002795.SZ",
+   "name": "永和智控",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "301299.SZ",
+   "name": "卓创资讯",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "600777.SH",
+   "name": "新潮能源",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "600770.SH",
+   "name": "综艺股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300673.SZ",
+   "name": "佩蒂股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "002383.SZ",
+   "name": "合众思壮",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "603615.SH",
+   "name": "茶花股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002917.SZ",
+   "name": "金奥博",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "001324.SZ",
+   "name": "长青科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300279.SZ",
+   "name": "和晶科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300454.SZ",
+   "name": "深信服",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-07"
+  },
+  {
+   "code": "603275.SH",
+   "name": "众辰科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "000006.SZ",
+   "name": "深振业A",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300608.SZ",
+   "name": "思特奇",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "301110.SZ",
+   "name": "青木科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "002869.SZ",
+   "name": "金溢科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002576.SZ",
+   "name": "通达动力",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002519.SZ",
+   "name": "银河电子",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "301367.SZ",
+   "name": "瑞迈特",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "301023.SZ",
+   "name": "奕帆传动",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "603968.SH",
+   "name": "醋化股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-09"
+  },
+  {
+   "code": "920455.BJ",
+   "name": "汇隆活塞",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "002420.SZ",
+   "name": "毅昌科技",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600851.SH",
+   "name": "海欣股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "001318.SZ",
+   "name": "阳光乳业",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600998.SH",
+   "name": "九州通",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-23"
+  },
+  {
+   "code": "601607.SH",
+   "name": "上海医药",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "002603.SZ",
+   "name": "以岭药业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "002100.SZ",
+   "name": "天康生物",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "301383.SZ",
+   "name": "天键股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "000858.SZ",
+   "name": "五粮液",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-17"
+  },
+  {
+   "code": "688187.SH",
+   "name": "时代电气",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-29"
+  },
+  {
+   "code": "002044.SZ",
+   "name": "美年健康",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "688475.SH",
+   "name": "萤石网络",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-29"
+  },
+  {
+   "code": "601000.SH",
+   "name": "唐山港",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-23"
+  },
+  {
+   "code": "603288.SH",
+   "name": "海天味业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-29"
+  },
+  {
+   "code": "600718.SH",
+   "name": "东软集团",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600699.SH",
+   "name": "均胜电子",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600050.SH",
+   "name": "中国联通",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "000999.SZ",
+   "name": "华润三九",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-24"
+  },
+  {
+   "code": "600085.SH",
+   "name": "同仁堂",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "603992.SH",
+   "name": "松霖科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "603348.SH",
+   "name": "文灿股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "002027.SZ",
+   "name": "分众传媒",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600587.SH",
+   "name": "新华医疗",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-17"
+  },
+  {
+   "code": "920690.BJ",
+   "name": "捷众科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "300747.SZ",
+   "name": "锐科激光",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2025-12-17"
+  },
+  {
+   "code": "600094.SH",
+   "name": "大名城",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "002262.SZ",
+   "name": "恩华药业",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-06"
+  },
+  {
+   "code": "600060.SH",
+   "name": "海信视像",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-05-19"
+  },
+  {
+   "code": "600713.SH",
+   "name": "南京医药",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "000088.SZ",
+   "name": "盐田港",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "002839.SZ",
+   "name": "张家港行",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-17"
+  },
+  {
+   "code": "600874.SH",
+   "name": "创业环保",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "300654.SZ",
+   "name": "世纪天鸿",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-08"
+  },
+  {
+   "code": "601156.SH",
+   "name": "东航物流",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-06-09"
+  },
+  {
+   "code": "300878.SZ",
+   "name": "维康药业",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-04-14"
+  },
+  {
+   "code": "301598.SZ",
+   "name": "博科测试",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "001219.SZ",
+   "name": "青岛食品",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "603103.SH",
+   "name": "横店影视",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "002481.SZ",
+   "name": "双塔食品",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "000333.SZ",
+   "name": "美的集团",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-05-28"
+  },
+  {
+   "code": "603199.SH",
+   "name": "九华旅游",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "600928.SH",
+   "name": "西安银行",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-17"
+  },
+  {
+   "code": "688162.SH",
+   "name": "巨一科技",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002676.SZ",
+   "name": "顺威股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-27"
+  },
+  {
+   "code": "002044.SZ",
+   "name": "美年健康",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "002967.SZ",
+   "name": "广电计量",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "603899.SH",
+   "name": "晨光股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "603288.SH",
+   "name": "海天味业",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-28"
+  },
+  {
+   "code": "600693.SH",
+   "name": "东百集团",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "301109.SZ",
+   "name": "军信股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-09-02"
+  },
+  {
+   "code": "600626.SH",
+   "name": "申达股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "600741.SH",
+   "name": "华域汽车",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "expired",
+   "sig_dt": "2026-08-18"
+  },
+  {
+   "code": "600267.SH",
+   "name": "海正药业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "301122.SZ",
+   "name": "采纳股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-20"
+  },
+  {
+   "code": "600023.SH",
+   "name": "浙能电力",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "688410.SH",
+   "name": "山外山",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "000810.SZ",
+   "name": "创维数字",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "600011.SH",
+   "name": "华能国际",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "301513.SZ",
+   "name": "尚水智能",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "920982.BJ",
+   "name": "锦波生物",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "003006.SZ",
+   "name": "百亚股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-14"
+  },
+  {
+   "code": "301081.SZ",
+   "name": "严牌股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "301398.SZ",
+   "name": "星源卓镁",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "688203.SH",
+   "name": "海正生材",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002098.SZ",
+   "name": "浔兴股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-22"
+  },
+  {
+   "code": "603160.SH",
+   "name": "汇顶科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "301187.SZ",
+   "name": "欧圣电气",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-23"
+  },
+  {
+   "code": "301313.SZ",
+   "name": "凡拓数创",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "600732.SH",
+   "name": "爱旭股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "301525.SZ",
+   "name": "儒竞科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "600551.SH",
+   "name": "时代出版",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-10"
+  },
+  {
+   "code": "600285.SH",
+   "name": "羚锐制药",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "002009.SZ",
+   "name": "天奇股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002044.SZ",
+   "name": "美年健康",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-08"
+  },
+  {
+   "code": "603276.SH",
+   "name": "恒兴新材",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "600329.SH",
+   "name": "达仁堂",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "301372.SZ",
+   "name": "科净源",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "688071.SH",
+   "name": "华依科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "603278.SH",
+   "name": "大业股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "603231.SH",
+   "name": "索宝蛋白",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-22"
+  },
+  {
+   "code": "600585.SH",
+   "name": "海螺水泥",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-06-29"
+  },
+  {
+   "code": "002531.SZ",
+   "name": "天顺风能",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "300741.SZ",
+   "name": "华宝股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-27"
+  },
+  {
+   "code": "603303.SH",
+   "name": "得邦照明",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "002623.SZ",
+   "name": "亚玛顿",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "expired",
+   "sig_dt": "2026-07-21"
+  },
+  {
+   "code": "002332.SZ",
+   "name": "仙琚制药",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "601607.SH",
+   "name": "上海医药",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "000928.SZ",
+   "name": "中钢国际",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-30"
+  },
+  {
+   "code": "603883.SH",
+   "name": "老百姓",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600368.SH",
+   "name": "五洲交通",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600926.SH",
+   "name": "杭州银行",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600064.SH",
+   "name": "南京高科",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "601825.SH",
+   "name": "沪农商行",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "000001.SZ",
+   "name": "平安银行",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-26"
+  },
+  {
+   "code": "002014.SZ",
+   "name": "永新股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "002483.SZ",
+   "name": "润邦股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-28"
+  },
+  {
+   "code": "600479.SH",
+   "name": "千金药业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-29"
+  },
+  {
+   "code": "002949.SZ",
+   "name": "华阳国际",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "603289.SH",
+   "name": "泰瑞机器",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600583.SH",
+   "name": "海油工程",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "300171.SZ",
+   "name": "东富龙",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "001228.SZ",
+   "name": "永泰运",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "605003.SH",
+   "name": "众望布艺",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600272.SH",
+   "name": "开开实业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "601998.SH",
+   "name": "中信银行",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "605169.SH",
+   "name": "洪通燃气",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "002679.SZ",
+   "name": "福建金森",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "300864.SZ",
+   "name": "南大环境",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "new",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "300358.SZ",
+   "name": "楚天科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "001872.SZ",
+   "name": "招商港口",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "601528.SH",
+   "name": "瑞丰银行",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600025.SH",
+   "name": "华能水电",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "301591.SZ",
+   "name": "肯特股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "601728.SH",
+   "name": "中国电信",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-21"
+  },
+  {
+   "code": "003033.SZ",
+   "name": "征和工业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "603565.SH",
+   "name": "中谷物流",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600094.SH",
+   "name": "大名城",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "300983.SZ",
+   "name": "尤安设计",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600892.SH",
+   "name": "大晟文化",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "002376.SZ",
+   "name": "新北洋",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "600900.SH",
+   "name": "长江电力",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-22"
+  },
+  {
+   "code": "600351.SH",
+   "name": "亚宝药业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600350.SH",
+   "name": "山东高速",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-21"
+  },
+  {
+   "code": "600419.SH",
+   "name": "天润乳业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "603128.SH",
+   "name": "华贸物流",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-23"
+  },
+  {
+   "code": "601318.SH",
+   "name": "中国平安",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-20"
+  },
+  {
+   "code": "002322.SZ",
+   "name": "理工能科",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "601919.SH",
+   "name": "中远海控",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600886.SH",
+   "name": "国投电力",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-21"
+  },
+  {
+   "code": "300471.SZ",
+   "name": "厚普股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-15"
+  },
+  {
+   "code": "601882.SH",
+   "name": "海天精工",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "600189.SH",
+   "name": "泉阳泉",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "600919.SH",
+   "name": "江苏银行",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-22"
+  },
+  {
+   "code": "301175.SZ",
+   "name": "中科环保",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "301047.SZ",
+   "name": "义翘神州",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "002627.SZ",
+   "name": "三峡旅游",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "002262.SZ",
+   "name": "恩华药业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "002095.SZ",
+   "name": "生意宝",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-30"
+  },
+  {
+   "code": "003013.SZ",
+   "name": "地铁设计",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "002768.SZ",
+   "name": "国恩股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "300579.SZ",
+   "name": "数字认证",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "688710.SH",
+   "name": "益诺思",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "600887.SH",
+   "name": "伊利股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "002425.SZ",
+   "name": "凯撒文化",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "002862.SZ",
+   "name": "实丰文化",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "600780.SH",
+   "name": "通宝能源",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-17"
+  },
+  {
+   "code": "605179.SH",
+   "name": "一鸣食品",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "601156.SH",
+   "name": "东航物流",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "running",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "600865.SH",
+   "name": "百大集团",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "000995.SZ",
+   "name": "皇台酒业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "688137.SH",
+   "name": "近岸蛋白",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "002172.SZ",
+   "name": "澳洋健康",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "688004.SH",
+   "name": "博汇科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "300314.SZ",
+   "name": "戴维医疗",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "300154.SZ",
+   "name": "瑞凌股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "603198.SH",
+   "name": "迎驾贡酒",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "300369.SZ",
+   "name": "绿盟科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "601595.SH",
+   "name": "上海电影",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-22"
+  },
+  {
+   "code": "300473.SZ",
+   "name": "德尔股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-19"
+  },
+  {
+   "code": "603151.SH",
+   "name": "邦基科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-09-17"
+  },
+  {
+   "code": "603466.SH",
+   "name": "风语筑",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "301529.SZ",
+   "name": "福赛科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "002422.SZ",
+   "name": "科伦药业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "688131.SH",
+   "name": "皓元医药",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "expired",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "688111.SH",
+   "name": "金山办公",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "003010.SZ",
+   "name": "若羽臣",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "600801.SH",
+   "name": "华新建材",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "301448.SZ",
+   "name": "开创电气",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-04-10"
+  },
+  {
+   "code": "300017.SZ",
+   "name": "网宿科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "600298.SH",
+   "name": "安琪酵母",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "603871.SH",
+   "name": "嘉友国际",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-14"
+  },
+  {
+   "code": "600986.SH",
+   "name": "浙文互联",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "300628.SZ",
+   "name": "亿联网络",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-01-05"
+  },
+  {
+   "code": "300433.SZ",
+   "name": "蓝思科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "300875.SZ",
+   "name": "捷强装备",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-06"
+  },
+  {
+   "code": "002062.SZ",
+   "name": "宏润建设",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-28"
+  },
+  {
+   "code": "603556.SH",
+   "name": "海兴电力",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-28"
+  },
+  {
+   "code": "603049.SH",
+   "name": "中策橡胶",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-16"
+  },
+  {
+   "code": "300407.SZ",
+   "name": "凯发电气",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-26"
+  },
+  {
+   "code": "603039.SH",
+   "name": "泛微网络",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "001210.SZ",
+   "name": "金房能源",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-12"
+  },
+  {
+   "code": "002606.SZ",
+   "name": "大连电瓷",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "301578.SZ",
+   "name": "辰奕智能",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "300054.SZ",
+   "name": "鼎龙股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "002809.SZ",
+   "name": "红墙股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "300533.SZ",
+   "name": "冰川网络",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "002425.SZ",
+   "name": "凯撒文化",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "300849.SZ",
+   "name": "锦盛新材",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "301587.SZ",
+   "name": "中瑞股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "603819.SH",
+   "name": "神力股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "920076.BJ",
+   "name": "国亮新材",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "601116.SH",
+   "name": "三江购物",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-27"
+  },
+  {
+   "code": "300674.SZ",
+   "name": "宇信科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "002345.SZ",
+   "name": "潮宏基",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-17"
+  },
+  {
+   "code": "601677.SH",
+   "name": "明泰铝业",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "002840.SZ",
+   "name": "华统股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-28"
+  },
+  {
+   "code": "688558.SH",
+   "name": "国盛智科",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-26"
+  },
+  {
+   "code": "300846.SZ",
+   "name": "首都在线",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "605567.SH",
+   "name": "春雪食品",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "688212.SH",
+   "name": "澳华内镜",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "300911.SZ",
+   "name": "亿田智能",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-15"
+  },
+  {
+   "code": "002679.SZ",
+   "name": "福建金森",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-15"
+  },
+  {
+   "code": "688170.SH",
+   "name": "德龙激光",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "002641.SZ",
+   "name": "公元股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-07"
+  },
+  {
+   "code": "300536.SZ",
+   "name": "农尚环境",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "688227.SH",
+   "name": "品高股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "603307.SH",
+   "name": "扬州金泉",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "600962.SH",
+   "name": "国投中鲁",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-28"
+  },
+  {
+   "code": "601138.SH",
+   "name": "工业富联",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "605066.SH",
+   "name": "天正电气",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-11"
+  },
+  {
+   "code": "002951.SZ",
+   "name": "金时科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "688198.SH",
+   "name": "佰仁医疗",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "600110.SH",
+   "name": "诺德股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "600517.SH",
+   "name": "国网英大",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "000590.SZ",
+   "name": "古汉医药",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "300859.SZ",
+   "name": "西域旅游",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "000020.SZ",
+   "name": "深华发A",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "688159.SH",
+   "name": "有方科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "688357.SH",
+   "name": "建龙微纳",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "601908.SH",
+   "name": "京运通",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600724.SH",
+   "name": "宁波富达",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "300778.SZ",
+   "name": "新城市",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "920166.BJ",
+   "name": "海圣医疗",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "002112.SZ",
+   "name": "三变科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "300996.SZ",
+   "name": "普联软件",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "002313.SZ",
+   "name": "日海智能",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "601026.SH",
+   "name": "道生天合",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-07"
+  },
+  {
+   "code": "605188.SH",
+   "name": "国光连锁",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-07"
+  },
+  {
+   "code": "300626.SZ",
+   "name": "华瑞股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-10"
+  },
+  {
+   "code": "301449.SZ",
+   "name": "天溯计量",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-14"
+  },
+  {
+   "code": "603075.SH",
+   "name": "热威股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "603283.SH",
+   "name": "赛腾股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-14"
+  },
+  {
+   "code": "300766.SZ",
+   "name": "每日互动",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-29"
+  },
+  {
+   "code": "688208.SH",
+   "name": "道通科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "002533.SZ",
+   "name": "金杯电工",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "301077.SZ",
+   "name": "星华新材",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "002090.SZ",
+   "name": "金智科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-14"
+  },
+  {
+   "code": "600929.SH",
+   "name": "雪天盐业",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-14"
+  },
+  {
+   "code": "600382.SH",
+   "name": "广东明珠",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "920541.BJ",
+   "name": "铁大科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "603086.SH",
+   "name": "先达股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-27"
+  },
+  {
+   "code": "605299.SH",
+   "name": "舒华体育",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "300468.SZ",
+   "name": "四方精创",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-19"
+  },
+  {
+   "code": "300807.SZ",
+   "name": "天迈科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-20"
+  },
+  {
+   "code": "920802.BJ",
+   "name": "保丽洁",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "688538.SH",
+   "name": "和辉光电",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-06-11"
+  },
+  {
+   "code": "002006.SZ",
+   "name": "精工科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "920145.BJ",
+   "name": "恒合股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "601686.SH",
+   "name": "友发集团",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-14"
+  },
+  {
+   "code": "002173.SZ",
+   "name": "创新医疗",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "003011.SZ",
+   "name": "海象新材",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "603535.SH",
+   "name": "嘉诚国际",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "301068.SZ",
+   "name": "大地海洋",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-24"
+  },
+  {
+   "code": "600230.SH",
+   "name": "沧州大化",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-26"
+  },
+  {
+   "code": "603376.SH",
+   "name": "大明电子",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "300879.SZ",
+   "name": "大叶股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "003007.SZ",
+   "name": "直真科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-31"
+  },
+  {
+   "code": "002190.SZ",
+   "name": "成飞集成",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-25"
+  },
+  {
+   "code": "002117.SZ",
+   "name": "东港股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600618.SH",
+   "name": "氯碱化工",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-21"
+  },
+  {
+   "code": "600617.SH",
+   "name": "国新能源",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "000815.SZ",
+   "name": "美利云",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "300624.SZ",
+   "name": "万兴科技",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-26"
+  },
+  {
+   "code": "002478.SZ",
+   "name": "常宝股份",
+   "grade": "avoid",
+   "type": "2买",
+   "stage": "broken",
+   "sig_dt": "2026-08-24"
+  },
+  {
+   "code": "688227.SH",
+   "name": "品高股份",
+   "grade": "avoid",
+   "type": "1买",
+   "stage": "broken",
+   "sig_dt": "2026-07-30"
+  },
+  {
+   "code": "300474.SZ",
+   "name": "景嘉微",
+   "grade": "avoid",
+   "type": "1买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "920895.BJ",
+   "name": "花溪科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "601811.SH",
+   "name": "新华文轩",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "688485.SH",
+   "name": "九州一轨",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "605058.SH",
+   "name": "澳弘电子",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "601118.SH",
+   "name": "海南橡胶",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-29"
+  },
+  {
+   "code": "600738.SH",
+   "name": "丽尚国潮",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "603333.SH",
+   "name": "福华尚纬",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "300550.SZ",
+   "name": "和仁科技",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "300226.SZ",
+   "name": "上海钢联",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-30"
+  },
+  {
+   "code": "002388.SZ",
+   "name": "新亚制程",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-11"
+  },
+  {
+   "code": "300811.SZ",
+   "name": "铂科新材",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "301108.SZ",
+   "name": "洁雅股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-23"
+  },
+  {
+   "code": "002486.SZ",
+   "name": "嘉麟杰",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "603230.SH",
+   "name": "内蒙新华",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "002292.SZ",
+   "name": "奥飞娱乐",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "300665.SZ",
+   "name": "飞鹿股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "603408.SH",
+   "name": "建霖家居",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "000823.SZ",
+   "name": "超声电子",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-12"
+  },
+  {
+   "code": "600778.SH",
+   "name": "友好集团",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "605069.SH",
+   "name": "正和生态",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-23"
+  },
+  {
+   "code": "001216.SZ",
+   "name": "华瓷股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "601199.SH",
+   "name": "江南水务",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "603102.SH",
+   "name": "百合股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "300400.SZ",
+   "name": "劲拓股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-12"
+  },
+  {
+   "code": "601886.SH",
+   "name": "江河集团",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "000567.SZ",
+   "name": "海德股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "300662.SZ",
+   "name": "科锐国际",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-28"
+  },
+  {
+   "code": "002162.SZ",
+   "name": "悦心健康",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "002636.SZ",
+   "name": "金安国纪",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-12"
+  },
+  {
+   "code": "301251.SZ",
+   "name": "威尔高",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-13"
+  },
+  {
+   "code": "002234.SZ",
+   "name": "民和股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-15"
+  },
+  {
+   "code": "688209.SH",
+   "name": "英集芯",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "920087.BJ",
+   "name": "秋乐种业",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-29"
+  },
+  {
+   "code": "600881.SH",
+   "name": "亚泰集团",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-09-16"
+  },
+  {
+   "code": "603995.SH",
+   "name": "甬金股份",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-09"
+  },
+  {
+   "code": "603155.SH",
+   "name": "新亚强",
+   "grade": "avoid",
+   "type": "3买",
+   "stage": "broken",
+   "sig_dt": "2026-10-08"
+  }
+ ],
+ "actionable": [
+  {
+   "code": "301563.SZ",
+   "name": "云汉芯城",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "new"
+  },
+  {
+   "code": "920870.BJ",
+   "name": "恒进感应",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "new"
+  },
+  {
+   "code": "605003.SH",
+   "name": "众望布艺",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "301508.SZ",
+   "name": "中机认检",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "002381.SZ",
+   "name": "双箭股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "301515.SZ",
+   "name": "港通医疗",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "301103.SZ",
+   "name": "何氏眼科",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "301408.SZ",
+   "name": "华人健康",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "603214.SH",
+   "name": "爱婴室",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "688113.SH",
+   "name": "联测科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "600743.SH",
+   "name": "华远控股",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "600930.SH",
+   "name": "华电新能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "688235.SH",
+   "name": "百济神州",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "000543.SZ",
+   "name": "皖能电力",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "000423.SZ",
+   "name": "东阿阿胶",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920091.BJ",
+   "name": "大鹏工业",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002901.SZ",
+   "name": "大博医疗",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "300251.SZ",
+   "name": "光线传媒",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "688165.SH",
+   "name": "埃夫特",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "601800.SH",
+   "name": "中国交建",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920885.BJ",
+   "name": "星辰科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "301221.SZ",
+   "name": "光庭信息",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600422.SH",
+   "name": "昆药集团",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002294.SZ",
+   "name": "信立泰",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "605189.SH",
+   "name": "富春染织",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "001286.SZ",
+   "name": "陕西能源",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600055.SH",
+   "name": "万东医疗",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "300984.SZ",
+   "name": "金沃股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "688196.SH",
+   "name": "卓越新能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920237.BJ",
+   "name": "力佳科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "300486.SZ",
+   "name": "东杰智能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "301459.SZ",
+   "name": "丰茂股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920207.BJ",
+   "name": "众诚科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002766.SZ",
+   "name": "索菱股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "601916.SH",
+   "name": "浙商银行",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "300143.SZ",
+   "name": "盈康生命",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002791.SZ",
+   "name": "坚朗五金",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920522.BJ",
+   "name": "纳科诺尔",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "300712.SZ",
+   "name": "永福股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600661.SH",
+   "name": "昂立教育",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920455.BJ",
+   "name": "汇隆活塞",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "002420.SZ",
+   "name": "毅昌科技",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "600851.SH",
+   "name": "海欣股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "001318.SZ",
+   "name": "阳光乳业",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running"
+  },
+  {
+   "code": "600998.SH",
+   "name": "九州通",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "601607.SH",
+   "name": "上海医药",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002603.SZ",
+   "name": "以岭药业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002100.SZ",
+   "name": "天康生物",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "301383.SZ",
+   "name": "天键股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "000858.SZ",
+   "name": "五粮液",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "688187.SH",
+   "name": "时代电气",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002044.SZ",
+   "name": "美年健康",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "688475.SH",
+   "name": "萤石网络",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "601000.SH",
+   "name": "唐山港",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "603288.SH",
+   "name": "海天味业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600718.SH",
+   "name": "东软集团",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600699.SH",
+   "name": "均胜电子",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600050.SH",
+   "name": "中国联通",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "000999.SZ",
+   "name": "华润三九",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600085.SH",
+   "name": "同仁堂",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "603992.SH",
+   "name": "松霖科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "603348.SH",
+   "name": "文灿股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "002027.SZ",
+   "name": "分众传媒",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "600587.SH",
+   "name": "新华医疗",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  },
+  {
+   "code": "920690.BJ",
+   "name": "捷众科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running"
+  }
+ ]
+}

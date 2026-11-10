@@ -1,0 +1,167 @@
+{
+ "generated_at": "2026-11-07T20:00:02+08:00",
+ "write": true,
+ "projects": [
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "pdf_ocr": {
+    "stage": "skip_no_pdf",
+    "pdfs": 0,
+    "ran": 0,
+    "skipped": 0,
+    "failed": 0
+   },
+   "texts": 1,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_draft.jsonl",
+    "exists": true,
+    "total": 286,
+    "meta_skipped": 0,
+    "kept": 286,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
+   "action": "pipelined",
+   "clean_files": [
+    "C:\\项目\\知识库\\20_清洗\\laomu_notes\\clean\\20261102_老木创业笔记_交易老木29条视频文案汇编.md"
+   ],
+   "units": 288,
+   "meta_skipped": 0,
+   "units_raw": 288,
+   "concepts_top": 30
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "status": "distilling",
+   "pdf_ocr": {
+    "stage": "skip_no_pdf",
+    "pdfs": 0,
+    "ran": 0,
+    "skipped": 0,
+    "failed": 0
+   },
+   "texts": 8,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_draft.jsonl",
+    "exists": true,
+    "total": 800,
+    "meta_skipped": 0,
+    "kept": 800,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
+   "action": "pipelined",
+   "clean_files": [
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_AI量化工具手记(1).md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_cash猫4415.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_K哥真交易(1).md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_一修论市(1).md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_乔木缠论ROEE.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_指标公式入门(1).md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_数据帝-量化开发.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_爱死磕-康康.md"
+   ],
+   "units": 1018,
+   "meta_skipped": 2795,
+   "units_raw": 3813,
+   "concepts_top": 30
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "pdf_ocr": {
+    "stage": "skip_no_pdf",
+    "pdfs": 0,
+    "ran": 0,
+    "skipped": 0,
+    "failed": 0
+   },
+   "texts": 3,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_第二期_units_draft.jsonl",
+    "exists": true,
+    "total": 1116,
+    "meta_skipped": 0,
+    "kept": 1116,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
+   "action": "pipelined",
+   "clean_files": [
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_第二期\\clean\\20261103_刺猬投研.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_第二期\\clean\\20261103_指标说明书.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_第二期\\clean\\20261103_爱吃折耳根的Ace.md"
+   ],
+   "units": 1293,
+   "meta_skipped": 734,
+   "units_raw": 2027,
+   "concepts_top": 30
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "status": "distilling",
+   "pdf_ocr": {
+    "stage": "skip_no_pdf",
+    "pdfs": 0,
+    "ran": 0,
+    "skipped": 0,
+    "failed": 0
+   },
+   "texts": 1,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_北斗股术1688_units_draft.jsonl",
+    "exists": true,
+    "total": 108,
+    "meta_skipped": 0,
+    "kept": 108,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
+   "action": "pipelined",
+   "clean_files": [
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_北斗股术1688\\clean\\视频号学习_北斗股术1688.md"
+   ],
+   "units": 114,
+   "meta_skipped": 343,
+   "units_raw": 457,
+   "concepts_top": 30
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "status": "distilling",
+   "pdf_ocr": {
+    "stage": "skip_no_pdf",
+    "pdfs": 0,
+    "ran": 0,
+    "skipped": 0,
+    "failed": 0
+   },
+   "texts": 3,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\公开投教_布林线_units_draft.jsonl",
+    "exists": true,
+    "total": 3,
+    "meta_skipped": 0,
+    "kept": 3,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
+   "action": "pipelined",
+   "clean_files": [
+    "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C1_official_edu_中国投资者网.md",
+    "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C2_broker_edu_国泰君安.md",
+    "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C3_opensource_docs_backtrader.md"
+   ],
+   "units": 3,
+   "meta_skipped": 0,
+   "units_raw": 3,
+   "concepts_top": 30
+  }
+ ]
+}

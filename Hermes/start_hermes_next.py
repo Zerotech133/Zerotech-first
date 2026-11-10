@@ -32,7 +32,27 @@ def _log(msg):
 
 _log("[boot] next launcher entered (pid=%s)" % os.getpid())
 
-VENV_PY = r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv\Scripts\python.exe"
+# ── A2（2026-11-10）：venv 双哈希路径写死 → 重装 .hermes 即静默失效，
+# 改 env 解析 + fail-fast（与 start_hermes_bg.py 同配方，见其 _resolve_venv_py）。
+def _resolve_venv_py():
+    """解析顺序：HERMES_WEBUI_PYTHON / HERMES_VENV_PY env → 现役生产 venv
+    （原写死值，回滚资产）→ 都不可用则 FATAL 退出。不做 installs/* 自动
+    发现（PM selected 环境身份敏感，pydantic_core 崩溃判例）。"""
+    cand = os.environ.get("HERMES_WEBUI_PYTHON") or os.environ.get("HERMES_VENV_PY")
+    if cand and os.path.isfile(cand):
+        return cand
+    legacy = r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv\Scripts\python.exe"
+    if os.path.isfile(legacy):
+        return legacy
+    print("[FATAL] Hermes venv python 不可用：env 未给 HERMES_WEBUI_PYTHON/"
+          "HERMES_VENV_PY，且现役路径缺失（.hermes 可能已重装，venv 哈希已变）。"
+          "请设 HERMES_WEBUI_PYTHON=<新 venv>\\venv\\Scripts\\python.exe 后重试。")
+    _log("[FATAL] venv resolution failed: no env override, legacy path missing")
+    sys.exit(2)
+
+
+VENV_PY = _resolve_venv_py()
+_log("[venv] resolved: %s" % VENV_PY)
 SERVER = r"C:\aios\Hermes\hermes-webui-next\server.py"
 STATE_DIR = r"C:\aios\Hermes\webui-state-next"
 
@@ -70,9 +90,12 @@ env.update({
     "NO_PROXY": "localhost,127.0.0.1",
 })
 _sysroot = os.environ.get("SystemRoot", r"C:\Windows")
+# A2：PATH 的 venv 前缀从解析结果派生（不再写死哈希路径）
+_venv_scripts = os.path.dirname(VENV_PY)
+_venv_root = os.path.dirname(_venv_scripts)
 env["PATH"] = ";".join([
-    r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv\Scripts",
-    r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv",
+    _venv_scripts,
+    _venv_root,
     r"C:\Program Files\Python311\Scripts",
     r"C:\Program Files\Python311",
     _sysroot,
