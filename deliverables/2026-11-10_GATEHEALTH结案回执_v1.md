@@ -1,17 +1,17 @@
 # GATEHEALTH 分支结案回执（v1）
 
-- 日期：2026-11-10 17:25
+- 日期：2026-11-10（裁决更新 17:40）
 - 执行：DSH-Lead
-- 裁定依据：用户 2026-11-10 17:17 指令「写 ADR-027（Proposed）结案，不申请 H5 例外，分支指针保留待清理」
-- 相关：`docs/adr/ADR-027-gatehealth-branch-closure_v1.md`（Proposed）、`C:\Temp\gatehealth_decision_20261110.md`
+- 裁定依据：`docs/adr/ADR-027-gatehealth-branch-closure_v1.md`（**Accepted，2026-11-10 裁决**）；用户 2026-11-10 17:34 指令：确认结案、不申请 H5 例外、分支指针保留待清理、清理项入待办
+- 相关：`C:\Temp\gatehealth_decision_20261110.md`、ADR-027、`docs/ops/2026-11-10_待办清单_v1.md`
 
 ## 一、结论
 
-`task/K-STOCK-ANALYSIS-GATEHEALTH-20261107` **结案归档**：
+`task/K-STOCK-ANALYSIS-GATEHEALTH-20261107` **结案归档（ADR-027 已 Accepted）**：
 
 1. 不申请 H5 钉扎例外；
 2. 不 rebase、不进合并队列；
-3. 分支指针保留（tip `f64af59fa`，2026-11-07 22:11），worktree 于窗口外清理；
+3. 分支指针保留（tip `f64af59fa`，2026-11-07 22:11），worktree 于窗口外清理（清理项已入待办）；
 4. 若「closeout 动态基线」仍有 master 未覆盖的独有语义，另起小单在最新 master 重做。
 
 ## 二、证据
@@ -35,6 +35,6 @@
 
 ## 四、后续
 
-1. 老田在 ADR-027 签名表签注后，状态改 Accepted；
-2. worktree `C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-GATEHEALTH-20261107` 于 11-11 窗口外清理（`git worktree remove`，分支保留）；
+1. ADR-027 状态已为 **Accepted**（裁决 2026-11-10，老田批准），正文含裁决记录与依据；
+2. worktree `C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-GATEHEALTH-20261107` 于 11-11 窗口外清理（`git worktree remove`，分支保留），已归档到 `docs/ops/2026-11-10_待办清单_v1.md`；
 3. 任务单 GATEHEALTH 状态置 done/archived，备注本回执与 ADR-027。
