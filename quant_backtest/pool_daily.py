@@ -19,6 +19,9 @@
      旧版就没了，而共振回放要的是历史成分。
   5. 两个页面：个股页、板块页。
   6. `pool_close_review`：推飞书。它自带幂等与时段门控，手动跑过不会重推。
+  7. `shadow_ab --daily`：影子台账（固化 v1 六腿，F1 转正验收的 G-A 门靠它
+     每天累积动作差）。soft——写失败不挡结构流水线；另有 15:10 WorkBuddy
+     自动化兜底，双保险。
 
 用法：
   python pool_daily.py                 # 全跑
@@ -176,6 +179,11 @@ def main():
     steps.append(("发布目录打包（h5_pack）", ["h5_pack.py"], False))
     if not a.no_push:
         steps.append(("收盘复盘推送", ["pool_close_review.py"], True))
+    # 影子台账（固化 v1 六腿）：F1 转正验收的 G-A 门靠每个交易日的动作差累积。
+    # 标 soft —— 台账失败不该挡住整条结构流水线；15:10 自动化已写过的当日
+    # 文件会被这里正常覆盖重算（幂等，同输入同输出）。
+    steps.append(("影子台账（shadow --daily）",
+                  ["shadow_ab.py", "--daily"], True))
 
     if a.dry:
         log("计划执行：")
