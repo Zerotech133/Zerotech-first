@@ -20,7 +20,8 @@
 
 两种模式：
   --diag   逐笔成交价诊断（历史三年，立刻出结论）
-  --daily  写当日影子台账（v3 vs 旧 D 双口径持仓，供连续一周累积）
+  --daily  写当日影子台账（四腿：v3 现役 / d_legacy 旧方案 /
+           A3 slot_score / D1 score+cap25 候选池，供连续一周累积）
 
 用法：
   python shadow_ab.py --diag
@@ -133,23 +134,39 @@ def diag():
 
 
 def daily():
-    """当日影子台账：同一批信号，V2 与旧 D 两套退出各自的持仓与动作快照。
+    """当日影子台账：同一批信号，四条腿各自的持仓与动作快照。
 
-    连续 5 个交易日即可比出「两套规则在真实数据上给出的动作差在哪」。
-    台账只记录、不交易；一周后按 note 与实际次日开盘价核对成交。
+    四腿 = 现役 v3 / 旧 d_legacy（20日强平+移动止损）/ 候选池 A3（评分定仓）
+    / 候选池 D1（评分定仓+单票帽 25%）。候选池腿只记账不交易，连续累积
+    动作差；一周后按 note 与实际次日开盘价核对成交。
     """
     os.makedirs(SHADOW_DIR, exist_ok=True)
     today = time.strftime("%Y%m%d")
     d1 = today
     d0 = str(int(today[:4]) - 1) + today[4:]  # 滚动一年
 
+    # 2026-11-10 固化 DEFAULT_PRESET=v3 后主腿是 v3；d_legacy 继续留作对照；
+    # A3/D1 是当日入场侧探索产生的候选池（reports/bt10m_entry_grid.json /
+    # bt10m_sscore_cap.json），在影子期做无成本平行记账。
+    LEGS = [
+        ("v3", {"preset": "v3"}),
+        ("d_legacy", {"preset": "d_legacy"}),
+        ("A3_slot_score", {"preset": "v3", "slot_mode": "score"}),
+        ("D1_score_cap25", {"preset": "v3", "slot_mode": "score",
+                            "slot_score_cap": 0.25}),
+    ]
+
     out = {"date": today, "d0": d0, "d1": d1, "legs": {}}
-    # 2026-11-10 固化 DEFAULT_PRESET=v3 后，影子对照的主腿跟着换成 v3；
-    # d_legacy（20日强平+移动止损）继续跑一周，核对两套规则的动作差与成交价。
-    for leg, preset in (("v3", "v3"), ("d_legacy", "d_legacy")):
-        p = {"preset": preset}
+    for leg, p in LEGS:
+        p = dict(p)
         p["d0"], p["d1"] = d0, d1
         p["cost"] = 0.0061
+        # 自检（「参数看着传了」家族防御）：显式键必须原样进入 apply_preset
+        ap = eng.apply_preset(p)
+        for k, v in p.items():
+            if k != "d0" and k != "d1" and ap.get(k) != v:
+                raise SystemExit("影子自检失败：%s 参数 %s 传 %r 实际 %r"
+                                 % (leg, k, v, ap.get(k)))
         payload, err = eng.run_job(p, "shadow_daily_%s_%s" % (leg, today),
                                    progress=lambda *a, **k: None)
         if err or not payload:
@@ -167,11 +184,16 @@ def daily():
                 "n_trades": len([t for t in payload["trades"] if t["side"] == "SELL"]),
                 "avg_inv": payload["summary"].get("avg_invested_pct"),
             },
+            # assumptions 取 apply_preset 展开后的真实值（此前取参数 dict，
+            # 预设腿全记成 null——11-10 修）。
             "assumptions": {
-                "tp_pct": p.get("tp_pct", 0.0),
-                "holding_max_days": p.get("holding_max_days", 0),
-                "stop_pct": p.get("stop_pct", 0.0),
-                "trail": (p.get("trail_activate", 0.0), p.get("trail_drawdown", 0.0)),
+                "slot_mode": ap.get("slot_mode", "fixed"),
+                "slot_score_cap": ap.get("slot_score_cap", 0.0),
+                "tp_pct": ap.get("tp_pct", 0.0),
+                "holding_max_days": ap.get("holding_max_days", 0),
+                "stop_pct": ap.get("stop_pct", 0.0),
+                "trail": (ap.get("trail_activate", 0.0),
+                          ap.get("trail_drawdown", 0.0)),
             },
         }
     fp = os.path.join(SHADOW_DIR, "%s.json" % today)
