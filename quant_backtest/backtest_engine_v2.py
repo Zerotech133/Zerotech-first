@@ -765,6 +765,10 @@ class BacktestConfig:
     # 入场趋势过滤（2026-11-10 老田「趋势还在」）：>0 时要求「买入日开盘价 > 前一交易日 MA(N)」，
     # 价格在均线下方说明趋势没起来，3买只是下跌中的一次反抽。用前一日均线=开盘时已知，无未来函数。
     entry_ma: int = 0
+    # 位置硬门槛（2026-11-10 老田「探索上升空间」）：close/zg-1 超过 pos_gap_max 放弃。
+    # 证据：三窗口位置分桶里 ≤2% 是唯一全正桶（t=2.40/5.04），>20% 全负——追高是负α来源。
+    # 0=关闭（默认，v3 行为不变）；量纲与 zg 同（px_raw 真实价，量纲事故防御）。
+    pos_gap_max: float = 0.0
     # 固定目标位止盈 + 时间衰减（2026-11-10 老田「按反抽重设退出」）：
     # 反抽的特征是「弹到位就走」，不是「跟着趋势跑」。目标 = tp_pct − tp_decay × 已持有日数，
     # 下限 tp_min（越久没到目标 → 这波力度不足 → 目标该降，而不是无限等）。
@@ -1564,6 +1568,23 @@ def run_backtest(
                                 }
                             )
                         continue
+                if cfg.pos_gap_max > 0:
+                    _zg_v = m_s.get("zg")
+                    if _zg_v:
+                        try:
+                            _gap = px_raw(s, day, "close") / _zg_v - 1.0
+                        except Exception:
+                            _gap = None
+                        if _gap is not None and _gap > cfg.pos_gap_max:
+                            if s not in pos and s not in pending_buy:
+                                actions.append(
+                                    {
+                                        "type": "note",
+                                        "stock": s,
+                                        "note": f"位置门槛：距上沿{_gap:.1%}>{cfg.pos_gap_max:.0%} 放弃（追高风险）",
+                                    }
+                                )
+                            continue
                 if gate_mode == "high" and regime_lv != "high":
                     if s not in pos and s not in pending_buy:
                         actions.append(
@@ -2156,6 +2177,7 @@ def run_job(params: dict, job_id: str, progress=None):
                 else "open_next"
             ),
             stop_slip=max(0.0, min(0.05, _num("stop_slip", 0.0))),
+            pos_gap_max=max(0.0, _num("pos_gap_max", 0.0)),
             cap_tiers=tuple(
                 max(0.0, min(1.0, float(x)))
                 for x in (
