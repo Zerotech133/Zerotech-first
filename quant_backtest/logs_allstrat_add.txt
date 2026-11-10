@@ -1,0 +1,11 @@
+  C5_A3+S2         PRE    +1.00%  mdd -15.57%  n  57  α  +134bp  t  0.88
+  C5_A3+S2         OOS   +23.13%  mdd  -7.83%  n  45  α  -135bp  t -0.81
+  C5_A3+S2         IN    +7.80%  mdd  -8.55%  n  55  α  +255bp  t  1.30
+  C5_A3+S2         RY   +18.30%  mdd  -8.12%  n  53  α  +329bp  t  1.56
+C5_A3+S2         [组合] 合并 n 210  α  +157bp  t  1.70   RY +18.30%
+  C6_D1+S2         PRE    +7.41%  mdd  -8.86%  n  59  α  +159bp  t  1.09
+  C6_D1+S2         OOS   +29.58%  mdd  -6.88%  n  51  α   -54bp  t -0.35
+  C6_D1+S2         IN   +10.79%  mdd  -6.97%  n  57  α  +155bp  t  0.81
+  C6_D1+S2         RY   +11.07%  mdd  -6.15%  n  53  α  +203bp  t  0.99
+C6_D1+S2         [组合] 合并 n 220  α  +119bp  t  1.36   RY +11.07%
+追加完成 C:\项目\老田的AI助手\quant_backtest\reports\bt10m_all_strats.json（170s）

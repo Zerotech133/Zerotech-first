@@ -15,6 +15,15 @@
 - 股吧 `guba_rank` 是人气榜名次（1=最热），`guba_rank_chg` 是较上期变化，
   正数=排名上升
 - 帖子 `reads/comments` 是累计值，不是当日增量（接口不提供增量）
+
+时序口径标注（2026-11-10，A 方案，仅标注、不改行为）：
+- 文件名里的 `day` 是【选票日】，`fetched_at` 才是榜单 / 帖子的【观测时刻】；
+  三个采集源都不接收日期参数，`--day` 只决定给哪批票拉帖子。
+- 本模块是**页面展示层**，按 A 方案**不接可信度护栏**：`has=True` 仅表示文件存在，
+  **不等于「该日社交状态可信」**；`jev_graph` 社交面板行为保持原样。
+- P2.3 覆盖率表与 P5.3/P5.4 校准链路请改用
+  `jev_snapshot_gate.load_compliant_social()` / `require_compliant_social()`，
+  口径全文见 `docs/JEV_P2_3_快照可信度与覆盖率口径.md`。
 """
 from __future__ import annotations
 

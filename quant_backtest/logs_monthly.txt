@@ -1,0 +1,7 @@
+V3               全年 NAV  106.32%  月连乘 106.32%  月数 13
+A3_slotscore     全年 NAV  107.36%  月连乘 107.36%  月数 13
+D1_score_cap25   全年 NAV  106.11%  月连乘 106.11%  月数 13
+P4_part50_trail  全年 NAV  101.96%  月连乘 101.96%  月数 13
+G2 通过：V3 复现 cand 报告 M1 值 106.32
+落盘 C:\项目\老田的AI助手\quant_backtest\reports\bt10m_10m_monthly.json
+落盘 C:\项目\老田的AI助手\quant_backtest\reports\bt10m_10m_monthly.html（49.8s）
