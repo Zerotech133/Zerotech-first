@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>候风 · 持仓周期最优解 · 三年网格</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 22px 44px}
+.plat-bar{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:var(--brand);text-decoration:none;font-weight:600}
+.plat-bar .sep{color:var(--line)}
+.plat-bar .cur{color:var(--text);font-weight:700}
+.top{display:flex;align-items:baseline;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+.top h1{font-size:22px;font-weight:800}
+.top .sub{font-size:12.5px;color:var(--muted)}
+.caliber{background:var(--card);border:1px solid #dfe6f5;border-left:4px solid var(--brand);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+.caliber b{color:var(--text)}
+.caliber code{background:#f0f3fa;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11.5px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:11.5px;color:var(--dim)}
+.kpi .v{font-size:21px;font-weight:800;font-family:var(--mono);margin-top:2px}
+.kpi .v.pos{color:var(--up)} .kpi .v.neg{color:var(--dn)}
+.kpi .n{font-size:10.5px;color:var(--dim);margin-top:1px}
+.kpi.hl{border:2px solid var(--brand);background:#f7f9ff}
+.verdict{border-radius:14px;padding:16px 20px;margin-bottom:16px;background:#f5f8ff;border:1px solid #d6e2fb;border-left:5px solid var(--brand)}
+.verdict .k{font-size:12px;color:var(--brand);font-weight:800;letter-spacing:.5px}
+.verdict .t{font-size:20px;font-weight:800;margin:4px 0 6px;line-height:1.5}
+.verdict .t em{font-style:normal;color:var(--up);font-family:var(--mono)}
+.verdict .d{font-size:12.8px;color:var(--muted)}
+.verdict .d b{color:var(--text)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.panel h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.panel .hint{font-size:12px;color:var(--dim);margin-bottom:12px}
+.panel .hint b{color:var(--text)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid #f0f2f8;white-space:nowrap}
+th{background:#fafbff;color:var(--muted);font-weight:700;font-size:11.5px}
+th:first-child,td:first-child{text-align:left}
+td.pos{color:var(--up)} td.neg{color:var(--dn)}
+tr.hl td{background:#f7f9ff;font-weight:800;border-top:2px solid #d6e2fb;border-bottom:2px solid #d6e2fb}
+tr.bad td{color:var(--dim)}
+.legend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin:6px 0 0;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab{font-size:12.5px;padding:4px 14px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+.tab.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+.note{background:#fafbff;border:1px dashed #dfe6f5;border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);line-height:1.8}
+.note b{color:var(--text)}
+.note code{background:#eef1f9;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11px}
+svg{display:block;width:100%;height:auto}
+footer{margin-top:20px;font-size:11.5px;color:var(--dim);text-align:center}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>/* 页级覆盖：与本页原值逐位一致（视觉零变化） */
+:root {--mono:'SF Mono',Consolas,monospace;}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="plat-bar"><a href="HOUFENG_STRATEGY_CARD.html">策略中心</a><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><a href="HOUFENG_PLAYBOOK.html">回放日历</a><span class="sep">/</span><a href="HOUFENG_ARENA.html">竞技场·一年</a><span class="sep">/</span><a href="HOUFENG_ARENA_36M.html">竞技场·三年</a><span class="sep">/</span><span class="cur">持仓网格</span><span class="sep">/</span><a href="HOUFENG_DIVIDEND.html">红利防御档</a><span class="sep">/</span><a href="M2_DASHBOARD.html">冻结看板</a><span style="margin-left:auto"><span id="gen">载入中…</span></span></div>
+
+  <div class="top">
+    <h1>持仓周期的最优解</h1>
+    <span class="sub">其余参数全部冻结，只扫 hold：1 / 2 / 3 / 4 / 5 / 6 / 7 / 8 / 10 / 12 / 15 / 20 / 30</span>
+  </div>
+
+  <div class="caliber">
+    口径：三年窗口 <b id="win">—</b>，<b>top_n=30 不变</b>、inv_vol 加权、往返成本 <code>0.30%</code> 已内含、涨停不可买、整手约束。
+    两套资金口径并列：<b>cash 模式</b>＝真实约束（现金到手就投），<b>slot 模式</b>＝资金强度归一（单票预算 = 权益/(N×hold)，不同 hold 的资金占用对齐）。
+    两套都给同一个答案，才敢下结论。
+  </div>
+
+  <div class="verdict">
+    <div class="k">裁 决</div>
+    <div class="t" id="v-t">—</div>
+    <div class="d" id="v-d">—</div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel">
+    <h2>年化收益 vs 持仓天数</h2>
+    <div class="hint">同一批买入信号，只改卖出时点。<b>两个口径的峰值都落在 5 天附近</b>，且 3~6 天构成一个平台——不是尖峰，说明这个结论对参数不敏感。</div>
+    <div id="chart1"></div>
+    <div class="legend">
+      <span><i style="background:#2a5be2"></i>slot 模式（资金强度归一）</span>
+      <span><i style="background:#8a93a8"></i>cash 模式（真实约束）</span>
+      <span><i style="background:#e0342c"></i>5 天（现行）</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>为什么不是"持越久越好"：alpha 衰减</h2>
+    <div class="hint">柱＝每多持有 1 天的<b>边际</b>单笔收益（pp），线＝累计单笔净收益。累计曲线在 <b id="peak-h">10</b> 天见顶，但边际到第 <b id="marg-h">7</b> 天就转负——多拿着不加分，还占着资金。</div>
+    <div id="chart2"></div>
+    <div class="legend">
+      <span><i style="background:#547be7"></i>累计单笔净收益（%）</span>
+      <span><i style="background:#f0b429"></i>单日边际（pp）</span>
+      <span><i style="background:#e0342c;height:3px"></i>零线</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>完整网格</h2>
+    <div class="hint">换手率是<b>年化倍数</b>：hold=1 一年换手 360 次，hold=30 只有 19 次。成本就藏在这一列里。</div>
+    <div class="tabs">
+      <div class="tab on" data-m="slot">slot 模式</div>
+      <div class="tab" data-m="cash">cash 模式</div>
+    </div>
+    <div id="tbl"></div>
+  </div>
+
+  <div class="panel">
+    <h2>按年拆：单笔净收益（%）</h2>
+    <div class="hint">红色为正、绿色为负。<b>2023 与 2026 全 hold 都接近 0 甚至为负</b>，alpha 集中在 2024–2025——这是持仓周期结论的最大前提。</div>
+    <div id="tbly"></div>
+  </div>
+
+  <div class="panel">
+    <h2>三条必须记住的口径限制</h2>
+    <div class="note">
+      <b>① 长持有的真问题不是"赚得少"，是"买不进"。</b>1000 万本金、每天 30 只，持仓超过 7 天就开始有票买不起一手
+      （lot 跳过 <code>45 → 712</code>，cash 模式更糟 <code>2226 → 9175</code>）。所以曲线右端下滑有一部分是<b>执行不可行</b>，不是策略变差。
+      <br><br>
+      <b>② 5 天不是独立发现。</b>这个策略本身就是按 5 日持有框架建模的，5 天胜出等于"与设计自洽"。真正值钱的是<b>曲线形状</b>：
+      3~6 天是平台（差异在噪声内），7 天后急跌，20 天转负。这说明参数不敏感——好事，意味着不会因为少调一天就崩。
+      <br><br>
+      <b>③ 2026 年（截至 11/06）所有 hold 的单笔收益都≈0。</b>最优持仓周期是在"有 alpha 的年份"里测出来的。
+      当 alpha 消失，任何持仓天数都救不了——这比调参重要得多。
+    </div>
+  </div>
+
+  <footer>候风 · 持仓周期网格 · 数据由 portfolio_sim.py 生成 · 页面纯 fetch 渲染，无手填数字<span style="margin-left:auto">模拟盘数据 · 不构成投资建议 · 历史回测不代表未来表现（程序生成）</span></footer>
+</div>
+
+<script>
+const fmt=(v,d)=> (v>0?'+':'')+v.toFixed(d===undefined?2:d);
+let A=null, MODE='slot';
+
+function lineChart(host, series, opts){
+  const W=1000,H=340,pl=58,pr=26,pt=22,pb=44;
+  const xs=opts.xs, n=xs.length;
+  const all=series.flatMap(s=>s.pts.map(p=>p.y));
+  let lo=Math.min(...all,0), hi=Math.max(...all,0);
+  const pad=(hi-lo)*0.18||1; lo-=pad; hi+=pad;
+  const X=i=>pl+(n===1?0:i*(W-pl-pr)/(n-1));
+  const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+  let g='';
+  // 网格 + y 轴刻度
+  const steps=5;
+  for(let k=0;k<=steps;k++){
+    const v=lo+(hi-lo)*k/steps, y=Y(v);
+    g+='<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'" stroke="#eef1f8" stroke-width="1"/>';
+    g+='<text x="'+(pl-8)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" font-size="11" fill="#8a93a8">'+v.toFixed(0)+'%</text>';
+  }
+  // 零线
+  if(lo<0&&hi>0){
+    g+='<line x1="'+pl+'" y1="'+Y(0).toFixed(1)+'" x2="'+(W-pr)+'" y2="'+Y(0).toFixed(1)+'" stroke="#c9d2e4" stroke-dasharray="4 3" stroke-width="1.2"/>';
+  }
+  // x 轴标签
+  xs.forEach((h,i)=>{ g+='<text x="'+X(i).toFixed(1)+'" y="'+(H-pb+18)+'" text-anchor="middle" font-size="11" fill="#5a6478">'+h+'</text>'; });
+  g+='<text x="'+(W/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" fill="#8a93a8">持仓交易日</text>';
+  // 5 天竖线
+  const i5=xs.indexOf(5);
+  if(i5>=0){
+    g+='<line x1="'+X(i5).toFixed(1)+'" y1="'+pt+'" x2="'+X(i5).toFixed(1)+'" y2="'+(H-pb)+'" stroke="#e0342c" stroke-width="1.4" stroke-dasharray="5 4" opacity=".55"/>';
+    g+='<text x="'+(X(i5)+6).toFixed(1)+'" y="'+(pt+12)+'" font-size="10.5" fill="#e0342c" font-weight="700">5 天·现行</text>';
+  }
+  // 曲线
+  series.forEach(s=>{
+    const pts=s.pts.map((p,i)=>X(i).toFixed(1)+','+Y(p.y).toFixed(1)).join(' ');
+    g+='<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="'+(s.bold?2.8:1.8)+'" stroke-linejoin="round" opacity="'+(s.bold?1:.75)+'"/>';
+    s.pts.forEach((p,i)=>{
+      g+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.y).toFixed(1)+'" r="'+(s.bold?4:3)+'" fill="#fff" stroke="'+s.color+'" stroke-width="2"/>';
+      if(s.bold) g+='<text x="'+X(i).toFixed(1)+'" y="'+(Y(p.y)-9).toFixed(1)+'" text-anchor="middle" font-size="10" fill="'+s.color+'" font-weight="700">'+p.y.toFixed(1)+'</text>';
+    });
+  });
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+g+'</svg>';
+}
+
+function barLineChart(host, cats, bars, line){
+  const W=1000,H=330,pl=58,pr=26,pt=22,pb=44;
+  const n=cats.length;
+  const bmax=Math.max(...bars.map(b=>Math.abs(b.v)),0.05);
+  const lmax=Math.max(...line.map(p=>p.y),0.01), lmin=Math.min(...line.map(p=>p.y),0);
+  const X=i=>pl+(n===1?0:i*(W-pl-pr)/(n-1));
+  const bw=(W-pl-pr)/n*0.42;
+  const zeroY=H-pb-(0-lmin)/((lmax-lmin)||1)*(H-pt-pb);
+  const YL=v=>H-pb-(v-lmin)/((lmax-lmin)||1)*(H-pt-pb);
+  const YB=v=>zeroY-(v/bmax)*(zeroY-pt)*0.86;
+  let g='';
+  for(let k=0;k<=4;k++){
+    const v=lmin+(lmax-lmin)*k/4, y=YL(v);
+    g+='<line x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'" stroke="#eef1f8"/>';
+    g+='<text x="'+(pl-8)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" font-size="11" fill="#8a93a8">'+v.toFixed(2)+'%</text>';
+  }
+  g+='<line x1="'+pl+'" y1="'+zeroY.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+zeroY.toFixed(1)+'" stroke="#e0342c" stroke-width="1.6"/>';
+  bars.forEach((b,i)=>{
+    const y1=YB(Math.max(b.v,0)), y2=YB(Math.min(b.v,0));
+    const col=b.v>=0?'#f0b429':'#cbd3e3';
+    g+='<rect x="'+(X(i)-bw/2).toFixed(1)+'" y="'+Math.min(y1,y2).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.abs(y2-y1).toFixed(1)+'" fill="'+col+'" opacity=".85" rx="2"/>';
+  });
+  const pts=line.map((p,i)=>X(i).toFixed(1)+','+YL(p.y).toFixed(1)).join(' ');
+  g+='<polyline points="'+pts+'" fill="none" stroke="#547be7" stroke-width="2.6" stroke-linejoin="round"/>';
+  line.forEach((p,i)=>{
+    g+='<circle cx="'+X(i).toFixed(1)+'" cy="'+YL(p.y).toFixed(1)+'" r="3.4" fill="#fff" stroke="#547be7" stroke-width="2"/>';
+    g+='<text x="'+X(i).toFixed(1)+'" y="'+(YL(p.y)-9).toFixed(1)+'" text-anchor="middle" font-size="9.5" fill="#547be7" font-weight="700">'+p.y.toFixed(2)+'</text>';
+  });
+  cats.forEach((h,i)=>{ g+='<text x="'+X(i).toFixed(1)+'" y="'+(H-pb+18)+'" text-anchor="middle" font-size="11" fill="#5a6478">'+h+'</text>'; });
+  g+='<text x="'+(W/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" fill="#8a93a8">持仓交易日</text>';
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+g+'</svg>';
+}
+
+function render(){
+  if(!A) return;                       /* 数据未到不做渲染（防御） */
+  const M=A[MODE+'_mode']||A[MODE+' mode'];
+  const rows=M, xs=rows.map(r=>r.hold);
+  document.getElementById('win').textContent=A.window.label+'（'+A.window.start+'~'+A.window.end+'）';
+
+  // 图1：两模式年化
+  lineChart(document.getElementById('chart1'),[
+    {color:'#8a93a8',pts:(A.cash_mode||[]).map(r=>({y:r.annualized}))},
+    {color:'#2a5be2',bold:true,pts:rows.map(r=>({y:r.annualized}))}
+  ],{xs:xs});
+
+  // 边际曲线
+  const marg=[], cum=rows.map(r=>({y:r.avg_trade}));
+  let prev=null;
+  rows.forEach(r=>{
+    if(prev===null) marg.push({v:r.avg_trade});
+    else marg.push({v:(r.avg_trade-prev.avg_trade)/(r.hold-prev.hold)});
+    prev=r;
+  });
+  barLineChart(document.getElementById('chart2'), xs, marg, cum);
+
+  // 关键点
+  const peakCum=rows.reduce((a,b)=>b.avg_trade>a.avg_trade?b:a);
+  let firstNeg=null;
+  for(let i=1;i<marg.length;i++){ if(marg[i].v<0){ firstNeg=rows[i].hold; break; } }
+  document.getElementById('peak-h').textContent=peakCum.hold;
+  document.getElementById('marg-h').textContent=(firstNeg||'—');
+
+  // 裁决
+  const bestAnn=rows.reduce((a,b)=>b.annualized>a.annualized?b:a);
+  const bestSh=rows.reduce((a,b)=>b.sharpe>a.sharpe?b:a);
+  const bestCal=rows.reduce((a,b)=>(b.calmar||-9)>(a.calmar||-9)?b:a);
+  const plateau=rows.filter(r=>r.annualized>=bestAnn.annualized*0.85);
+  const h5=rows.find(r=>r.hold===5)||bestSh;
+  document.getElementById('v-t').innerHTML =
+    '最佳持仓 <em>'+bestSh.hold+' 交易日</em>（3~6 天为平台，非尖峰）';
+  document.getElementById('v-d').innerHTML =
+    'slot 口径：年化最高 hold='+bestAnn.hold+'（'+fmt(bestAnn.annualized)+'%），'+
+    '风险调整后最优 hold='+bestSh.hold+'（Sharpe <b>'+bestSh.sharpe.toFixed(3)+'</b>、Calmar <b>'+((bestCal.calmar||0).toFixed(3))+'</b>、回撤 <b>'+bestCal.max_dd.toFixed(2)+'%</b>）；'+
+    '现金口径同样在 hold=5 见顶（年化 '+fmt((A.cash_mode.find(r=>r.hold===5)||h5).annualized)+'%）。'+
+    '年化 ≥ 峰值 85% 的平台是 <b>'+plateau.map(r=>r.hold).join(' / ')+'</b> 天。';
+
+  // KPI
+  const feas=rows.filter(r=>r.skip_lot<300);
+  const lastFeas=feas.length?feas[feas.length-1].hold:null;
+  const kp=[
+    {l:'平台区间',v:plateau[0].hold+'–'+plateau[plateau.length-1].hold+' 天',n:'年化 ≥ 峰值 85%',hl:true},
+    {l:'最优年化',v:fmt(bestAnn.annualized)+'%',n:'hold='+bestAnn.hold,pos:bestAnn.annualized>0},
+    {l:'最优 Sharpe',v:bestSh.sharpe.toFixed(3),n:'hold='+bestSh.hold},
+    {l:'单笔 alpha 见顶',v:peakCum.hold+' 天',n:'累计 '+fmt(peakCum.avg_trade)+'%'},
+    {l:'可行上限',v:lastFeas+' 天',n:'再长就开始买不进一手'}
+  ];
+  document.getElementById('kpis').innerHTML=kp.map(k=>
+    '<div class="kpi'+(k.hl?' hl':'')+'"><div class="l">'+k.l+'</div>'+
+    '<div class="v'+(k.pos?' pos':'')+'">'+k.v+'</div><div class="n">'+k.n+'</div></div>').join('');
+
+  // 表格
+  const th=['hold','累计%','年化%','回撤%','Calmar','Sharpe','单笔%','胜率%','换手×','利用%','lot跳过'];
+  let h='<div style="overflow-x:auto"><table><thead><tr>'+th.map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{
+    const cls=(r.hold===bestSh.hold?'hl':(r.skip_lot>1500?'bad':''));
+    h+='<tr class="'+cls+'"><td>'+r.hold+'</td>'+
+      '<td class="'+(r.total_return>0?'pos':'neg')+'">'+fmt(r.total_return)+'</td>'+
+      '<td class="'+(r.annualized>0?'pos':'neg')+'">'+fmt(r.annualized)+'</td>'+
+      '<td class="neg">'+r.max_dd.toFixed(2)+'</td>'+
+      '<td>'+((r.calmar||0).toFixed(3))+'</td>'+
+      '<td>'+r.sharpe.toFixed(3)+'</td>'+
+      '<td class="'+(r.avg_trade>0?'pos':'neg')+'">'+fmt(r.avg_trade,3)+'</td>'+
+      '<td>'+r.win_rate.toFixed(1)+'</td>'+
+      '<td>'+r.turnover.toFixed(1)+'</td>'+
+      '<td>'+r.utilization.toFixed(1)+'</td>'+
+      '<td class="dim">'+r.skip_lot+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  document.getElementById('tbl').innerHTML=h;
+
+  // 按年表
+  const yrs=['2023','2024','2025','2026'];
+  let y='<div style="overflow-x:auto"><table><thead><tr><th>hold</th>'+yrs.map(v=>'<th>'+v+'</th>').join('')+'<th>全期</th></tr></thead><tbody>';
+  rows.forEach(r=>{
+    y+='<tr'+(r.hold===bestSh.hold?' class="hl"':'')+'><td>'+r.hold+'</td>';
+    yrs.forEach(v=>{
+      const x=(r.yearly[v]||{}).avg_ret;
+      y+= x===undefined?'<td class="dim">—</td>'
+        :'<td class="'+(x>0?'pos':'neg')+'">'+fmt(x,2)+'</td>';
+    });
+    y+='<td class="'+(r.avg_trade>0?'pos':'neg')+'">'+fmt(r.avg_trade,2)+'</td></tr>';
+  });
+  y+='</tbody></table></div>';
+  document.getElementById('tbly').innerHTML=y;
+
+  document.getElementById('gen').textContent='数据：3 年 × 13 个 hold = 26 次回测';
+}
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=function(){
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on'); MODE=this.dataset.m; render();
+  };
+});
+
+fetch('houfeng_holdgrid.json').then(r=>r.json()).then(d=>{
+  A=d; 
+  A.cash_mode=d.cash_mode||d['cash_mode'];
+  A.slot_mode=d.slot_mode||d['slot_mode'];
+  render();
+}).catch(e=>{
+  document.getElementById('v-t').textContent='数据载入失败：'+e.message;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2783 @@
+{
+ "asof": "20261106",
+ "books": {
+  "cur": {
+   "cagr": -9.77,
+   "cap": null,
+   "hold": 20,
+   "label": "现行",
+   "mdd": -13.83,
+   "min_ticket": null,
+   "n_batch": 87,
+   "n_open": 300,
+   "n_pick": 1129,
+   "open_pos": [
+    {
+     "code": "688496.SH",
+     "entry": "20260826",
+     "exp": "20260923",
+     "h": 20,
+     "name": "*ST清越",
+     "status": "halted",
+     "type": "1买"
+    },
+    {
+     "code": "000036.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "华联控股",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "001260.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "坤泰股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002055.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "ST得润",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002209.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "达意隆",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002519.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "银河电子",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002793.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "罗欣药业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002899.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "英派斯",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300260.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "新莱应材",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300279.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "和晶科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300430.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "*ST益通",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300454.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "深信服",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300474.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "景嘉微",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300634.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "彩讯股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300733.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "西菱动力",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300733.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "西菱动力",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300741.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "华宝股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301110.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "青木科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301186.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "超达装备",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301213.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "观想科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301299.SZ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "卓创资讯",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600084.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "*ST尼雅",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600303.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "曙光股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600617.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "国新能源",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600724.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "宁波富达",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601112.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "振石股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "601156.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "东航物流",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603086.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "先达股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603108.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "润达医疗",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603229.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "奥翔药业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603248.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "锡华科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603303.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "得邦照明",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603615.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "茶花股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603697.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "有友食品",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603776.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "永安行",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "605222.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "起帆电缆",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688186.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "广大特材",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688203.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "海正生材",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688227.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "品高股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688227.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "品高股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688273.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "麦澜德",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688292.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "浩瀚深度",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688581.SH",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "安杰思",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "920357.BJ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "雅葆轩",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "920357.BJ",
+     "entry": "20261012",
+     "exp": null,
+     "h": 20,
+     "name": "雅葆轩",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000708.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "中信特钢",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "001219.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "青岛食品",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002004.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "华邦健康",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002010.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "传化智联",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002090.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "金智科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002096.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "易普力",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002117.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "东港股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002226.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "江南化工",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002262.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "恩华药业",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002481.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "双塔食品",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002533.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "金杯电工",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002540.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "亚太科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002606.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "大连电瓷",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002623.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "亚玛顿",
+     "status": "halted",
+     "type": "1买"
+    },
+    {
+     "code": "002632.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "道明光学",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002641.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "公元股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300146.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "汤臣倍健",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300158.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "振东制药",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300712.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "永福股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300778.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "新城市",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300921.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "南凌科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301068.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "大地海洋",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301109.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "军信股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301449.SZ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "天溯计量",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600131.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "国网信通",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600517.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "国网英大",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600618.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "氯碱化工",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600741.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "华域汽车",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600750.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "华润江中",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600866.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "星湖科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600928.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "西安银行",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600976.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "健民集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601026.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "道生天合",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601069.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "西部黄金",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601116.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "三江购物",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601908.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "京运通",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603165.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "荣晟环保",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603195.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "公牛集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603444.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "吉比特",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603535.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "嘉诚国际",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603708.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "家家悦",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603858.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "步长制药",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "605188.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "国光连锁",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "605299.SH",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "舒华体育",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "920166.BJ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "海圣医疗",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "920541.BJ",
+     "entry": "20261013",
+     "exp": null,
+     "h": 20,
+     "name": "铁大科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000020.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "深华发A",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000571.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "新大洲A",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "001324.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "长青科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "001400.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "江顺科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002098.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "浔兴股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002214.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "大立科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002383.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "合众思壮",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300153.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "科泰电源",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300384.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "三联虹普",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300879.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "大叶股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300891.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "惠云钛业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300972.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "万辰集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301187.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "欧圣电气",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301315.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "威士顿",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301367.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "瑞迈特",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301398.SZ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "星源卓镁",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600519.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "贵州茅台",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600661.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "昂立教育",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600770.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "综艺股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603205.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "健尔康",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603278.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "大业股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603344.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "星德胜",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603369.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "今世缘",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603893.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "瑞芯微",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603899.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "晨光股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688132.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "邦彦技术",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688755.SH",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "汉邦科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "920478.BJ",
+     "entry": "20261014",
+     "exp": null,
+     "h": 20,
+     "name": "峆一药业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000069.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "华侨城A",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000756.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "新华制药",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002633.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "申科股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002650.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "ST加加",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002791.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "坚朗五金",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002988.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "豪美新材",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300713.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "英可瑞",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301023.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "奕帆传动",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301023.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "奕帆传动",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301028.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "鼎熔岩",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301170.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "锡南科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301456.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "盘古智能",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301525.SZ",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "儒竞科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600418.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "江淮汽车",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600444.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "国机通用",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600592.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "龙溪股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600604.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "市北高新",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600699.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "均胜电子",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603231.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "索宝蛋白",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688071.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "华依科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688339.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "亿华通",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688357.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "建龙微纳",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688357.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "建龙微纳",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688622.SH",
+     "entry": "20261016",
+     "exp": null,
+     "h": 20,
+     "name": "*ST禾信",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002007.SZ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "华兰生物",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002345.SZ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "潮宏基",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002434.SZ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "万里扬",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002486.SZ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "嘉麟杰",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300022.SZ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "吉峰科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300451.SZ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "创业慧康",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600713.SH",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "南京医药",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603160.SH",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "汇顶科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603232.SH",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "格尔软件",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "920190.BJ",
+     "entry": "20261019",
+     "exp": null,
+     "h": 20,
+     "name": "雷神科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000333.SZ",
+     "entry": "20261021",
+     "exp": null,
+     "h": 20,
+     "name": "美的集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000400.SZ",
+     "entry": "20261021",
+     "exp": null,
+     "h": 20,
+     "name": "许继电气",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000826.SZ",
+     "entry": "20261021",
+     "exp": null,
+     "h": 20,
+     "name": "*ST启环",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "001227.SZ",
+     "entry": "20261021",
+     "exp": null,
+     "h": 20,
+     "name": "兰州银行",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002082.SZ",
+     "entry": "20261021",
+     "exp": null,
+     "h": 20,
+     "name": "ST万邦",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002487.SZ",
+     "entry": "20261021",
+     "exp": null,
+     "h": 20,
+     "name": "大金重工",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002583.SZ",
+     "entry": "20261023",
+     "exp": null,
+     "h": 20,
+     "name": "海能达",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300281.SZ",
+     "entry": "20261023",
+     "exp": null,
+     "h": 20,
+     "name": "金明精机",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300747.SZ",
+     "entry": "20261023",
+     "exp": null,
+     "h": 20,
+     "name": "锐科激光",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600110.SH",
+     "entry": "20261023",
+     "exp": null,
+     "h": 20,
+     "name": "诺德股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600476.SH",
+     "entry": "20261023",
+     "exp": null,
+     "h": 20,
+     "name": "*ST湘邮",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601233.SH",
+     "entry": "20261023",
+     "exp": null,
+     "h": 20,
+     "name": "桐昆股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000999.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "华润三九",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002006.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "精工科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002062.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "宏润建设",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002313.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "日海智能",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300324.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "旋极信息",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300407.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "凯发电气",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300536.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "农尚环境",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300628.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "亿联网络",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301122.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "采纳股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301361.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "众智科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301361.SZ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "众智科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600141.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "兴发集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600285.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "羚锐制药",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600298.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "安琪酵母",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600801.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "华新建材",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "601916.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "浙商银行",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603039.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "泛微网络",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603556.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "海兴电力",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603968.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "醋化股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688111.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "金山办公",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688159.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "有方科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688198.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "佰仁医疗",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688208.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "道通科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688368.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "晶丰明源",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688420.SH",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "美腾科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "920378.BJ",
+     "entry": "20261027",
+     "exp": null,
+     "h": 20,
+     "name": "泰德股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000423.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "东阿阿胶",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000590.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "古汉医药",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000639.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "ST西王",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000715.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "中兴商业",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002027.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "分众传媒",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002094.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "青岛金王",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002519.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "银河电子",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002553.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "南方精工",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002809.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "红墙股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "003006.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "百亚股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300152.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "*ST动力",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300807.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "天迈科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300859.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "西域旅游",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301137.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "哈焊华通",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301508.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "中机认检",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301578.SZ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "辰奕智能",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600329.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "达仁堂",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600382.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "广东明珠",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600557.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "康缘药业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600585.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "海螺水泥",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600611.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "大众交通",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600855.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "航天长峰",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600962.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "国投中鲁",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603103.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "横店影视",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603177.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "德创环保",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603288.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "海天味业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603289.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "泰瑞机器",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603739.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "蔚蓝生物",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603926.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "铁流股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "605138.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "盛泰集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "605567.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "春雪食品",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688558.SH",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "国盛智科",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "920527.BJ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "夜光明",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "920556.BJ",
+     "entry": "20261030",
+     "exp": null,
+     "h": 20,
+     "name": "雅达股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002603.SZ",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "以岭药业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301408.SZ",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "华人健康",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600050.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "中国联通",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600422.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "昆药集团",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600965.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "*ST福成",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603276.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "恒兴新材",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603382.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "海阳科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603619.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "中曼石油",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688187.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "时代电气",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688475.SH",
+     "entry": "20261102",
+     "exp": null,
+     "h": 20,
+     "name": "萤石网络",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000910.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "大亚圣象",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002009.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "天奇股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002100.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "天康生物",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002294.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "信立泰",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "002901.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "大博医疗",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300045.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "华力创通",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "300054.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "鼎龙股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301199.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "迈赫股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301221.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "光庭信息",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301313.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "凡拓数创",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301459.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "丰茂股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "301513.SZ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "尚水智能",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600055.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "万东医疗",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600064.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "南京高科",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600085.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "同仁堂",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600320.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "振华重工",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600320.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "振华重工",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600732.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "爱旭股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "601872.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "招商轮船",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603171.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "税友股份",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "603209.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "兴通股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603283.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "赛腾股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "605189.SH",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "富春染织",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "920690.BJ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "捷众科技",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "920870.BJ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "恒进感应",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "920982.BJ",
+     "entry": "20261103",
+     "exp": null,
+     "h": 20,
+     "name": "锦波生物",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000543.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "皖能电力",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "000703.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "恒逸石化",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "000858.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "五粮液",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "001318.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "阳光乳业",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002173.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "创新医疗",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002381.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "双箭股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002420.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "毅昌科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002634.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "*ST棒杰",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002679.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "福建金森",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002788.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "鹭燕医药",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "002951.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "金时科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "003010.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "若羽臣",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "003011.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "海象新材",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300626.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "华瑞股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300872.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "天阳科技",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300878.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "维康药业",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "300996.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "普联软件",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301077.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "星华新材",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301088.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "戎美股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301103.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "何氏眼科",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301448.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "开创电气",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301456.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "盘古智能",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301516.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "中远通",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "301587.SZ",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "中瑞股份",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600094.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "大名城",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600230.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "沧州大化",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600267.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "海正药业",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "600423.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "*ST柳化",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600527.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "江南高纤",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600569.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "安阳钢铁",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600693.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "东百集团",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "600743.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "华远控股",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603214.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "爱婴室",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603311.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "金海高科",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "603836.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "海程邦达",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688165.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "埃夫特",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688212.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "澳华内镜",
+     "status": "data_end",
+     "type": "2买"
+    },
+    {
+     "code": "688235.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "百济神州",
+     "status": "data_end",
+     "type": "1买"
+    },
+    {
+     "code": "688410.SH",
+     "entry": "20261104",
+     "exp": null,
+     "h": 20,
+     "name": "山外山",
+     "status": "data_end",
+     "type": "1买"
+    }
+   ],
+   "rejected": {
+    "nobar": 22,
+    "regime": 0,
+    "type": 0
+   },
+   "sharpe": -0.54,
+   "total": -5.45,
+   "util": 62.1
+  },
+  "v3": {
+   "cagr": 15.54,
+   "cap": 0.05,
+   "hold": 8,
+   "label": "v3全规则",
+   "mdd": -1.57,
+   "min_ticket": null,
+   "n_batch": 40,
+   "n_open": 0,
+   "n_pick": 486,
+   "open_pos": [],
+   "rejected": {
+    "nobar": 0,
+    "regime": 240,
+    "type": 425
+   },
+   "sharpe": 2.62,
+   "total": 8.19,
+   "util": 13.0
+  },
+  "v3d": {
+   "cagr": 15.12,
+   "cap": 0.05,
+   "hold": 5,
+   "label": "v3-持5",
+   "mdd": -3.98,
+   "min_ticket": null,
+   "n_batch": 40,
+   "n_open": 0,
+   "n_pick": 486,
+   "open_pos": [],
+   "rejected": {
+    "nobar": 0,
+    "regime": 240,
+    "type": 425
+   },
+   "sharpe": 1.87,
+   "total": 7.98,
+   "util": 20.9
+  }
+ },
+ "cost": {
+  "buy_rate": 0.00075,
+  "caliber": "佣金双边 20.0bp（买 7.5 / 卖 12.5）+ 单边滑点 0.0bp→ 买 7.5bp / 卖 12.5bp，双边合计 20.0bp",
+  "comm_bp": 20.0,
+  "sell_rate": 0.00125,
+  "slip_bp": 0.0,
+  "tag": null,
+  "total_bp": 20.0
+ },
+ "idx": 5115.366,
+ "ledger": "shadow_book_v3.jsonl",
+ "mom20_pct": -8.1675,
+ "n_entry_days": 88,
+ "n_signal": 1151,
+ "regime": "弱",
+ "sha1": "7de3fff79b31faed3364f3c428babbf112ba5e8e",
+ "universe": "live"
+}

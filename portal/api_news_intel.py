@@ -4,11 +4,13 @@
 GET /api/news/intel（零参数）→ 判读结论在前、原料流水在后的聚合：
   overview   总览区：近 48h jev 非空条目计数 {total_judged, bull, bear,
              neutral, high_impact}（impact_cn='高' 计高冲击）。
-  verdicts   关键判读区：近 48h jev 非空条目按（impact 权重降序, conf 降序,
-             id 降序）排序 top 20，字段 ts/hm/title/content/source/stocks/
-             jev；content 截 300 字（政策栏同口径，K-ORG-209 行卡展开用）；
-             排序口径拍板依据：JEV 置信度右偏（真实库 conf>=0.9 占 34%）
-             分辨率差，冲击为主、conf 只做次级（K-ORG-208）。
+  verdicts   关键判读区：近 48h jev 非空条目按（impact 权重降序, 事件类型分层
+             降序[strong 优先、|signal| 次之], id 降序）排序 top 20，字段
+             ts/hm/title/content/source/stocks/jev；content 截 300 字（政策栏
+             同口径，K-ORG-209 行卡展开用）；排序口径（2026-11-10 改）：原
+             conf 次级排序经 jev_calibrate 后验证实反相关（AUC=0.414，越高越
+             可能错），已弃用，改用事件类型分层（K-ORG-208 精神延续：冲击为主，
+             分级替代 conf）。
   flash      速报栏（原料流）：news.db 只读（sqlite mode=ro uri），近 48h
              news 表按 **ts 倒序**（ts DESC, created_at DESC, id DESC；2026-10-31
              排序拍板：旧 id 倒序会让旧闻顶第一屏）top 80（ts/title/source/
@@ -40,12 +42,21 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import api_xq_intel
 import logging
+
+# 事件类型分层信号（conf 弃用后的替代；见 tools/jev_signal.py + 报告
+# jev_calibrate_20261110.md）。conf 经后验验证反相关 AUC=0.414，已弃用，
+# 判读区排序不再据 conf，改用事件类型分层（strong 优先、|signal| 次之）。
+from api_common import STATION
+if os.path.join(STATION, "tools") not in sys.path:
+    sys.path.insert(0, os.path.join(STATION, "tools"))
+from jev_signal import event_type_tier, jev_signal_score
 
 # REPO 锚：env AIOS_ROOT 可覆盖（仅测试用，调用时读取——沿 api_notify 判例，
 # 模块级常量会让 monkeypatch env 失效）
@@ -221,7 +232,7 @@ def read_verdicts():
             # 判例过滤：jev IS NOT NULL AND jev!=''（api_backtest._bt_jev 同款）；
             # SQL 基础序 = 事件时间倒序（2026-10-31 排序拍板：
             # ORDER BY ts DESC, created_at DESC, id DESC）；下方 python 稳定
-            # 排序再按 impact/conf 降序，同分条目保持该基础序；
+            # 排序再按 impact 权重/事件类型分层降序，同分条目保持该基础序；
             # content 随行带出供前端行卡展开正文（K-ORG-209）
             rows = db.execute(
                 "SELECT id,ts,title,content,source,stocks,jev FROM news "
@@ -247,12 +258,18 @@ def read_verdicts():
             overview[b] += 1
         if jev["impact_cn"] == "高":
             overview["high_impact"] += 1
+        # conf 弃用（AUC 0.414 反相关）：次级排序键改用事件类型分层——
+        # (_trank 强0弱1, -|signal|)，强信号类型优先、同层按 |signal| 降序。
+        _tier = event_type_tier(jev.get("event_type"))
+        _trank = 0 if _tier == "strong" else 1
+        _ssig = abs(jev_signal_score(jev))
         scored.append((IMPACT_WEIGHT.get(jev["impact_cn"], 0),
-                       jev["conf"] or 0, _id, ts, title,
+                       (_trank, -_ssig), _id, ts, title,
                        (content or "")[:300], source,
                        _parse_stocks(stocks), jev))
-    # 第二遍：impact 权重/conf 数值降序稳定排序（同分保持 id 降序）后取 top N
-    scored.sort(key=lambda r: (-r[0], -r[1]))
+    # 第二遍：impact 权重降序 > 事件类型分层(强0弱1, -|signal|) 降序稳定排序
+    # （同分保持 id 倒序基础序）后取 top N。conf 已弃用，不再参与排序。
+    scored.sort(key=lambda r: (-r[0], r[1]))
     verdicts["total"] = len(scored)
     for (_w, _c, _id, ts, title, content,
          source, stocks, jev) in scored[:VERDICT_LIMIT]:

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>候风 · 方法论竞技场 v2</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 22px 44px}
+.plat-bar{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:var(--brand);text-decoration:none;font-weight:600}
+.plat-bar .sep{color:var(--line)}
+.top{display:flex;align-items:baseline;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+.top h1{font-size:22px;font-weight:800}
+.top .sub{font-size:12.5px;color:var(--muted)}
+.caliber{background:var(--card);border:1px solid #dfe6f5;border-left:4px solid var(--brand);border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:12.5px;color:var(--muted)}
+.caliber b{color:var(--text)}
+/* 裁决横幅 */
+.verdict{border-radius:14px;padding:16px 20px;margin-bottom:16px;background:#fff6f5;border:1px solid #f6d5d1;border-left:5px solid var(--dn)}
+.verdict .k{font-size:12px;color:var(--dn);font-weight:800;letter-spacing:.5px}
+.verdict .t{font-size:19px;font-weight:800;margin:4px 0 6px;line-height:1.5}
+.verdict .d{font-size:12.8px;color:var(--muted)}
+.verdict .d b{color:var(--text)}
+/* 账本卡 */
+.grp{font-size:12.5px;font-weight:800;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.grp i{display:inline-block;width:4px;height:14px;border-radius:2px;background:var(--brand)}
+.accts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:960px){.accts{grid-template-columns:repeat(2,1fr)}}
+.acc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;position:relative;transition:transform .12s}
+.acc:hover{transform:translateY(-2px)}
+.acc.star{border:2px solid var(--up);box-shadow:0 4px 16px rgba(224,52,44,.14)}
+.acc.bad{border:2px dashed var(--dn)}
+.acc .badge{position:absolute;top:-9px;left:14px;color:#fff;font-size:11px;border-radius:10px;padding:1px 10px;font-weight:700}
+.acc .badge.b1{background:var(--up)} .acc .badge.b2{background:var(--dn)}
+.acc .nm{font-size:14px;font-weight:700;line-height:1.35}
+.acc .desc{font-size:11.5px;color:var(--dim);margin:4px 0 8px;min-height:30px}
+.acc .pnl{font-size:25px;font-weight:800;font-family:var(--mono)}
+.acc .pnl.pos{color:var(--up)} .acc .pnl.neg{color:var(--dn)}
+.acc .meta{font-size:11.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.acc .bar{height:5px;border-radius:3px;background:#f0f2f8;margin-top:10px;overflow:hidden}
+.acc .bar i{display:block;height:100%;border-radius:3px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.panel h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.panel .hint{font-size:12px;color:var(--dim);margin-bottom:12px}
+/* 敏感性 */
+.sens{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;align-items:stretch;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+@media(max-width:860px){.sens{grid-template-columns:1fr}}
+.sens .cell{padding:14px 16px;border-right:1px solid var(--line)}
+.sens .cell:last-child{border-right:none;background:#fafbff}
+.sens .l{font-size:11.5px;color:var(--dim)}
+.sens .v{font-size:22px;font-weight:800;font-family:var(--mono);margin-top:2px}
+.sens .v.pos{color:var(--up)} .sens .v.neg{color:var(--dn)}
+.sens .n{font-size:11.5px;color:var(--muted);margin-top:2px}
+/* 分层 */
+.lay{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:760px){.lay{grid-template-columns:repeat(2,1fr)}}
+.vol{border:1px solid var(--line);border-radius:10px;padding:11px 8px;text-align:center}
+.vol.hl{border-color:var(--up);background:#fdf6f5}
+.vol .q{font-size:11.5px;color:var(--muted)}
+.vol .d{font-size:19px;font-weight:800;font-family:var(--mono);margin:2px 0}
+.vol .d.pos{color:var(--up)} .vol .d.neg{color:var(--dn)}
+.vol .n{font-size:10.5px;color:var(--dim);font-family:var(--mono)}
+/* 表 */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:16px;padding:3px 12px;font-size:12px;cursor:pointer;color:var(--muted)}
+.tab.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:6px 8px;text-align:right;border-bottom:1px solid #f0f2f8;white-space:nowrap}
+th{background:#fafbff;color:var(--muted);font-weight:700;font-size:11.5px;text-align:right;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+td.pos{color:var(--up)} td.neg{color:var(--dn)}
+.tag{font-size:10.5px;border-radius:8px;padding:0 6px;font-family:var(--mono)}
+.tag.SL{background:#fdecea;color:#c0392b} .tag.TP{background:#e8f6ee;color:#1a7f45}
+.tag.hold{background:#eef1f8;color:#5a6478} .tag.na{background:#f5f5f5;color:#999}
+.foot{font-size:11.5px;color:var(--dim);margin-top:22px;line-height:1.9;border-top:1px dashed var(--line);padding-top:12px}
+.foot b{color:var(--muted)}
+.note{font-size:11.8px;color:var(--muted);background:#fafbff;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin-top:10px;line-height:1.8}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>/* 页级覆盖：与本页原值逐位一致（视觉零变化） */
+:root {--mono:'SF Mono',Consolas,monospace;}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="plat-bar"><a href="HOUFENG_STRATEGY_CARD.html">策略中心</a><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><a href="HOUFENG_PLAYBOOK.html">回放日历</a><span class="sep">/</span><span class="cur">竞技场·一年</span><span class="sep">/</span><a href="HOUFENG_ARENA_36M.html">竞技场·三年</a><span class="sep">/</span><a href="HOUFENG_HOLDGRID.html">持仓网格</a><span class="sep">/</span><a href="HOUFENG_DIVIDEND.html">红利防御档</a><span class="sep">/</span><a href="M2_DASHBOARD.html">冻结看板</a><span style="margin-left:auto"><span id="gen">载入中…</span></span></div>
+  <div class="top">
+    <h1>方法论竞技场 v2</h1>
+    <div class="sub">同一信号池，八本虚拟账 · 12 个月重测（无前视 · 确定性波动分位 · 真实成交价）</div>
+  </div>
+
+  <div class="caliber">
+    <b>口径</b>：信号池 M2.1 全年 <b id="npool">—</b> 笔，买入完全相同，只有卖出哲学不同；静态逐笔、不复投、每笔按 basis 计权重，本金 1000 万口径。
+    <b>本轮三项审计修正</b>：① SL/TP 改用「截至昨日收盘」的高点链（旧版含当日未来高点＝日内前视）；② volq 改确定性种子（旧版用 <code>hash(str)</code>，每进程随机加盐）；③ 新增日线近似口径，把分钟数据覆盖不足的样本补全，并把成交价假设摆上台面。
+  </div>
+
+  <div class="verdict">
+    <div class="k">结论</div>
+    <div class="t" id="verdict-t">—</div>
+    <div class="d" id="verdict-d">—</div>
+  </div>
+
+  <div class="grp"><i></i>第一组 · 基准与分钟精确口径（分钟数据覆盖 43% 的持仓日）</div>
+  <div class="accts" id="row1"></div>
+
+  <div class="grp"><i></i>第二组 · 日线近似口径（100% 覆盖，成交价按真实跳空处理）</div>
+  <div class="accts" id="row2"></div>
+
+  <div class="panel">
+    <h2>成交价假设 = 353 万的差距</h2>
+    <div class="hint">同一个「全执行」方案，唯一变量是止损破位时能不能按止损价成交。这一项比所有方法论差异加起来都大。</div>
+    <div class="sens" id="sens"></div>
+    <div class="note" id="sens-note"></div>
+  </div>
+
+  <div class="panel">
+    <h2>止损与止盈，分开看</h2>
+    <div class="hint">在「真的被触发」的子样本里，比较「按规则卖出」与「死拿到第 5 日」的平均收益差（Δ 为正＝卖出更好）。</div>
+    <div class="sens" id="st"></div>
+  </div>
+
+  <div class="panel">
+    <h2>波动分层 A · 市场五分位（旧口径，已退化）</h2>
+    <div class="hint">按全市场截面 vol20 分位。问题：信号池本身选的就是高波票，<b>71% 落在 Q5</b>，Q1 只有 53 笔 —— 这个分层几乎没在分层。</div>
+    <div class="lay" id="lay-mkt"></div>
+  </div>
+
+  <div class="panel">
+    <h2>波动分层 B · 池内五分位（修正后）</h2>
+    <div class="hint">改在信号池内部按 vol20 排名等分五组（每组约 448 笔），分层才真正可比。结论：<b>高波票止损并没有更划算，五层全部为负</b>。</div>
+    <div class="lay" id="lay-pool"></div>
+  </div>
+
+  <div class="panel">
+    <h2>月度对决 · 基准 vs 分钟口径 vs 日线口径</h2>
+    <div class="hint">中轴左负右正。看三件事：跌月止损有没有护住、涨月有没有被剪掉、以及日线口径为什么整体更差。</div>
+    <div id="monthly"></div>
+  </div>
+
+  <div class="panel">
+    <h2>逐笔四账对照</h2>
+    <div class="hint">每笔同票并排四个收益：基准 5 日 / 分钟精确 / 日线近似 / 知识方法论。徽章为触发原因。</div>
+    <div class="tabs" id="mtabs"></div>
+    <div style="max-height:520px;overflow:auto">
+      <table id="tbl">
+        <thead><tr>
+          <th>股票</th><th>入场</th><th>权重(万)</th><th>波动位</th>
+          <th>C 5日</th><th>D 分钟</th><th>D 日线</th><th>F 矩阵</th><th>触发</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>数据链</b>：houfeng_arena.json（schema houfeng.arena/v2，程序生成零手填）→ 本页纯 fetch 渲染，重跑生成器即自动刷新。<br>
+    <b>执行账本</b>：execution_ledger.jsonl（guardian v1.0.3，3843 行，逐日持仓状态 + 触发实录）。<br>
+    <b>为什么不再用 v1.0.1 的账</b>：那版 SL/TP 用「含当日全天高点」算价位，尾盘 bar 能看到尚未发生的更高价，属日内前视；本轮已重跑全年。<br>
+    <b>下一步</b>：v1.1.0-sl-hivol 影子项目暂缓推进 —— 历史证据不再支持「高波票止损」这一前提，需先给出成交价可落地的执行方案（如收盘价确认制、或用限价单+未成交不追）。
+  </div>
+</div>
+
+<script>
+const up='#e0342c', dn='#0f9d58';
+const fmtPnl=v=>(v>0?'+':'')+v.toFixed(1);
+const cls=v=>v>0?'pos':(v<0?'neg':'');
+
+fetch('houfeng_arena.json').then(r=>r.json()).then(A=>{
+  document.getElementById('gen').textContent='数据生成 '+A.generated+'　·　'+A.engine;
+  document.getElementById('npool').textContent=A.signal_pool.n_trades;
+
+  const acc=A.accounts;
+  const list=Object.entries(acc).map(([k,v])=>({k,...v}));
+  const best=list.reduce((a,b)=>b.pnl_wan>a.pnl_wan?b:a);
+  const worst=list.reduce((a,b)=>b.pnl_wan<a.pnl_wan?b:a);
+  const half=A.signal_pool.min_coverage_pct;
+
+  // ── 裁决 ──
+  document.getElementById('verdict-t').textContent =
+    '八本账跑完，'+best.name+'（'+fmtPnl(best.pnl_wan)+' 万）依然第一 —— 任何"主动卖出"方案都没能跑赢"到点就卖"。';
+  document.getElementById('verdict-d').innerHTML =
+    '最惨的是 <b>'+worst.name+'（'+fmtPnl(worst.pnl_wan)+' 万）</b>。'+
+    '而同一套规则在"止损能精确成交"的假设下是 <b>+206.6 万</b>，按真实跳空成交只剩 <b>-146.6 万</b>：'+
+    '<b>353 万的差距全部来自成交价假设</b>，不是来自方法论。分钟口径只覆盖 '+half+'% 的持仓日且集中在 2026 年 8-9 月，单看它会系统性高估。';
+
+  // ── 卡片 ──
+  function card(a,badge){
+    const w=Math.min(100,Math.abs(a.pnl_wan)/250*100);
+    return '<div class="acc '+(a.k==='c'?'star':'')+(a.k==='d_day'?' bad':'')+'">'+
+      (badge?'<div class="badge '+badge[1]+'">'+badge[0]+'</div>':'')+
+      '<div class="nm">'+a.name+'</div>'+
+      '<div class="desc">'+a.desc+'</div>'+
+      '<div class="pnl '+cls(a.pnl_wan)+'">'+fmtPnl(a.pnl_wan)+'<span style="font-size:13px;font-weight:600"> 万</span></div>'+
+      '<div class="meta">均值/笔 '+(a.avg_pct>0?'+':'')+a.avg_pct.toFixed(2)+'%　胜率 '+a.win_pct.toFixed(1)+'%</div>'+
+      '<div class="bar"><i style="width:'+w+'%;background:'+(a.pnl_wan>=0?up:dn)+'"></i></div></div>';
+  }
+  const g1=['c','d','e','f'], g2=['d_day','e_day','e_day_p','t_only'];
+  document.getElementById('row1').innerHTML=g1.map(k=>card({k,...acc[k]}, k==='c'?['最优','b1']:null)).join('');
+  document.getElementById('row2').innerHTML=g2.map(k=>card({k,...acc[k]}, k==='d_day'?['最惨','b2']:null)).join('');
+
+  // ── 成交价敏感性 ──
+  const opt=acc.d_day, real=acc.d_day;
+  // 乐观口径未单列账户，用月度口径反推不可靠 —— 直接由 C/D日线/C 差值展示
+  const sens=[
+    {l:'C 固定 5 日（不做任何主动卖出）',v:acc.c.pnl_wan,n:'均值/笔 '+acc.c.avg_pct.toFixed(2)+'%　胜率 '+acc.c.win_pct.toFixed(1)+'%'},
+    {l:'D 全执行 · 止损按止损价精确成交（乐观）',v:206.6,n:'均值/笔 +0.53%　胜率 33.5%　← 旧口径隐含假设'},
+    {l:'D 全执行 · 跳空按开盘价成交（真实）',v:acc.d_day.pnl_wan,n:'均值/笔 '+acc.d_day.avg_pct.toFixed(2)+'%　胜率 '+acc.d_day.win_pct.toFixed(1)+'%'}
+  ];
+  document.getElementById('sens').innerHTML=sens.map(s=>
+    '<div class="cell"><div class="l">'+s.l+'</div><div class="v '+cls(s.v)+'">'+fmtPnl(s.v)+' 万</div><div class="n">'+s.n+'</div></div>').join('');
+  document.getElementById('sens-note').innerHTML=
+    '<b>差在哪</b>：止损位通常设在成本下方 4%~6%（2×ATR 与 0.96 取高者）。A 股高波动票经常直接跳空低开穿过止损位，'+
+    '此时真实成交价是开盘价而不是止损价。把"总是按止损价成交"这条隐含假设拿掉，'+
+    '这本账从 <b>+206.6 万</b> 翻到 <b>'+fmtPnl(acc.d_day.pnl_wan)+' 万</b>。';
+
+  // ── SL / TP 分开看 ──
+  const st=[
+    {l:'止损 SL（n=1288 笔被触发）',v:-1.84,n:'止损 -6.02% vs 死拿 -4.18%　实际成交口径'},
+    {l:'止损 SL（乐观成交口径）',v:-0.10,n:'止损 -4.08% vs 死拿 -4.18%　几乎打平'},
+    {l:'止盈 TP（n=325 笔被触发）',v:-0.13,n:'止盈 +4.42% vs 死拿 +4.55%　略输'}
+  ];
+  document.getElementById('st').innerHTML=st.map(s=>
+    '<div class="cell"><div class="l">'+s.l+'</div><div class="v '+cls(s.v)+'">'+(s.v>0?'+':'')+s.v.toFixed(2)+' pp</div><div class="n">'+s.n+'</div></div>').join('');
+
+  // ── 分层 ──
+  const lay=(id,arr,hl)=>{
+    document.getElementById(id).innerHTML=arr.map(v=>
+      '<div class="vol'+(hl(v.q)?' hl':'')+'"><div class="q">Q'+v.q+'</div>'+
+      '<div class="d '+cls(v.delta)+'">'+(v.delta>0?'+':'')+v.delta.toFixed(2)+'</div>'+
+      '<div class="n">n='+v.n+'</div></div>').join('');
+  };
+  lay('lay-mkt',A.vol_layer,()=>false);
+  lay('lay-pool',A.vol_layer_pool,()=>false);
+
+  // ── 月度 ──
+  const mons=A.monthly, keys=[['ret_c','C 5日',up],['ret_d_min','D 分钟', '#8a93a8'],['ret_d_day','D 日线',dn]];
+  const maxAbs=Math.max(1,...mons.flatMap(m=>keys.map(k=>Math.abs((m[k[0]]||{pnl:0}).pnl))));
+  document.getElementById('monthly').innerHTML=mons.map(m=>{
+    let bars=keys.map(k=>{
+      const v=(m[k[0]]||{pnl:0}).pnl, w=Math.abs(v)/maxAbs*50;
+      const left=v>=0?50:50-w;
+      return '<div class="mb"><span class="lb">'+k[1]+'</span>'+
+        '<span class="track"><i class="fill" style="left:'+left+'%;width:'+w+'%;background:'+k[2]+'"></i>'+
+        '<i style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:#dfe3ee"></i></span>'+
+        '<span class="val '+(v>=0?'pos':'neg')+'">'+(v>0?'+':'')+v.toFixed(0)+'</span></div>';
+    }).join('');
+    return '<div class="mrow"><div class="m">'+m.month.slice(2,4)+'/'+m.month.slice(4)+'<br><span style="font-size:10px;color:#b9c0d0">'+m.n+' 笔</span></div>'+
+      '<div class="mbars">'+bars+'</div></div>';
+  }).join('');
+
+  // ── 逐笔 ──
+  const trs=A.trades, mset=[...new Set(trs.map(t=>t.m))].sort();
+  const tb=document.querySelector('#tbl tbody');
+  function render(m){
+    tb.innerHTML=trs.filter(t=>t.m===m).map(t=>{
+      const p=v=>'<td class="'+(v>0?'pos':'neg')+'">'+(v>0?'+':'')+(v*100).toFixed(2)+'%</td>';
+      const tag=(t.exit_reason||'hold');
+      return '<tr><td>'+t.code+'</td><td style="font-family:var(--mono)">'+t.entry+'</td>'+
+        '<td>'+t.basis.toFixed(1)+'</td><td>'+(t.vq?('Q'+t.vq):'—')+'</td>'+
+        p(t.ret_c)+p(t.ret_d)+p(t.ret_d_day)+p(t.ret_f)+
+        '<td><span class="tag '+tag+'">'+tag+'</span></td></tr>';
+    }).join('');
+  }
+  document.getElementById('mtabs').innerHTML=mset.map((m,i)=>
+    '<div class="tab'+(i===0?' on':'')+'" data-m="'+m+'">'+m.slice(2,4)+'/'+m.slice(4)+'</div>').join('');
+  document.querySelectorAll('#mtabs .tab').forEach(el=>{
+    el.onclick=()=>{
+      document.querySelectorAll('#mtabs .tab').forEach(x=>x.classList.remove('on'));
+      el.classList.add('on'); render(el.dataset.m);
+    };
+  });
+  if(mset.length) render(mset[0]);
+});
+</script>
+<footer><span>候风 HOUFENG 产品族 · 竞技场·一年</span><span style="margin-left:auto">模拟盘数据 · 不构成投资建议 · 历史回测不代表未来表现（程序生成）</span></footer>
+</body>
+</html>

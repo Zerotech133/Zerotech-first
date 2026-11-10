@@ -32,8 +32,33 @@ RUNS = os.path.join(WORK, "runs")
 QUEUE = os.path.join(WORK, "queue")
 DELIVER = r"C:\项目\deliverables"
 
-CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{6})\.(SH|SZ|BJ)$")
+CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{5}|4[0-9]{5})\.(SH|SZ|BJ)$")
 RUN_RE = re.compile(r"^[A-Za-z0-9_\-]{6,80}$")
+_BARE_RE = re.compile(r"^[0-9]{6}$")
+
+
+def normalize_code(raw):
+    """把用户输入归一为 Tushare ts_code。
+
+    接受：600337 / 600337.SH / 600337.sh / SZ000001 / sh600337。
+    裸 6 位按板块推断：6/9→SH，0/3→SZ，8/4→BJ；其余无法识别返回 None。
+    """
+    s = str(raw or "").strip().upper().replace(" ", "")
+    if not s:
+        return None
+    m = re.match(r"^(SH|SZ|BJ)([0-9]{6})$", s)
+    if m:
+        s = m.group(2) + "." + m.group(1)
+    if _BARE_RE.match(s):
+        if s[0] in ("6", "9"):
+            s += ".SH"
+        elif s[0] in ("0", "3"):
+            s += ".SZ"
+        elif s[0] in ("8", "4"):
+            s += ".BJ"
+        else:
+            return None
+    return s if CODE_RE.match(s) else None
 
 
 def _json(handler, obj, status=200):
@@ -251,6 +276,9 @@ def handle_get(handler, path, qs):
         limit = max(1, min(int(q.get("limit", 20) or 20), 100))
         code = q.get("code", "")
         if code:
+            code = normalize_code(code)
+            if not code:
+                return _json(handler, {"ok": False, "error": "非法代码（示例 600337 或 600337.SH）"}, 400)
             rows = _db_rows("SELECT run_id,code,name,as_of,started,finished,status,rating,coverage,artifacts_dir "
                             "FROM runs WHERE code=? ORDER BY started DESC LIMIT ?", (code, limit))
         else:
@@ -258,9 +286,9 @@ def handle_get(handler, path, qs):
                             "FROM runs ORDER BY started DESC LIMIT ?", (limit,))
         return _json(handler, {"ok": True, "count": len(rows), "runs": rows})
     if path == "/api/analysis/latest":
-        code = q.get("code", "")
-        if not CODE_RE.match(code or ""):
-            return _json(handler, {"ok": False, "error": "非法代码"}, 400)
+        code = normalize_code(q.get("code", ""))
+        if not code:
+            return _json(handler, {"ok": False, "error": "非法代码（示例 600337 或 600337.SH）"}, 400)
         rows = _db_rows("SELECT * FROM runs WHERE code=? ORDER BY started DESC LIMIT 1", (code,))
         if not rows:
             return _json(handler, {"ok": True, "code": code, "run": None})
@@ -299,9 +327,11 @@ def handle_get(handler, path, qs):
     if path == "/api/analysis/events":
         limit = max(1, min(int(q.get("limit", 30) or 30), 200))
         code = q.get("code", "")
+        if code:
+            code = normalize_code(code)
+            if not code:
+                return _json(handler, {"ok": False, "error": "非法代码（示例 600337 或 600337.SH）"}, 400)
         status = q.get("status", "pending")
-        if code and not CODE_RE.match(code):
-            return _json(handler, {"ok": False, "error": "非法代码"}, 400)
         try:
             import sys
             if ROOT not in sys.path:
@@ -387,9 +417,9 @@ def handle_post(handler, path, qs):
             return _json(handler, {"ok": False, "error": "复核失败: " + str(e)[:120]}, 500)
         return _json(handler, r, 200 if r.get("ok") else 404)
 
-    code = str(body.get("code") or "").strip().upper()
-    if not CODE_RE.match(code):
-        return _json(handler, {"ok": False, "error": "非法代码（示例 600337.SH）"}, 400)
+    code = normalize_code(body.get("code"))
+    if not code:
+        return _json(handler, {"ok": False, "error": "非法代码（示例 600337 或 600337.SH）"}, 400)
     llm = bool(body.get("llm", False))
     push = bool(body.get("push", False))
     try:

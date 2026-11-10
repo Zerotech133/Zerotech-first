@@ -20,6 +20,12 @@ if HERE not in os.sys.path:
 
 import score_registry as sr  # noqa: E402
 
+# JEV 信号分层替代已弃用的 conf：强类型权重 1.0 / 弱类型 0.4 × 方向 sign
+_TOOLS = os.path.join(ROOT, "tools")
+if _TOOLS not in os.sys.path:
+    os.sys.path.insert(0, _TOOLS)
+from jev_signal import jev_signal_score  # noqa: E402
+
 QB = os.path.join(ROOT, "quant_backtest")
 RPS_JSON = os.path.join(QB, "reports", "rps_latest.json")
 NINE_JSON = os.path.join(QB, "data", "nine_dim_scores.json")
@@ -77,7 +83,12 @@ def _nine_dim():
     )
 
 
-def _jev_conf():
+def _jev_signal():
+    """近 24h JEV 信号分：事件类型分层加权方向分（替代已弃用的 conf）。
+
+    强类型（credit/trade/risk/policy/equity/earnings）权重 1.0、弱类型 0.4；
+    bull=+1 / neutral=0 / bear=-1；取窗口内加权均值。详见 tools/jev_signal.py。
+    """
     try:
         c = sqlite3.connect(NEWS_DB, timeout=10)
         cutoff = (datetime.now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
@@ -93,18 +104,20 @@ def _jev_conf():
     for (raw,) in rows:
         try:
             j = json.loads(raw) if isinstance(raw, str) else raw
-            if isinstance(j, dict) and j.get("conf") is not None:
-                vals.append(float(j["conf"]))
+            if isinstance(j, dict):
+                s = jev_signal_score(j)
+                if s is not None:
+                    vals.append(s)
         except (ValueError, TypeError):
             continue
     if not vals:
         return None
     avg = sum(vals) / len(vals)
     return _annot(
-        "jev_conf",
-        round(avg, 3),
+        "jev_signal",
+        round(avg, 4),
         datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "近 24h JEV 平均置信（%d 条）" % len(vals),
+        "近 24h JEV 信号分（强类型±1/弱类型±0.4 加权均值，%d 条）" % len(vals),
     )
 
 
@@ -138,7 +151,7 @@ def snapshot():
     builders = [
         ("rps50", _rps),
         ("nine_dim_score", _nine_dim),
-        ("jev_conf", _jev_conf),
+        ("jev_signal", _jev_signal),
         ("chan_signal", _chan_signal),
         ("kg_resonance", _kg_resonance),
     ]

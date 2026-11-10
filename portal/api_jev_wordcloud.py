@@ -11,7 +11,8 @@
         event_words 每事件类型词数，3..15，默认 8
 
 只读纪律：news.db 一律 `mode=ro`；不调 Ollama、不碰 ollama_lock、不写任何库。
-分桶：bull / bear / neutral（工单 §3）；conf<0.5 降权 0.5；
+分桶：bull / bear / neutral（工单 §3）；强信号事件类型权重 1.0、弱信号 0.4
+     （事件类型分层，conf 已弃用——见 jev_calibrate_20261110）；
      unjudged 对照桶仅抽样（≤ min(1000, bull 数)），不计入主词云。
 停用词：**复用** quant_backtest/tools/wordc1_cloud.py 的 STOPWORDS（工单验收判据 3：
      不增不减）；清理正则同样复用（_RE_TAGS/_RE_URL/_RE_ENTITY）。
@@ -33,12 +34,15 @@ from urllib.parse import parse_qs
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DB = os.path.join(STATION, "news_collector", "news.db")
 WCTOOLS_DIR = os.path.join(STATION, "quant_backtest", "tools")
+if os.path.join(STATION, "tools") not in sys.path:
+    sys.path.insert(0, os.path.join(STATION, "tools"))
+from jev_signal import event_type_tier, STRONG_TYPES
 
 MIN_DAYS, MAX_DAYS, DEF_DAYS = 1, 730, 90
 MIN_TOP, MAX_TOP, DEF_TOP = 5, 80, 30
 MIN_ETOP, MAX_ETOP, DEF_ETOP = 0, 8, 6
 MIN_EWORDS, MAX_EWORDS, DEF_EWORDS = 3, 15, 8
-CONF_DOWN = 0.5            # conf<0.5 权重（工单 §3）
+WEAK_WEIGHT = 0.4         # 弱信号事件类型（price/supply 等）词频权重（事件类型分层）
 CACHE_TTL_S = 600
 BUCKETS = ("bull", "bear", "neutral")
 MIN_BUCKET_N = 1000        # 工单 §3：不足则出「样本不足」占位
@@ -136,7 +140,7 @@ def compute(days: int = DEF_DAYS, top_n: int = DEF_TOP,
         try:
             d = json.loads(jev)
             bias = d.get("bias")
-            conf = float(d.get("conf") or 1.0)
+            conf = float(d.get("conf") or 1.0)  # 弃用字段：仅保留用于显示/审计，不再参与加权
             et = str(d.get("event_type") or "")
         except (ValueError, TypeError):
             malformed += 1
@@ -158,7 +162,9 @@ def compute(days: int = DEF_DAYS, top_n: int = DEF_TOP,
                 b["min_ts"] = ts
             if b["max_ts"] is None or ts > b["max_ts"]:
                 b["max_ts"] = ts
-        w = CONF_DOWN if conf < CONF_DOWN else 1.0
+        # 事件类型分层加权（替代原 conf 加权）：强信号类型权重 1.0，弱信号 0.4。
+        # conf 已证实反相关（AUC 0.414），不再用于加权。
+        w = 1.0 if event_type_tier(et) == "strong" else WEAK_WEIGHT
         toks = [t for t in _tokens(text) if _valid(t)]
         for t in set(toks):          # 标题级去重：一篇新闻同一词只计一次
             b["words"][t] += w
@@ -220,7 +226,8 @@ def compute(days: int = DEF_DAYS, top_n: int = DEF_TOP,
         "unjudged": {"sampled": sample_n, "top": _top(ucnt, top_n)},
         "event_matrix": event_matrix,
         "meta": {
-            "conf_downweight_below": CONF_DOWN,
+            "weak_type_weight": WEAK_WEIGHT,
+            "strong_types": sorted(STRONG_TYPES),
             "min_bucket_n": MIN_BUCKET_N,
             "stopwords_source": "quant_backtest/tools/wordc1_cloud.py STOPWORDS（工单判据3：不增不减）",
             "dedup": "per-title set()（一篇新闻同一词只计一次）",

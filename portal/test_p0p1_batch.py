@@ -25,10 +25,10 @@ def test_score_registry_validates():
 
 
 def test_score_annotate_and_gates():
-    a = S.annotate("jev_conf", 0.72, as_of="2026-10-26 08:00")
-    assert a["metric_id"] == "jev_conf" and a["evidence_level"] == "C"
+    a = S.annotate("jev_signal", 0.5, as_of="2026-10-26 08:00")
+    assert a["metric_id"] == "jev_signal" and a["evidence_level"] == "C"
     assert a["allow_push"] is True and a["allow_decision"] is False
-    assert S.decision_allowed("jev_conf") is False
+    assert S.decision_allowed("jev_signal") is False
     assert S.push_allowed("focus_p") is False  # D 级只做研究
     assert S.decision_allowed("rps50") is True  # B 级可作候选
 

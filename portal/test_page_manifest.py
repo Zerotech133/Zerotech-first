@@ -186,9 +186,11 @@ def test_current_manifest_covers_production_pages():
     assert by_source["portal/approvals.html"]["auth"] == "oidc"
     assert by_source["portal/intel_workbench.html"]["path"] == "/intel"
     assert by_source["portal/intel_workbench.html"]["auth"] == "oidc"
-    # capability/perf：nginx 未接通短路由，仍按静态直链登记（route gap 见复核文档）
-    assert by_source["portal/capability.html"]["path"] == "/capability.html"
-    assert by_source["portal/perf.html"]["path"] == "/perf.html"
+    # capability/perf：R8 已接通 nginx 短路由（location = /capability|/perf → 8091 动态页），
+    # 按可达路由归一。2026-11-09 更正：旧断言写的是「nginx 未接通、按静态直链登记」，
+    # 那是 R8 之前的状态；nginx.conf:509/515 已有 location，实测 /capability /perf 均 200。
+    assert by_source["portal/capability.html"]["path"] == "/capability"
+    assert by_source["portal/perf.html"]["path"] == "/perf"
     # 复核结论：7 页 legacy→active
     for rel in ("portal/approvals.html", "portal/capability.html", "portal/flow.html",
                 "portal/perf.html", "portal/bt_view.html", "portal/bt2_view.html",

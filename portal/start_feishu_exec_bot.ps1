@@ -21,23 +21,48 @@ if (-not (Test-Path -LiteralPath $secret)) {
     Write-Log "SKIP: secret missing ($secret) — W2 待老田建 app"
     exit 0
 }
-$running = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
-    Where-Object { $_.CommandLine -like '*feishu_dsh_bot.py*' })
-if ($running.Count -gt 0) {
-    Write-Log "already running pid=$($running.ProcessId -join ',')"
+
+# ★2026-11-09 加固：CommandLine 在非管理员账户/S4U 下返回 NULL，
+# 导致进程枚举恒为空、看门狗每 5min 重复拉起。改用全局 Mutex
+# + S4U 安全进程名枚举双重幂等（参考 run_bot_watchdog.ps1 的互斥模式）。
+$mutex = $null; $got = $false
+try {
+    $mutex = New-Object System.Threading.Mutex($false, 'Global\FeishuDshBotStart')
+    $got = $mutex.WaitOne(0)
+} catch { $got = $false }
+if (-not $got) {
+    Write-Log "start mutex busy - skip (peer is starting or already started)"
     exit 0
 }
-Write-Log "starting 零界·执行 bot ..."
+
 try {
-    $proc = Start-Process -FilePath $py `
-        -ArgumentList @("-u", "-X", "utf8", $bot) `
-        -WorkingDirectory "C:\aios\portal" `
-        -WindowStyle Hidden `
-        -RedirectStandardOutput $out `
-        -RedirectStandardError $err `
-        -PassThru
-    if ($proc) { Write-Log "STARTED pid=$($proc.Id)" } else { Write-Log "FAIL: null"; exit 1 }
-} catch {
-    Write-Log "FAIL: $($_.Exception.Message)"
-    exit 1
+    # 二次判活：Mutex 已保证不会并发；正常用户会话下 CommandLine 可枚举
+    $running = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like '*feishu_dsh_bot.py*' })
+    if ($running.Count -gt 0) {
+        Write-Log "already running pid=$($running.ProcessId -join ',')"
+        exit 0
+    }
+    Write-Log "starting 零界·执行 bot ..."
+    try {
+        $proc = Start-Process -FilePath $py `
+            -ArgumentList @("-u", "-X", "utf8", $bot) `
+            -WorkingDirectory "C:\aios\portal" `
+            -WindowStyle Hidden `
+            -RedirectStandardOutput $out `
+            -RedirectStandardError $err `
+            -PassThru
+        if ($proc) {
+            Write-Log "STARTED pid=$($proc.Id)"
+            # 等待子进程就绪（CommandLine 写入 WMI 有短暂延迟），
+            # 确保本 Mutex 持有者释放后，后续持有者能在二次判活枚举到
+            Start-Sleep -Seconds 3
+        } else { Write-Log "FAIL: null"; exit 1 }
+    } catch {
+        Write-Log "FAIL: $($_.Exception.Message)"
+        exit 1
+    }
+} finally {
+    try { $mutex.ReleaseMutex() } catch { }
+    try { $mutex.Dispose() } catch { }
 }

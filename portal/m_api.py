@@ -644,7 +644,7 @@ def daily_payload():
     bad = [i for i in items if not i.get("exists")]
     total = dist.get("total") or 0
     bias = dist.get("bias") or {}
-    conf = dist.get("conf_buckets") or {}
+    tier = dist.get("tier_buckets") or {}
 
     def pc(n):
         try:
@@ -694,19 +694,19 @@ def daily_payload():
     )
     headline = (
         "今日情报 %s 条：偏多 %s%%、偏空 %s%%、中性 %s%%；"
-        "高置信 %s%%。主要事件：%s。"
+        "强信号类型 %s%%。主要事件：%s。"
         % (
             total,
             pc(bias.get("bull")),
             pc(bias.get("bear")),
             pc(bias.get("neutral")),
-            pc(conf.get("high")),
+            pc(tier.get("strong")),
             event_line,
         )
     )
-    status_line = "今日情报 %s 条 · 高置信 %s%% · 漂移提醒 %s 项" % (
+    status_line = "今日情报 %s 条 · 强信号类型 %s%% · 漂移提醒 %s 项" % (
         total,
-        pc(conf.get("high")),
+        pc(tier.get("strong")),
         drift_open,
     )
     return {
@@ -718,16 +718,16 @@ def daily_payload():
         "headline": headline,
         "total": total,
         "bias": bias,
-        "conf": conf,
+        "tier": tier,
         "bias_pct": {
             "bull": pc(bias.get("bull")),
             "bear": pc(bias.get("bear")),
             "neutral": pc(bias.get("neutral")),
         },
-        "conf_pct": {
-            "high": pc(conf.get("high")),
-            "mid": pc(conf.get("mid")),
-            "low": pc(conf.get("low")),
+        "tier_pct": {
+            "strong": pc(tier.get("strong")),
+            "weak": pc(tier.get("weak")),
+            "unknown": pc(tier.get("unknown")),
         },
         "events": events,
         "drift_open": drift_open,
@@ -735,7 +735,7 @@ def daily_payload():
         "bt": bt_summary,
         "health_total": len(items),
         "health_bad": [{"name": i.get("name"), "path": i.get("path")} for i in bad][:5],
-        "note": "偏多/偏空/中性=JEV 判定方向；置信=判定置信度；"
+        "note": "偏多/偏空/中性=JEV 判定方向；强信号类型占比=事件类型分层（强信号类型）；"
         "事件类型=JEV 归类；漂移=近 7 天分布变化超阈值（JS>0.05）。",
     }
 

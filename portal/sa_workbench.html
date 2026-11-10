@@ -160,8 +160,8 @@ footer{border-top:1px solid var(--border-weak);margin-top:28px;padding-top:14px;
   <div class="card">
     <div class="searchbar">
       <input class="input" id="q" placeholder="输入股票代码/名称，或直接说需求，例如：帮我分析 600337 的三季报影响">
-      <button class="btn primary" onclick="toast('已解析：单股分析（600337.SH），进入分析队列')">开始分析</button>
-      <button class="btn" onclick="toast('已切换到条件选股：请描述筛选条件')">条件选股</button>
+      <button class="btn primary" id="btnAnalyze">开始分析</button>
+      <button class="btn" onclick="location.href='/static/proto/2_nl_screener.html'">条件选股</button>
     </div>
     <div class="row small muted" style="margin-top:10px">
       <span>试试：</span>
@@ -170,6 +170,12 @@ footer{border-top:1px solid var(--border-weak);margin-top:28px;padding-top:14px;
       <a href="#" onclick="fillSearch('轻工制造 PS 分位低于 50%');return false">轻工制造 PS 分位 &lt; 50%</a>
       <span>·</span>
       <a href="#" onclick="fillSearch('近期有回购事件且 ROE 转正');return false">回购 + ROE 转正</a>
+    </div>
+    <div id="runState" style="display:none;margin-top:12px">
+      <div style="height:6px;background:var(--line,#1b2230);border-radius:4px;overflow:hidden">
+        <div id="runBar" style="height:100%;width:0;background:var(--ok,#3fb950);transition:width .3s"></div>
+      </div>
+      <div class="small muted" id="runText" style="margin-top:6px">—</div>
     </div>
   </div>
 
@@ -197,7 +203,7 @@ footer{border-top:1px solid var(--border-weak);margin-top:28px;padding-top:14px;
         </tbody>
       </table>
       <div class="row" style="margin-top:12px">
-        <button class="btn sm primary" onclick="toast('已提交：观察池 4 只批量分析')">批量分析（4）</button>
+        <button class="btn sm primary" id="btnBatch">批量分析（逐只入队）</button>
         <button class="btn sm" onclick="toast('已打开观察池管理')">管理观察池</button>
         <span class="spacer"></span>
         <span class="small muted">上次更新：15:41</span>
@@ -260,7 +266,85 @@ footer{border-top:1px solid var(--border-weak);margin-top:28px;padding-top:14px;
 <script>
 function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600);}
 function fillSearch(t){document.getElementById('q').value=t;}
-document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')toast('已解析请求，提交分析队列（原型）');});
+function normCode(v){
+  var s=String(v||'').trim().toUpperCase().replace(/\s+/g,'');
+  var m=s.match(/^(SH|SZ|BJ)(\d{6})$/); if(m){ s=m[2]+'.'+m[1]; }
+  if(/^\d{6}$/.test(s)){
+    var h=s.charAt(0);
+    if(h==='6'||h==='9'){ s+='.SH'; }
+    else if(h==='0'||h==='3'){ s+='.SZ'; }
+    else if(h==='8'||h==='4'){ s+='.BJ'; }
+  }
+  return /^(60\d{4}|68\d{4}|00\d{4}|30\d{4}|8\d{5}|4\d{5})\.(SH|SZ|BJ)$/.test(s)?s:'';
+}
+function pickCode(text){ var m=String(text||'').match(/(?:^|[^0-9])(\d{6})(?:[^0-9]|$)/); return m?normCode(m[1]):''; }
+function showRun(pct,html){
+  var box=document.getElementById('runState'); if(!box){ return; }
+  box.style.display='block';
+  document.getElementById('runBar').style.width=(pct||0)+'%';
+  document.getElementById('runText').innerHTML=html||'';
+}
+function hideRun(delay){ setTimeout(function(){ var b=document.getElementById('runState'); if(b){ b.style.display='none'; } }, delay||9000); }
+function postSubmit(code){
+  return fetch('/api/analysis/submit',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({code:code,llm:false,push:false})})
+    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,status:r.status,body:j}; }); });
+}
+async function analyze(){
+  var raw=document.getElementById('q').value||'';
+  var code=pickCode(raw);
+  if(!code){
+    if(/筛|选股|条件/.test(raw)){ location.href='/static/proto/2_nl_screener.html'; return; }
+    toast('请输入 6 位股票代码，例如 600337 或 600337.SH'); return;
+  }
+  var btn=document.getElementById('btnAnalyze'); if(btn.disabled){ return; }
+  var old=btn.textContent; btn.disabled=true; btn.textContent='提交中…';
+  showRun(10,'正在入队 '+code+' …');
+  var pct=10; var timer=setInterval(function(){ pct=Math.min(90,pct+7); showRun(pct,'正在入队 '+code+' …'); },600);
+  try{
+    var r=await postSubmit(code); clearInterval(timer);
+    if(r.ok&&(r.body||{}).ok){
+      showRun(100,'已入队：'+(r.body.job_id||'')+' · <a href="/sa?code='+encodeURIComponent(code)+'">查看分析页 →</a>');
+      toast('已入队：'+(r.body.job_id||''));
+    }else{
+      showRun(100,'提交失败：'+((r.body||{}).error||('HTTP '+r.status)));
+    }
+  }catch(e){ clearInterval(timer); showRun(100,'提交失败：'+e); }
+  btn.disabled=false; btn.textContent=old;
+}
+async function batch(){
+  var btn=document.getElementById('btnBatch'); if(btn.disabled){ return; }
+  var old=btn.textContent; btn.disabled=true; btn.textContent='批量入队中…';
+  try{
+    var wr=await fetch('/api/analysis/watchlist').then(function(r){ return r.json(); });
+    var codes=(wr||{}).codes||[];
+    if(!codes.length){ toast('观察池为空'); btn.disabled=false; btn.textContent=old; return; }
+    var ok=0,fail=0;
+    for(var i=0;i<codes.length;i++){
+      showRun(Math.round(i/codes.length*90),'正在入队 '+(i+1)+'/'+codes.length+'：'+codes[i]);
+      try{ var r=await postSubmit(codes[i]); if(r.ok&&(r.body||{}).ok){ ok++; } else { fail++; } }catch(e){ fail++; }
+    }
+    showRun(100,'批量完成：成功 '+ok+'，失败 '+fail+'（由 15:40 盘后批消费）'); hideRun(9000);
+    toast('批量入队完成：成功 '+ok+'，失败 '+fail);
+  }catch(e){ showRun(100,'批量失败：'+e); }
+  btn.disabled=false; btn.textContent=old;
+}
+document.getElementById('btnAnalyze').addEventListener('click',analyze);
+document.getElementById('btnBatch').addEventListener('click',batch);
+document.getElementById('q').addEventListener('keydown',function(e){ if(e.key==='Enter'){ analyze(); } });
+document.querySelectorAll('table tbody tr').forEach(function(tr){
+  var code=(tr.textContent.match(/\d{6}\.(SH|SZ|BJ)/)||[])[0]||'';
+  var runEl=tr.querySelector('.mono'); var runId=runEl?runEl.textContent.trim():'';
+  tr.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var t=b.textContent.trim();
+      if(t.indexOf('MD')>=0 && runId){ window.open('/api/analysis/report?run_id='+encodeURIComponent(runId),'_blank'); return; }
+      if(t.indexOf('H5')>=0 && runId){ window.open('/api/analysis/h5?run_id='+encodeURIComponent(runId),'_blank'); return; }
+      if(code){ location.href='/sa?code='+encodeURIComponent(code); return; }
+      toast('该行暂无动作');
+    });
+  });
+});
 </script>
 </body>
 </html>

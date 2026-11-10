@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>板块分析与回测 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/os_theme.css">
+<script src="/static/nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 18px 22px 60px;
+    background: var(--bg-page); color: var(--text);
+    font: 14px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; letter-spacing: .3px; }
+  .sub { color: var(--text-dim); font-size: 12.5px; margin-bottom: 14px; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 16px; }
+  .badge {
+    font-size: 11.5px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-surface);
+  }
+  .badge.on { color: var(--link); border-color: var(--link); }
+  .bar {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;
+  }
+  .bar label { color: var(--text-dim); font-size: 12.5px; }
+  input, select, button {
+    font: inherit; color: var(--text); background: var(--bg-raised);
+    border: 1px solid var(--border); border-radius: 7px; padding: 5px 9px;
+  }
+  input[type=number] { width: 72px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--link); }
+  button.primary { background: var(--link); color: #fff; border-color: var(--link); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .layout { display: grid; grid-template-columns: 366px minmax(0,1fr); gap: 16px; }
+  @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 10px; font-weight: 600; }
+  .card h2 small { color: var(--text-dim); font-weight: 400; margin-left: 6px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(104px,1fr)); gap: 8px; }
+  .kpi { background: var(--bg-raised); border: 1px solid var(--border-weak); border-radius: 9px; padding: 8px 10px; }
+  .kpi b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .kpi span { color: var(--text-dim); font-size: 11.5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: right; padding: 5px 6px; border-bottom: 1px solid var(--border-weak); }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  thead th { color: var(--text-dim); font-weight: 500; font-size: 12px; white-space: nowrap; }
+  tbody tr:hover { background: var(--bg-raised); }
+  tbody tr.sel { background: var(--bg-raised); outline: 1px solid var(--link); }
+  .up { color: var(--color-up); }
+  .dn { color: var(--color-dn); }
+  .mut { color: var(--text-dim); }
+  .scroll { max-height: 62vh; overflow: auto; }
+  .scroll table { min-width: 100%; }
+  .note { color: var(--text-dim); font-size: 12px; line-height: 1.7; }
+  .warn {
+    border-left: 3px solid var(--color-warn); background: var(--bg-raised);
+    padding: 8px 11px; border-radius: 6px; font-size: 12.5px; color: var(--text-dim);
+    margin-top: 10px;
+  }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-dim); margin: 4px 0 6px; }
+  .dot { display: inline-block; width: 9px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .loading { color: var(--text-dim); font-size: 12.5px; }
+  #err { color: var(--color-err); font-size: 12.5px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<h1>板块分析与回测</h1>
+<div class="sub">概念口径（开盘啦）· 逐日 point-in-time 成分 · 涨停自算（一分钱容差）· 复权收益</div>
+<div class="badges">
+  <span class="badge on">口径：概念</span>
+  <span class="badge">成分：按日快照，不用今日成分回测历史</span>
+  <span class="badge">回测：T 选股 → T+1 开盘买 → 持有 N 日开盘卖</span>
+  <span class="badge">成本：往返 20bp（可调）</span>
+</div>
+
+<div class="bar">
+  <label>交易日</label><input id="day" type="text" placeholder="YYYYMMDD" style="width:112px">
+  <label>板块</label><select id="board" style="min-width:170px"></select>
+  <button id="btnReload">加载</button>
+  <button id="btnToday" title="取最新有成分快照的交易日">最新</button>
+  <span class="loading" id="hint"></span><span id="err"></span>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <h2>板块榜 <small id="blSub">按中位涨幅</small></h2>
+      <div class="scroll" style="max-height:70vh">
+        <table>
+          <thead><tr><th>#</th><th>板块</th><th>成员</th><th>中位%</th><th>涨停</th><th>成交额亿</th></tr></thead>
+          <tbody id="blBody"><tr><td colspan="6" class="mut">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>板块分析 <small id="anSub"></small></h2>
+      <div class="kpis" id="anKpis"></div>
+      <div class="note" id="anNote" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>领涨 / 落后 <small>当日板块内涨幅排序</small></h2>
+      <div class="scroll" style="max-height:38vh">
+        <table>
+          <thead><tr><th>代码</th><th>名称</th><th>涨幅%</th><th>成交额亿</th><th>涨停</th><th>连板</th></tr></thead>
+          <tbody id="membersBody"><tr><td colspan="6" class="mut">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>回测 <small>T 日选股 → T+1 开盘买 → 持有 N 日</small></h2>
+      <div class="bar" style="margin:0 0 12px">
+        <label>选股</label>
+        <select id="mode">
+          <option value="top">涨幅前 K</option>
+          <option value="limitup">当日涨停股</option>
+        </select>
+        <label>K</label><input id="k" type="number" value="3" min="1" max="20">
+        <label>持有</label><input id="hold" type="number" value="3" min="1" max="20">
+        <label>成本bp</label><input id="cost" type="number" value="20" min="0" max="100">
+        <label>起</label><input id="start" type="text" placeholder="默认近一年" style="width:112px">
+        <button class="primary" id="btnBt">开始回测</button>
+        <span class="loading" id="btHint"></span>
+      </div>
+      <div class="kpis" id="btKpis"></div>
+      <div class="legend" style="margin-top:12px">
+        <span><i class="dot" style="background:var(--color-up)"></i>策略净值</span>
+        <span><i class="dot" style="background:var(--link)"></i>同期板块全成员等权基准</span>
+        <span class="mut">（按卖出日分组、非重叠调仓复利）</span>
+      </div>
+      <div id="chart"></div>
+      <div class="note" id="btNote" style="margin-top:8px"></div>
+      <div class="scroll" style="max-height:34vh;margin-top:10px">
+        <table>
+          <thead><tr><th>信号日</th><th>代码</th><th>名称</th><th>买(开盘)</th><th>卖日</th><th>卖(开盘)</th><th>收益%</th></tr></thead>
+          <tbody id="btBody"><tr><td colspan="7" class="mut">—</td></tr></tbody>
+        </table>
+      </div>
+      <div class="warn">
+        口径与局限：成分按当日快照（含盘中调整），退市/停牌票当日缺行仍有轻量幸存者偏差；
+        ST 档位用当前名称回溯；净值只在已实现口径上算，持仓期回撤看不到；
+        未扣滑点，成本按往返 bp 扣除。结果用于研究，不构成投资建议。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const API = "/api/board";
+let CUR = { day: "", board: "" };
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function pct(v, digits) {
+  if (v == null || Number.isNaN(v)) return '<span class="mut">—</span>';
+  const n = Number(v);
+  const cls = n > 0 ? "up" : (n < 0 ? "dn" : "mut");
+  return '<span class="' + cls + '">' + n.toFixed(digits == null ? 2 : digits) + "</span>";
+}
+function num(v, d) { return (v == null || Number.isNaN(v)) ? "—" : Number(v).toFixed(d == null ? 2 : d); }
+function say(msg) { $("err").textContent = msg || ""; }
+
+async function jget(path, params) {
+  const qs = new URLSearchParams(params || {}).toString();
+  const r = await fetch(API + path + (qs ? "?" + qs : ""), { headers: { Accept: "application/json" } });
+  const j = await r.json().catch(() => ({ ok: false, message: "响应非 JSON（HTTP " + r.status + "）" }));
+  if (!r.ok || j.ok === false) throw new Error(j.message || ("HTTP " + r.status));
+  return j;
+}
+
+async function loadList(day) {
+  $("blSub").textContent = "加载中…";
+  const d = await jget("/list", day ? { day, top: 60 } : { top: 60 });
+  CUR.day = d.day;
+  $("day").value = d.day;
+  const tb = $("blBody");
+  tb.innerHTML = d.boards.map((b) => (
+    '<tr data-board="' + esc(b.name) + '"' + (b.name === CUR.board ? ' class="sel"' : "") + ">" +
+    "<td>" + b.rank + "</td><td>" + esc(b.name) + "</td><td>" + b.n + "</td>" +
+    "<td>" + pct(b.med) + "</td><td>" + (b.limit_up || '<span class="mut">0</span>') + "</td>" +
+    "<td>" + num(b.amount_yi, 1) + "</td></tr>"
+  )).join("") || '<tr><td colspan="6" class="mut">当日无板块</td></tr>';
+  tb.querySelectorAll("tr[data-board]").forEach((tr) => {
+    tr.onclick = () => { CUR.board = tr.dataset.board; $("board").value = CUR.board; markSel(); loadAnalyze(); };
+  });
+  $("blSub").textContent = d.day + " · 共 " + d.total + " 个板块（显示前 " + d.boards.length + "）";
+  const sel = $("board");
+  const names = d.boards.map((b) => b.name);
+  if (CUR.board && names.indexOf(CUR.board) < 0) names.unshift(CUR.board);
+  sel.innerHTML = names.map((n) => '<option value="' + esc(n) + '">' + esc(n) + "</option>").join("");
+  if (!CUR.board && names.length) CUR.board = names[0];
+  sel.value = CUR.board;
+  markSel();
+}
+
+function markSel() {
+  document.querySelectorAll("#blBody tr[data-board]").forEach((tr) => {
+    tr.classList.toggle("sel", tr.dataset.board === CUR.board);
+  });
+}
+
+async function loadAnalyze() {
+  if (!CUR.board) return;
+  $("anSub").textContent = "加载中…";
+  $("membersBody").innerHTML = '<tr><td colspan="6" class="mut">加载中…</td></tr>';
+  try {
+    const a = await jget("/analyze", { board: CUR.board, day: CUR.day });
+    $("anSub").textContent = a.day + " · " + a.board + " · 概念 " + a.n + " 只";
+    const kp = [
+      ["成员", a.n], ["行情覆盖", (a.coverage * 100).toFixed(1) + "%"],
+      ["中位涨幅", pct(a.med)], ["上涨占比", (a.up_ratio * 100).toFixed(0) + "%"],
+      ["涨停", a.limit_up], ["盘中触板", a.touch_only], ["2 连板", a.ladder2],
+      ["新进成分", a.new_members], ["成交额(亿)", num(a.amount_yi, 1)],
+    ];
+    $("anKpis").innerHTML = kp.map(([k, v]) => "<div class='kpi'><b>" + v + "</b><span>" + k + "</span></div>").join("");
+    const rows = (a.top || []).concat(a.bottom || []);
+    $("membersBody").innerHTML = rows.map((z) => (
+      "<tr><td>" + esc(z.code) + "</td><td>" + esc(z.name) + (z.new_member ? ' <span class="mut">*新</span>' : "") + "</td>" +
+      "<td>" + pct(z.pct) + "</td><td>" + num(z.amount_yi, 1) + "</td>" +
+      "<td>" + (z.limit_up ? '<span class="up">涨停</span>' : (z.touch_only ? '<span class="mut">触板</span>' : "")) + "</td>" +
+      "<td>" + (z.boards > 1 ? z.boards : "") + "</td></tr>"
+    )).join("");
+    $("anNote").textContent = "领涨前 10 + 落后 5；*新 = 当日新进成分；连板只识别 2 连板（需前一日也涨停）。"
+      + (a.n_prev ? " 前一日成分 " + a.n_prev + " 只。" : "");
+    say("");
+  } catch (e) {
+    $("anSub").textContent = "加载失败";
+    say(e.message);
+  }
+}
+
+function drawChart(strat, bench) {
+  const box = $("chart");
+  const W = Math.max(560, box.clientWidth || 640), H = 210;
+  const P = { l: 44, r: 10, t: 8, b: 22 };
+  const map = new Map();
+  const put = (arr, key) => (arr || []).forEach((p) => {
+    if (!map.has(p.day)) map.set(p.day, {});
+    map.get(p.day)[key] = p.nav;
+  });
+  put(strat, "s"); put(bench, "b");
+  const days = Array.from(map.keys()).sort();
+  if (days.length < 2) { box.innerHTML = '<div class="note">样本不足，无法画净值曲线。</div>'; return; }
+  let ls = 1, lb = 1;
+  const S = [], B = [];
+  days.forEach((d) => {
+    const m = map.get(d);
+    if (m.s != null) ls = m.s;
+    if (m.b != null) lb = m.b;
+    S.push(ls); B.push(lb);
+  });
+  const all = S.concat(B);
+  const hi = Math.max.apply(null, all), lo = Math.min.apply(null, all);
+  const pad = (hi - lo) * 0.08 || 0.05;
+  const yMax = hi + pad, yMin = lo - pad;
+  const x = (i) => P.l + (W - P.l - P.r) * i / (days.length - 1);
+  const y = (v) => P.t + (H - P.t - P.b) * (1 - (v - yMin) / (yMax - yMin));
+  const line = (arr) => arr.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+  const grid = [0, 0.25, 0.5, 0.75, 1].map((t) => {
+    const v = yMin + (yMax - yMin) * t;
+    return '<line x1="' + P.l + '" x2="' + (W - P.r) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) +
+      '" stroke="var(--border-weak)" stroke-width="1"/>' +
+      '<text x="' + (P.l - 6) + '" y="' + (y(v) + 3.5).toFixed(1) + '" fill="var(--text-dim)" font-size="10" text-anchor="end">' +
+      v.toFixed(2) + "</text>";
+  }).join("");
+  box.innerHTML =
+    '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" height="' + H + '" role="img" aria-label="净值曲线">' +
+    grid +
+    '<path d="' + line(B) + '" fill="none" stroke="var(--link)" stroke-width="1.6" stroke-dasharray="4 3"/>' +
+    '<path d="' + line(S) + '" fill="none" stroke="var(--color-up)" stroke-width="2"/>' +
+    '<text x="' + P.l + '" y="' + (H - 6) + '" fill="var(--text-dim)" font-size="10">' + days[0] + "</text>" +
+    '<text x="' + (W - P.r) + '" y="' + (H - 6) + '" fill="var(--text-dim)" font-size="10" text-anchor="end">' +
+    days[days.length - 1] + "</text></svg>";
+}
+
+async function runBt() {
+  if (!CUR.board) return;
+  const btn = $("btnBt");
+  btn.disabled = true; $("btHint").textContent = "回测中（首次读 311MB 概念成分，约 3~10 秒）…";
+  try {
+    const m = await jget("/backtest", {
+      board: CUR.board, day: CUR.day, start: ($("start").value || "").trim(),
+      k: $("k").value, hold: $("hold").value, cost_bps: $("cost").value, mode: $("mode").value,
+    });
+    const kp = [
+      ["交易笔数", m.n], ["胜率", m.win_rate == null ? "—" : (m.win_rate * 100).toFixed(1) + "%"],
+      ["单笔均值", pct(m.avg * 100)], ["盈亏比", m.pl_ratio == null ? "—" : m.pl_ratio.toFixed(2)],
+      ["累计", pct(m.total_return * 100, 1)], ["年化", pct(m.annual * 100, 1)],
+      ["最大回撤", pct(m.mdd * 100, 1)], ["基准累计", pct(m.bench.total_return * 100, 1)],
+      ["超额", pct(m.excess * 100, 1)],
+    ];
+    $("btKpis").innerHTML = kp.map(([k, v]) => "<div class='kpi'><b>" + v + "</b><span>" + k + "</span></div>").join("");
+    drawChart(m.equity, m.bench.equity);
+    const sk = m.skipped || {};
+    const eff = m.signal_days - (sk.no_members || 0);
+    $("btNote").textContent =
+      m.start + " ~ " + m.end + " · " + m.signal_days + " 个信号日（每 " + m.hold + " 日调仓一次，非重叠）· " +
+      "有效选股 " + eff + " 日 · " +
+      (m.mode === "top" ? "取涨幅前 " + m.k : "取当日涨停股") + " · 成本 " + m.cost_bps + "bp 往返 · " +
+      "剔除：一字板 " + (sk.one_word_limit || 0) + " 笔、T+1 无行情 " + (sk.no_next_bar || 0) +
+      " 笔、卖出日无行情 " + (sk.no_exit_bar || 0) + " 笔、板块无成分 " + (sk.no_members || 0) + " 日";
+    $("btBody").innerHTML = (m.trades || []).slice().reverse().map((t) => (
+      "<tr><td>" + t.signal_day + "</td><td>" + esc(t.code) + "</td><td>" + esc(t.name) + "</td>" +
+      "<td>" + num(t.buy, 2) + "</td><td>" + t.exit_day + "</td><td>" + num(t.exit, 2) + "</td>" +
+      "<td>" + pct(t.ret * 100) + "</td></tr>"
+    )).join("") || '<tr><td colspan="7" class="mut">无成交</td></tr>';
+    say("");
+  } catch (e) {
+    say("回测失败：" + e.message);
+  } finally {
+    btn.disabled = false; $("btHint").textContent = "";
+  }
+}
+
+$("btnReload").onclick = async () => {
+  const d = ($("day").value || "").trim();
+  try { await loadList(d || null); await loadAnalyze(); } catch (e) { say(e.message); }
+};
+$("btnToday").onclick = async () => {
+  $("day").value = "";
+  try { await loadList(null); await loadAnalyze(); } catch (e) { say(e.message); }
+};
+$("board").onchange = () => { CUR.board = $("board").value; markSel(); loadAnalyze(); };
+$("btnBt").onclick = runBt;
+
+(async function init() {
+  try { await loadList(null); await loadAnalyze(); } catch (e) { say("初始化失败：" + e.message); }
+})();
+</script>
+</body>
+</html>

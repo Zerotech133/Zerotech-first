@@ -1,0 +1,810 @@
+{
+  "wo": "WO-KG-202",
+  "generated_at": "2026-11-09",
+  "scope": {
+    "units_total": 481,
+    "units_matched": 32,
+    "edges_confirmed": 94,
+    "candidates_degraded": 22
+  },
+  "kb_breakdown": {
+    "edges": {
+      "research_reports_kb": 94
+    },
+    "candidates": {
+      "research_reports_kb": 22
+    }
+  },
+  "channels": {
+    "name": 94
+  },
+  "edges": [
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830016191::8189236133cda851",
+      "ts_code": "688041.SH",
+      "via": "name",
+      "matched_term": "海光信息"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830022766::20d0b84f868d7643",
+      "ts_code": "601021.SH",
+      "via": "name",
+      "matched_term": "春秋航空"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830023754::e3ac8e8e8f83fbe5",
+      "ts_code": "001979.SZ",
+      "via": "name",
+      "matched_term": "招商蛇口"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::41c9eb2bf7899714",
+      "ts_code": "002120.SZ",
+      "via": "name",
+      "matched_term": "韵达股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::41c9eb2bf7899714",
+      "ts_code": "002352.SZ",
+      "via": "name",
+      "matched_term": "顺丰控股"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::41c9eb2bf7899714",
+      "ts_code": "002468.SZ",
+      "via": "name",
+      "matched_term": "申通快递"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::41c9eb2bf7899714",
+      "ts_code": "600233.SH",
+      "via": "name",
+      "matched_term": "圆通速递"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::7b3780cd51228758",
+      "ts_code": "002120.SZ",
+      "via": "name",
+      "matched_term": "韵达股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::7b3780cd51228758",
+      "ts_code": "002352.SZ",
+      "via": "name",
+      "matched_term": "顺丰控股"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::7b3780cd51228758",
+      "ts_code": "002468.SZ",
+      "via": "name",
+      "matched_term": "申通快递"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830034661::7b3780cd51228758",
+      "ts_code": "600233.SH",
+      "via": "name",
+      "matched_term": "圆通速递"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035133::4c12e483dc79c25a",
+      "ts_code": "000710.SZ",
+      "via": "name",
+      "matched_term": "贝瑞基因"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035133::4c12e483dc79c25a",
+      "ts_code": "301047.SZ",
+      "via": "name",
+      "matched_term": "义翘神州"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035133::4c12e483dc79c25a",
+      "ts_code": "301080.SZ",
+      "via": "name",
+      "matched_term": "百普赛斯"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035133::4c12e483dc79c25a",
+      "ts_code": "688114.SH",
+      "via": "name",
+      "matched_term": "华大智造"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035133::4c12e483dc79c25a",
+      "ts_code": "688137.SH",
+      "via": "name",
+      "matched_term": "近岸蛋白"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035133::4c12e483dc79c25a",
+      "ts_code": "688315.SH",
+      "via": "name",
+      "matched_term": "诺禾致源"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035707::1574c5221ff9fa3b",
+      "ts_code": "300058.SZ",
+      "via": "name",
+      "matched_term": "蓝色光标"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830035707::1574c5221ff9fa3b",
+      "ts_code": "301171.SZ",
+      "via": "name",
+      "matched_term": "易点天下"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830038557::f581be70f601e893",
+      "ts_code": "000157.SZ",
+      "via": "name",
+      "matched_term": "中联重科"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830038557::f581be70f601e893",
+      "ts_code": "000425.SZ",
+      "via": "name",
+      "matched_term": "徐工机械"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830038557::f581be70f601e893",
+      "ts_code": "000528.SZ",
+      "via": "name",
+      "matched_term": "柳工"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830038557::f581be70f601e893",
+      "ts_code": "600031.SH",
+      "via": "name",
+      "matched_term": "三一重工"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830038557::f581be70f601e893",
+      "ts_code": "601100.SH",
+      "via": "name",
+      "matched_term": "恒立液压"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830042321::193332eae9f14116",
+      "ts_code": "300207.SZ",
+      "via": "name",
+      "matched_term": "欣旺达"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830042321::2162a1166fb0b93e",
+      "ts_code": "300750.SZ",
+      "via": "name",
+      "matched_term": "宁德时代"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830042321::00e8f42a001305de",
+      "ts_code": "300014.SZ",
+      "via": "name",
+      "matched_term": "亿纬锂能"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "000792.SZ",
+      "via": "name",
+      "matched_term": "盐湖股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "002460.SZ",
+      "via": "name",
+      "matched_term": "赣锋锂业"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "002466.SZ",
+      "via": "name",
+      "matched_term": "天齐锂业"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "002594.SZ",
+      "via": "name",
+      "matched_term": "比亚迪"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "002709.SZ",
+      "via": "name",
+      "matched_term": "天赐材料"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "002812.SZ",
+      "via": "name",
+      "matched_term": "恩捷股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "300014.SZ",
+      "via": "name",
+      "matched_term": "亿纬锂能"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "300207.SZ",
+      "via": "name",
+      "matched_term": "欣旺达"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "300750.SZ",
+      "via": "name",
+      "matched_term": "宁德时代"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::59f00d9b4ae25597",
+      "ts_code": "301358.SZ",
+      "via": "name",
+      "matched_term": "湖南裕能"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830054135::ea2324f68c6b83e3",
+      "ts_code": "002624.SZ",
+      "via": "name",
+      "matched_term": "完美世界"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830054135::ea2324f68c6b83e3",
+      "ts_code": "300364.SZ",
+      "via": "name",
+      "matched_term": "中文在线"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830054135::ea2324f68c6b83e3",
+      "ts_code": "300418.SZ",
+      "via": "name",
+      "matched_term": "昆仑万维"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105332::7e57da742c656e5a",
+      "ts_code": "002383.SZ",
+      "via": "name",
+      "matched_term": "合众思壮"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105332::7e57da742c656e5a",
+      "ts_code": "600391.SH",
+      "via": "name",
+      "matched_term": "航发科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105332::7e57da742c656e5a",
+      "ts_code": "603678.SH",
+      "via": "name",
+      "matched_term": "火炬电子"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105332::7e57da742c656e5a",
+      "ts_code": "688070.SH",
+      "via": "name",
+      "matched_term": "纵横股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105332::7e57da742c656e5a",
+      "ts_code": "688081.SH",
+      "via": "name",
+      "matched_term": "兴图新科"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "002202.SZ",
+      "via": "name",
+      "matched_term": "金风科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "002487.SZ",
+      "via": "name",
+      "matched_term": "大金重工"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "300185.SZ",
+      "via": "name",
+      "matched_term": "通裕重工"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "600416.SH",
+      "via": "name",
+      "matched_term": "湘电股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "600458.SH",
+      "via": "name",
+      "matched_term": "时代新材"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "601218.SH",
+      "via": "name",
+      "matched_term": "吉鑫科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105333::fef2afec6f5c2b85",
+      "ts_code": "603218.SH",
+      "via": "name",
+      "matched_term": "日月股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::fec66c864b01bf0d",
+      "ts_code": "300424.SZ",
+      "via": "name",
+      "matched_term": "航新科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::fec66c864b01bf0d",
+      "ts_code": "688011.SH",
+      "via": "name",
+      "matched_term": "新光光电"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::fec66c864b01bf0d",
+      "ts_code": "688175.SH",
+      "via": "name",
+      "matched_term": "高凌信息"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::fec66c864b01bf0d",
+      "ts_code": "688629.SH",
+      "via": "name",
+      "matched_term": "华丰科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::fec66c864b01bf0d",
+      "ts_code": "688682.SH",
+      "via": "name",
+      "matched_term": "霍莱沃"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::fec66c864b01bf0d",
+      "ts_code": "688776.SH",
+      "via": "name",
+      "matched_term": "国光电气"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105365::586ff2c978cb6472",
+      "ts_code": "300474.SZ",
+      "via": "name",
+      "matched_term": "景嘉微"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105370::62a2659fb9fd7c93",
+      "ts_code": "300118.SZ",
+      "via": "name",
+      "matched_term": "东方日升"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "002531.SZ",
+      "via": "name",
+      "matched_term": "天顺风能"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "300569.SZ",
+      "via": "name",
+      "matched_term": "天能重工"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "300904.SZ",
+      "via": "name",
+      "matched_term": "威力传动"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "301063.SZ",
+      "via": "name",
+      "matched_term": "海锅股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "301163.SZ",
+      "via": "name",
+      "matched_term": "宏德股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "301232.SZ",
+      "via": "name",
+      "matched_term": "飞沃科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "600416.SH",
+      "via": "name",
+      "matched_term": "湘电股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "603063.SH",
+      "via": "name",
+      "matched_term": "禾望电气"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "603507.SH",
+      "via": "name",
+      "matched_term": "振江股份"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105372::c2f1203e1f3fbdb5",
+      "ts_code": "688660.SH",
+      "via": "name",
+      "matched_term": "电气风电"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830111904::0d2fad748c9aa73f",
+      "ts_code": "603596.SH",
+      "via": "name",
+      "matched_term": "伯特利"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830111958::808a50850a769f34",
+      "ts_code": "300014.SZ",
+      "via": "name",
+      "matched_term": "亿纬锂能"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830112399::43f83b634688838e",
+      "ts_code": "600111.SH",
+      "via": "name",
+      "matched_term": "北方稀土"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610031830126605::96a00383b2efe8a7",
+      "ts_code": "603486.SH",
+      "via": "name",
+      "matched_term": "科沃斯"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830182729::2207017f1c207950",
+      "ts_code": "300750.SZ",
+      "via": "name",
+      "matched_term": "宁德时代"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830182729::e509858a99ef8f97",
+      "ts_code": "002074.SZ",
+      "via": "name",
+      "matched_term": "国轩高科"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830184407::f6b0a1a8e1857ba2",
+      "ts_code": "300229.SZ",
+      "via": "name",
+      "matched_term": "拓尔思"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830184407::f6b0a1a8e1857ba2",
+      "ts_code": "301236.SZ",
+      "via": "name",
+      "matched_term": "软通动力"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::8ad7eb91836175e7",
+      "ts_code": "600901.SH",
+      "via": "name",
+      "matched_term": "江苏金租"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::d607e3a02082de34",
+      "ts_code": "688825.SH",
+      "via": "name",
+      "matched_term": "长鑫科技"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "000776.SZ",
+      "via": "name",
+      "matched_term": "广发证券"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "600030.SH",
+      "via": "name",
+      "matched_term": "中信证券"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "600901.SH",
+      "via": "name",
+      "matched_term": "江苏金租"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "601108.SH",
+      "via": "name",
+      "matched_term": "财通证券"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "601211.SH",
+      "via": "name",
+      "matched_term": "国泰海通"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "601318.SH",
+      "via": "name",
+      "matched_term": "中国平安"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "601601.SH",
+      "via": "name",
+      "matched_term": "中国太保"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "601688.SH",
+      "via": "name",
+      "matched_term": "华泰证券"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "ts_code": "601995.SH",
+      "via": "name",
+      "matched_term": "中金公司"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830186073::814903f52d4bfae8",
+      "ts_code": "000858.SZ",
+      "via": "name",
+      "matched_term": "五粮液"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830186073::0d061d3914390b9f",
+      "ts_code": "002956.SZ",
+      "via": "name",
+      "matched_term": "西麦食品"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830186073::0d061d3914390b9f",
+      "ts_code": "600298.SH",
+      "via": "name",
+      "matched_term": "安琪酵母"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830186073::0d061d3914390b9f",
+      "ts_code": "600519.SH",
+      "via": "name",
+      "matched_term": "贵州茅台"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830188839::100ddec8a3622e4f",
+      "ts_code": "301299.SZ",
+      "via": "name",
+      "matched_term": "卓创资讯"
+    }
+  ],
+  "candidates": [
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830015411::ec957d80ae515f65",
+      "book": "rp_AP202609301830015411",
+      "term": "中国建筑",
+      "level": "name",
+      "codes": [
+        "601668.SH"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202609301830049884::eed0eb70f16d4b0b",
+      "book": "rp_AP202609301830049884",
+      "term": "国新能源",
+      "level": "name",
+      "codes": [
+        "600617.SH"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610011830075766::e5a5d1cddd74a9ab",
+      "book": "rp_AP202610011830075766",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610011830075766::625f38d6d2015b37",
+      "book": "rp_AP202610011830075766",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105370::62a2659fb9fd7c93",
+      "book": "rp_AP202610021830105370",
+      "term": "太阳能",
+      "level": "name",
+      "codes": [
+        "000591.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105414::f3668dd9be2a5594",
+      "book": "rp_AP202610021830105414",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105414::4f230242646d4c98",
+      "book": "rp_AP202610021830105414",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105414::9110e2d3792d570c",
+      "book": "rp_AP202610021830105414",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830105414::c1b53c083f408e9b",
+      "book": "rp_AP202610021830105414",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610021830112399::efaebe278ef50bbc",
+      "book": "rp_AP202610021830112399",
+      "term": "中国稀土",
+      "level": "name",
+      "codes": [
+        "000831.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610031830124601::3ade352883098a8e",
+      "book": "rp_AP202610031830124601",
+      "term": "新产业",
+      "level": "name",
+      "codes": [
+        "300832.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610031830126598::6eedf4eaeebd9586",
+      "book": "rp_AP202610031830126598",
+      "term": "海量数据",
+      "level": "name",
+      "codes": [
+        "603138.SH"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610031830126605::96a00383b2efe8a7",
+      "book": "rp_AP202610031830126605",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610061830165137::8a203b3b4c1f1d49",
+      "book": "rp_AP202610061830165137",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610061830165858::e5482ecea0378fe4",
+      "book": "rp_AP202610061830165858",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610061830165858::57a6605b535b5224",
+      "book": "rp_AP202610061830165858",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610061830165858::2bc3ea9fb876b644",
+      "book": "rp_AP202610061830165858",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610061830165858::92ea6fbe6c114813",
+      "book": "rp_AP202610061830165858",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610061830165858::64f406543c9a55a6",
+      "book": "rp_AP202610061830165858",
+      "term": "机器人",
+      "level": "name",
+      "codes": [
+        "300024.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830184407::42f0374e4ac3d489",
+      "book": "rp_AP202610071830184407",
+      "term": "同花顺",
+      "level": "name",
+      "codes": [
+        "300033.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830184407::42f0374e4ac3d489",
+      "book": "rp_AP202610071830184407",
+      "term": "东方财富",
+      "level": "name",
+      "codes": [
+        "300059.SZ"
+      ],
+      "why": "common_term"
+    },
+    {
+      "unit_key": "research_reports_kb::rp_AP202610071830185864::dc25b7ad68495892",
+      "book": "rp_AP202610071830185864",
+      "term": "同花顺",
+      "level": "name",
+      "codes": [
+        "300033.SZ"
+      ],
+      "why": "common_term"
+    }
+  ],
+  "data1_note": "降级候选（常用词简称/通用后缀拦截/2 字短名/同名多码）不猜不建边；DATA1 张松线权威映射表到位后按本报告候选清单复核补边，MERGE 幂等直补。"
+}

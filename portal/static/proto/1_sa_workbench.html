@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>个股分析工作台 · 零界</title>
+<link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>零界 <small>· 个股分析</small></div>
+  <nav class="tabs">
+    <a class="active" href="#">工作台</a>
+    <a href="2_nl_screener.html">条件选股</a>
+    <a href="3_strategy_studio.html">策略工作室</a>
+    <a href="4_backtest_report.html">回测报告</a>
+    <a href="#">报告库</a>
+  </nav>
+  <div class="top-right">
+    <span class="pill"><span class="dot"></span>数据 2026-11-02 · T+1</span>
+    <a class="btn sm" href="#">💬 Hermes 对话</a>
+  </div>
+</div>
+
+<main>
+  <div class="crumbs"><a href="#">零界</a> / 个股分析 / 工作台</div>
+  <h1>个股分析</h1>
+  <p class="sub">数据快照 → 事件库 → 特征 → 五维研判 → 报告/H5，全链路可复核、可追溯。研究分析，不构成投资建议。</p>
+
+  <!-- 搜索 + 快捷动作 -->
+  <div class="card">
+    <div class="searchbar">
+      <input class="input" id="q" placeholder="输入股票代码/名称，或直接说需求，例如：帮我分析 600337 的三季报影响">
+      <button class="btn primary" onclick="toast('已解析：单股分析（600337.SH），进入分析队列')">开始分析</button>
+      <button class="btn" onclick="toast('已切换到条件选股：请描述筛选条件')">条件选股</button>
+    </div>
+    <div class="row small muted" style="margin-top:10px">
+      <span>试试：</span>
+      <a href="#" onclick="fillSearch('600337');return false">600337 三季报影响</a>
+      <span>·</span>
+      <a href="#" onclick="fillSearch('轻工制造 PS 分位低于 50%');return false">轻工制造 PS 分位 &lt; 50%</a>
+      <span>·</span>
+      <a href="#" onclick="fillSearch('近期有回购事件且 ROE 转正');return false">回购 + ROE 转正</a>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid-kpi">
+    <div class="kpi"><div class="k">观察池</div><div class="v">4 <small>只</small></div><div class="d">全部已复核</div></div>
+    <div class="kpi"><div class="k">最近报告</div><div class="v">4 <small>份</small></div><div class="d">今日新增 4</div></div>
+    <div class="kpi"><div class="k">事件库</div><div class="v">211 <small>条</small></div><div class="d">待复核 0</div></div>
+    <div class="kpi"><div class="k">数据覆盖</div><div class="v">93.7 <small>%</small></div><div class="d">12 域中 11.5 齐全</div></div>
+    <div class="kpi"><div class="k">数据时效</div><div class="v">T+1</div><div class="d">行情/财务/筹码 11-02</div></div>
+    <div class="kpi"><div class="k">研究简报</div><div class="v">开 <small>·可选</small></div><div class="d">多/空/风险，不参与评级</div></div>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- 观察池 -->
+    <section class="card">
+      <h2><span>观察池</span><span class="hint">最近分析 · 点击行进入报告</span></h2>
+      <table>
+        <thead><tr><th>代码</th><th>名称</th><th>评级</th><th class="num">总分</th><th class="num">20日</th><th>数据 as-of</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="code">600337.SH</td><td>ST美克</td><td><span class="badge warn">事件观察</span></td><td class="num">27.5</td><td class="num dn">-4.37%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+          <tr><td class="code">605258.SH</td><td>协和电子</td><td><span class="badge warn">事件观察</span></td><td class="num">48.8</td><td class="num up">+2.10%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+          <tr><td class="code">688023.SH</td><td>安恒信息</td><td><span class="badge blue">观察</span></td><td class="num">49.4</td><td class="num dn">-16.08%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+          <tr><td class="code">603667.SH</td><td>五洲新春</td><td><span class="badge blue">观察</span></td><td class="num">36.1</td><td class="num up">+1.32%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+        </tbody>
+      </table>
+      <div class="row" style="margin-top:12px">
+        <button class="btn sm primary" onclick="toast('已提交：观察池 4 只批量分析')">批量分析（4）</button>
+        <button class="btn sm" onclick="toast('已打开观察池管理')">管理观察池</button>
+        <span class="spacer"></span>
+        <span class="small muted">上次更新：15:41</span>
+      </div>
+    </section>
+
+    <!-- Hermes 对话 -->
+    <section class="card">
+      <h2><span>Hermes 助手</span><span class="hint">研究问答 · 工具优先</span></h2>
+      <div class="notice info"><span>💬</span><div><b>可以这样问：</b>"600337 三季报后风险点有哪些？"、"帮我筛轻工制造里低估值高成长的票"、"用低估值+质量因子做个回测"。</div></div>
+      <div class="row">
+        <input class="input" placeholder="输入问题…" onkeydown="if(event.key==='Enter')toast('已发送到 Hermes（需登录 8787）')">
+        <button class="btn primary" onclick="toast('已发送到 Hermes（需登录 8787）')">发送</button>
+      </div>
+      <div class="row small muted" style="margin-top:10px">
+        <span class="tag ok">工具优先</span><span class="tag">不编造数据</span><span class="tag">引用 run_id</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- 最近报告 -->
+  <section class="card">
+    <h2><span>最近报告</span><span class="hint">报告 = 数据 + 事件 + 评分 + 风险清单</span></h2>
+    <table>
+      <thead><tr><th>run_id</th><th>股票</th><th>评级</th><th>覆盖</th><th>关键结论</th><th>生成时间</th><th></th></tr></thead>
+      <tbody>
+        <tr><td class="mono">600337SH-20261102-055625</td><td class="code">600337.SH ST美克</td><td><span class="badge warn">事件观察</span></td><td>91.7%</td><td class="muted">净资产转正、负债率 87.5%；退市风险短期缓解未消除</td><td class="muted">05:56</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+        <tr><td class="mono">688023SH-20261102-055456</td><td class="code">688023.SH 安恒信息</td><td><span class="badge blue">观察</span></td><td>100%</td><td class="muted">PS 历史分位 21%，20 日 -16%，机构研报覆盖 51 篇</td><td class="muted">05:54</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+        <tr><td class="mono">603667SH-20261102-055521</td><td class="code">603667.SH 五洲新春</td><td><span class="badge blue">观察</span></td><td>100%</td><td class="muted">扣非 -22.9% vs 归母 +898%（非经常性 9.12 亿）</td><td class="muted">05:55</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+        <tr><td class="mono">605258SH-20261102-055643</td><td class="code">605258.SH 协和电子</td><td><span class="badge warn">事件观察</span></td><td>83.3%</td><td class="muted">控制权拟变更、复牌；非两融/无卖方覆盖</td><td class="muted">05:56</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="grid grid-3">
+    <section class="card hover">
+      <h2>条件选股</h2>
+      <p class="small muted" style="margin:0 0 12px">自然语言描述 → 解析为可核对条件 → 预览确认 → 批量出报告。</p>
+      <a class="btn sm" href="2_nl_screener.html">进入选股 →</a>
+    </section>
+    <section class="card hover">
+      <h2>策略工作室</h2>
+      <p class="small muted" style="margin:0 0 12px">把你的想法写成策略 Spec：筛选、排序、调仓、成本；先校验后回测。</p>
+      <a class="btn sm" href="3_strategy_studio.html">进入策略 →</a>
+    </section>
+    <section class="card hover">
+      <h2>回测报告</h2>
+      <p class="small muted" style="margin:0 0 12px">样本内外、成本敏感性、分年度表现；结果可追溯、可导出。</p>
+      <a class="btn sm" href="4_backtest_report.html">看示例 →</a>
+    </section>
+  </div>
+
+  <footer>
+    <span>数据来源：本地数据仓（curated 51 表 + 数据根 256 表）</span>
+    <span>质量门：G1-G4 · 六套件</span>
+    <span>研究分析，不构成投资建议 · 历史回测不代表未来</span>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600);}
+function fillSearch(t){document.getElementById('q').value=t;}
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')toast('已解析请求，提交分析队列（原型）');});
+</script>
+</body>
+</html>

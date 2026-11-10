@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>候风 · 交易回放日历</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 22px 44px}
+.plat-bar{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin-bottom:14px}
+.plat-bar a{color:var(--brand);text-decoration:none;font-weight:600}
+.plat-bar .sep{color:var(--line)}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.top h1{font-size:21px;font-weight:800}
+.top .sub{font-size:12.5px;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1020px){.cal{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.cal{grid-template-columns:1fr}}
+.mcell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;position:relative;transition:transform .12s, box-shadow .12s}
+.mcell:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(42,91,226,.10)}
+.mcell.zero{opacity:.55;cursor:default}
+.mcell.zero:hover{transform:none;box-shadow:none}
+.mcell .ym{font-size:13px;color:var(--dim);font-family:var(--mono)}
+.mcell .pnl{font-size:26px;font-weight:800;font-family:var(--mono);line-height:1.15;margin:2px 0}
+.mcell .pnl.pos{color:var(--up)} .mcell .pnl.neg{color:var(--dn)}
+.mcell .meta{font-size:12px;color:var(--muted)}
+.mcell .spark{display:flex;gap:1.5px;align-items:flex-end;height:34px;margin-top:10px}
+.mcell .spark i{flex:1;border-radius:1px;min-width:2px}
+.mcell .go{position:absolute;right:14px;top:16px;color:var(--brand);font-size:12px;opacity:0;transition:opacity .12s}
+.mcell:hover .go{opacity:1}
+.mask{position:fixed;inset:0;background:rgba(13,26,58,.45);z-index:9;display:none}
+.mask.on{display:block}
+.sheet{position:fixed;right:0;top:0;bottom:0;width:min(860px,94vw);background:#fff;z-index:10;overflow-y:auto;display:none;box-shadow:-8px 0 32px rgba(13,26,58,.18)}
+.sheet.on{display:block}
+.sheet-hd{position:sticky;top:0;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;padding:18px 24px;z-index:5}
+.sheet-hd h2{font-size:19px;font-weight:800}
+.sheet-hd .sub{font-size:12.5px;color:#dce6ff;margin-top:2px}
+.sheet-hd .x{position:absolute;right:18px;top:14px;font-size:20px;cursor:pointer;background:rgba(255,255,255,.18);border:none;color:#fff;width:34px;height:34px;border-radius:50%}
+.sheet-bd{padding:20px 24px 40px}
+.msum{display:flex;gap:22px;flex-wrap:wrap;background:var(--bg);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.msum b{font-family:var(--mono)}
+.day{margin-bottom:18px}
+.day-hd{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.day-hd .d{font-family:var(--mono);font-weight:700;font-size:13.5px}
+.day-hd .tag{font-size:11px;border-radius:3px;padding:0 7px;background:#eaf0ff;color:var(--brand);font-weight:600}
+.day-hd .tag.sell{background:#fdf6ec;color:#b07818}
+.day-hd .flow{font-size:12px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{color:var(--dim);font-weight:600;text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);font-size:11px;white-space:nowrap}
+td{padding:5px 8px;border-bottom:1px solid #f0f2f8;text-align:right;font-family:var(--mono);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;font-family:inherit}
+tr:hover td{background:#f8faff}
+.pos{color:var(--up)} .neg{color:var(--dn)}
+.pill{display:inline-block;font-size:10.5px;border-radius:3px;padding:0 6px}
+.pill.w{background:var(--dn-bg);color:var(--dn)} .pill.l{background:var(--up-bg);color:var(--up)}
+footer{margin-top:22px;color:var(--dim);font-size:12px;display:flex;gap:12px;flex-wrap:wrap}
+.caliber{background:var(--card);border:1px solid #dfe6f5;border-left:4px solid var(--brand);border-radius:10px;padding:12px 18px;margin-bottom:14px}
+.caliber .cap{font-size:13px;color:var(--muted);margin-bottom:8px}
+.caliber .cap b{color:var(--text);font-family:var(--mono)}
+.wg-hd{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.wg-hd b{color:var(--up)}
+.wg-row{display:flex;gap:8px;flex-wrap:wrap}
+.wg-chip{border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;cursor:default;background:#fff}
+.wg-chip.on{border-color:var(--brand);background:#eaf0ff}
+.wg-chip .r{font-family:var(--mono);font-weight:800}
+.wg-chip .r.pos{color:var(--up)} .wg-chip .r.neg{color:var(--dn)}
+.wg-chip .n{color:var(--dim);font-size:11px;display:block;margin-top:1px}
+#loading{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:20;display:flex;align-items:center;justify-content:center;color:var(--brand);font-size:14px}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>/* 页级覆盖：与本页原值逐位一致（视觉零变化） */
+:root {--mono:'SF Mono',Consolas,monospace;}</style>
+</head>
+<body>
+<div id="loading">加载回放数据…</div>
+<div class="wrap">
+
+  <div class="plat-bar"><a href="HOUFENG_STRATEGY_CARD.html">策略中心</a><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><span class="cur">回放日历</span><span class="sep">/</span><a href="HOUFENG_ARENA.html">竞技场·一年</a><span class="sep">/</span><a href="HOUFENG_ARENA_36M.html">竞技场·三年</a><span class="sep">/</span><a href="HOUFENG_HOLDGRID.html">持仓网格</a><span class="sep">/</span><a href="HOUFENG_DIVIDEND.html">红利防御档</a><span class="sep">/</span><a href="M2_DASHBOARD.html">冻结看板</a><span style="margin-left:auto"><b id="win">—</b><b id="gen">—</b></span></div>
+
+  <div class="caliber" id="caliber" style="display:none">
+    <div class="cap" id="cap-line">本金 <b>—</b></div>
+    <div class="wg" id="wg">
+      <div class="wg-hd" id="wg-hd">—</div>
+      <div class="wg-row" id="wg-rows"></div>
+    </div>
+  </div>
+
+  <div class="top">
+    <h1>交易回放日历</h1>
+    <div class="sub" id="ov">—</div>
+  </div>
+
+  <div class="cal" id="cal"></div>
+
+  <footer>
+    <span>点月份卡片 → 展开当月逐日买卖时间线（T 日信号 → T+1 开盘买 → 持有 5 日收盘卖）</span>
+    <span style="margin-left:auto">数据源 houfeng_playbook.json · 候风 HOUFENG · qpzm 引擎</span>
+  <span style="margin-left:auto">模拟盘数据 · 不构成投资建议 · 历史回测不代表未来表现（程序生成）</span></footer>
+</div>
+
+<div class="mask" id="mask"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-hd">
+    <button class="x" id="x">×</button>
+    <h2 id="sh-title">—</h2>
+    <div class="sub" id="sh-sub">—</div>
+  </div>
+  <div class="sheet-bd" id="sh-body"></div>
+</div>
+
+<script>
+let PB=null, NAVS=null;
+const monSeq=['202511','202512','202601','202602','202603','202604','202605','202606','202607','202608','202609','202610','202611'];
+fetch('houfeng_playbook.json').then(r=>r.json()).then(d=>{
+  PB=d; loadNavs();
+}).catch(e=>{document.getElementById('loading').textContent='加载失败（需 http 服务打开本页）：'+e});
+
+async function loadNavs(){
+  try{
+    const r=await fetch('paper_ledger_replay_12m.jsonl'); const t=await r.text();
+    const rows=t.trim().split('\n').map(l=>JSON.parse(l));
+    const mon={}; rows.forEach(x=>{mon[x.date.slice(0,6)]=x.nav});
+    NAVS={}; let prev=1.0;
+    monSeq.forEach(m=>{ if(mon[m]!=null){NAVS[m]=mon[m]/prev-1; prev=mon[m];} });
+  }catch(e){ NAVS={}; }
+  document.getElementById('loading').style.display='none';
+  render();
+}
+
+function render(){
+  const o=PB.overview;
+  document.getElementById('win').textContent=PB.window.start+' ~ '+PB.window.end;
+  document.getElementById('gen').textContent=PB.generated;
+  document.getElementById('ov').innerHTML='<b>'+o.n_trades+'</b> 笔 · 本窗口累计 <b class="pos">+'+o.total_return_pct+'%</b> · 回撤 <b class="neg">'+o.max_dd_pct+'%</b> · 胜率 '+(o.win_rate*100).toFixed(1)+'% · 盈亏比 '+o.pl_ratio;
+  const cp=PB.capital, wg=PB.window_guide;
+  if(cp){
+    document.getElementById('caliber').style.display='block';
+    document.getElementById('cap-line').innerHTML='起始资金 <b>'+cp.label+'</b>（'+cp.value.toLocaleString()+' 元）— '+cp.note;
+  }
+  if(wg){
+    document.getElementById('wg-hd').innerHTML='⚠ '+wg.warning+' <b>窗口 ≠ 结论</b>';
+    document.getElementById('wg-rows').innerHTML=wg.windows.map(x=>
+      '<div class="wg-chip'+(x.w.indexOf('12')===0?' on':'')+'" title="'+x.note+'"><span class="r '+(x.ret>=0?'pos':'neg')+'">'+x.w+' '+(x.ret>=0?'+':'')+x.ret+'%</span><span class="n">回撤 '+x.dd+'% · '+x.note+'</span></div>'
+    ).join('')+'<div style="font-size:11px;color:var(--dim);align-self:center;max-width:300px">'+wg.note+'</div>';
+  }
+  const byMon={}; PB.months.forEach(x=>byMon[x.month]=x);
+  document.getElementById('cal').innerHTML=monSeq.map(m=>{
+    const g=byMon[m];
+    if(!g||g.n===0){
+      return '<div class="mcell zero"><div class="ym">'+m+'</div><div class="pnl" style="color:var(--dim);font-size:17px">闸门关闭</div><div class="meta">0 笔 · 空仓保命</div></div>';
+    }
+    const mr=NAVS&&NAVS[m];
+    const pnlCls=g.pnl_wan>=0?'pos':'neg';
+    return '<div class="mcell" data-m="'+m+'">'+
+      '<div class="ym">'+m+'<span class="go">展开 ›</span></div>'+
+      '<div class="pnl '+pnlCls+'">'+(g.pnl_wan>=0?'+':'')+g.pnl_wan.toFixed(0)+' 万</div>'+
+      '<div class="meta">'+g.n+' 笔 · 胜率 '+(g.win_rate*100).toFixed(0)+'%'+(mr!=null?' · 组合月收益 <b class="'+(mr>=0?'pos':'neg')+'">'+(mr>=0?'+':'')+(mr*100).toFixed(1)+'%</b>':'')+'</div>'+
+      spark(m)+
+      '</div>';
+  }).join('');
+  document.querySelectorAll('.mcell[data-m]').forEach(c=>c.onclick=()=>openMonth(c.dataset.m));
+}
+
+function spark(m){
+  const ts=PB.trades.filter(t=>t.m===m);
+  if(!ts.length) return '';
+  const byDay={}; ts.forEach(t=>{byDay[t.exit]=(byDay[t.exit]||0)+t.pnl_wan;});
+  const days=Object.keys(byDay).sort();
+  const mx=Math.max(...days.map(d=>Math.abs(byDay[d])),1);
+  return '<div class="spark">'+days.map(d=>{
+    const h=Math.max(Math.abs(byDay[d]/mx)*100,10);
+    const c=byDay[d]>=0?'var(--up)':'var(--dn)';
+    return '<i style="height:'+Math.min(h,100)+'%;background:'+c+';opacity:.7" title="'+d+' '+(byDay[d]>=0?'+':'')+byDay[d].toFixed(1)+'万"></i>';
+  }).join('')+'</div>';
+}
+
+function openMonth(m){
+  const g=PB.months.find(x=>x.month===m);
+  document.getElementById('sh-title').textContent=m+' · 操盘明细';
+  const mr=NAVS&&NAVS[m];
+  document.getElementById('sh-sub').innerHTML=g.n+' 笔 · 买入 '+g.basis_wan.toFixed(0)+' 万 · 盈亏 '+(g.pnl_wan>=0?'+':'')+g.pnl_wan.toFixed(0)+' 万 · 胜率 '+(g.win_rate*100).toFixed(0)+'%'+(mr!=null?' · 组合月收益 '+(mr>=0?'+':'')+(mr*100).toFixed(1)+'%':'');
+  const ts=PB.trades.filter(t=>t.m===m);
+  const byEntry={}; ts.forEach(t=>{(byEntry[t.entry]=byEntry[t.entry]||[]).push(t)});
+  const days=Object.keys(byEntry).sort();
+  let html='<div class="msum">'+
+    '<span>买入金额 <b>'+g.basis_wan.toFixed(0)+'</b> 万</span>'+
+    '<span>盈亏 <b class="'+(g.pnl_wan>=0?'pos':'neg')+'">'+(g.pnl_wan>=0?'+':'')+g.pnl_wan.toFixed(0)+'</b> 万</span>'+
+    '<span>最赚 <b class="pos">'+g.best.name+' +'+g.best.ret_pct+'%</b></span>'+
+    '<span>最亏 <b class="neg">'+g.worst.name+' '+g.worst.ret_pct+'%</b></span></div>';
+  days.forEach(d=>{
+    const list=byEntry[d]; const pnl=list.reduce((s,x)=>s+x.pnl_wan,0);
+    const sells=[...new Set(list.map(x=>x.exit))].sort();
+    html+='<div class="day"><div class="day-hd"><span class="d">'+d+'</span>'+
+      '<span class="tag">买入 '+list.length+' 笔</span>'+
+      '<span class="tag sell">卖出日 '+sells[0]+' ~ '+sells[sells.length-1]+'</span>'+
+      '<span class="flow">合计 <b class="'+(pnl>=0?'pos':'neg')+'">'+(pnl>=0?'+':'')+pnl.toFixed(1)+'</b> 万</span></div>';
+    html+='<table><thead><tr><th>代码</th><th>名称</th><th>行业</th><th>买入(万)</th><th>入价→出价</th><th>持有</th><th>收益</th><th>盈亏(万)</th><th></th></tr></thead><tbody>';
+    list.slice().sort((a,b)=>b.pnl_wan-a.pnl_wan).forEach(x=>{
+      html+='<tr><td>'+x.code+'</td><td>'+x.name+'</td><td style="color:#8a93a8">'+x.industry+'</td><td>'+x.basis_wan+'</td><td>'+x.entry_px+' → '+x.exit_px+'</td><td>5日</td><td class="'+(x.ret_pct>=0?'pos':'neg')+'">'+(x.ret_pct>=0?'+':'')+x.ret_pct+'%</td><td class="'+(x.pnl_wan>=0?'pos':'neg')+'">'+(x.pnl_wan>=0?'+':'')+x.pnl_wan+'</td><td><span class="pill '+(x.pnl_wan>=0?'w':'l')+'">'+(x.pnl_wan>=0?'盈':'亏')+'</span></td></tr>';
+    });
+    html+='</tbody></table></div>';
+  });
+  document.getElementById('sh-body').innerHTML=html;
+  document.getElementById('mask').classList.add('on');
+  document.getElementById('sheet').classList.add('on');
+}
+document.getElementById('x').onclick=closeSheet;
+document.getElementById('mask').onclick=closeSheet;
+function closeSheet(){document.getElementById('mask').classList.remove('on');document.getElementById('sheet').classList.remove('on')}
+</script>
+</body>
+</html>

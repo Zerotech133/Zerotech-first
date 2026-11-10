@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>候风 · 红利防御档 · 弱市专用小仓位</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 22px 44px}
+.plat-bar{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:var(--brand);text-decoration:none;font-weight:600}
+.plat-bar a:hover{text-decoration:underline}
+.plat-bar .sep{color:var(--line)}
+.plat-bar .cur{color:var(--text);font-weight:700}
+.top h1{font-size:22px;font-weight:800}
+.top .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.caliber{background:var(--card);border:1px solid #dfe6f5;border-left:4px solid var(--brand);border-radius:10px;padding:11px 16px;margin:12px 0 14px;font-size:12.5px;color:var(--muted)}
+.caliber b{color:var(--text)}
+.caliber code{background:#f0f3fa;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11.5px}
+.verdict{border-radius:14px;padding:16px 20px;margin-bottom:16px;background:#f5f8ff;border:1px solid #d6e2fb;border-left:5px solid var(--brand)}
+.verdict .k{font-size:12px;color:var(--brand);font-weight:800;letter-spacing:.6px}
+.verdict .t{font-size:20px;font-weight:800;margin:5px 0 6px;line-height:1.5}
+.verdict .t em{font-style:normal;font-family:var(--mono);color:var(--up)}
+.verdict .d{font-size:12.8px;color:var(--muted);line-height:1.85}
+.verdict .d b{color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi .l{font-size:11.5px;color:var(--dim)}
+.kpi .v{font-size:20px;font-weight:800;font-family:var(--mono);margin-top:2px}
+.kpi .v.pos{color:var(--up)} .kpi .v.neg{color:var(--dn)} .kpi .v.warn{color:var(--warn)}
+.kpi .n{font-size:10.5px;color:var(--dim);margin-top:1px}
+.kpi.hl{border:2px solid var(--brand);background:#f9fbff}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.panel h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.panel .hint{font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.75}
+.panel .hint b{color:var(--text)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid #f0f2f8;white-space:nowrap}
+th{background:#fafbff;color:var(--muted);font-weight:700;font-size:11.5px}
+th:first-child,td:first-child{text-align:left}
+td.pos{color:var(--up)} td.neg{color:var(--dn)}
+tr.hl td{background:#f9fbff;font-weight:800}
+tr.dim td{color:var(--dim)}
+.tblwrap{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.tblwrap table{min-width:900px}
+.tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;background:#f0f3fa;color:var(--muted);margin-left:3px;white-space:nowrap}
+.tag.warn{background:#fff4e5;color:#b36b00}
+.tag.err{background:#fdecea;color:#c0392b}
+.tag.ok{background:#eef7f1;color:#0f7b46}
+.bars{margin:8px 0 4px}
+.bar-row{display:grid;grid-template-columns:120px 1fr 96px;gap:10px;align-items:center;font-size:12.5px;margin-bottom:8px}
+.bar-row .lab{color:var(--muted)}
+.bar-row .track{position:relative;height:20px;background:#f4f6fb;border-radius:5px}
+.bar-row .fill{position:absolute;top:0;bottom:0;border-radius:5px}
+.bar-row .fill.pos{background:var(--up);left:50%}
+.bar-row .fill.neg{background:var(--dn);right:50%}
+.bar-row .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#c9cede}
+.bar-row .num{font-family:var(--mono);font-weight:800;text-align:right}
+.stack{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:10px 0 6px;border:1px solid var(--line)}
+.stack div{display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:#fff;font-family:var(--mono)}
+.stack .dv{background:#2a5be2}
+.stack .cg{background:#e0342c}
+.legend{display:flex;gap:18px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.note{background:#fafbff;border:1px dashed #dfe6f5;border-radius:10px;padding:12px 16px;font-size:12.3px;color:var(--muted);line-height:1.9}
+.note b{color:var(--text)}
+.note code{background:#eef1f9;padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11px}
+.note ol{margin:6px 0 0 18px}
+.note li{margin-bottom:4px}
+.warnbox{background:#fff8f2;border:1px solid #f3dcc4;border-left:5px solid var(--warn);border-radius:10px;padding:12px 16px;font-size:12.5px;color:#7a4a00;line-height:1.85}
+.warnbox b{color:#5a3600}
+.lv{font-size:10.5px;padding:1px 7px;border-radius:4px;font-weight:700;white-space:nowrap}
+.lv.hi{background:#fdecea;color:#c0392b}
+.lv.md{background:#fff4e5;color:#b36b00}
+.lv.lo{background:#eef7f1;color:#0f7b46}
+footer{margin-top:20px;font-size:11.5px;color:var(--dim);text-align:center;line-height:1.9}
+.err-box{background:#fdecea;border:1px solid #f6d2cb;border-radius:10px;padding:14px;color:#c0392b;font-size:13px}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>/* 页级覆盖：与本页原值逐位一致（视觉零变化） */
+:root {--mono:'SF Mono',Consolas,monospace;}</style>
+</head>
+<body>
+<div class="wrap">
+<div style="background:#fff7df;color:#8a6d00;border:1px solid #e8d48b;border-radius:10px;padding:12px 16px;margin:0 0 14px;font-size:13.5px;font-weight:600">⚠ 实验档 · 未冻结：本页是弱市防御思路的探索稿，未进入 M2.1 冻结口径，页内数字不构成产品口径，请勿对外引用。</div>
+
+  <div class="plat-bar"><a href="HOUFENG_STRATEGY_CARD.html">策略中心</a><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><a href="HOUFENG_PLAYBOOK.html">回放日历</a><span class="sep">/</span><a href="HOUFENG_ARENA.html">竞技场·一年</a><span class="sep">/</span><a href="HOUFENG_ARENA_36M.html">竞技场·三年</a><span class="sep">/</span><a href="HOUFENG_HOLDGRID.html">持仓网格</a><span class="sep">/</span><span class="cur">红利防御档</span><span class="sep">/</span><a href="M2_DASHBOARD.html">冻结看板</a></div>
+
+  <div class="top">
+    <h1>红利防御档 · 弱市专用</h1>
+    <div class="sub" id="sub">加载中…</div>
+  </div>
+
+  <div class="caliber">
+    <b>与 M2.1 的关系：两套逻辑，不能混用。</b>
+    M2.1 是<b>动量+环境闸门</b>（关闸就空仓，开闸满仓做 5 日波段）；本页是<b>红利+低波</b>（常年持有、不择时、月频调仓）。
+    它不是 M2.1 的替代品，定位是<b>弱市里的底仓/现金替代</b>，回测区间 <span id="win">—</span>，月度调仓，单边成本 0.15%。
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel">
+    <h2>四档对照：低波过滤才是关键，高股息单用会亏</h2>
+    <div class="hint">同一股票池、同一调仓日、同一成本，<b>只差选股规则</b>。A/B/C 都在"股息率≥2.5% 且市值≥50 亿且日均成交≥5000 万"的池子里选，D 是池内全部等权（不要求股息率）。</div>
+    <table id="tbtbl">
+      <thead><tr><th>档位</th><th>累计</th><th>年化</th><th>最大回撤</th><th>Calmar</th><th>Sharpe</th><th>月胜率</th><th>月均换手</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="note" style="margin-top:12px">
+      <b>读法</b>：A（纯按股息率排序）年化是负的，回撤 −30.71%——<b>股息率高往往意味着市场在给"分红不可持续"定价</b>。
+      加上低波过滤（B）后年化从 −0.73% 跳到 18.09%、回撤砍掉一半，说明<b>起作用的不是股息，是"高股息里再挑波动低的"这道二次筛选</b>。
+      C 用 0.5/0.5 线性打分反而更差，说明两因子不该等权相加。
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>牛市跑输、弱市跑赢：这是它的本质，不是缺陷</h2>
+    <div class="hint">分年度收益（%）。看 2025 与 2026 的两行对照——同一档在牛市落后基准 <b>28pp</b>，在弱市领先 <b>22pp</b>。</div>
+    <table id="yearlytbl"><thead><tr><th>档位</th></tr></thead><tbody></tbody></table>
+    <div class="bars" id="ybars" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>收益拆解：69% 不是股息，是估值扩张</h2>
+    <div class="hint">组合历期平均股息率 <b id="dvv">—</b>，年化总收益 <b id="annv">—</b>。两者之差就是资本利得——这部分<b>取决于别人愿意出多少价，不取决于你持有的是什么</b>。</div>
+    <div class="stack" id="stack"></div>
+    <div class="legend">
+      <span><i style="background:#2a5be2"></i>股息收益（可拿到）</span>
+      <span><i style="background:#e0342c"></i>资本利得（不可预测）</span>
+    </div>
+    <div class="note" style="margin-top:14px" id="calibnote"></div>
+  </div>
+
+  <div class="panel">
+    <h2>重新标定：三档情景，别拿回测当预期</h2>
+    <div class="hint" style="color:#8a5b00"><b>口径修正（2026-11-07）：</b>换仓成本按「卖出+买入」双边计一次（原实现只收单边，四档年化系统性偏高约 0.6~0.7pp）；下表为修正后重跑值。</div>
+    <div class="hint">把"股息"和"估值变动"分开假设。历史 18.09% 落在乐观档，<b>但它依赖 2024 年那一次估值修复，不能外推</b>。</div>
+    <table id="scentbl"><thead><tr><th>情景</th><th>假设</th><th>预期年化</th><th>预期最大回撤</th><th>成立条件</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="panel">
+    <h2>11/6 截面：按同一规则今天建仓会买这 20 只 <span class="tag warn">非调仓日 · 仅供对照</span></h2>
+    <div class="hint">
+      月度规则下 <b>11/6 不是调仓日</b>，真实持仓见下一节。这里列出"若今日重建"的截面，供你看清这套规则当前会选什么。
+      池子 <b id="pooln">—</b> 只 → 取股息率前 40% 内波动最低的 20 只，等权。
+    </div>
+    <div class="tblwrap">
+      <table id="snaptbl">
+        <thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>股息率</th><th>vol60</th><th>市值(亿)</th><th>日均成交(亿)</th><th>收盘</th><th>权重</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="warnbox" style="margin-top:12px" id="conc"></div>
+  </div>
+
+  <div class="panel">
+    <h2>最近一期实际持仓（<span id="hdate">—</span> 建仓，持有至下月末）</h2>
+    <div class="hint">这才是这套规则<b>当前真实持有</b>的名单。用行业分布和上面的截面比对，能看出一个月里风格漂移了多少。</div>
+    <div class="tblwrap" style="max-height:420px">
+      <table id="holdtbl">
+        <thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>股息率</th><th>vol60</th><th>市值(亿)</th><th>日均成交(亿)</th><th>收盘</th><th>权重</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>参数敏感性：24 组里 24 组为正</h2>
+    <div class="hint">TOP_N ∈ {10,20,30} × 股息率门槛 ∈ {2.0,2.5,3.0,3.5} × 单边成本 ∈ {0.15%,0.30%}，共 24 组。<b>年化区间 9.67%~19.27%，最深回撤 −17.84%</b>——不是靠某一个参数点撑起来的。但注意：<b>全为正只能说明「没有过拟合到单一参数」，不能说明未来为正</b>。</div>
+    <div class="tblwrap" style="max-height:340px">
+      <table id="sweeptbl"><thead><tr><th>TOP_N</th><th>股息门槛</th><th>单边成本</th><th>累计</th><th>年化</th><th>最大回撤</th><th>Sharpe</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>行业上限：把集中度压下去的代价，实测是"更差"</h2>
+    <div class="hint" id="capverdict">—</div>
+    <div class="tblwrap" style="max-height:260px">
+      <table id="captbl"><thead><tr><th>约束</th><th>年化</th><th>最大回撤</th><th>Sharpe</th><th>月胜率</th><th>换手</th><th>最大行业(均)</th><th>行业数(均)</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="hint">同一策略、同调仓日、同成本，<b>只改"单行业最多几只"</b>。上限是可选参数、<b>默认关闭</b>（<code>--industry-cap N</code>），因为已发布的 18.09% 是"不限"口径跑出来的；换口径必须整段重算，不能新旧混引。</div>
+  </div>
+
+  <div class="panel">
+    <h2>风险要素（按因子研究口径逐条登记）</h2>
+    <div class="hint">每条都带<b>触发条件与应对</b>。缺 IF_RISK 的结论一律不成立。</div>
+    <table id="elemtbl">
+      <thead><tr><th>要素</th><th>读数</th><th>等级</th><th>反面证据</th><th>触发与应对</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>这套规则不能做什么</h2>
+    <div class="note">
+      <ol>
+        <li><b>不能当"稳健理财"</b>：历史最大回撤 −13.43%，但那是估值扩张期的回撤；悲观情景下预期 −24%。</li>
+        <li><b>不能在牛市里拿</b>：2025 年落后全市场等权 28pp，你会拿不住——这不是策略失效，是风格使然。</li>
+        <li><b>别指望"加行业上限"解决集中</b>：实测单行业 ≤3 只会让年化 −4.66pp、回撤反而恶化 4.27pp、换手 +6.8pp。这档的防御性本来就来自低波行业的集中，去掉压舱石不等于更安全。要真分散，只能降仓位或换策略。</li>
+        <li><b>不能按日盯盘做波段</b>：月频调仓、换手 36%，日内交易只会把成本吃掉。</li>
+        <li><b>个股层面不构成建议</b>：本页是因子筛选的研究输出，不是荐股、不给买卖点与目标价。</li>
+      </ol>
+    </div>
+  </div>
+
+  <footer>
+    候风 M2.1 配套 · 红利防御档 · 数据源 data/ashare（5815 只）+ data/tdx/ts_daily_basic（792 交易日）<br>
+    <b>投资有风险，本内容仅供研究与教育，不构成投资建议。</b>历史回测不代表未来表现。
+  <span style="margin-left:auto">模拟盘数据 · 不构成投资建议 · 历史回测不代表未来表现（程序生成）</span></footer>
+</div>
+
+<script>
+(function(){
+  function f(x,d){ return (x===null||x===undefined||isNaN(x))?'—':Number(x).toFixed(d===undefined?1:d); }
+  function pct(x,d){ if(x===null||x===undefined||isNaN(x)) return '—'; var s=Number(x).toFixed(d===undefined?2:d); return (x>0?'+':'')+s+'%'; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var ORDER=['A','B','C','D'];
+
+  fetch('houfeng_dividend.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(D){
+    var m=D.meta, R=D.results, C=D.calibration, B=R['B'];
+    document.getElementById('win').textContent = m.window[0]+' ~ '+m.window[1]+'（'+m.n_days+' 个交易日）';
+    document.getElementById('sub').textContent = '样本 '+m.window[0]+'~'+m.window[1]+' · 月度调仓 · 等权 20 只 · 单边成本 0.15% · 生成于 '+m.generated_at;
+
+    // ── 裁决 ──
+    document.getElementById('verdict').innerHTML =
+      '<div class="k">定位 · 弱市防御，不是收益引擎</div>'
+      + '<div class="t">年化 <em>'+f(B.ann_pct,2)+'%</em>、回撤 <em>−'+f(Math.abs(B.max_dd_pct),2)+'%</em>，但其中 <em>69%</em> 的收益来自估值扩张</div>'
+      + '<div class="d">四档实测：纯高股息（A）年化 <b>'+f(R['A'].ann_pct,2)+'%</b>、回撤 <b>'+f(R['A'].max_dd_pct,2)+'%</b>——<b>股息率高不是买点</b>；'
+      + '加低波过滤（B）后年化 <b>'+f(B.ann_pct,2)+'%</b>、回撤 <b>'+f(B.max_dd_pct,2)+'%</b>。'
+      + '同期全市场等权（D）年化 '+f(R['D'].ann_pct,2)+'%、回撤 '+f(R['D'].max_dd_pct,2)+'%。<br>'
+      + '<b>它不是"更赚钱的组合"，是"波动减半、牛市落后的组合"</b>——2025 年落后基准 28pp，2026 年领先 22pp。</div>';
+
+    // ── KPI ──
+    var kp=[
+      {l:'年化收益',v:f(B.ann_pct,2)+'%',n:m.window[0]+'~'+m.window[1]+'，含 2024 估值修复',cls:'pos',hl:true},
+      {l:'最大回撤',v:f(B.max_dd_pct,2)+'%',n:'历史实测，悲观情景预期 −24%',cls:'neg'},
+      {l:'Sharpe',v:f(B.sharpe,2),n:'隐含年化波动 '+f(C.implied_vol_pct,1)+'%',cls:''},
+      {l:'平均股息率',v:f(C.avg_dv_pct,2)+'%',n:'历期组合加权，可拿到',cls:'pos'},
+      {l:'资本利得占比',v:f(C.capital_gain_share_pct,0)+'%',n:'不可预测，别当预期',cls:'warn'}
+    ];
+    document.getElementById('kpis').innerHTML = kp.map(function(k){
+      return '<div class="kpi'+(k.hl?' hl':'')+'"><div class="l">'+k.l+'</div><div class="v '+(k.cls||'')+'">'+k.v+'</div><div class="n">'+k.n+'</div></div>';
+    }).join('');
+
+    // ── 四档表 ──
+    document.querySelector('#tbtbl tbody').innerHTML = ORDER.map(function(k){
+      var r=R[k];
+      return '<tr'+(k==='B'?' class="hl"':'')+'><td>'+esc(r.label)+'</td>'
+        +'<td class="'+(r.total_pct>=0?'pos':'neg')+'">'+pct(r.total_pct,2)+'</td>'
+        +'<td class="'+(r.ann_pct>=0?'pos':'neg')+'"><b>'+pct(r.ann_pct,2)+'</b></td>'
+        +'<td class="neg">'+pct(r.max_dd_pct,2)+'</td>'
+        +'<td>'+f(r.calmar,2)+'</td><td>'+f(r.sharpe,2)+'</td>'
+        +'<td>'+f(r.monthly_win_pct,1)+'%</td><td>'+f(r.avg_turnover_pct,1)+'%</td></tr>';
+    }).join('');
+
+    // ── 分年度表 ──
+    var years=[]; ORDER.forEach(function(k){ Object.keys(R[k].yearly_pct||{}).forEach(function(y){ if(years.indexOf(y)<0) years.push(y); }); });
+    years.sort();
+    var th='<tr><th>档位</th>'+years.map(function(y){return '<th>'+y+'</th>';}).join('')+'</tr>';
+    document.querySelector('#yearlytbl thead').innerHTML=th;
+    document.querySelector('#yearlytbl tbody').innerHTML=ORDER.map(function(k){
+      var r=R[k];
+      return '<tr'+(k==='B'?' class="hl"':'')+'><td>'+esc(r.label)+'</td>'
+        +years.map(function(y){var v=r.yearly_pct[y];return '<td class="'+(v>=0?'pos':'neg')+'">'+pct(v,2)+'</td>';}).join('')+'</tr>';
+    }).join('');
+
+    // ── 年度柱（B vs D）──
+    var maxAbs=0; years.forEach(function(y){ maxAbs=Math.max(maxAbs, Math.abs(R['B'].yearly_pct[y]||0), Math.abs(R['D'].yearly_pct[y]||0)); });
+    maxAbs=maxAbs||1;
+    document.getElementById('ybars').innerHTML = years.map(function(y){
+      var b=R['B'].yearly_pct[y]||0, d=R['D'].yearly_pct[y]||0, diff=b-d;
+      function row(lab,v,extra){
+        var w=Math.abs(v)/maxAbs*50, cls=v>=0?'pos':'neg';
+        return '<div class="bar-row"><div class="lab">'+lab+'</div>'
+          +'<div class="track"><div class="mid"></div><div class="fill '+cls+'" style="width:'+w+'%"></div></div>'
+          +'<div class="num" style="color:'+(v>=0?'#e0342c':'#0f9d58')+'">'+pct(v,2)+'</div></div>';
+      }
+      return '<div style="margin-bottom:12px"><div style="font-size:12px;color:#8a93a8;margin-bottom:4px">'+y
+        +(diff>=0?' · <span style="color:#e0342c">跑赢基准 '+f(diff,1)+'pp</span>':' · <span style="color:#0f9d58">跑输基准 '+f(diff,1)+'pp</span>')
+        +'</div>'+row('B 红利防御',b)+row('D 全市场等权',d)+'</div>';
+    }).join('');
+
+    // ── 收益拆解 ──
+    document.getElementById('dvv').textContent=f(C.avg_dv_pct,2)+'%';
+    document.getElementById('annv').textContent=f(C.ann_pct,2)+'%';
+    var tot=Math.abs(C.ann_pct)||1, wd=Math.abs(C.avg_dv_pct)/tot*100, wc=Math.abs(C.capital_gain_pct)/tot*100;
+    document.getElementById('stack').innerHTML =
+      '<div class="dv" style="width:'+wd+'%">股息 '+f(C.avg_dv_pct,2)+'pp</div>'
+      +'<div class="cg" style="width:'+wc+'%">资本利得 '+f(C.capital_gain_pct,2)+'pp</div>';
+    document.getElementById('calibnote').innerHTML = '<b>'+esc(C.key_point)+'</b><br>'
+      +'换句话：就算你完美执行这套规则，<b>能确定拿到的只有 5.86% 左右</b>；剩下的 12.23pp 是 2024 年银行/公用事业估值修复的产物。'
+      +'分年度看更清楚——2024 年 41.20% 里有 35.34pp 是资本利得，2023 年资本利得是 <b>负的 −4.68pp</b>。';
+
+    // ── 情景 ──
+    document.querySelector('#scentbl tbody').innerHTML = C.scenarios.map(function(s,i){
+      return '<tr'+(i===1?' class="hl"':'')+'><td><b>'+esc(s.name)+'</b></td><td style="text-align:right;color:#5a6478">'+esc(s.assume)+'</td>'
+        +'<td class="'+(s.ann_pct>=0?'pos':'neg')+'"><b>'+pct(s.ann_pct,1)+'</b></td>'
+        +'<td class="neg">'+pct(s.dd_pct,1)+'</td>'
+        +'<td style="text-align:left;white-space:normal;color:#5a6478;font-size:11.5px">'+esc(s.basis)+'</td></tr>';
+    }).join('');
+
+    // ── 截面 ──
+    document.getElementById('pooln').textContent=D.snapshot_1106.stats? (D.meta? D.meta.pool_size||'—':'—') : '—';
+    function rowsTbl(picks, tb){
+      tb.innerHTML = picks.map(function(p){
+        var flags=[];
+        if((p.dv_pct||0)>=10) flags.push('<span class="tag err">股息异常高</span>');
+        if((p.amt20_yi||0)<=0.8) flags.push('<span class="tag warn">流动性偏薄</span>');
+        return '<tr><td>'+p.rank+'</td><td style="font-family:var(--mono)">'+esc(p.code)+'</td>'
+          +'<td style="text-align:right"><b>'+esc(p.name)+'</b>'+(flags.join('')||'')+'</td>'
+          +'<td style="text-align:center;color:#8a93a8">'+esc(p.industry)+'</td>'
+          +'<td class="pos">'+f(p.dv_pct,2)+'%</td><td>'+f(p.vol60_pct,1)+'%</td>'
+          +'<td>'+f(p.mv_yi,0)+'</td><td>'+f(p.amt20_yi,2)+'</td>'
+          +'<td>'+f(p.close,2)+'</td><td>'+f(p.weight_pct,1)+'%</td></tr>';
+      }).join('');
+    }
+    rowsTbl(D.snapshot_1106.picks, document.querySelector('#snaptbl tbody'));
+    document.getElementById('hdate').textContent = D.holdings_last.date;
+    rowsTbl(D.holdings_last.picks, document.querySelector('#holdtbl tbody'));
+
+    // ── 集中度警示 ──
+    var ind=D.snapshot_1106.industry, tot20=D.snapshot_1106.picks.length;
+    var top=Object.keys(ind).slice(0,2), topN=top.reduce(function(a,k){return a+ind[k];},0);
+    document.getElementById('conc').innerHTML =
+      '<b>行业集中度：'+top.map(function(k){return esc(k)+' '+ind[k]+' 只';}).join(' + ')+'，合计 '+topN+'/'+tot20+' = '
+      +f(topN/tot20*100,0)+'%。</b><br>'
+      +'这意味着这套组合当前的收益来源高度依赖<b>银行与建筑/基建的估值</b>。'
+      +'2024 年银行板块大涨时它是优势，反过来就是风险。'
+      +'如果你要的是"真分散"，这套规则需要加行业上限（本页未加，因为加什么上限、上限多少都会变成新的可调参数——那才是过拟合的入口）。';
+
+    // ── 敏感性 ──
+    document.querySelector('#sweeptbl tbody').innerHTML = (D.sweep||[]).map(function(s){
+      var hl = (s.top_n===20&&s.min_dv===2.5&&s.cost_oneway<0.002);
+      return '<tr'+(hl?' class="hl"':'')+'><td>'+s.top_n+'</td><td>'+f(s.min_dv,1)+'%</td>'
+        +'<td>'+f(s.cost_oneway*100,2)+'%</td>'
+        +'<td class="'+(s.total_pct>=0?'pos':'neg')+'">'+pct(s.total_pct,1)+'</td>'
+        +'<td class="'+(s.ann_pct>=0?'pos':'neg')+'">'+pct(s.ann_pct,2)+'</td>'
+        +'<td class="neg">'+pct(s.max_dd_pct,1)+'</td><td>'+f(s.sharpe,2)+'</td></tr>';
+    }).join('');
+
+    // ── 行业上限代价 ──
+    (function(){
+      var C=D.industry_cap_compare||[], V=D.industry_cap_verdict;
+      document.querySelector('#captbl tbody').innerHTML = C.map(function(x){
+        return '<tr'+(x.cap===0?' class="hl"':'')+'><td>'+x.label+'</td>'
+          +'<td class="'+(x.ann_pct>=0?'pos':'neg')+'">'+pct(x.ann_pct,2)+'</td>'
+          +'<td class="neg">'+pct(x.dd_pct,2)+'</td><td>'+f(x.sharpe,2)+'</td>'
+          +'<td>'+f(x.monthly_win_pct,1)+'%</td><td>'+f(x.turnover_pct,1)+'%</td>'
+          +'<td>'+f(x.avg_top_industry_n,1)+' 只</td><td>'+f(x.avg_n_industry,1)+'</td></tr>';
+      }).join('');
+      if(V){ document.querySelector('#capverdict').innerHTML =
+        '<b>结论：不要加。</b>'+V.conclusion+'（以「单行业 ≤3 只」为例，对比不限口径）'; }
+    })();
+
+    // ── 风险要素 ──
+    var elems=[
+      {n:'股息单因子无效',r:'A 档年化 '+f(R['A'].ann_pct,2)+'%、回撤 '+f(R['A'].max_dd_pct,2)+'%（2023-2026，39 期）',lv:'hi',lvT:'重大',
+       t:'高股息率常是"分红不可持续"的定价结果；A 档 2023/2024 两年资本利得为负',
+       i:'若把规则简化成"买股息率最高的 20 只"，实测年化 '+f(R['A'].ann_pct,2)+'%。发现组合里出现股息率>10% 的票，视为异常并剔除'},
+      {n:'低波过滤是主要收益来源',r:'B 比 A 年化高 '+f(R['B'].ann_pct-R['A'].ann_pct,2)+'pp、回撤好 '+f(Math.abs(R['A'].max_dd_pct)-Math.abs(R['B'].max_dd_pct),2)+'pp',lv:'md',lvT:'较大',
+       t:'可能是 2024-2026 银行低波行情的一次性红利，非永久 alpha',
+       i:'若某年度 B 相对 A 的超额转为负，说明低波因子失效，需降级为"待验证"'},
+      {n:'资本利得占年化 68%',r:'年化 18.09% = 股息 5.86pp + 资本利得 12.23pp',lv:'hi',lvT:'重大',
+       t:'2023 年资本利得为 −4.68pp，说明这部分可以是负数',
+       i:'任何把 18.09% 当预期的方案都不成立；按本页三档情景，中性预期 '+pct(C.scenarios[1].ann_pct,1)},
+      {n:'行业集中 50%',r:'银行 6 只 + 建筑工程 4 只 = 10/20',lv:'md',lvT:'较大',
+       t:'本质是"中特估/红利"风格 beta，不是跨行业分散',
+       i:'已实测「单行业 ≤3 只」：最大行业从 9.9 只压到 3.0 只、行业数 9.4→14.6，代价是年化 −4.66pp、回撤反而恶化 4.27pp、换手 +6.8pp。低波红利的防御性本就来自银行/公用事业这类低波行业的集中，硬分散等于把压舱石换成高波品种'},
+      {n:'牛市系统性落后',r:'2025 年 B '+pct(R['B'].yearly_pct['2025'],2)+' vs D '+pct(R['D'].yearly_pct['2025'],2),lv:'md',lvT:'较大',
+       t:'同期基准 +36.57%，落后 28pp，持有体验差',
+       i:'若市场 breadth 连续站上 60%、中位涨幅转正，应切回 M2.1 而非硬扛'},
+      {n:'参数稳健性',r:'24 组参数全部年化为正，区间 9.67%~19.27%',lv:'lo',lvT:'一般',
+       t:'24 组同源数据，不构成独立性检验；且全部落在同一段估值修复行情内',
+       i:'无（已做 TOP_N×门槛×成本三维扫描）；若新增参数维度，需重新登记尝试次数并做多重检验校正'},
+      {n:'幸存者偏差',r:'已退市 229 只保留在池内；ST 用当前名称静态判定',lv:'md',lvT:'较大',
+       t:'当前名称判定 ST 会把"后来变差"的票提前剔除，轻微高估',
+       i:'若需要更严口径，应接历史 ST 状态表；当前结果视为上限估计'},
+      {n:'股息率数据覆盖',r:'dv_ratio 非空 69.1%（2026-11-06 当日 67.5%）',lv:'lo',lvT:'一般',
+       t:'新股与未分红票缺失，红利池天然偏大市值成熟公司',
+       i:'若某期池子不足 5 只，规则改为沿用上期持仓（已在回测中实现）'},
+      {n:'股息率静态口径',r:'dv_ratio = 近 12 个月现金分红 / 当日股价，除权日前后跳变',lv:'lo',lvT:'提示',
+       t:'除权当天股息率会机械性跳升，可能造成同月换手异常',
+       i:'换手率月度 36% 已包含该影响；若某月换手突然 >60% 需排查除权集中期'}
+    ];
+    document.querySelector('#elemtbl tbody').innerHTML = elems.map(function(e){
+      return '<tr><td style="white-space:normal"><b>'+esc(e.n)+'</b></td>'
+        +'<td style="text-align:left;white-space:normal">'+esc(e.r)+'</td>'
+        +'<td class="c"><span class="lv '+e.lv+'">'+e.lvT+'</span></td>'
+        +'<td style="text-align:left;white-space:normal;color:#5a6478;font-size:11.5px">'+esc(e.t)+'</td>'
+        +'<td style="text-align:left;white-space:normal;color:#5a6478;font-size:11.5px">'+esc(e.i)+'</td></tr>';
+    }).join('');
+
+  }).catch(function(e){
+    document.getElementById('verdict').innerHTML='<div class="err-box">数据加载失败：'+esc(e&&e.message||e)+'</div>';
+  });
+})();
+</script>
+</body>
+</html>

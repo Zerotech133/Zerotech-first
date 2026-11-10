@@ -1438,28 +1438,30 @@ class Handler(_ChanlunSlTpMixin):  # Mixin 壳：经基座多继承并入
                 "<span class='dim'> %s</span></td>"
                 "<td style='max-width:460px;white-space:nowrap;overflow:hidden;"
                 "text-overflow:ellipsis' title='%s'>%s</td>"
-                "<td><span style='display:inline-block;padding:1px 9px;"
+                "<td><span title='conf 已证伪（AUC 0.414 反相关：高 conf 反而更可能错）· 仅原始留痕，不参与决策'"
+                " style='display:inline-block;padding:1px 9px;"
                 "border-radius:10px;font-size:12px;font-weight:600;"
-                "color:#fff;background:%s'>%d%%</span></td></tr>"
+                "color:#fff;background:#8b949e'>%d%%⚠</span></td></tr>"
                 % (b["ts"][:10], b["code"], b["code"],
                    b["name"] or "—",
                    _hb.escape(b["title"] or "", quote=True),
                    (b["title"][:48] + "…") if len(b["title"] or "") > 48
                    else b["title"],
-                   "#f85149" if (b["conf"] or 0) >= 85 else "#d29922",
                    b["conf"])
                 for b in bear_news)
             body += ("<div class='sec'><h2>⚠️ 利空消息警示"
                      "<span class='dim' style='font-size:12px'>"
-                     "（近5日 %d 条 · LLM 利空判定 · 置信≥75%% · 回测 v2 偏空"
-                     " T+1 跑输市场 0.49pp · 仅提示不拦截 · 悬浮看全文）"
+                     "（近5日 %d 条 · LLM 利空判定 · 事件类型门过滤"
+                     "（conf 过滤已弃用）· conf 已证伪仅供参考 · "
+                     "仅提示不拦截 · 悬浮看全文）"
                      "</span></h2>"
                      "<table><tr><th>消息日</th><th>代码 / 名称</th>"
-                     "<th>消息</th><th>置信</th></tr>%s</table></div>"
+                     "<th>消息</th><th title='conf 已证伪（AUC 0.414 反相关）· 仅留痕不参与决策'>置信⚠</th></tr>%s</table></div>"
                      % (len(bear_news), brows))
         elif mkt == "CN":
             body += ("<div class='dim' style='font-size:12.5px;margin-top:6px'>"
-                     "⚠️ 利空消息警示：近5日池内个股无高置信（≥75%）利空判定"
+                     "⚠️ 利空消息警示：近5日池内个股无利空类型判定"
+                     "（conf 过滤已弃用，改事件类型门——显式弱类型不进池）"
                      "（回测 v2 偏空 T+1 跑输市场 0.49pp，仅提示不拦截）</div>")
         body += ("<div class='sec'><h2>💼 当前模拟持仓"
                  "<span class='dim' style='font-size:12px'>（前 30，"

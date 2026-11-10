@@ -472,8 +472,8 @@
   // ── daily（数据日报 · 人话版） ──────────────────────────
   function renderDaily(d) {
     if (d.ok === false) { fail(d.error || '数据日报不可用'); return; }
-    var bias = d.bias || {}, conf = d.conf || {};
-    var bp = d.bias_pct || {}, cp = d.conf_pct || {};
+    var bias = d.bias || {}, tier = d.tier || {};
+    var bp = d.bias_pct || {}, tp = d.tier_pct || {};
     var lv = d.level || 'ok';
     var banner = '<div class="' + (lv === 'bad' ? 'm-error' : (lv === 'warn' ? 'm-stale' : 'm-card')) + '">' +
       (lv === 'ok' ? '✓ ' : (lv === 'warn' ? '⚠ ' : '✕ ')) +
@@ -514,9 +514,9 @@
       '<div><label>偏多</label><b class="up">' + esc(bp.bull == null ? '—' : bp.bull) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(bias.bull == null ? '' : bias.bull) + ' 条</span></div>' +
       '<div><label>偏空</label><b class="dn">' + esc(bp.bear == null ? '—' : bp.bear) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(bias.bear == null ? '' : bias.bear) + ' 条</span></div>' +
       '<div><label>中性</label><b>' + esc(bp.neutral == null ? '—' : bp.neutral) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(bias.neutral == null ? '' : bias.neutral) + ' 条</span></div>' +
-      '<div><label>高置信</label><b>' + esc(cp.high == null ? '—' : cp.high) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(conf.high == null ? '' : conf.high) + ' 条</span></div>' +
-      '<div><label>中置信</label><b>' + esc(cp.mid == null ? '—' : cp.mid) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(conf.mid == null ? '' : conf.mid) + ' 条</span></div>' +
-      '<div><label>低置信</label><b class="dim">' + esc(cp.low == null ? '—' : cp.low) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(conf.low == null ? '' : conf.low) + ' 条</span></div></div>' +
+      '<div><label>强信号类型</label><b>' + esc(tp.strong == null ? '—' : tp.strong) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(tier.strong == null ? '' : tier.strong) + ' 条</span></div>' +
+      '<div><label>弱信号类型</label><b>' + esc(tp.weak == null ? '—' : tp.weak) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(tier.weak == null ? '' : tier.weak) + ' 条</span></div>' +
+      '<div><label>未标注</label><b class="dim">' + esc(tp.unknown == null ? '—' : tp.unknown) + '%</b><span class="dim" style="font-size:var(--fs-xs)"> ' + esc(tier.unknown == null ? '' : tier.unknown) + ' 条</span></div></div>' +
       (evs ? '<div class="m-crumbs">事件类型（JEV 归类）</div>' + evs : '') +
       btHtml +
       (alerts ? '<div class="m-crumbs">漂移提醒（' + esc(d.drift_open == null ? 0 : d.drift_open) + '）· 点开看依据</div>' + alerts

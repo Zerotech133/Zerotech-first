@@ -84,6 +84,7 @@ _XT = None             # xtcloud 客户端单例（惰性）
 _FLOW = None           # jev_flow 模块（惰性）
 _SOCIAL = None         # jev_social 模块（惰性）
 _CHAIN = None          # jev_chain 模块（惰性）
+_THEME = None          # jev_theme 模块（惰性；只读快照，不联网）
 _MINS_MEM: dict = {}   # (code, day) -> DataFrame | None，进程内分钟缓存
 _MINS_FAIL: dict = {}  # (code, day) -> 失败时刻；负缓存要能过期，不能记一辈子
 _WRITE_LOCK = threading.Lock()   # 同月 parquet 是 read-modify-write，必须串行
@@ -187,19 +188,37 @@ def _is_new_listing(name, list_date, d8):
 
 
 # ── 个股层 ──────────────────────────────────────────────────
-def load_board(day: str) -> dict:
-    """全市场当日行情 × 行业 → 个股行 + 板块聚合。"""
-    key = ("board", day)
+def load_board(day: str, kind: str = "industry") -> dict:
+    """全市场当日行情 × 口径 → 个股行 + 板块聚合。
+
+    kind="industry"  board 取 stock_basic.industry（110 类，互斥，答「产业链位置」）
+    kind="theme"     board 取开盘啦主题材（250 个，重叠，答「市场在炒什么」）
+
+    **两种情况都同时带上 `industry` / `theme` / `themes` 三个字段**，所以换口径
+    不丢信息、可回算：11-06 的「新型电力」在选股上能对上概念「电力」219 只，
+    也能对回行业 32 只（判例 #28）。题材快照缺失时 theme 回落 industry 并标
+    theme_src="industry"，不静默当成「无题材」。
+    """
+    if kind not in ("industry", "theme"):
+        raise ValueError("board_kind 只能是 industry / theme，收到 %r" % (kind,))
+    key = ("board", day, kind)
     hit = _CACHE.get(key)
     if hit and time.time() - hit[0] < CACHE_TTL_S:
         return hit[1]
 
-    dm = _dm()
-    d = dm.read("daily", start=int(day), end=int(day), limit=10000)
+    d = _dm_read_retry("daily", start=int(day), end=int(day), limit=10000)
     if d is None or not len(d):
+        # 盘前/盘中：tushare 当日日线尚未发布 → 降级到 xtcloud 实时分钟近似
+        # 构造的 partial board（仅中证800 成分）。盘后日线到位后本分支不再
+        # 触发，自动回到完整口径。render 层仍走「本地优先→远端兜底」既有
+        # 模式（分钟层早已如此），不破采集/渲染隔离。
+        ib = _load_board_intraday(day)
+        if ib is not None:
+            _CACHE[key] = (time.time(), ib)
+            return ib
         raise RuntimeError("%s 无日线数据" % day)
-    sb = dm.read("stock_basic", fields=["ts_code", "name", "industry",
-                                        "list_date", "list_status"])
+    sb = _dm_read_retry("stock_basic", fields=["ts_code", "name", "industry",
+                                       "list_date", "list_status"])
     m = d.merge(sb, on="ts_code", how="left")
 
     rows = []
@@ -217,10 +236,11 @@ def load_board(day: str) -> dict:
             lu, touch, ratio, lp = limit_state(float(r.close), float(r.high),
                                                float(r.pre_close), c6, nm, pct)
             newbie = False
+        ind = (r.industry if isinstance(r.industry, str) else None) or "未分类"
         rows.append({
             "code": code, "c6": c6, "name": nm,
-            "board": (r.industry if isinstance(r.industry, str) else None)
-                     or "未分类",
+            "industry": ind,
+            "board": ind,
             "pct": round(pct, 2), "close": round(float(r.close), 2),
             "amount": (round(float(r.amount) / 1e5, 0)
                        if r.amount == r.amount else None),   # 千元→万元? 见下
@@ -230,16 +250,51 @@ def load_board(day: str) -> dict:
                           if r.pre_close == r.pre_close else None),
         })
 
-    # 板块内涨幅排名（1 = 板块内涨幅最高）
-    by_board: dict = {}
+    # ── 题材字段（两条腿并存，追加不改默认）──
+    th = _theme_mod()
     for x in rows:
-        by_board.setdefault(x["board"], []).append(x)
+        x["themes"] = th.themes_of(day, x["c6"])
+        p = th.primary(day, x["c6"])
+        if p:
+            x["theme"], x["theme_src"] = p[0], "concept"
+        else:
+            # 没有题材（或只挂属性标签）→ 回落行业，并如实标注来源
+            x["theme"], x["theme_src"] = x["industry"], "industry"
+        if kind == "theme":
+            x["board"] = x["theme"]
+
+    # ── 板块聚合 ──
+    # 两种口径的聚合方式**根本不同**，不能共用一套：
+    #   行业  互斥分区（一票一个行业）→ 直接按 row["board"] 分组，顺手写 pct_rank
+    #   题材  成分允许重叠（一票平均挂 3.16 个）→ 必须按**全量成分**聚合。
+    #         曾按「主题材」切过一次：概念「电力」218 只被切成 52 只，润建股份
+    #         （属电力但主题材是算力）直接不在板块里——这正是要修的漏人，等于白改。
+    #         所以题材口径下 pct_rank 由 rank_board 按焦点板块现算，这里不写。
+    tload = th.load(day) if kind == "theme" else None
+    if kind == "theme" and not tload["has"]:
+        # 快照缺失 → 回落行业，并如实汇报实际口径（不静默给个空板块榜）
+        _elog("theme snapshot missing for %s, fallback industry\n" % day)
+        kind = "industry"
+
+    c6row = {x["c6"]: x for x in rows}
+    by_board: dict = {}
+    if kind == "theme":
+        for name, c6s in tload["by_theme"].items():
+            if name in th.GENERIC:
+                continue      # 属性标签不是题材，别让「地方国资」346 只霸榜
+            mem = [c6row[c] for c in c6s if c in c6row]
+            if mem:
+                by_board[name] = mem
+    else:
+        for x in rows:
+            by_board.setdefault(x["board"], []).append(x)
     boards = []
     for name, lst in by_board.items():
         lst.sort(key=lambda z: -(z["pct"] if z["pct"] is not None else -99))
-        for i, z in enumerate(lst, 1):
-            z["pct_rank"] = i
-            z["board_n"] = len(lst)
+        if kind == "industry":
+            for i, z in enumerate(lst, 1):
+                z["pct_rank"] = i
+                z["board_n"] = len(lst)
         up = sum(1 for z in lst if z["pct"] > 0)
         pcts = sorted(z["pct"] for z in lst if z["pct"] is not None)
         med = pcts[len(pcts) // 2] if pcts else None
@@ -272,10 +327,63 @@ def load_board(day: str) -> dict:
         "median_pct": (round(sorted(z["pct"] for z in rows)[len(rows) // 2], 2)
                        if rows else None),
     }
-    out = {"day": day, "rows": rows, "boards": boards,
-           "by_code": {z["code"]: z for z in rows}, "universe": universe}
+    theme_members = {}
+    if kind == "theme":
+        theme_members = {n: [z["c6"] for z in lst] for n, lst in by_board.items()}
+    out = {"day": day, "board_kind": kind, "rows": rows, "boards": boards,
+           "by_code": {z["code"]: z for z in rows}, "universe": universe,
+           "theme_members": theme_members,
+           "theme_has": bool(th.load(day)["has"])}
     _CACHE[key] = (time.time(), out)
     return out
+
+
+# ── 盘中降级：日线缺失时用 xtcloud 实时分钟近似构造 partial board ──
+def _intraday_snapshot_path(day):
+    d = os.path.join(QUANT, "data", "tushare", "intraday_board")
+    return os.path.join(d, "board_%s.json" % day)
+
+
+def _load_board_intraday(day):
+    """日线缺失时的盘中降级：返回 load_board 兼容的 B 字典（partial=True）。
+
+    优先级：① 本地 partial 快照（采集层落地的 board_<day>.json，120s 内新鲜）
+    直接用；② 否则在线构造 build_intraday_board（采集层产出，render 层只读），
+    并写回快照。无实时数据返回 None，交由 load_board 抛「无日线数据」。
+
+    这是 render 层「本地优先→远端兜底」既有模式的延伸（分钟层早已如此），
+    不破采集/渲染隔离：降级数据由采集层 build_intraday_board 产出，
+    此处只读取并标 partial，绝不自行组装网络请求。
+    """
+    snap = _intraday_snapshot_path(day)
+    _ttl = int(os.environ.get("JEV_INTRADAY_TTL", "3600"))
+    if os.path.exists(snap) and (time.time() - os.path.getmtime(snap)) < _ttl:
+        try:
+            with open(snap, encoding="utf-8") as f:
+                B = json.load(f)
+            B["partial"] = True
+            B.setdefault("by_code", {z["code"]: z for z in B.get("rows", [])})
+            return B
+        except Exception as exc:  # noqa: BLE001
+            _elog("intraday snapshot read failed: %s\n" % exc)
+    try:
+        if os.path.join(STATION, "tools") not in sys.path:
+            sys.path.insert(0, os.path.join(STATION, "tools"))
+        import jev_mins_fetch as JF
+        G = sys.modules[__name__]
+        B = JF.build_intraday_board(day, G)
+        if B and B.get("rows"):
+            try:
+                os.makedirs(os.path.dirname(snap), exist_ok=True)
+                Bcopy = {k: v for k, v in B.items() if k != "by_code"}
+                with open(snap, "w", encoding="utf-8") as f:
+                    json.dump(Bcopy, f, ensure_ascii=False)
+            except Exception as exc:  # noqa: BLE001
+                _elog("intraday snapshot write failed: %s\n" % exc)
+            return B
+    except Exception as exc:  # noqa: BLE001
+        _elog("intraday board fallback failed: %s\n" % exc)
+    return None
 
 
 # ── 分钟层 ──────────────────────────────────────────────────
@@ -318,6 +426,38 @@ def _chain_mod():
     return _CHAIN
 
 
+def _theme_mod():
+    """惰性导入题材层（开盘啦概念，只读本地快照）。"""
+    global _THEME
+    if _THEME is None:
+        import jev_theme
+        _THEME = jev_theme
+    return _THEME
+
+
+def _dm_read_retry(table, **kw):
+    """dm.read 包一层重试：并行进程原子替换 parquet 分片的瞬间，读方
+    拿到 OSError [Errno 22]（2026-11-08 双实例并发写回 stk_mins 实测）。
+    重试一次读新文件即可，不值得让整张图 500；再失败就让它带着堆栈进
+    C:\\Temp\\jev_graph_err.log。"""
+    try:
+        return _dm().read(table, **kw)
+    except OSError:
+        time.sleep(0.25)
+        return _dm().read(table, **kw)
+
+
+def _elog(msg):
+    """安全写 stderr：换血时计划任务终止父进程，python 继承的 stderr
+    管道随之失效，裸 sys.stderr.write 抛 OSError [Errno 22] 让整张图 500
+    （2026-11-09 00:35 堆栈实锤于 _warm_many 的 warm 日志行；此前误诊为
+    多实例并发撞 parquet）。日志丢了无所谓，服务不能死。"""
+    try:
+        _elog(msg)
+    except Exception:
+        pass
+
+
 def _mins_local(ts_code: str, day: str):
     dm = _dm()
     d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
@@ -349,7 +489,7 @@ def _mins_fetch(ts_code: str, day: str):
         rows = c.mins(ts_code[:6], day, limit=400, tbl="ts_rt_min")
         return (rows, "ts_rt_min") if rows else (None, None)
     except Exception as exc:  # noqa: BLE001
-        sys.stderr.write("mins fetch failed %s: %s\n" % (ts_code, exc))
+        _elog("mins fetch failed %s: %s\n" % (ts_code, exc))
         return None, None
 
 
@@ -378,7 +518,7 @@ def _writeback(ts_code: str, day: str, rows, tbl="ts_stk_mins"):
             F.merge_write(ts_code, day, rows)
         return True
     except Exception as exc:  # noqa: BLE001
-        sys.stderr.write("mins writeback failed %s: %s\n" % (ts_code, exc))
+        _elog("mins writeback failed %s: %s\n" % (ts_code, exc))
         return False
 
 
@@ -448,7 +588,7 @@ def _warm_many(codes, day: str, limit=None, budget_s=None):
                               deadline_s=budget_s * 0.7)
         src.update({k: "ts_stk_mins" for k in got})
     except Exception as exc:  # noqa: BLE001
-        sys.stderr.write("mins_many failed: %s\n" % exc)
+        _elog("mins_many failed: %s\n" % exc)
     # ts_rt_min 兜底：mins_many 只查了 ts_stk_mins，缺的再补一轮（同样受预算约束）
     miss = [c for c in codes if c[:6] not in got]
     if miss and (time.time() - t0) < budget_s * 0.6:
@@ -460,7 +600,7 @@ def _warm_many(codes, day: str, limit=None, budget_s=None):
                 got[k] = v
                 src[k] = "ts_rt_min"
         except Exception as exc:  # noqa: BLE001
-            sys.stderr.write("mins_many rt_min failed: %s\n" % exc)
+            _elog("mins_many rt_min failed: %s\n" % exc)
     for c in codes:
         rows = got.get(c[:6])
         if not rows:
@@ -471,7 +611,7 @@ def _warm_many(codes, day: str, limit=None, budget_s=None):
         d = _to_frame(rows, "remote")
         d.attrs["tbl"] = tbl
         _mem_put((c, day), d)
-    sys.stderr.write("mins warm %d 只 命中 %d（stk_mins %d / rt_min %d）用时 %.1fs\n"
+    _elog("mins warm %d 只 命中 %d（stk_mins %d / rt_min %d）用时 %.1fs\n"
                      % (len(codes), len(got),
                         sum(1 for v in src.values() if v == "ts_stk_mins"),
                         sum(1 for v in src.values() if v == "ts_rt_min"),
@@ -740,7 +880,7 @@ def _hm(ts):
 
 
 def rank_board(board_name: str, rows, events: dict, profiles: dict,
-               top: int = 8) -> dict:
+               top: int = 8, members=None) -> dict:
     """单板块的领涨-跟随结构。
 
     口径（写死在代码里，避免"领涨"变成"涨幅最大"的同义词）：
@@ -750,7 +890,10 @@ def rank_board(board_name: str, rows, events: dict, profiles: dict,
                 或涨停）——「谁跟随」在时间上有先后，不是涨幅排队。
       same_time 与 lead 相差 <10 分钟的，算「同波启动」，不算跟随。
     """
-    members = [z for z in rows if z["board"] == board_name]
+    # members 显式给出时用它：题材口径的成员来自全量成分表（可重叠），
+    # 而 row["board"] 只是「主题材」，拿它过滤会把同题材的票漏掉。
+    members = (list(members) if members is not None
+               else [z for z in rows if z["board"] == board_name])
     if not members:
         return {"name": board_name, "n": 0, "lead": None, "followers": [],
                 "same_wave": [], "laggards": [], "note": "板块无成员"}
@@ -897,17 +1040,20 @@ def _brief(zs):
 # ── 建图 ────────────────────────────────────────────────────
 def build(day_raw=None, board=None, code=None, top: int = 8,
           with_minute: bool = True, with_fund: bool = True,
-          with_social: bool = True, with_chain: bool = True) -> dict:
+          with_social: bool = True, with_chain: bool = True,
+          board_kind: str = "industry") -> dict:
     """一次成图：板块 → 个股 → 消息 → 资金/披露，五类边 + 两个补充维度。
 
     board      指定焦点板块（缺省=当日中位涨幅第一的板块）
+    board_kind 板块口径：industry（行业，默认）/ theme（开盘啦题材）。两条腿
+               都带在个股行上，换口径不丢信息；主题材缺失回落行业。
     code       指定个股（给出时焦点板块跟着它走，并在 timeline 里定位该股）
     with_fund  是否拉资金流与研报/公告（关掉可省 ~4s 与两次外部调用）
     with_social 是否读散户热度快照（只读本地 json，不联网；缺文件 has=False）
     with_chain  是否读连板梯队/席位/龙虎榜（查 xtcloud 已接入表，3 次请求 ~1.5s）
     """
     day = resolve_day(day_raw)
-    B = load_board(day)
+    B = load_board(day, kind=board_kind)
     rows, boards = B["rows"], B["boards"]
     by_c6 = {}
     for z in rows:
@@ -932,7 +1078,7 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
                 z["main_net"] = v["main_net"] if v else None
                 z["net_mf"] = v["net_mf"] if v else None
         except Exception as exc:  # noqa: BLE001
-            sys.stderr.write("fund layer failed: %s\n" % exc)
+            _elog("fund layer failed: %s\n" % exc)
 
     # ── 散户热度（雪球四榜 + 股吧人气榜 + 股吧帖子，只读本地快照）──
     # 与资金流的关键区别：**不联网**。采集是独立脚本、独立时点的事，
@@ -942,7 +1088,7 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
         try:
             social = _social_mod().load_social(day)
         except Exception as exc:  # noqa: BLE001
-            sys.stderr.write("social layer failed: %s\n" % exc)
+            _elog("social layer failed: %s\n" % exc)
 
     # ── 接力梯队（连板 / 席位 / 龙虎榜）──
     # 与社交层的区别：这一层**要联网**（查 xtcloud 三张表），但都是已接入的
@@ -952,7 +1098,7 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
         try:
             chain = _chain_mod().load_chain(day)
         except Exception as exc:  # noqa: BLE001
-            sys.stderr.write("chain layer failed: %s\n" % exc)
+            _elog("chain layer failed: %s\n" % exc)
 
     # 焦点板块：显式指定 > 指定个股所属 > 当日最强（涨停最多，其次中位涨幅）
     if board:
@@ -967,11 +1113,23 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
         focus_name = z["board"]
     else:
         ranked = [b for b in boards if b.get("ranked")]
-        best = max(ranked, key=lambda b: (b["limit_up"], b["med"] or -99))
+        if ranked:
+            best = max(ranked, key=lambda b: (b["limit_up"], b["med"] or -99))
+        elif boards:
+            # 盘中数据过薄（无任何板块达到 MIN_BOARD_N）时退回「全板块最强」
+            # 取焦点，避免 max() 空序列崩溃；该情形只在降级口径下可能出现。
+            best = max(boards, key=lambda b: (b["limit_up"], b["med"] or -99))
+        else:
+            raise RuntimeError("%s 无可用板块（盘中数据过薄）" % day)
         focus_name = best["name"]
 
     # ── 需要分钟线的票：焦点板块候选 + 全市场涨停 + 有盘中事件的票 ──
-    focus_members = [z for z in rows if z["board"] == focus_name]
+    if B.get("board_kind") == "theme":
+        # 题材口径：全量成分（一票可属多个题材），不是 row["board"] 分区
+        _codes = set((B.get("theme_members") or {}).get(focus_name) or [])
+        focus_members = [z for z in rows if z["c6"] in _codes]
+    else:
+        focus_members = [z for z in rows if z["board"] == focus_name]
     focus_members.sort(key=lambda z: -z["pct"])
     want = []
     want += [z["code"] for z in focus_members[:top + 4]]
@@ -1008,7 +1166,10 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
 
     # ── 焦点板块结构 ──
     _BOARD_CACHE["data"] = boards
-    focus = rank_board(focus_name, rows, ev, profiles, top)
+    for i, z in enumerate(focus_members, 1):
+        z["pct_rank"], z["board_n"] = i, len(focus_members)
+    focus = rank_board(focus_name, rows, ev, profiles, top,
+                       members=focus_members)
     # rank_board 是重新拼的 dict，不带板块资金流；`_nodes` 的板块节点要读
     # board_main_net。原来没这一步，节点上的主力净额恒为 null（前端不报错，
     # 只是永远显示「—」，最容易被当成「没数据」）。
@@ -1046,12 +1207,27 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
         "ok": True,
         "day": day,
         "day_cn": _day_cn(day),
+        "partial": bool(B.get("partial")),
+        "partial_note": (
+            "盘中预览：当日日线尚未发布，board 由 xtcloud 实时分钟近似涨跌幅"
+            "构造，成分池仅限中证800、涨停判定以最新一根 close 为准（盘中"
+            "触板未封可能漏判）；收盘后日线到位将自动替换为完整口径。")
+            if B.get("partial") else None,
         "universe": B["universe"],
         "minute_coverage": dict(
             minute_coverage(day, rows),
             read_asked=len(codes),
             read_ok=sum(1 for p in profiles.values() if p.get("ok"))),
         "minute_read": _minute_read(profiles, len(codes)),
+        "board_kind": B.get("board_kind", board_kind),
+        "theme": {
+            "has": bool(B.get("theme_has")),
+            "note": ("题材=开盘啦概念（250 个，一票平均挂 3.16 个，允许重叠）；"
+                     "强度自算（涨停家数→中位涨幅），上游 ts_kpl_concept 停在"
+                     "2024-11-17 不可用；属性标签（地方国资/汇金证金持股等）"
+                     "不参与主题材选举，无题材者回落行业并标 theme_src。"),
+            "top": _theme_mod().strength(day, rows)[:12],
+        },
         "boards": overview,
         "focus": dict(focus, events=focus_events, timeline=timeline,
                       flow=_focus_flow(focus_name, focus_members, flow, bflow),
@@ -1068,8 +1244,10 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
         "social": _social_block(social, focus_members, by_c6, top),
         "chain": _chain_block(chain, focus, focus_members),
         "network": {
-            "nodes": _nodes(focus, focus_members, focus_events, profiles,
+            "nodes": _nodes(focus, _cap_members(focus_members),
+                            focus_events, profiles,
                             disc if with_fund else None, social, chain),
+            "n_members": len(focus_members),
             "edges": edges,
             "cross_summary": cross_summary,
             "edge_types": _edge_counts(edges),
@@ -1381,7 +1559,7 @@ def _chain_block(chain, focus, members):
     try:
         bc = _chain_mod().board_chain(chain, focus["name"], members)
     except Exception as exc:  # noqa: BLE001
-        sys.stderr.write("board_chain failed: %s\n" % exc)
+        _elog("board_chain failed: %s\n" % exc)
         bc = {"has": False, "note": "板块视角计算失败: %s" % exc}
     # 梯队每只票挂上「谁在接」：光看「5 板」不知道是三板斧游资还是机构，
     # 而这两者次日行为完全不同。前端左卡要能直接读出来。
@@ -1411,6 +1589,22 @@ def _chain_block(chain, focus, members):
         "errors": chain.get("errors") or [],
         "note": chain.get("note"),
     }
+
+
+NODE_MAX = 60          # 个股节点上限：行业口径板块最多 ~50 只够用；题材口径
+                       # 「电力」218 只全塞进 payload 是 5 倍冗余，而前端只画
+                       # lead/same_wave/followers/unpriced，多出来的既不上图
+                       # 也拖慢首屏。涨停票优先保留，其余按涨幅截断。
+
+
+def _cap_members(members, cap=None):
+    """节点用的成员裁剪：涨停全留，其余按涨幅补到 cap。"""
+    cap = cap or NODE_MAX
+    if len(members) <= cap:
+        return members
+    hot = [z for z in members if z["limit_up"] or z["touch_only"]]
+    rest = [z for z in members if not (z["limit_up"] or z["touch_only"])]
+    return (hot + rest)[:cap]
 
 
 def _nodes(focus, members, focus_events, profiles, disc=None, social=None,

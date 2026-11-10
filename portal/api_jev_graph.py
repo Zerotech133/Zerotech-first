@@ -5,6 +5,7 @@
     GET /api/jev/graph?day=20261106             指定交易日
     GET /api/jev/graph?board=种植业              指定焦点板块
     GET /api/jev/graph?code=600371&day=20261106  以个股定位其板块
+    GET /api/jev/graph?kind=theme                板块口径换成开盘啦题材
 
 返回（计算全在 jev_graph.py，本文件只做参数校验与缓存）：
     universe         当日全市场：涨跌家数 / 涨停 / 触板 / 中位涨幅
@@ -19,6 +20,10 @@
 
 参数：
     fund=0           跳过资金流与研报/公告（省 ~4s，用于快速调试）
+    kind=industry|theme  板块口径。industry（默认）=申万行业，互斥、109 类；
+                 theme=开盘啦概念，250 个、允许重叠。两条腿都在个股行上，
+                 换口径不丢信息。题材快照缺失时自动回落行业并在响应里
+                 board_kind 如实回报（不静默给空板块榜）。
 
 只读，60s 缓存。参数错误 400，内部错误 500，均返回 JSON。
 """
@@ -40,12 +45,14 @@ _CACHE: dict = {}
 MIN_TOP, MAX_TOP, DEF_TOP = 3, 20, 8
 
 
-def compute(day=None, board=None, code=None, top=DEF_TOP, fund=True) -> dict:
-    key = (day or "", board or "", code or "", top, bool(fund))
+def compute(day=None, board=None, code=None, top=DEF_TOP, fund=True,
+            kind="industry") -> dict:
+    key = (day or "", board or "", code or "", top, bool(fund), kind)
     hit = _CACHE.get(key)
     if hit and time.time() - hit[0] < CACHE_TTL_S:
         return hit[1]
-    data = G.build(day, board=board, code=code, top=top, with_fund=fund)
+    data = G.build(day, board=board, code=code, top=top, with_fund=fund,
+                   board_kind=kind)
     _CACHE[key] = (time.time(), data)
     return data
 
@@ -66,12 +73,24 @@ def handle_get(handler, path: str, qs_raw: str) -> None:
         if code and not code[:6].isdigit():
             raise ValueError("code 须为 6 位数字")
         fund = (qs.get("fund") or ["1"])[-1].strip() not in ("0", "false", "off")
-        result = compute(day, board, code, top, fund)
+        kind = (qs.get("kind") or ["industry"])[-1].strip().lower() or "industry"
+        if kind not in ("industry", "theme"):
+            raise ValueError("kind 只能是 industry / theme")
+        result = compute(day, board, code, top, fund, kind)
     except ValueError as exc:
         handler._json({"ok": False, "error": "invalid_params",
                        "message": str(exc)}, 400)
         return
     except Exception as exc:  # noqa: BLE001
+        # 堆栈必须落盘：响应体只带 type+msg，远程排查时拿不到现场（2026-11-08）。
+        # 路径固定 C:\Temp：服务以 SYSTEM 跑，%TEMP% 指向 C:\Windows\Temp 不便查看。
+        try:
+            import traceback as _tb
+            with open(r"C:\Temp\jev_graph_err.log", "a", encoding="utf-8") as f:
+                f.write("===== %s qs=%s\n" % (time.strftime("%F %T"), qs_raw))
+                _tb.print_exc(file=f)
+        except Exception:  # noqa: BLE001
+            pass
         handler._json({"ok": False, "error": "internal",
                        "message": "%s: %s" % (type(exc).__name__, exc)}, 500)
         return

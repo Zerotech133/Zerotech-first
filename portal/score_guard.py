@@ -26,7 +26,7 @@ if HERE not in sys.path:
 import score_registry as sr  # noqa: E402
 
 # 5 个核心指标（与注册表 core=true 对齐；focus_p 为 D 级不可推送，用 kg_resonance 替代）
-DEFAULT_CORE = ("rps50", "nine_dim_score", "jev_conf", "chan_signal", "kg_resonance")
+DEFAULT_CORE = ("rps50", "nine_dim_score", "jev_signal", "chan_signal", "kg_resonance")
 LEVELS = ("A", "B", "C", "D")
 
 
