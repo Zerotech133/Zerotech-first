@@ -369,6 +369,7 @@ def combine_score(
     eligible=None,
     jev_mode="missing",
     jev_mat=None,
+    w4=None,
 ):
     """共振打分 + 信号（复刻 resonance_watchlist 缺维降权）。
 
@@ -379,6 +380,11 @@ def combine_score(
       replay    消费 jev_mat（逐日截面 replay 分）；能匹配的票该分作 jev 维，
                 匹配不到的票保持缺维降权（replay 归档仅覆盖其日期范围）
 
+    w4 可选（P64）：覆盖 {tech,jev,rps,env} 四维权重，None=用 W4（现行，
+    行为与加参前逐元素一致）。权重变化后 wsum 按可用维重新归一，
+    故只调 rps 会同时降低 tech/env 的相对占比——这正是「提权」的物理含义。
+    jev_mode='w015' 走 W4_W015 自有权重，不受 w4 影响。
+
     返回 (score DataFrame, buy bool, obs bool)。gate_on 且 env safe=False →
     买入/观察全部否决（与产线 action='回避（环境闸门）' 一致）。
     """
@@ -386,6 +392,7 @@ def combine_score(
         raise ValueError("unknown jev_mode: %s" % jev_mode)
     if jev_mode == "replay" and jev_mat is None:
         raise ValueError("jev_mode=replay requires jev_mat")
+    w = dict(W4) if w4 is None else dict(w4)
     t = tech.to_numpy(dtype=float)
     rp = rps_mix.to_numpy(dtype=float)
     el = (
@@ -396,19 +403,19 @@ def combine_score(
     hr = el & ~np.isnan(rp)
     env_score = env_df["score"].to_numpy(dtype=float)  # (D,)
     if jev_mode == "missing":
-        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr
+        wsum = (w["tech"] + w["env"]) * el + w["rps"] * hr
         num = (
-            t * W4["tech"]
-            + env_score[:, None] * W4["env"]
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+            t * w["tech"]
+            + env_score[:, None] * w["env"]
+            + np.where(np.isnan(rp), 0.0, rp * w["rps"])
         )
     elif jev_mode == "neutral50":
-        wsum = (W4["tech"] + W4["env"] + W4["jev"]) * el + W4["rps"] * hr
+        wsum = (w["tech"] + w["env"] + w["jev"]) * el + w["rps"] * hr
         num = (
-            t * W4["tech"]
-            + env_score[:, None] * W4["env"]
-            + 50.0 * W4["jev"] * el
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+            t * w["tech"]
+            + env_score[:, None] * w["env"]
+            + 50.0 * w["jev"] * el
+            + np.where(np.isnan(rp), 0.0, rp * w["rps"])
         )
     elif jev_mode == "w015":
         wt = W4_W015["tech"]
@@ -427,12 +434,12 @@ def combine_score(
             dtype=float
         )
         jv = el & ~np.isnan(jm)
-        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr + W4["jev"] * jv
+        wsum = (w["tech"] + w["env"]) * el + w["rps"] * hr + w["jev"] * jv
         num = (
-            t * W4["tech"]
-            + env_score[:, None] * W4["env"]
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
-            + np.where(np.isnan(jm), 0.0, jm * W4["jev"])
+            t * w["tech"]
+            + env_score[:, None] * w["env"]
+            + np.where(np.isnan(rp), 0.0, rp * w["rps"])
+            + np.where(np.isnan(jm), 0.0, jm * w["jev"])
         )
     sc = np.divide(num, wsum, out=np.full(num.shape, np.nan), where=wsum > 0)
     gate = (
@@ -1125,6 +1132,169 @@ def run_backtest(args):
                 _row["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
             gate_ab["monthly"]["rows"].append(_row)
 
+    # ---- P64 连续加权：RPS 权重 0.25 → 0.30/0.35/0.40（2026-11-11 老田裁定方案 A）----
+    # 前提：P63 已证「RPS 硬地板」不是 alpha 而是动量暴露（202609 单月超额随地板
+    #       提高而加深亏损），故本组不设任何阈值，只调 combine_score 的 rps 权重，
+    #       让 score 排序自然向强动量倾斜——不加闸门，不砍样本。
+    # 两形态各 3 档，差别在「多出来的 rps 权重从哪来」：
+    #   提权 rpsXX  其余维不动 → wsum 变大，归一后 tech/env 相对占比被动稀释
+    #   让渡 rebXX  tech 等量让出（权重和守恒）→ tech:env 比例不变
+    # 对照组 = w_cur_th7550_gate_on；w4_rps25 与之必须逐笔一致（自检锚）。
+    P64_W = [
+        ("w4_rps25", {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15}),
+        ("w4_rps30", {"tech": 0.35, "jev": 0.25, "rps": 0.30, "env": 0.15}),
+        ("w4_rps35", {"tech": 0.35, "jev": 0.25, "rps": 0.35, "env": 0.15}),
+        ("w4_rps40", {"tech": 0.35, "jev": 0.25, "rps": 0.40, "env": 0.15}),
+        ("w4_reb35", {"tech": 0.25, "jev": 0.25, "rps": 0.35, "env": 0.15}),
+        ("w4_reb40", {"tech": 0.20, "jev": 0.25, "rps": 0.40, "env": 0.15}),
+    ]
+    weight_ab = {
+        "note": "连续加权变体：只改 combine_score 的 rps 权重，不设任何 RPS 阈值；"
+        "rpsXX=其余维不动（归一后 tech/env 被动稀释），"
+        "rebXX=tech 等量让出（权重和守恒）；"
+        "对照组 = variants 里的 w_cur_th7550_gate_on（w4_rps25 须与之逐笔一致）",
+        "variants": [],
+        "monthly": {
+            "note": "逐月按信号日分组，出场用全窗口价格；holds 只取 5/10",
+            "holds": [int(h) for h in holds if int(h) <= 10],
+            "rows": [],
+        },
+    }
+    for _wl, _w in P64_W:
+        _sc, _b64, _o64 = combine_score(
+            tech_w,
+            mix_cur,
+            env_df,
+            buy_th=TH_CUR[0],
+            obs_th=TH_CUR[1],
+            gate_on=True,
+            eligible=eligible,
+            jev_mode=args.jev_mode,
+            jev_mat=jev_mat,
+            w4=_w,
+        )
+        _bw = _b64.loc[in_win]
+        _v = {
+            "label": _wl,
+            "w4": dict(_w),
+            "n_buy_in_window": int(_bw.sum().sum()),
+            "holds": {},
+        }
+        for _n in holds:
+            _r, _ = trade_returns(
+                _bw, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            _v["holds"][str(_n)] = {
+                "n_trades": int(len(_r)),
+                "mean": round(float(_r.mean()), 6) if len(_r) else None,
+                "median": round(float(_r.median()), 6) if len(_r) else None,
+                "win_rate": round(float((_r > 0).mean()), 4) if len(_r) else None,
+            }
+        weight_ab["variants"].append(_v)
+        print(
+            "%-10s buy=%6d hold%d mean=%s"
+            % (
+                _wl,
+                _v["n_buy_in_window"],
+                holds[0],
+                _v["holds"][str(holds[0])]["mean"],
+            ),
+            flush=True,
+        )
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _bw & pd.DataFrame(
+                np.broadcast_to(_mm, _bw.shape), index=_bw.index, columns=_bw.columns
+            )
+            _row = {
+                "cfg": _wl,
+                "month": "%04d%02d" % (_y, _m),
+                "n_buy": int(_sel.sum().sum()),
+            }
+            for _n in weight_ab["monthly"]["holds"]:
+                _r, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _row["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            weight_ab["monthly"]["rows"].append(_row)
+
+    # P64 阈值-笔数对齐：提权会让 wsum 变大 → score 分布整体下移，阈值 75 的
+    # 实际含义跟着漂移（笔数被动减少）。若不做这一步，就无法区分「排序变好」
+    # 与「变相加严」——P63 的口径错配正是栽在这里。
+    # 做法：同一 w4 下扫 buy_th，给出 (笔数, 后验) 曲线，再找与 base 笔数最接近的档。
+    weight_ab["th_curve"] = {
+        "note": "同一权重下扫 buy_th，用于把各变体对齐到 base 的笔数后再比后验；"
+        "逐笔绝对收益，成本口径同 args.cost",
+        "base_n_buy": None,
+        "rows": [],
+    }
+    for _wl, _w in P64_W:
+        _sc64, _, _ = combine_score(
+            tech_w,
+            mix_cur,
+            env_df,
+            buy_th=0.0,
+            obs_th=0.0,
+            gate_on=True,
+            eligible=eligible,
+            jev_mode=args.jev_mode,
+            jev_mat=jev_mat,
+            w4=_w,
+        )
+        _sc_in = _sc64.loc[in_win]
+        for _th in (70.0, 72.0, 74.0, 76.0, 78.0, 80.0):
+            _cond = elig_in & (~mix_in.isna()) & safe_mat & (_sc_in >= _th)
+            _crow = {
+                "cfg": _wl,
+                "buy_th": _th,
+                "n_buy": int(_cond.sum().sum()),
+            }
+            for _n in holds:
+                _r, _ = trade_returns(
+                    _cond, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _crow["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            weight_ab["th_curve"]["rows"].append(_crow)
+
+    # P64 副产物：纯阈值变动的逐月（权重保持现行 W4，只动 buy_th）。
+    # th_curve 显示 70→80 后验单调改善，但「提高阈值」同时也是「降低暴露」，
+    # 在普跌月天然少亏。必须看 OOS 有效月（202605/202608/202609）是否同步改善，
+    # 才能区分「score 排序力」与「仓位暴露差异」。
+    weight_ab["th_monthly"] = {
+        "note": "纯阈值变动（w4=W4 现行），逐月 T+5/T+10；用于区分排序力与暴露",
+        "rows": [],
+    }
+    _sc_cur34, _, _ = combine_score(
+        tech_w,
+        mix_cur,
+        env_df,
+        buy_th=0.0,
+        obs_th=0.0,
+        gate_on=True,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
+    _sc_cur_in = _sc_cur34.loc[in_win]
+    for _th in (75.0, 78.0, 80.0):
+        _cm = elig_in & (~mix_in.isna()) & safe_mat & (_sc_cur_in >= _th)
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _cm & pd.DataFrame(
+                np.broadcast_to(_mm, _cm.shape), index=_cm.index, columns=_cm.columns
+            )
+            _trow = {
+                "buy_th": _th,
+                "month": "%04d%02d" % (_y, _m),
+                "n_buy": int(_sel.sum().sum()),
+            }
+            for _n in (5, 10):
+                _r, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _trow["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            weight_ab["th_monthly"]["rows"].append(_trow)
+
     all_ret_hold = {}
     for n in holds:
         ret, _drop = trade_returns(
@@ -1201,6 +1371,7 @@ def run_backtest(args):
         "rps_split": rps_split,
         "gate_ab": gate_ab,
         "floor_ab": floor_ab,
+        "weight_ab": weight_ab,
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
