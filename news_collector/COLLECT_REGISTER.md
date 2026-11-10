@@ -36,7 +36,7 @@
 
 - [x] **R1 模块入库**：#2-#8 连同批文号（C9A-KOL-001）+ #11 桥，已 `git add` + 提交（commit `a6d383bd9`，11 文件 / 1788 行，pre-commit 凭据扫描 0 命中；老田 2026-11-10 批）。推送 GitHub 受本环境网络限制（`github.com:443` 代理不可达），待另行批准走自建 git 远端（触 10.205.0.118，需单独点头）。
 - [x] **R2 台账落地**：本文件（2026-11-10 建）
-- [ ] **R3 路径修复**：`xq_kol.py:44` 写死 `C:\aios` → env `AIOS_ROOT`/`resolve_repo_root()`（阶段 A3）
+- [x] **R3 路径修复（2026-11-10 完成）**：`xq_kol.py:44` 写死 `C:\aios\quant_backtest` → `env AIOS_ROOT` 优先 + 原默认值兜底（对齐 `tools/intel_source_health.py:72` 同款约定）；验证脚本码点级断言默认解析值与修复前逐字符一致、env 覆盖生效、生产 profile 目录不受影响。验证过程撞既有判例：bash `-c` 通道把断言字面量 `\a` 串味成 `/a`，改落盘脚本 + `chr(92)` 构造通过。
 - [ ] **R4 文档订正**：整合版 §1.2/§2.2 + `docs/采集情报_板块手册.md` 同步改判（2026-11-10 已同步）
 - [ ] **红线维持**：采集频率/源/反爬不进渲染链路；#3/#4 增删号只改 `news_config.json`，不动代码
 - [ ] **R5 Windows 计划任务**：`KStockIntelDaily`(每日07:30) 注册脚本已备（`register_kstock_intel_task.ps1`）；当前非管理员会话注册被拒（"拒绝访问"），待管理员以管理员 PowerShell 执行；WorkBuddy 自动化已作兜底(07:30 ACTIVE，id `a4c50019…`)
