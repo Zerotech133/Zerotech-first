@@ -1,0 +1,53 @@
+[
+  {
+    "id": "WL-20261110-001",
+    "message_type": "message",
+    "sender": {"identity": "notify", "display": "军机驿·通知"},
+    "target": {"display": "核心订阅组", "type": "subscription", "member_count": 128},
+    "state": "sent",
+    "template": {"id": "ai_finance_daily"},
+    "intent": {
+      "title": "盘前晨报·11月10日",
+      "summary": "政策、产业与全球市场三条主线。",
+      "buttons": [{"label": "查看全文", "action": "open_deep_link", "style": "primary"}]
+    },
+    "trace_id": "trace-demo-001",
+    "extra": {"priority": "P1", "receipt_required": false}
+  },
+  {
+    "id": "WL-20261110-003",
+    "message_type": "confirm",
+    "sender": {"identity": "command", "display": "军机驿·指令"},
+    "target": {"display": "客户域 / 白名单", "type": "customer_domain", "member_count": 40},
+    "state": "approval_pending",
+    "template": {"id": "subscription_guide"},
+    "intent": {
+      "title": "客户域订阅扩容",
+      "summary": "新增 40 个白名单收件人，预计每日 +40 条；需要目标负责人确认后生效。",
+      "buttons": [
+        {"label": "拒绝", "action": "reject", "style": "danger"},
+        {"label": "通过", "action": "approve", "style": "primary"}
+      ]
+    },
+    "trace_id": "trace-demo-003",
+    "extra": {"priority": "P0", "receipt_required": true, "decision_table": "notification_decisions"}
+  },
+  {
+    "id": "WL-20261110-005",
+    "message_type": "delivery",
+    "sender": {"identity": "exec", "display": "军机驿·执行"},
+    "target": {"display": "策略观察组", "type": "chat", "member_count": 12},
+    "state": "failed",
+    "template": {"id": "daily:report"},
+    "intent": {
+      "title": "涨停复盘推送",
+      "summary": "12 个收件人；机器人被移出群，未交付。",
+      "buttons": [
+        {"label": "查看证据", "action": "open_evidence", "style": "default"},
+        {"label": "转人工补发", "action": "manual_resend", "style": "primary"}
+      ]
+    },
+    "trace_id": "trace-demo-005",
+    "extra": {"priority": "P0", "receipt_required": true, "error_code": "230013"}
+  }
+]

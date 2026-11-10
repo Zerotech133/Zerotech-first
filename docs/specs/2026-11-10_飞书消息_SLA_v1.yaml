@@ -1,0 +1,86 @@
+# 飞书消息工作台 · SLA 默认表 v1（M0 草案）
+# 页面只展示“要求 + 截止 + 超时后果”，不在前端计算 SLA。
+# 时限由优先级决定；消息类型只决定交互方式。
+version: 1
+status: draft
+owner: TBD
+updated_at: "2026-11-10"
+note: "P0/P1/P2 的优先级映射由 source/owner 在 M1 决定；本表只定时限默认值。"
+
+priorities:
+  P0:
+    label: "资金 / 客户 / 交易"
+    confirm:
+      ack_after_minutes: 15
+      escalate_after_minutes: 30
+      escalate_to: "owner"
+    delivery:
+      receipt_after_minutes: 5
+      escalate_after_minutes: 15
+      escalate_to: "OPS1"
+    message:
+      failure_alert_after_minutes: 5
+  P1:
+    label: "日常运营"
+    confirm:
+      ack_after_minutes: 120
+      escalate_after_minutes: 240
+      escalate_to: "owner"
+    delivery:
+      receipt_after_minutes: 10
+      escalate_after_minutes: 30
+      escalate_to: "OPS1"
+    message:
+      failure_alert_after_minutes: 15
+  P2:
+    label: "资讯 / 低风险"
+    confirm:
+      ack_after_minutes: 480
+      escalate_after_minutes: 1440
+      escalate_to: "owner"
+    delivery:
+      receipt_after_minutes: 30
+      escalate_after_minutes: 120
+      escalate_to: "OPS1"
+    message:
+      failure_alert_after_minutes: 60
+
+message_types:
+  message:
+    interaction: "summary + deep link"
+    receipt_required: false
+    ack_required: false
+    allowed_buttons: ["open_deep_link"]
+  confirm:
+    interaction: "reject / approve"
+    receipt_required: true
+    ack_required: true
+    allowed_buttons: ["reject", "approve"]
+    decision_table: "notification_decisions"
+  delivery:
+    interaction: "evidence / confirm delivery / manual resend"
+    receipt_required: true
+    ack_required: false
+    allowed_buttons: ["open_evidence", "confirm_delivery", "manual_resend"]
+
+receipts:
+  # 不把“已读”当回执；飞书不保证读回执。
+  success_signals:
+    - "message_id accepted"
+    - "card action callback"
+    - "manual delivery confirmation"
+  failure_signals:
+    - "send error"
+    - "no message_id"
+    - "callback timeout"
+    - "dead letter"
+
+routing:
+  default_priority: "P1"
+  priority_sources:
+    - "subscription.customer_domain"
+    - "operation.owner"
+    - "manual override"
+  alert_channel:
+    mode: "preview_only"     # M1; M2 test; M3 real
+    target: "TBD"

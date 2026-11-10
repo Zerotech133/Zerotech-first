@@ -1,4 +1,4 @@
-# JEVSocialDaily installer — JEV 社交快照「每日盘后前向采集」定时任务注册器。
+﻿# JEVSocialDaily installer — JEV 社交快照「每日盘后前向采集」定时任务注册器。
 #
 # 背景（v2 P2.2 修正）：雪球/股吧接口只返回「查询时刻」实时榜，不接收日期参数，
 #   历史回补物理不可行。唯一能补社交信号的方式 = 每个交易日后跑一次、逐日累积。
@@ -86,7 +86,7 @@ if ($Verify) {
     $found = Show-State
     Write-Result ('bat exists=' + (Test-Path $BatPath) + ' py exists=' + (Test-Path $PyPath))
     if (Test-Path $RunLog) {
-        Write-Result ('run log tail: ' + ((Get-Content $RunLog -Tail 1) -join ''))
+        Write-Result ('run log tail: ' + ((Get-Content $RunLog -Tail 1 -Encoding UTF8) -join ''))
     }
     if (-not $found) { exit 3 }
     exit 0
@@ -135,6 +135,6 @@ try {
 }
 
 Show-State | Out-Null
-Write-Result '验证: install_jev_social_task.ps1 -Verify ；手工跑一次: ' + $BatPath
+Write-Result ('验证: install_jev_social_task.ps1 -Verify ；手工跑一次: ' + $BatPath)
 Write-Result '回滚: install_jev_social_task.ps1 -Uninstall'
 exit 0
