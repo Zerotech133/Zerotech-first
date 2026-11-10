@@ -363,12 +363,14 @@ function renderCards(){
         "<span>人气榜TOP100 " + t.n_hot + "</span>" +
         (t.n_lhb ? "<span>龙虎榜 " + t.n_lhb + "</span>" : "") + "</div>" +
       '<div class="top5">' + top.map(s =>
-        '<div class="s" onclick="event.stopPropagation();openDetail(\\'' + s.code + "\\')\">" +
+        '<div class="s" data-code="' + s.code + '">' +
         "<b>" + s.name + ' <span style="color:var(--tx2);font-size:11px">' + s.code + "</span></b>" +
         "<i>" + s.sig_type + " · 分 " + s.score + " · " + pctS(s.pct) + "</i></div>").join("") +
       "</div>" +
       '<span class="more">查看全部 ' + t.stocks.length + " 只 →</span></div>";
   }).join("");
+  document.querySelectorAll(".top5 .s").forEach(el =>
+    el.onclick = (ev) => { ev.stopPropagation(); openDetail(el.dataset.code); });
 }
 
 /* ── 层2：档列表 ── */
@@ -379,7 +381,7 @@ function openList(i){curTier=i;
   document.getElementById("lvDesc").textContent = TIER_DESC[t.name];
   document.getElementById("lvSearch").value="";
   document.getElementById("cardView").style.display="none";
-  document.getElementById("listView").style.display="";
+  document.getElementById("listView").style.display="block";
   renderList();window.scrollTo(0,0);}
 function renderList(){
   const t=D.tiers[curTier]; if(!t)return;
@@ -390,13 +392,15 @@ function renderList(){
   const th=[["name","名称"],["code","代码"],["sig_type","信号"],["score","评分"],["close","收盘"],["pct","涨幅%%"],["mv","市值(亿)"],["amt","20日额(亿)"],["hs","沪深300"],["hot","人气榜"]];
   document.getElementById("lvTable").innerHTML = "<table><tr>" +
     th.map(h=>"<th>"+h[1]+"</th>").join("")+"</tr>" +
-    rows.map(s=>'<tr class="r" onclick="openDetail(\\'' + s.code + "\\')\">" +
+    rows.map(s=>'<tr class="r" data-code="' + s.code + '">' +
       "<td><b>"+s.name+"</b></td><td>"+s.code+"</td><td>"+s.sig_type+"</td>" +
       "<td>"+s.score+"</td><td>"+fmt(s.close)+"</td>" +
       '<td class="'+pctCls(s.pct)+'">'+pctS(s.pct)+"</td>" +
       "<td>"+fmt(s.mv)+"</td><td>"+fmt(s.amt)+"</td>" +
       "<td>"+(s.hs?"✓ "+s.hs+"%%":"")+"</td>" +
       "<td>"+(s.hot?"#"+s.hot:"")+"</td></tr>").join("") + "</table>";
+  document.querySelectorAll("#lvTable tr.r").forEach(el =>
+    el.onclick = () => openDetail(el.dataset.code));
 }
 
 /* ── 层3：个股详情 ── */
