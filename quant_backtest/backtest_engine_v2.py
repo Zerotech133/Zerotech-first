@@ -769,6 +769,11 @@ class BacktestConfig:
     # 证据：三窗口位置分桶里 ≤2% 是唯一全正桶（t=2.40/5.04），>20% 全负——追高是负α来源。
     # 0=关闭（默认，v3 行为不变）；量纲与 zg 同（px_raw 真实价，量纲事故防御）。
     pos_gap_max: float = 0.0
+    # score 槽位的独立单票帽（2026-11-10 老田「探索上升空间」）：slot_mode="score" 下
+    # per=capv×sc/当日评分和，单候选日满帽押一只票（集中彩票，PRE mdd −14.3%）。
+    # 本参数把单票压到 slot_score_cap，截断部分不转移（总仓略降）；0=不限制。
+    # 与 cap 档独立——cap 档是总仓位帽，本参数只限单票，用来分离「评分信息 vs 集中效应」。
+    slot_score_cap: float = 0.0
     # 固定目标位止盈 + 时间衰减（2026-11-10 老田「按反抽重设退出」）：
     # 反抽的特征是「弹到位就走」，不是「跟着趋势跑」。目标 = tp_pct − tp_decay × 已持有日数，
     # 下限 tp_min（越久没到目标 → 这波力度不足 → 目标该降，而不是无限等）。
@@ -1142,6 +1147,8 @@ def run_backtest(
             elif cfg.slot_mode == "score":
                 sc_v = sc if isinstance(sc, (int, float)) else 60
                 per = max(0.005, min(capv, capv * sc_v / _sc_sum))
+                if cfg.slot_score_cap > 0:
+                    per = min(per, cfg.slot_score_cap)
             else:
                 per = cfg.slot_pct
             amt = min(cash, eqv_open * per, max(0.0, eqv_open * capv - deployed))
@@ -1509,6 +1516,26 @@ def run_backtest(
                         continue
                     if p["val"] / p["cost"] - 1 <= cfg.stop_pct:
                         if _gated(s, "硬止损"):
+                            continue
+                        if cfg.stop_fill_mode == "close_same":
+                            # 收盘确认→当日尾盘卖（2026-11-10「跳空保护」第二方案）：
+                            # 收盘才确认（免 intraday 插针假摔）+ 当日收盘成交（免隔夜跳空
+                            # −9.4% vs −8% 的滑移）。val 已被 B 盯市块更新到当日收盘，
+                            # 直接按 val 记账；slip 用 stop_slip 近似尾盘冲击。
+                            val_exit = p["val"] * (1 - cfg.stop_slip)
+                            pnl_c = val_exit / p["cost"] - 1
+                            cash += val_exit * (1 - cfg.cost)
+                            del pos[s]
+                            holding_since.pop(s, None)
+                            actions.append(
+                                {
+                                    "type": "sell",
+                                    "stock": s,
+                                    "note": "硬止损：收盘确认·当日尾盘卖（close_same）",
+                                    "pnl_pct": round(pnl_c * 100, 2),
+                                }
+                            )
+                            rec(day, "SELL", s, "stop_loss", pnl_c, stop_mode="close_same")
                             continue
                         pending_sell.add(s)
                         p["exit_why"] = "stop_loss"
@@ -2173,11 +2200,12 @@ def run_job(params: dict, job_id: str, progress=None):
             stop_fill_mode=(
                 str(p.get("stop_fill_mode") or "open_next").strip().lower()
                 if str(p.get("stop_fill_mode") or "open_next").strip().lower()
-                in ("open_next", "intraday")
+                in ("open_next", "intraday", "close_same")
                 else "open_next"
             ),
             stop_slip=max(0.0, min(0.05, _num("stop_slip", 0.0))),
             pos_gap_max=max(0.0, _num("pos_gap_max", 0.0)),
+            slot_score_cap=max(0.0, _num("slot_score_cap", 0.0)),
             cap_tiers=tuple(
                 max(0.0, min(1.0, float(x)))
                 for x in (
