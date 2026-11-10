@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import inspect
 import json
-from datetime import date
+from datetime import date, datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException
@@ -28,6 +29,7 @@ from zhice_os_v2.application.services.strategy_registry_service import (
 )
 from zhice_os_v2.application.services.strategy_runner import StrategyRunner
 from zhice_os_v2.application.services.strategy_service import StrategyService
+from zhice_os_v2.application.services.strategy_market_service import build_sidecar_items, load_research_items
 from zhice_os_v2.domain.security.user import Role, User
 from zhice_os_v2.domain.strategy.spec import StrategySpec
 from zhice_os_v2.infrastructure.repositories.ports import PersistencePort
@@ -41,6 +43,214 @@ router = APIRouter(
 # (RISK_MANAGER)——策略库的注册/审批/编辑/删除属研究+管理职责。中间件已按 role 拦
 # USER/VIEWER 的全局写；此处 require_roles 为端点级纵深防御（再挡 TRADER/RISK_MANAGER）。
 _MANAGE_ROLES = (Role.ADMIN, Role.RESEARCHER)
+
+# ---------------------------------------------------------------------------
+# 研究状态只读视图（task-69 P0）
+#
+# 数据源（文件直读、只读；不写 DB、不触发构建、不改任何配置）：
+# - config/research_artifact_manifest.json：task-66 生成的 artifacts sha256/asof/counts；
+# - config/strategy_gate_matrix.json：task-67 的 G1-G8 门槛矩阵（32 策略/25 close/7 needs-more/4 冲突）；
+# - config/strategy_market_research.json：仅取 generated_at 计算同步滞后，不返回各条明细。
+#
+# 路由必须放在 /{strategy_id} 等动态路径之前，避免 "research-status" 被当成 strategy_id。
+# 文件缺失/损坏时降级为 503 + 稳定 code，不裸 500，也不回退到 DB。
+# ---------------------------------------------------------------------------
+_RESEARCH_STATUS_ROOT = Path(__file__).resolve().parents[4]
+_RESEARCH_ARTIFACT_MANIFEST = _RESEARCH_STATUS_ROOT / "config" / "research_artifact_manifest.json"
+_STRATEGY_GATE_MATRIX = _RESEARCH_STATUS_ROOT / "config" / "strategy_gate_matrix.json"
+_STRATEGY_MARKET_RESEARCH = _RESEARCH_STATUS_ROOT / "config" / "strategy_market_research.json"
+_RESEARCH_STATUS_MAX_AGE_HOURS = 24  # 契约 config/contracts/strategy_research.odcs.yaml freshness
+
+
+def _load_research_status_json(path: Path, label: str) -> dict:
+    """读取研究状态 JSON；缺失/损坏统一 503（不裸 500、不读 DB）。"""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "strategy.research_status_unavailable",
+                "message": f"{label} 不可用",
+            },
+        ) from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "strategy.research_status_unavailable",
+                "message": f"{label} 数据结构无效",
+            },
+        )
+    return payload
+
+
+def _load_optional_research_json(path: Path) -> dict | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _parse_iso_dt(value: object) -> datetime | None:
+    if not value:
+        return None
+    try:
+        text = str(value).strip()
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        dt = datetime.fromisoformat(text)
+        return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def _research_status_freshness(manifest: dict, gate: dict, snapshot: dict | None) -> dict:
+    asof = _parse_iso_dt(manifest.get("asof"))
+    snapshot_at = _parse_iso_dt((snapshot or {}).get("generated_at"))
+    gate_at = _parse_iso_dt(gate.get("generated_at"))
+    now = datetime.now(timezone.utc)
+    sync_lag_hours: float | None = None
+    status = "UNKNOWN"
+    if asof is not None and snapshot_at is not None:
+        sync_lag_hours = round((snapshot_at - asof).total_seconds() / 3600.0, 2)
+        if snapshot_at < asof:
+            status = "STALE"
+        elif sync_lag_hours > _RESEARCH_STATUS_MAX_AGE_HOURS:
+            status = "WARN"
+        else:
+            status = "FRESH"
+    warnings = (manifest.get("validations") or {}).get("warnings") or []
+    return {
+        "asof": manifest.get("asof"),
+        "manifest_generated_at": manifest.get("generated_at"),
+        "snapshot_generated_at": (snapshot or {}).get("generated_at"),
+        "gate_matrix_generated_at": gate.get("generated_at"),
+        "manifest_age_hours": round((now - asof).total_seconds() / 3600.0, 2) if asof else None,
+        "gate_matrix_age_hours": round((now - gate_at).total_seconds() / 3600.0, 2) if gate_at else None,
+        "sync_lag_hours": sync_lag_hours,
+        "max_age_hours": _RESEARCH_STATUS_MAX_AGE_HOURS,
+        "status": status,
+        "warnings": warnings,
+    }
+
+
+@router.get("/research-status")
+def get_strategy_research_status() -> dict:
+    """研究 artifacts manifest + G1-G8 门槛矩阵的只读摘要（P0）。
+
+    - manifest：artifacts 的 sha256/asof/owner/counts/validations；
+    - gate matrix：32 策略（24 book + 8 registered）、strict_verdict 25 close / 7 needs-more、
+      4 个 verdict_conflict、G1-G8 gate_status_tally；
+    - freshness：asof / snapshot / gate matrix 时间与 24h 契约滞后；
+    - read_only=true，无 DB 访问、无写操作。
+    """
+    manifest = _load_research_status_json(_RESEARCH_ARTIFACT_MANIFEST, "research_artifact_manifest")
+    gate = _load_research_status_json(_STRATEGY_GATE_MATRIX, "strategy_gate_matrix")
+    snapshot = _load_optional_research_json(_STRATEGY_MARKET_RESEARCH)
+
+    manifest_counts = manifest.get("counts") or {}
+    gate_counts = gate.get("counts") or {}
+    if not isinstance(manifest_counts, dict) or not isinstance(gate_counts, dict) or not gate_counts.get("total"):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "strategy.research_status_unavailable",
+                "message": "研究状态数据结构无效",
+            },
+        )
+
+    artifacts: list[dict] = []
+    for raw in manifest.get("artifacts") or []:
+        if not isinstance(raw, dict):
+            continue
+        artifacts.append({
+            "role": raw.get("role"),
+            "path": raw.get("path"),
+            "relative_path": raw.get("relative_path"),
+            "sha256": raw.get("sha256"),
+            "asof": raw.get("asof"),
+            "owner": raw.get("owner"),
+            "bytes": raw.get("bytes"),
+        })
+
+    validations = manifest.get("validations") or {}
+    conflicts = [x for x in (gate.get("conflicts") or []) if isinstance(x, dict)]
+    gaps = [x for x in (gate.get("gaps") or []) if isinstance(x, dict)]
+    snapshot_counts = (snapshot or {}).get("counts") if isinstance(snapshot, dict) else {}
+    if not isinstance(snapshot_counts, dict):
+        snapshot_counts = {}
+    resolved_conflicts = int(snapshot_counts.get("resolved_conflicts") or 0)
+    open_conflicts = int(snapshot_counts.get("open_conflicts") if snapshot_counts.get("open_conflicts") is not None else len(conflicts))
+    strict_verdict = gate_counts.get("strict_verdict") or {}
+    if not isinstance(strict_verdict, dict):
+        strict_verdict = {}
+
+    return {
+        "schema": "zhice.strategy_research_status/v1",
+        "read_only": True,
+        "generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        "counts": {
+            "specs": manifest_counts.get("research_specs"),
+            "expected_specs": manifest_counts.get("expected_specs", 24),
+            "strategies": gate_counts.get("total"),
+            "book": gate_counts.get("book"),
+            "registered": gate_counts.get("registered"),
+            "strict_verdict": strict_verdict,
+            "close": strict_verdict.get("close"),
+            "needs_more": strict_verdict.get("needs-more"),
+            "conflicts": len(conflicts),
+            "resolved_conflicts": resolved_conflicts,
+            "open_conflicts": open_conflicts,
+            "artifacts": len(artifacts),
+        },
+        "manifest": {
+            "schema": manifest.get("schema"),
+            "generated_at": manifest.get("generated_at"),
+            "asof": manifest.get("asof"),
+            "asof_source": manifest.get("asof_source"),
+            "owner": manifest.get("owner"),
+            "contract": manifest.get("contract"),
+            "counts": manifest_counts,
+            "valid": bool(validations.get("valid")),
+            "error_count": validations.get("error_count"),
+            "warning_count": validations.get("warning_count"),
+            "warnings": validations.get("warnings") or [],
+        },
+        "artifacts": artifacts,
+        "gate_matrix": {
+            "schema": gate.get("schema"),
+            "generated_at": gate.get("generated_at"),
+            "counts": gate_counts,
+            "gate_status_tally": gate.get("gate_status_tally") or gate_counts.get("gate_status_tally"),
+            "verdict_policy": gate.get("verdict_policy"),
+            "conflict_count": len(conflicts),
+            "gaps_count": len(gaps),
+        },
+        "specs": {
+            "count": manifest_counts.get("research_specs"),
+            "expected": manifest_counts.get("expected_specs", 24),
+            "complete": manifest_counts.get("research_specs") == manifest_counts.get("expected_specs", 24),
+        },
+        "strategies": {
+            "total": gate_counts.get("total"),
+            "book": gate_counts.get("book"),
+            "registered": gate_counts.get("registered"),
+            "strict_verdict": strict_verdict,
+            "market_decision": gate_counts.get("market_decision") or {},
+            "book_verdict": gate_counts.get("book_verdict") or {},
+            "registered_verdict": gate_counts.get("registered_verdict") or {},
+        },
+        "conflicts": conflicts,
+        "gaps": gaps,
+        "freshness": _research_status_freshness(manifest, gate, snapshot),
+        "sources": {
+            "manifest": str(_RESEARCH_ARTIFACT_MANIFEST),
+            "gate_matrix": str(_STRATEGY_GATE_MATRIX),
+            "strategy_market": str(_STRATEGY_MARKET_RESEARCH),
+        },
+    }
 
 
 class RegisterBody(BaseModel):
@@ -185,6 +395,7 @@ def strategy_performance(
 @router.get("")
 def list_strategies(
     market: str | None = None,
+    include_research: bool = True,
     db: PersistencePort = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -256,36 +467,25 @@ def list_strategies(
                 ],
             }
         )
-    session = get_session()
+    _market_session = get_session()
     try:
-        sidecars = session.execute(text(
-            "SELECT strategy_id, display_name, status, owner, note FROM v2_strategy_sidecar "
-            "ORDER BY strategy_id")).mappings().all()
+        out.extend(build_sidecar_items(market, own, session=_market_session))
     finally:
-        session.close()
-    for r in sidecars:
-        if market and market != "CN":
-            continue
-        out.append({
-            "strategy_id": r["strategy_id"],
-            "strategy_name": r["display_name"],
-            "description": r["note"] or "研究院研究策略（sidecar）",
-            "market": "CN",
-            "strategy_type": "SIDECAR",
-            "status": (r["status"] or "live").upper(),
-            "is_builtin": False,
-            "editable": False,
-            "owner_user_id": r["owner"],
-            "research_owner": (own.get(r["strategy_id"]) or {}).get("research_owner") or r["owner"],
-            "validation_owner": (own.get(r["strategy_id"]) or {}).get("validation_owner"),
-            "data_owner": (own.get(r["strategy_id"]) or {}).get("data_owner"),
-            "ops_owner": (own.get(r["strategy_id"]) or {}).get("ops_owner"),
-            "lifecycle_status": (own.get(r["strategy_id"]) or {}).get("lifecycle_status") or (r["status"] or "live").lower(),
-            "next_review": str((own.get(r["strategy_id"]) or {}).get("next_review") or ""),
-            "version_count": 0,
-            "versions": [],
-            "is_sidecar": True,
-        })
+        _market_session.close()
+    if include_research and (not market or market == "CN"):
+        existing = {x["strategy_id"] for x in out}
+        for x in load_research_items():
+            if x.get("strategy_id") in existing:
+                continue
+            x = dict(x)
+            x.setdefault("is_research", True)
+            x.setdefault("tradable", False)
+            x.setdefault("editable", False)
+            x.setdefault("is_sidecar", False)
+            x.setdefault("is_builtin", False)
+            x.setdefault("version_count", 0)
+            x.setdefault("versions", [])
+            out.append(x)
     out.sort(key=lambda x: (x["market"], x["strategy_id"]))
     return out
 

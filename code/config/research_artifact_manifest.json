@@ -1,0 +1,802 @@
+{
+  "schema": "zhice.research_artifact_manifest/v1",
+  "generated_at": "2026-11-11T03:18:19+08:00",
+  "asof": "2026-11-10T16:09:36+08:00",
+  "asof_source": "max(research/strategy_specs/*.yaml mtime, strict_audit mtime, audit.meta.generated_at)",
+  "owner": "DATA1",
+  "source": {
+    "research_root": "C:\\项目\\老田的AI助手",
+    "research_dir": "C:\\项目\\老田的AI助手\\research",
+    "specs": "C:\\项目\\老田的AI助手\\research\\strategy_specs",
+    "strict_audit": "C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json",
+    "strategy_market": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\strategy_market_research.json",
+    "builder": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\scripts\\build_strategy_market.py",
+    "deliverable_reports": {
+      "deliverables/2026-11-10_wrapper_tail_order_verify_v1.md": "C:\\项目\\deliverables\\2026-11-10_wrapper_tail_order_verify_v1.md"
+    },
+    "manifest": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\research_artifact_manifest.json"
+  },
+  "contract": {
+    "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\contracts\\strategy_research.odcs.yaml",
+    "id": "strategy_research_zhangsong",
+    "name": "张松研究策略交付",
+    "version": "1.0.0",
+    "owner": "DATA1",
+    "sha256": "c6b32b7a8d3320e8456b3f5a78de587ba2774d32928b281cc33a64fea5f7ba98"
+  },
+  "counts": {
+    "research_specs": 24,
+    "expected_specs": 24,
+    "registered_strategies": 8,
+    "expected_registered": 8,
+    "strategy_market_items": 32,
+    "expected_items": 32,
+    "audit_book_items": 24,
+    "audit_book_verdicts": {
+      "close": 20,
+      "needs-more": 4
+    },
+    "strategy_market_status": {
+      "RESEARCH_CLOSED": 25,
+      "RESEARCH_NEEDS_MORE": 7
+    },
+    "artifacts": 29,
+    "deliverable_reports": 1,
+    "research_files": 1798,
+    "research_dirs": 46
+  },
+  "research_tree": {
+    "root": "C:\\项目\\老田的AI助手\\research",
+    "files": 1798,
+    "dirs": 46,
+    "bytes": 288327407,
+    "by_extension": {
+      ".json": 1131,
+      ".md": 441,
+      ".jsonl": 64,
+      ".yaml": 49,
+      ".v1bak": 47,
+      ".csv": 40,
+      ".log": 10,
+      ".db": 3,
+      ".py": 3,
+      ".txt": 3,
+      ".xlsx": 3,
+      ".bak": 1,
+      ".bak_dupefix_20261104_192528": 1,
+      ".flag": 1,
+      ".parquet": 1
+    },
+    "latest_mtime": "2026-11-11T03:03:16+08:00"
+  },
+  "validations": {
+    "valid": true,
+    "error_count": 0,
+    "warning_count": 0,
+    "errors": [],
+    "warnings": [],
+    "checks": [
+      {
+        "code": "RESEARCH_ROOT_EXISTS",
+        "status": "PASS",
+        "message": "research root 存在: C:\\项目\\老田的AI助手",
+        "details": {
+          "root": "C:\\项目\\老田的AI助手"
+        }
+      },
+      {
+        "code": "SPECS_DIR_EXISTS",
+        "status": "PASS",
+        "message": "strategy_specs 目录存在: C:\\项目\\老田的AI助手\\research\\strategy_specs",
+        "details": {
+          "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs"
+        }
+      },
+      {
+        "code": "REPORTS_DIR_EXISTS",
+        "status": "PASS",
+        "message": "research/reports 目录存在",
+        "details": {
+          "path": "C:\\项目\\老田的AI助手\\research\\reports"
+        }
+      },
+      {
+        "code": "SPECS_COUNT_24",
+        "status": "PASS",
+        "message": "specs 数量必须为 24（当前 24）",
+        "details": {
+          "expected": 24,
+          "actual": 24,
+          "files": [
+            "001_量柱七形态.yaml",
+            "002_黄金柱.yaml",
+            "003_将军柱卧底搭梯.yaml",
+            "004_元帅柱零号.yaml",
+            "005_金线战法三步曲.yaml",
+            "006_大盘阴线长阴短柱.yaml",
+            "007_一剑封喉.yaml",
+            "008_倍量伸缩.yaml",
+            "009_现场直憋.yaml",
+            "010_3121战法.yaml",
+            "011_间谍战法量学七剑.yaml",
+            "012_双阴出货.yaml",
+            "013_兵临城下.yaml",
+            "014_接力双阳.yaml",
+            "015_价升量缩.yaml",
+            "016_平斜交叉.yaml",
+            "017_站稳凹峰.yaml",
+            "018_极阴次阳.yaml",
+            "019_牛股量形.yaml",
+            "020_牛股三绝.yaml",
+            "021_十月怀胎.yaml",
+            "022_凹口淘金.yaml",
+            "023_量学导火索.yaml",
+            "024_涨停基因.yaml"
+          ]
+        }
+      },
+      {
+        "code": "SPECS_LOADED_VALID",
+        "status": "PASS",
+        "message": "specs 全部可解析、含必填字段且 id 唯一",
+        "details": {
+          "errors": [],
+          "loaded": 24
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_EXISTS",
+        "status": "PASS",
+        "message": "strict audit 文件存在: C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json",
+        "details": {
+          "path": "C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json"
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_SCHEMA",
+        "status": "PASS",
+        "message": "strict audit schema_version 合法",
+        "details": {
+          "schema_version": "simahui_strict_audit.v1"
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_META",
+        "status": "PASS",
+        "message": "strict audit meta.generated_at 存在",
+        "details": {
+          "meta": {
+            "generated_at": "2026-11-01T16:48:33+08:00",
+            "auditor": "司马微",
+            "source": "张松交付单 v1",
+            "deliverable_ticket": "deliverables/2026-11-01_张松交付司马微_策略严苛调校单_v1.md",
+            "scope": "S01-S05 + book_backlog 24 项 + 张松 4 组研究（H24-H29 / 批量四关 / 反向规避 / 量学因子库）",
+            "protocol": "G1-G8（见 gates 定义）",
+            "not_done": [
+              "不重跑 LLM",
+              "不实盘",
+              "不改变既有事实结论（H24-H29 rejected、S05 closed）"
+            ]
+          }
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_AUDITOR",
+        "status": "PASS",
+        "message": "strict audit auditor 存在",
+        "details": {
+          "auditor": "司马微"
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_BOOK_24",
+        "status": "PASS",
+        "message": "book_backlog 必须 24 项（total=24, items=24）"
+      },
+      {
+        "code": "STRICT_AUDIT_BOOK_SPEC_COVERAGE",
+        "status": "PASS",
+        "message": "book_backlog 的 strategy_spec_id 与 specs 一一覆盖",
+        "details": {
+          "missing": [],
+          "extra": []
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_BOOK_VERDICT_VALID",
+        "status": "PASS",
+        "message": "book_backlog verdict 均为 close/needs-more/keep",
+        "details": {
+          "bad": []
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_BOOK_COUNTS",
+        "status": "PASS",
+        "message": "book_backlog.counts 与实际 verdict 统计一致",
+        "details": {
+          "declared": {
+            "close": 20,
+            "needs-more": 4
+          },
+          "actual": {
+            "close": 20,
+            "needs-more": 4
+          }
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_STRATEGIES_DETAIL",
+        "status": "PASS",
+        "message": "strict audit strategies 细项 5 条（book 24 项以 book_backlog 为准）",
+        "details": {
+          "strategies": [
+            "LX06_YIN_LINE_TACTICS",
+            "LX12_DOUBLE_YIN_EXIT",
+            "LX20_BULL_STOCK_THREE_ABSOLUTES",
+            "LX22_CONCAVE_NOTCH_GOLD",
+            "S05_LX20_AVOID_DEWEIGHT"
+          ]
+        }
+      },
+      {
+        "code": "STRICT_AUDIT_VERDICTS_SUMMARY_SCOPE",
+        "status": "PASS",
+        "message": "verdicts_summary 覆盖 strategies 细项（非 book 24 项）",
+        "details": {
+          "detail_ids": [
+            "LX06_YIN_LINE_TACTICS",
+            "LX12_DOUBLE_YIN_EXIT",
+            "LX20_BULL_STOCK_THREE_ABSOLUTES",
+            "LX22_CONCAVE_NOTCH_GOLD",
+            "S05_LX20_AVOID_DEWEIGHT"
+          ],
+          "strategies": [
+            "LX06_YIN_LINE_TACTICS",
+            "LX12_DOUBLE_YIN_EXIT",
+            "LX20_BULL_STOCK_THREE_ABSOLUTES",
+            "LX22_CONCAVE_NOTCH_GOLD",
+            "S05_LX20_AVOID_DEWEIGHT"
+          ]
+        }
+      },
+      {
+        "code": "BUILDER_EXISTS",
+        "status": "PASS",
+        "message": "builder 存在: C:\\项目\\zhice-os-v2-windows-20260920\\code\\scripts\\build_strategy_market.py",
+        "details": {
+          "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\scripts\\build_strategy_market.py"
+        }
+      },
+      {
+        "code": "BUILDER_REGISTERED_8",
+        "status": "PASS",
+        "message": "builder REGISTERED 必须 8 条（当前 8）",
+        "details": {
+          "registered": [
+            "S01_H14_quality_trap_guard",
+            "S02_composite_mvp",
+            "S03_H18_forecast_revision_watch",
+            "S04_AH_premium_pair",
+            "S05_LX20_AVOID_DEWEIGHT",
+            "S06_reversal_combo_mom20_120",
+            "S07_mom20_long_only",
+            "S08_mom120_long_only"
+          ]
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_CONFIG_EXISTS",
+        "status": "PASS",
+        "message": "策略市场快照存在: C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\strategy_market_research.json",
+        "details": {
+          "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\strategy_market_research.json"
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_SCHEMA",
+        "status": "PASS",
+        "message": "策略市场快照 schema 合法",
+        "details": {
+          "schema": "zhice.strategy_market_research/v1"
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_GENERATED_AT",
+        "status": "PASS",
+        "message": "策略市场快照 generated_at 存在",
+        "details": {
+          "generated_at": "2026-11-11T03:18:18+08:00"
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_SOURCE_AUDIT",
+        "status": "PASS",
+        "message": "快照 source 指向 strict audit 文件",
+        "details": {
+          "source": "C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json",
+          "expected": "C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json"
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_ITEMS_32",
+        "status": "PASS",
+        "message": "快照 items 必须 32 条（当前 32，counts.total=32）",
+        "details": {
+          "items": 32,
+          "counts": {
+            "total": 32,
+            "closed": 25,
+            "needs_more": 7,
+            "untested": 0,
+            "conflicts": 4,
+            "resolved_conflicts": 4,
+            "open_conflicts": 0,
+            "book": 24,
+            "registered": 8,
+            "strict_verdict": {
+              "close": 25,
+              "needs-more": 7
+            }
+          }
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_ID_COVERAGE",
+        "status": "PASS",
+        "message": "快照 strategy_id 与 specs+builder 注册策略一一覆盖",
+        "details": {
+          "missing": [],
+          "extra": []
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_ITEM_FIELDS",
+        "status": "PASS",
+        "message": "快照 item 必填字段/只读研究标志齐备",
+        "details": {
+          "errors": [],
+          "count": 0
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_BOOK_STATUS",
+        "status": "PASS",
+        "message": "24 书战法 status 与 strict audit verdict 对应",
+        "details": {
+          "errors": [],
+          "count": 0
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_REGISTERED_STATUS",
+        "status": "PASS",
+        "message": "8 注册策略 status 与严格门槛矩阵对应",
+        "details": {
+          "errors": [
+            "LX01_SEVEN_VOLUME_FORMS: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX02_GOLDEN_PILLAR: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX03_GENERAL_PILLAR: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX04_MARSHAL_PILLAR_ZERO: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX05_GOLDEN_LINE_TRILOGY: status=RESEARCH_NEEDS_MORE 期望 RESEARCH_NEEDS_MORE",
+            "LX06_YIN_LINE_TACTICS: status=RESEARCH_NEEDS_MORE 期望 RESEARCH_NEEDS_MORE",
+            "LX07_ONE_SWORD_SEAL_THROAT: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX08_DOUBLE_VOL_EXPAND_CONTRACT: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX09_LIVE_SUFFOCATION: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX10_3121_RULER: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX11_SPY_TACTICS: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX12_DOUBLE_YIN_EXIT: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX13_ARMY_AT_CITY_GATE: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX14_RELAY_DOUBLE_YANG: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX15_PRICE_UP_VOL_DOWN: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX16_FLAT_SLANT_CROSS: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX17_STAND_ON_CONCAVE_PEAK: status=RESEARCH_NEEDS_MORE 期望 RESEARCH_NEEDS_MORE",
+            "LX18_EXTREME_YIN_NEXT_YANG: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX19_BULL_STOCK_VOLUME_SHAPE: status=RESEARCH_CLOSED 期望 RESEARCH_CLOSED",
+            "LX20_BULL_STOCK_THREE_ABSOLUTES: status=RESEARCH_NEEDS_MORE 期望 RESEARCH_NEEDS_MORE"
+          ],
+          "count": 24,
+          "authority": "strategy_gate_matrix"
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_COUNTS",
+        "status": "PASS",
+        "message": "快照 counts 与 items status 统计一致",
+        "details": {
+          "declared": {
+            "total": 32,
+            "closed": 25,
+            "needs_more": 7,
+            "untested": 0,
+            "conflicts": 4,
+            "resolved_conflicts": 4,
+            "open_conflicts": 0,
+            "book": 24,
+            "registered": 8,
+            "strict_verdict": {
+              "close": 25,
+              "needs-more": 7
+            }
+          },
+          "actual": {
+            "closed": 25,
+            "needs_more": 7,
+            "untested": 0
+          }
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_FILES_EXIST",
+        "status": "PASS",
+        "message": "快照引用的研究文件均存在",
+        "details": {
+          "errors": [],
+          "count": 0
+        }
+      },
+      {
+        "code": "STRATEGY_MARKET_DATA_CONTRACT",
+        "status": "PASS",
+        "message": "快照 item data_contract 统一指向研究契约"
+      },
+      {
+        "code": "CONTRACT_EXISTS",
+        "status": "PASS",
+        "message": "research 契约存在: C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\contracts\\strategy_research.odcs.yaml",
+        "details": {
+          "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\contracts\\strategy_research.odcs.yaml"
+        }
+      },
+      {
+        "code": "CONTRACT_OWNER_DATA1",
+        "status": "PASS",
+        "message": "契约 owner 必须 DATA1",
+        "details": {
+          "owner": "DATA1"
+        }
+      },
+      {
+        "code": "CONTRACT_SCHEMA_COVERAGE",
+        "status": "PASS",
+        "message": "契约 schema 覆盖 strategy_specs/strict_audit",
+        "details": {
+          "schema": [
+            "strategy_specs",
+            "strict_audit"
+          ]
+        }
+      },
+      {
+        "code": "CONTRACT_FRESHNESS_24H",
+        "status": "PASS",
+        "message": "契约 freshness.maxAgeHours 必须 24",
+        "details": {
+          "maxAgeHours": 24
+        }
+      },
+      {
+        "code": "SYNC_SNAPSHOT_NOT_OLDER",
+        "status": "PASS",
+        "message": "策略市场快照 generated_at 不得早于研究 artifacts asof",
+        "details": {
+          "asof": "2026-11-10T16:09:36+08:00",
+          "snapshot_generated_at": "2026-11-11T03:18:18+08:00"
+        }
+      },
+      {
+        "code": "SYNC_FRESHNESS_24H",
+        "status": "PASS",
+        "message": "研究 artifacts→策略市场 同步滞后 11.1h（契约 ≤24h）",
+        "details": {
+          "lag_hours": 11.14,
+          "asof": "2026-11-10T16:09:36+08:00",
+          "snapshot_generated_at": "2026-11-11T03:18:18+08:00"
+        }
+      },
+      {
+        "code": "RESEARCH_TREE_NONEMPTY",
+        "status": "PASS",
+        "message": "research 目录非空且包含 specs/reports 等子目录",
+        "details": {
+          "files": 1798,
+          "dirs": 46,
+          "bytes": 288327407
+        }
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "role": "builder",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\scripts\\build_strategy_market.py",
+      "sha256": "f8741d7b15e03e2778e35675b12da95320a22d32bfed3999b6f00d1722c7c346",
+      "bytes": 11870,
+      "mtime": "2026-11-03T08:37:32+08:00",
+      "asof": "2026-11-03T08:37:32+08:00",
+      "relative_path": "scripts/build_strategy_market.py"
+    },
+    {
+      "role": "data_contract",
+      "owner": "DATA1",
+      "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\contracts\\strategy_research.odcs.yaml",
+      "sha256": "c6b32b7a8d3320e8456b3f5a78de587ba2774d32928b281cc33a64fea5f7ba98",
+      "bytes": 2262,
+      "mtime": "2026-11-03T07:30:47+08:00",
+      "asof": "2026-11-03T07:30:47+08:00",
+      "relative_path": "config/contracts/strategy_research.odcs.yaml"
+    },
+    {
+      "role": "deliverable_report",
+      "owner": "ACAD1",
+      "path": "C:\\项目\\deliverables\\2026-11-10_wrapper_tail_order_verify_v1.md",
+      "sha256": "7eee162b06193ff8841c29375eff25304167df8b951e0eb7354d3b7a01ddd929",
+      "bytes": 14086,
+      "mtime": "2026-11-10T22:53:03+08:00",
+      "asof": "2026-11-10T22:53:03+08:00",
+      "relative_path": "deliverables/2026-11-10_wrapper_tail_order_verify_v1.md"
+    },
+    {
+      "role": "strategy_market_snapshot",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\strategy_market_research.json",
+      "sha256": "f58b80184ea20d8a2dcda59cc6af7496e3638849b66dd02bbc24ee006c5a9bea",
+      "bytes": 57727,
+      "mtime": "2026-11-11T03:18:18+08:00",
+      "asof": "2026-11-11T03:18:18+08:00",
+      "relative_path": "config/strategy_market_research.json"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\001_量柱七形态.yaml",
+      "sha256": "0133e5aaf911b40f78b895f338cb951fcd3a625c097bfa78ffdfcb021f24cf35",
+      "bytes": 1968,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/001_量柱七形态.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\002_黄金柱.yaml",
+      "sha256": "89709a48b9a9a751af2e7d7831b4f3d0b0d87b5f79709b535243147bd261a40c",
+      "bytes": 1661,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/002_黄金柱.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\003_将军柱卧底搭梯.yaml",
+      "sha256": "63bb1b88ed6bff259b2a60e2ba65046f9ad449e49a2d32f3a3cb16a674da1bc3",
+      "bytes": 1482,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/003_将军柱卧底搭梯.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\004_元帅柱零号.yaml",
+      "sha256": "c2e178d6431ccf95fa4cbe54a5e3b91e26bd6aa1c5623e845e495b090631f2e3",
+      "bytes": 1483,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/004_元帅柱零号.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\005_金线战法三步曲.yaml",
+      "sha256": "ae93e3ca33c26d194d370ff94b7ecd7ce71bcfa5f9c034bcbba256c3b24472ec",
+      "bytes": 2170,
+      "mtime": "2026-11-10T16:09:36+08:00",
+      "asof": "2026-11-10T16:09:36+08:00",
+      "relative_path": "strategy_specs/005_金线战法三步曲.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\006_大盘阴线长阴短柱.yaml",
+      "sha256": "3bf0db9575b6e99946716acde851fb03b250d73f44dfeb508525d5756473ee2f",
+      "bytes": 1724,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/006_大盘阴线长阴短柱.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\007_一剑封喉.yaml",
+      "sha256": "83541d6899376e4ae0dd11cbbf2f4160f9e0818401fbed32352c612f68985e31",
+      "bytes": 1598,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/007_一剑封喉.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\008_倍量伸缩.yaml",
+      "sha256": "cc1b1cffd406c32ade9ea8eed516edd6045525a622cc3e0e0929b3fa7c9ae8fe",
+      "bytes": 1445,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/008_倍量伸缩.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\009_现场直憋.yaml",
+      "sha256": "6df6ff86e08dba3b6740bf98744f03d7382333498accb3b612de4105edd6c0b5",
+      "bytes": 1415,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/009_现场直憋.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\010_3121战法.yaml",
+      "sha256": "b8f3169ee0892047250cf14cb503b2f05428a62c4f8942620c81cff86de21e44",
+      "bytes": 1452,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/010_3121战法.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\011_间谍战法量学七剑.yaml",
+      "sha256": "ea90581d3b78ce6a9cb1a76dab5d4390013e6bce6161803d6c1ee9398aed492b",
+      "bytes": 1400,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/011_间谍战法量学七剑.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\012_双阴出货.yaml",
+      "sha256": "8e4871fc4d4722c95d11bd495e6c6a972c4711c68c746775b91b7795112166be",
+      "bytes": 1469,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/012_双阴出货.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\013_兵临城下.yaml",
+      "sha256": "8f39dd84b013f2fc20b2f5fb1ac08ba1b7153d7ab620a89c640d0d0278b8b630",
+      "bytes": 1536,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/013_兵临城下.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\014_接力双阳.yaml",
+      "sha256": "b1f4d5a8313f1fb9c213891af4cd7bd66d1e01543c41f42b71ccc56bf3facd36",
+      "bytes": 1394,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/014_接力双阳.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\015_价升量缩.yaml",
+      "sha256": "a6b9603eed07f04f8b5003168a2502412428e865a0bcd6538337d0eb348e9482",
+      "bytes": 1481,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/015_价升量缩.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\016_平斜交叉.yaml",
+      "sha256": "a4b71063c1ab9b93ace4ac3017bd60ca9dad033c405d3d10ecf7cf0a73d17ac3",
+      "bytes": 1428,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/016_平斜交叉.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\017_站稳凹峰.yaml",
+      "sha256": "bd655a6d0ccb7abd387c21d29386b05bcf60e3343a84289e303d8a4e1990040f",
+      "bytes": 1387,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/017_站稳凹峰.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\018_极阴次阳.yaml",
+      "sha256": "393b98ceaf2654c3442cea90e08e973a08282fa5d4ca7ee45d68e6d3d779a47e",
+      "bytes": 1451,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/018_极阴次阳.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\019_牛股量形.yaml",
+      "sha256": "827b0db2471fc88d647edc3a85dd84cbeb81c9ac184065f71cb614d6aaaee742",
+      "bytes": 1412,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/019_牛股量形.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\020_牛股三绝.yaml",
+      "sha256": "a1482f43d113c36b4e8abe138518a9cbee7a0e01dadb25ba2a2e4025e88f82b0",
+      "bytes": 1617,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/020_牛股三绝.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\021_十月怀胎.yaml",
+      "sha256": "876963cab60a46e2e91f4a99c772fae7797c694d24be9630d0fdb9807cdc261e",
+      "bytes": 1340,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/021_十月怀胎.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\022_凹口淘金.yaml",
+      "sha256": "ca1dbfbed2082b95991e947293d30cbbb2b5dc27fc1b64c6d90eceedc982efc0",
+      "bytes": 1305,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/022_凹口淘金.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\023_量学导火索.yaml",
+      "sha256": "965a5888a2b36e2aa2e6905054470c6af00a3b908143535af7bd40ec08f1db28",
+      "bytes": 1437,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/023_量学导火索.yaml"
+    },
+    {
+      "role": "strategy_spec",
+      "owner": "STRAT1",
+      "path": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\024_涨停基因.yaml",
+      "sha256": "3af009d6ac88989941dda048b4b430f2ccacb06f4d19f7a69b1bb28d26eb0630",
+      "bytes": 1509,
+      "mtime": "2026-11-01T05:41:09+08:00",
+      "asof": "2026-11-01T05:41:09+08:00",
+      "relative_path": "strategy_specs/024_涨停基因.yaml"
+    },
+    {
+      "role": "strict_audit",
+      "owner": "ACAD1",
+      "path": "C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json",
+      "sha256": "f1603a0ed91f607a75bce92293080cd8a101fb66c2ccac29ad9878bfa71d086b",
+      "bytes": 40104,
+      "mtime": "2026-11-01T16:50:42+08:00",
+      "asof": "2026-11-01T16:48:33+08:00",
+      "relative_path": "reports/simahui_strict_audit_20261101.json"
+    }
+  ],
+  "write_intent": "write"
+}

@@ -1,0 +1,2795 @@
+{
+ "schema": "zhice.strategy_gate_matrix/v1",
+ "task": "task-67 P1 策略门槛矩阵（只读）",
+ "generated_at": "2026-11-03T07:50:00+08:00",
+ "sources": {
+  "book_specs": "C:\\项目\\老田的AI助手\\research\\strategy_specs\\*.yaml（24 个）",
+  "strict_audit": "C:\\项目\\老田的AI助手\\research\\reports\\simahui_strict_audit_20261101.json（G1-G8 定义/S01-S05/book_backlog 裁决）",
+  "registry": "C:\\项目\\老田的AI助手\\agent_platform\\catalogs\\strategy_registry.json（strict_verdict / S01-S11 状态）",
+  "market_catalog": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\config\\strategy_market_research.json（32 条市场目录：owner/validator/decision）",
+  "book_batch_test": "C:\\项目\\老田的AI助手\\research\\reports\\book_batch_test_20261101.json（grade 初筛）",
+  "reverse_avoid": "C:\\项目\\老田的AI助手\\research\\reports\\reverse_avoid_20261101.json（反向规避深测）"
+ },
+ "gates_definition": {
+  "G1": "全部已测假设 BH-FDR q≤0.10（或 Bonferroni）；报原始 p 与 q",
+  "G2": "walk-forward ≥3 folds + 5 日 embargo；逐 fold OOS 符号",
+  "G3": "30/50/80bp + 冲击成本敏感性；50bp 净超额≤0 → 不可交易",
+  "G4": "同覆盖率随机信号 ≥1000 次置换，真实信号分位 ≥90%",
+  "G5": "成交额门槛/容量 AUM/涨跌停不可执行性；覆盖>30% → 不可执行",
+  "G6": "市值×行业×波动层内同向 + bootstrap CI",
+  "G7": "PIT/除权/停牌/ST/新股逐条核对（含 code review）",
+  "G8": "逐策略 keep/close/needs-more + 注册表 + 证据路径"
+ },
+ "verdict_policy": {
+  "strict_verdict_values": {
+   "close": "关闭/不交易",
+   "needs-more": "待补验后重判",
+   "keep": "保留（本轮无）"
+  },
+  "method": "优先取 strict audit/registry 的严格裁决；S06/S07/S08 按报告结论（rejected→close、shadow 观察→needs-more）；市场目录 decision 单列保留，冲突项标记 verdict_conflict。"
+ },
+ "counts": {
+  "total": 32,
+  "book": 24,
+  "registered": 8,
+  "strict_verdict": {
+   "close": 25,
+   "needs-more": 7
+  },
+  "market_decision": {
+   "关闭": 21,
+   "待补验": 11
+  },
+  "conflicts": 4,
+  "book_verdict": {
+   "close": 20,
+   "needs-more": 4
+  },
+  "registered_verdict": {
+   "close": 5,
+   "needs-more": 3
+  },
+  "gate_status_tally": {
+   "G1": {
+    "fail": 27,
+    "pass": 3,
+    "not_run": 2
+   },
+   "G2": {
+    "not_run": 14,
+    "partial": 14,
+    "pass": 3,
+    "fail": 1
+   },
+   "G3": {
+    "partial": 21,
+    "not_run": 5,
+    "pass": 1,
+    "fail": 5
+   },
+   "G4": {
+    "not_run": 27,
+    "fail": 5
+   },
+   "G5": {
+    "not_run": 23,
+    "pass": 5,
+    "fail": 3,
+    "partial": 1
+   },
+   "G6": {
+    "not_run": 25,
+    "pass": 3,
+    "fail": 3,
+    "not_met": 1
+   },
+   "G7": {
+    "partial": 21,
+    "pass": 7,
+    "not_run": 4
+   },
+   "G8": {
+    "done": 32
+   }
+  }
+ },
+ "conflicts": [
+  {
+   "strategy_id": "S01_H14_quality_trap_guard",
+   "strict_verdict": "close",
+   "market_decision": "待补验",
+   "reason": "审计/注册表判关闭；市场目录当前显示待补验"
+  },
+  {
+   "strategy_id": "S02_composite_mvp",
+   "strict_verdict": "close",
+   "market_decision": "待补验",
+   "reason": "审计/注册表判关闭；市场目录当前显示待补验"
+  },
+  {
+   "strategy_id": "S06_reversal_combo_mom20_120",
+   "strict_verdict": "close",
+   "market_decision": "待补验",
+   "reason": "审计/注册表判关闭；市场目录当前显示待补验"
+  },
+  {
+   "strategy_id": "S07_mom20_long_only",
+   "strict_verdict": "close",
+   "market_decision": "待补验",
+   "reason": "审计/注册表判关闭；市场目录当前显示待补验"
+  }
+ ],
+ "gaps": [
+  {
+   "id": "GAP-1",
+   "level": "P1",
+   "issue": "市场目录 decision 与严格审计裁决不一致 4 项（S01/S02/S06/S07）：目录为“待补验”，审计/注册表为 close",
+   "impact": "策略市场会展示为可补验，但审计结论已关闭；可能导致重复投入/口径漂移",
+   "recommendation": "以 strict_verdict 为准收口：更新 strategy_market_research.json 生成逻辑（本轮不改现有配置），或由 LEAD 裁定后同步"
+  },
+  {
+   "id": "GAP-2",
+   "level": "P1",
+   "issue": "strict audit JSON 的 strategies 明细仅 5 条（LX20/LX06/LX22/LX12/S05），S01-S04/S06-S08 无逐 G 明细",
+   "impact": "S01-S08 的 G1-G8 部分由 registry/report 推导（标注为推导/partial），审计证据链不完整",
+   "recommendation": "ACAD1 补齐 S01-S08 的逐门槛审计 JSON（尤其 S03/S04/S08 的 G2/G4/G5）"
+  },
+  {
+   "id": "GAP-3",
+   "level": "P2",
+   "issue": "24 本中 20 个 close 项的 G2-G6 多为 not_run/partial：close 结论主要依赖 G1 fail + 批量初筛 grade，缺完整成本/容量/安慰剂证据",
+   "impact": "关闭结论可被质疑“证据不足即关闭”；但不影响不交易边界",
+   "recommendation": "保持关闭；如未来复用为反向/风控特征，需按 G2-G7 补测"
+  },
+  {
+   "id": "GAP-4",
+   "level": "P2",
+   "issue": "本矩阵为新增 config 文件，平台策略市场 API 尚未消费（当前读 strategy_market_research.json）",
+   "impact": "矩阵暂为治理/审计用；页面决策仍看旧目录",
+   "recommendation": "下一波让 strategy_market_service 合并读取 gate matrix，或生成目录时引用矩阵（需另立任务）"
+  },
+  {
+   "id": "GAP-5",
+   "level": "P2",
+   "issue": "registry 中还存在 S09/S10/S11（research/pending/shadow），不在任务 S01-S08 范围；本矩阵未纳入",
+   "impact": "范围外但同属研究治理；S11 已小仓位影子",
+   "recommendation": "下一波纳入 S09-S11 形成全量注册策略矩阵"
+  }
+ ],
+ "items": [
+  {
+   "strategy_id": "LX01_SEVEN_VOLUME_FORMS",
+   "strategy_name": "量柱七形态（高/低/平/倍/梯/缩/金）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "tested_rejected",
+   "G1": {
+    "status": "fail",
+    "basis": "已测 rejected（H24-H29 全部 rejected，无正向显著；spec=tested_rejected）",
+    "evidence": [
+     "research/reports/H24-26_liangxue_features_20261031.json",
+     "research/reports/H29_liangxue_refined_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": []
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "原报告按 30bp 口径；未做 50/80bp 成本敏感性",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "H29 前视判例已修正并制度化；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（已测 rejected）",
+    "evidence": []
+   },
+   "next_action": "关闭：停止投入/不进入策略池；保留 rejected 证据与特征映射",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/001_量柱七形态.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "序言1《量学理论的七大贡献》；第4章第1节《量柱的形态及规律》",
+   "computability": "A",
+   "spec_test_status": "tested_rejected",
+   "batch_grade": null,
+   "evidence_ref": "已测 rejected（H24 倍量柱/H25 价升量缩 → rejected（简化定义无效））；H24-H29 全部 rejected，G1 无正向显著。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/H24-26_liangxue_features_20261031.json",
+    "research/reports/H29_liangxue_refined_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "LX02_GOLDEN_PILLAR",
+   "strategy_name": "黄金柱（三日不破实顶+缩量）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "tested_rejected",
+   "G1": {
+    "status": "fail",
+    "basis": "已测 rejected（H24-H29 全部 rejected，无正向显著；spec=tested_rejected）",
+    "evidence": [
+     "research/reports/H24-26_liangxue_features_20261031.json",
+     "research/reports/H29_liangxue_refined_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": []
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "原报告按 30bp 口径；未做 50/80bp 成本敏感性",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "H29 前视判例已修正并制度化；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（已测 rejected）",
+    "evidence": []
+   },
+   "next_action": "关闭：停止投入；PIT 修正后前视撤回，保留判例",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/002_黄金柱.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第8章第1–3节《伏击涨停的王牌：黄金柱生成/基柱选定/生死认定》",
+   "computability": "A",
+   "spec_test_status": "tested_rejected",
+   "batch_grade": null,
+   "evidence_ref": "已测 rejected（H29 严格版 → rejected（PIT 修正后前视撤回））；H24-H29 全部 rejected，G1 无正向显著。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/H24-26_liangxue_features_20261031.json",
+    "research/reports/H29_liangxue_refined_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "LX03_GENERAL_PILLAR",
+   "strategy_name": "将军柱（卧底/搭梯战法）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：批量四关 grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/003_将军柱卧底搭梯.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第8章第4–6节《将军柱双线认定/卧底战法/搭梯战法》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX04_MARSHAL_PILLAR_ZERO",
+   "strategy_name": "元帅柱·零号战法",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：批量四关 grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/004_元帅柱零号.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第9章《伏击涨停的天牌：元帅柱认定/生死存亡/零号战法》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX05_GOLDEN_LINE_TRILOGY",
+   "strategy_name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=C：IS IC t≈5.8 → OOS IC t≈1.4，OOS 有向超额为负（-0.38%, t=-1.90），方向未定 → 无正向显著",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "未做 walk-forward 年度序列（审计指定需补）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "not_run",
+    "basis": "未做 30/50/80bp 成本敏感性（审计指定需补）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做 ≥1000 次置换（审计指定需补）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/覆盖率/可执行性检验",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more：补 walk-forward/置换/成本敏感性后再判",
+    "evidence": []
+   },
+   "next_action": "待补验：补 walk-forward 年度序列 + ≥1000 次置换 + 30/50/80bp 成本敏感性，通过后再评估方向",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/005_金线战法三步曲.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第10–13章（金线三要点；金线战法三步曲；黄金双线；黄金十字）",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "C",
+   "evidence_ref": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX06_YIN_LINE_TACTICS",
+   "strategy_name": "大盘阴线战法 / 长阴短柱",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "pass",
+    "basis": "BH-FDR q=0.00016，毛利 t=6.2 → 校正后显著（反向规避口径）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "pass",
+    "basis": "年度 fold 2023-2026 4/4 同向（0.099/0.017/0.074/0.057）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "pass",
+    "basis": "30bp 净 0.359%、50bp 净 0.128%、80bp 净 -0.217% → 50bp 仍正（80bp 转负）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "fail",
+    "basis": "仅 300 次 bootstrap，未做 ≥1000 次置换",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "pass",
+    "basis": "覆盖 1.152%≤30%；容量小（剔除股票日均成交额 3.537 亿、日均剔除 41.1 只）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "pass",
+    "basis": "beyond_comp t=7.52（+62.838% ann）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "PIT：factor_lib 单测（无负 lag/T 截断不变性）+ 批量四关复用 PIT 因子 + H29 判例已修正",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more（G4 未做、覆盖过低；优先级低于 LX20）",
+    "evidence": []
+   },
+   "next_action": "待补验：补 G4 ≥1000 次置换；提升覆盖/降换手后复测；优先级低于 LX20",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/006_大盘阴线长阴短柱.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第14章《大盘阴线战法》；第15章《长阴短柱战法》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "G1/G3(50bp)/G6/G7 通过，但覆盖 1.15% 过低、G4 未做 → needs-more（优先级低于 LX20）。",
+   "evidence_paths": [
+    "research/reports/reverse_avoid_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX07_ONE_SWORD_SEAL_THROAT",
+   "strategy_name": "一剑封喉战法",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=F；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=F，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=F，概念/画线不可程序化，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/007_一剑封喉.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第16章《伏击涨停的抓手：一剑封喉战法》",
+   "computability": "C",
+   "spec_test_status": "untested",
+   "batch_grade": "F",
+   "evidence_ref": "批量四关 grade=F；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX08_DOUBLE_VOL_EXPAND_CONTRACT",
+   "strategy_name": "倍量伸缩战法",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "tested_rejected",
+   "G1": {
+    "status": "fail",
+    "basis": "已测 rejected（H24-H29 全部 rejected，无正向显著；spec=tested_rejected）",
+    "evidence": [
+     "research/reports/H24-26_liangxue_features_20261031.json",
+     "research/reports/H29_liangxue_refined_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": []
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "原报告按 30bp 口径；未做 50/80bp 成本敏感性",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "H29 前视判例已修正并制度化；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（已测 rejected）",
+    "evidence": []
+   },
+   "next_action": "关闭：H29 倍量确认 rejected，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/008_倍量伸缩.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第17章《伏击涨停的先兆：倍量伸缩战法》",
+   "computability": "A",
+   "spec_test_status": "tested_rejected",
+   "batch_grade": null,
+   "evidence_ref": "已测 rejected（H29 倍量确认 → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/H24-26_liangxue_features_20261031.json",
+    "research/reports/H29_liangxue_refined_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "LX09_LIVE_SUFFOCATION",
+   "strategy_name": "现场直憋战法",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/009_现场直憋.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第18章《伏击涨停的契机：现场直憋战法》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX10_3121_RULER",
+   "strategy_name": "3121 战法（量柱/价柱/量价标尺）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/010_3121战法.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "第5章《测庄七穴位：3121 标尺的标准和用法》",
+   "computability": "A",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX11_SPY_TACTICS",
+   "strategy_name": "间谍战法（量学七剑）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/011_间谍战法量学七剑.yaml",
+   "source": "伏击涨停（修订升级版）",
+   "chapter": "卷首彩页图注；相关正文第6章《股市三规律·神奇的股市密探》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX12_DOUBLE_YIN_EXIT",
+   "strategy_name": "双阴出货战法",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "BH-FDR q=0.989（t=-3.27，方向为负）→ 无正向显著",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "年度 fold 0/4 同向（逐年 -5.768/-2.688/-3.536/-4.0…）→ OOS 方向相反",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "fail",
+    "basis": "30bp 净 -24.601%、50bp -32.44%、80bp -44.198%",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "fail",
+    "basis": "仅 300 次 bootstrap（p=0.9967），未做 ≥1000 次置换",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "fail",
+    "basis": "覆盖 17.28%（reverse 口径）/71.9%（20261030 单日极端）>30% → 不可作为规避清单",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "fail",
+    "basis": "beyond_comp t=-5.69（-26.504% ann）→ 层内反向",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "PIT 同 LX06（factor_lib 单测 + 批量四关 PIT）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（G1/G3/G5 均 fail）",
+    "evidence": []
+   },
+   "next_action": "关闭：G1/G3/G5 均 fail（成本/覆盖不可执行），停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/012_双阴出货.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第6章《双阴进出攻防有度》",
+   "computability": "A",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "G1/G3/G5 均 fail（净 -24.6%@30bp、覆盖 71.9%）→ close。",
+   "evidence_paths": [
+    "research/reports/reverse_avoid_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX13_ARMY_AT_CITY_GATE",
+   "strategy_name": "兵临城下（试关/攻关/冲关/守关）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "tested_rejected",
+   "G1": {
+    "status": "fail",
+    "basis": "已测 rejected（H24-H29 全部 rejected，无正向显著；spec=tested_rejected）",
+    "evidence": [
+     "research/reports/H24-26_liangxue_features_20261031.json",
+     "research/reports/H29_liangxue_refined_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": []
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "原报告按 30bp 口径；未做 50/80bp 成本敏感性",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "H29 前视判例已修正并制度化；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（已测 rejected）",
+    "evidence": []
+   },
+   "next_action": "关闭：H27 rejected，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/013_兵临城下.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第4章《兵临城下蓄势待发》",
+   "computability": "B",
+   "spec_test_status": "tested_rejected",
+   "batch_grade": null,
+   "evidence_ref": "已测 rejected（H27 near_high_vol → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/H24-26_liangxue_features_20261031.json",
+    "research/reports/H29_liangxue_refined_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "LX14_RELAY_DOUBLE_YANG",
+   "strategy_name": "接力双阳（底部小双阳）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/014_接力双阳.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第5章《接力双阳后市看涨》",
+   "computability": "A",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX15_PRICE_UP_VOL_DOWN",
+   "strategy_name": "价升量缩择机做多",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "tested_rejected",
+   "G1": {
+    "status": "fail",
+    "basis": "已测 rejected（H24-H29 全部 rejected，无正向显著；spec=tested_rejected）",
+    "evidence": [
+     "research/reports/H24-26_liangxue_features_20261031.json",
+     "research/reports/H29_liangxue_refined_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": []
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "原报告按 30bp 口径；未做 50/80bp 成本敏感性",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "H29 前视判例已修正并制度化；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（已测 rejected）",
+    "evidence": []
+   },
+   "next_action": "关闭：H25 rejected，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/015_价升量缩.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第12章《价升量缩择机做多》",
+   "computability": "A",
+   "spec_test_status": "tested_rejected",
+   "batch_grade": null,
+   "evidence_ref": "已测 rejected（H25 → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/H24-26_liangxue_features_20261031.json",
+    "research/reports/H29_liangxue_refined_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "LX16_FLAT_SLANT_CROSS",
+   "strategy_name": "平斜交叉不上必下",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=F；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=F，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=F，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/016_平斜交叉.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第13章《平斜交叉不上必下》",
+   "computability": "C",
+   "spec_test_status": "untested",
+   "batch_grade": "F",
+   "evidence_ref": "批量四关 grade=F；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX17_STAND_ON_CONCAVE_PEAK",
+   "strategy_name": "站稳凹峰即将上攻",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=C：IS IC t≈5.8 → OOS IC t≈1.4，OOS 有向超额为负（-0.38%, t=-1.90），方向未定 → 无正向显著",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "未做 walk-forward 年度序列（审计指定需补）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "not_run",
+    "basis": "未做 30/50/80bp 成本敏感性（审计指定需补）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做 ≥1000 次置换（审计指定需补）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/覆盖率/可执行性检验",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more：补 walk-forward/置换/成本敏感性后再判",
+    "evidence": []
+   },
+   "next_action": "待补验：补 walk-forward 年度序列 + ≥1000 次置换 + 30/50/80bp 成本敏感性，通过后再评估方向",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/017_站稳凹峰.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第14章《站稳凹峰即将上攻》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "C",
+   "evidence_ref": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX18_EXTREME_YIN_NEXT_YANG",
+   "strategy_name": "极阴次阳择幅建仓",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "tested_rejected",
+   "G1": {
+    "status": "fail",
+    "basis": "已测 rejected（H24-H29 全部 rejected，无正向显著；spec=tested_rejected）",
+    "evidence": [
+     "research/reports/H24-26_liangxue_features_20261031.json",
+     "research/reports/H29_liangxue_refined_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": []
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "原报告按 30bp 口径；未做 50/80bp 成本敏感性",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "H29 前视判例已修正并制度化；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（已测 rejected）",
+    "evidence": []
+   },
+   "next_action": "关闭：H26 rejected（严格版仍负），停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/018_极阴次阳.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第15章《极阴次阳择幅建仓》",
+   "computability": "A",
+   "spec_test_status": "tested_rejected",
+   "batch_grade": null,
+   "evidence_ref": "已测 rejected（H26 → rejected（严格版仍负））；H24-H29 全部 rejected，G1 无正向显著。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/H24-26_liangxue_features_20261031.json",
+    "research/reports/H29_liangxue_refined_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
+   "strategy_name": "牛股量形（五要素/三阶段）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=D；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=D，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=D，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/019_牛股量形.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第16章《牛股量形看懂就赢》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "批量四关 grade=D；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+   "strategy_name": "牛股三绝（倍量不穿/高量不破/跳空不补）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "pass",
+    "basis": "毛超额 t=7.35、BH-FDR q≈0（26 假设池）→ 校正后仍显著（事后反向解释，需 OOS 独立确认）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json",
+     "research/reports/lx20_avoid_rule_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "pass",
+    "basis": "年度 fold 2023-2026 4/4 同向（逐年 +6.447/+10.504/+6.475/+4.635）；日频再平衡，未显式 5 日 embargo（口径已注明）",
+    "evidence": [
+     "research/reports/lx20_avoid_rule_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "fail",
+    "basis": "30bp 净 +2.03%、50bp 净 -1.278%、80bp 净 -6.236% → 50bp 已转负，不可交易",
+    "evidence": [
+     "research/reports/lx20_avoid_rule_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "fail",
+    "basis": "仅 300 次日频 bootstrap，未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "pass",
+    "basis": "覆盖 24.35%≤30%；剔除股票日均成交额中位 2.73 亿；容量 AUM 上限 187.11 亿；涨停不可买 1.47%/停牌 0.15%",
+    "evidence": [
+     "research/reports/lx20_avoid_rule_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "pass",
+    "basis": "市值×行业层内超额 +34.61% ann（t=9.76，beyond_comp），bootstrap p=0.0",
+    "evidence": [
+     "research/reports/lx20_avoid_rule_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "PIT：事件因子仅用 T 日及以前数据 + T+1 执行；T 截断单测；H29 前视判例已修正；除权/停牌/涨跌停已量化",
+    "evidence": [
+     "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more（G3 50bp fail + G4 未做；G1/G2/G5/G6/G7 通过）",
+    "evidence": []
+   },
+   "next_action": "待补验：降换手（周频/持有≥10 日）+50bp 复测+≥1000 次置换；仍正才进影子盘（不得直接交易）",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/020_牛股三绝.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第17章《牛股三绝上涨不歇》",
+   "computability": "A",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "G1/G2/G5/G6/G7 通过，但 G3 50bp 净超额已转负（-1.28%）、G4 安慰剂未做 → 不可直接交易，按严格协议 needs-more；先做降换手与安慰剂，再谈影子盘。",
+   "evidence_paths": [
+    "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/lx20_avoid_rule_20261101.json",
+    "research/reports/reverse_avoid_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX21_TEN_MONTH_PREGNANCY",
+   "strategy_name": "十月怀胎一朝分娩",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=F；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=F，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=F，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/021_十月怀胎.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第1章《十月怀胎一朝分娩》",
+   "computability": "C",
+   "spec_test_status": "untested",
+   "batch_grade": "F",
+   "evidence_ref": "批量四关 grade=F；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX22_CONCAVE_NOTCH_GOLD",
+   "strategy_name": "凹口淘金",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "pass",
+    "basis": "BH-FDR q≈1.2e-09，毛利 t=2.03 → 校正后显著（反向规避口径）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "pass",
+    "basis": "年度 fold 2023-2026 4/4 同向（2.232/3.462/3.515/0.549）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "fail",
+    "basis": "30bp 净 -6.568%、50bp -14.225%、80bp -25.71% → 30bp 已为负",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "fail",
+    "basis": "仅 300 次 bootstrap，未做 ≥1000 次置换",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "fail",
+    "basis": "覆盖 42.104% > 30% → 不可执行",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "pass",
+    "basis": "beyond_comp t=5.33（+16.955% ann）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "PIT 同 LX06（factor_lib 单测 + 批量四关 PIT）",
+    "evidence": [
+     "research/reports/reverse_avoid_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（G3 30bp 已负 + G5 覆盖>30%）",
+    "evidence": []
+   },
+   "next_action": "关闭：30bp 已负、覆盖 42.1%>30%，成本吃光，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/022_凹口淘金.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第2章《凹口淘金一抓就灵》",
+   "computability": "B",
+   "spec_test_status": "untested",
+   "batch_grade": "D",
+   "evidence_ref": "G3 30bp 已 -6.57%、G5 覆盖 42.1%>30% → close（张松已判『被成本吃光』，复核一致）。",
+   "evidence_paths": [
+    "research/reports/reverse_avoid_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX23_FUSE_TACTICS",
+   "strategy_name": "量学导火索战法",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "untested",
+   "G1": {
+    "status": "fail",
+    "basis": "批量四关 grade=F；无正向显著（grade D/F=负向/无效，C=方向未定）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "批量四关有 IS/OOS 单次切分（2023-2024 IS / 2025-2026 OOS），非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "批量四关按 30bp 单边；未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "批量四关未做容量/换手/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做市值×行业×波动分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "批量四关复用 factor_lib PIT 口径；该项未单独出 PIT 审计（全局 G7 PASS-WITH-CAVEAT）",
+    "evidence": [
+     "research/reports/book_batch_test_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（批量四关 grade=F，无正向显著）",
+    "evidence": []
+   },
+   "next_action": "关闭：grade=F，停止投入",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/023_量学导火索.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "第10章《长腿踩线》引申（量学导火索战法）",
+   "computability": "C",
+   "spec_test_status": "untested",
+   "batch_grade": "F",
+   "evidence_ref": "批量四关 grade=F；无正向显著，不值得继续投入。",
+   "evidence_paths": [
+    "research/reports/book_batch_test_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "LX24_LIMIT_UP_GENE",
+   "strategy_name": "涨停基因（单个/组合）",
+   "kind": "book",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.book_backlog.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "concept",
+   "G1": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G3": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G7": {
+    "status": "not_run",
+    "basis": "概念级战法，不可程序化，无假设可测（不进入策略池）",
+    "evidence": []
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（仅作特征映射框架）",
+    "evidence": []
+   },
+   "next_action": "关闭：概念级不可程序化，仅保留特征映射框架，不进入策略池",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": null,
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/strategy_specs/024_涨停基因.yaml",
+   "source": "涨停密码（修订升级版）",
+   "chapter": "前言《从“涨停基因”到“涨停密码”》；第11章《涨停基因势在必行》",
+   "computability": "C",
+   "spec_test_status": "concept",
+   "batch_grade": null,
+   "evidence_ref": "概念级战法（不可程序化），无假设可测；作为特征映射框架使用，不进入策略池。",
+   "evidence_paths": []
+  },
+  {
+   "strategy_id": "S01_H14_quality_trap_guard",
+   "strategy_name": "H14 质量陷阱规避过滤",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "strict_audit/registry（审计判 close；市场目录显示待补验，冲突待收口）",
+   "market_decision": "待补验",
+   "verdict_conflict": true,
+   "grade": "validated_filter_no_alpha",
+   "G1": {
+    "status": "fail",
+    "basis": "中性化后 20 日纯过滤超额 +0.17%≈0、扣成本 -15.43%（5bp/日）→ 无正向 alpha 假设通过 G1",
+    "evidence": [
+     "research/reports/S01_neutral_20261031.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "未提供 walk-forward（≥3 folds+5 日 embargo）证据",
+    "evidence": [
+     "research/reports/S01_neutral_20261031.json"
+    ]
+   },
+   "G3": {
+    "status": "not_run",
+    "basis": "仅作过滤层，无 30/50/80bp 成本敏感性检验（无 alpha 可检验）",
+    "evidence": [
+     "research/reports/S01_neutral_20261031.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做安慰剂置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "fail",
+    "basis": "平均覆盖 89.0% > 30%，作为选股组合不可执行；仅可作风控过滤层",
+    "evidence": [
+     "research/reports/S01_neutral_20261031.json"
+    ]
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "仅做市值/行业中性化剥离，未做层内同向检验与 bootstrap CI",
+    "evidence": []
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "中性化检验未单独出 PIT/除权/停牌审计；后续因子库 PIT 判例可部分覆盖",
+    "evidence": [
+     "deliverables/2026-11-01_H29更正_PIT前视假阳性_v1.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（仅过滤器、无 alpha）",
+    "evidence": []
+   },
+   "next_action": "关闭为 alpha；仅保留过滤代码作叠加，叠加净效应需另测（不得单独作为选股策略）",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "deliverables/2026-11-01_H29更正_PIT前视假阳性_v1.md",
+    "research/reports/S01_neutral_20261031.json"
+   ]
+  },
+  {
+   "strategy_id": "S02_composite_mvp",
+   "strategy_name": "复合排序 MVP",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "strict_audit/registry（审计判 close；市场目录显示待补验，冲突待收口）",
+   "market_decision": "待补验",
+   "verdict_conflict": true,
+   "grade": "paused_shadow_breaker",
+   "G1": {
+    "status": "fail",
+    "basis": "影子盘 20 日 -9.6%、四桶全负，无正向显著假设；未做多重检验校正",
+    "evidence": [
+     "research/reports/screening_20261030.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "单次 20 日影子切分，非 walk-forward",
+    "evidence": [
+     "research/reports/screening_20261030.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "30bp×换手已计，未做 50/80bp 与冲击成本敏感性",
+    "evidence": [
+     "research/reports/screening_20261030.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换/安慰剂检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/涨跌停可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "fail",
+    "basis": "分数四桶全负（q1 -2.57%/q2 -1.10%/q3 -2.70%/q4 -1.93%），无分层单调性",
+    "evidence": [
+     "deliverables/2026-11-01_P3影子盘归因熔断与S02处置_回执.md"
+    ]
+   },
+   "G7": {
+    "status": "not_run",
+    "basis": "未做 PIT/数据审计",
+    "evidence": []
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（paused_shadow_breaker）",
+    "evidence": []
+   },
+   "next_action": "关闭：不重启；如重做需新假设 + 完整 G1-G8 + 影子盘",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "deliverables/2026-11-01_P3影子盘归因熔断与S02处置_回执.md",
+    "research/reports/screening_20261030.json"
+   ]
+  },
+  {
+   "strategy_id": "S03_H18_forecast_revision_watch",
+   "strategy_name": "H18 预告修订观察",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.strict_verdict",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "validated_event_ambiguous_direction",
+   "G1": {
+    "status": "fail",
+    "basis": "H18 v2：改善 -1.51%(t=-1.27)、恶化 -2.35%(t=-3.23)，方向歧义；价差 +0.84% 不显著",
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "事件型换手低、30bp 已计；未做 50/80bp 敏感性",
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做 1000 次置换（审计明确 G4 缺口）",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "容量极小（493 事件/3.8 年），未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做层内同向检验",
+    "evidence": []
+   },
+   "G7": {
+    "status": "not_run",
+    "basis": "未单独出 PIT 审计",
+    "evidence": []
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more（仅事件观察，不交易）",
+    "evidence": []
+   },
+   "next_action": "待补验：补方向确认（OOS 符号）+ ≥1000 次置换；仅保留观察名单，不进影子",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "agent_platform/catalogs/strategy_registry.json"
+   ]
+  },
+  {
+   "strategy_id": "S04_AH_premium_pair",
+   "strategy_name": "A/H 溢价配对",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.strict_verdict",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "validated_pair_planned",
+   "G1": {
+    "status": "not_run",
+    "basis": "配对方向尚未跑完整四关（计划 phase2）",
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "未做 walk-forward",
+    "evidence": []
+   },
+   "G3": {
+    "status": "not_run",
+    "basis": "双边成本/汇率基差待评估",
+    "evidence": []
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "not_run",
+    "basis": "未做容量/可执行性检验",
+    "evidence": []
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "not_run",
+    "basis": "未出数据/PIT 审计",
+    "evidence": []
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more（规划中）",
+    "evidence": []
+   },
+   "next_action": "待补验：补齐配对回测（T+1/50bp/容量/分层）后再裁决",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "agent_platform/catalogs/strategy_registry.json"
+   ]
+  },
+  {
+   "strategy_id": "S05_LX20_AVOID_DEWEIGHT",
+   "strategy_name": "S05 LX20 规避/降配",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_CLOSED",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "registry.strict_verdict",
+   "market_decision": "关闭",
+   "verdict_conflict": false,
+   "grade": "closed_both_directions_fail",
+   "G1": {
+    "status": "fail",
+    "basis": "S05 复合/覆盖层 OOS t=-0.34、p≈0.73、q≫0.10 → 不显著",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "fail",
+    "basis": "年度 1/4 年为正、符号翻转；OOS 年化 -0.628%",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "fail",
+    "basis": "30bp 净 -0.573%、50bp 净 -2.043% → 50bp 不可交易",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "fail",
+    "basis": "无同覆盖率随机信号置换证据",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G5": {
+    "status": "pass",
+    "basis": "容量 AUM 上限 74.47 亿、p5 18.45 亿；单票日成交≤10%×ADV",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "not_met",
+    "basis": "无市值×行业×波动分层证据",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "PIT：LX20 因子复用 reverse_avoid_test → book_batch_test（已过 PIT 截断不变性/无负 lag 单测）",
+    "evidence": [
+     "research/reports/s05_reverse_20261101.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（两方向均失败，G1/G2/G3 fail）",
+    "evidence": []
+   },
+   "next_action": "关闭：停止投入；仅保留 research_only 知识结论（等权全市场口径线索）",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "注册表已 closed_both_directions_fail；严格复核再次确认（G1/G2/G3 fail）。与 LX20 反向规避研究不矛盾：S05 是叠加在既有组合上的覆盖层，覆层后 OOS 为负；LX20 的独立规避口径（等权全市场前 5 日事件股剔除）才有正超额，两者口径不同。",
+   "evidence_paths": [
+    "research/reports/s05_reverse_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "S06_reversal_combo_mom20_120",
+   "strategy_name": "S06 反转+动量组合",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "strict_audit/registry（审计判 close；市场目录显示待补验，冲突待收口）",
+   "market_decision": "待补验",
+   "verdict_conflict": true,
+   "grade": "research_registered",
+   "G1": {
+    "status": "fail",
+    "basis": "IC t=4.38 但未做 BH-FDR/多重检验校正（48 组研究存在多重比较）；严格 G1 不通过",
+    "evidence": [
+     "research/reports/s06_backtest_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "2019-2026/93 月年度分解（6/8 年正），但非 ≥3 fold walk-forward + 5 日 embargo",
+    "evidence": [
+     "research/reports/s06_backtest_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "0.15% 单边×换手已计，未做 50/80bp 敏感性；换手 0.911/月",
+    "evidence": [
+     "research/reports/s06_backtest_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做同覆盖率随机信号 ≥1000 次置换",
+    "evidence": []
+   },
+   "G5": {
+    "status": "partial",
+    "basis": "容量中位 1.7 亿（5% 参与率）偏小；未做涨跌停不可执行性/覆盖检验",
+    "evidence": [
+     "research/reports/s06_backtest_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "fail",
+    "basis": "up regime 月均超额 -0.172%、down +1.63% → 不同向（仅下跌市有效）",
+    "evidence": [
+     "research/reports/s06_backtest_20261101.json"
+    ]
+   },
+   "G7": {
+    "status": "partial",
+    "basis": "PIT 修复后全流程重跑回执存在；S06 报告本身未按修复后口径重算",
+    "evidence": [
+     "deliverables/2026-11-01_PIT修复与全流程重跑_回执.md"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（rejected_regime_dependent，不启动影子）",
+    "evidence": []
+   },
+   "next_action": "关闭：不启动影子；若重提需 regime 过滤+成本优化并重跑完整四关",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "deliverables/2026-11-01_PIT修复与全流程重跑_回执.md",
+    "research/reports/s06_backtest_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "S07_mom20_long_only",
+   "strategy_name": "S07 20 日动量多头",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "close",
+   "verdict_label": "关闭",
+   "verdict_source": "strict_audit/registry（审计判 close；市场目录显示待补验，冲突待收口）",
+   "market_decision": "待补验",
+   "verdict_conflict": true,
+   "grade": "research_registered",
+   "G1": {
+    "status": "fail",
+    "basis": "月均超额 0.004%、t=0.01 → 无正向显著",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "not_run",
+    "basis": "无 walk-forward 证据",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "fail",
+    "basis": "月换手 0.969 → 成本吞噬；30bp 净后无超额",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "pass",
+    "basis": "容量中位 5.92 亿（5% 参与率）",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "已按 PIT 重算（pit_note：结论不变、t≈0）",
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 close（rejected_long_only_no_excess）",
+    "evidence": []
+   },
+   "next_action": "关闭：不启动影子；保留 LS 四关证据，不再投入 long-only 多头",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "agent_platform/catalogs/strategy_registry.json",
+    "research/reports/s07s08_backtest_20261101.json"
+   ]
+  },
+  {
+   "strategy_id": "S08_mom120_long_only",
+   "strategy_name": "S08 120 日动量多头",
+   "kind": "registered",
+   "market": "CN",
+   "status": "RESEARCH_NEEDS_MORE",
+   "lifecycle_status": "research",
+   "tradable": false,
+   "strict_verdict": "needs-more",
+   "verdict_label": "待补验",
+   "verdict_source": "registry.status（影子观察，未过 G1）",
+   "market_decision": "待补验",
+   "verdict_conflict": false,
+   "grade": "research_registered",
+   "G1": {
+    "status": "fail",
+    "basis": "PIT 重算后月均超额 0.687%、t=1.3（未达 2）→ G1 未过",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G2": {
+    "status": "partial",
+    "basis": "年度 6/8 正收益，但非 ≥3 fold WF + 5 日 embargo",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G3": {
+    "status": "partial",
+    "basis": "0.15% 单边×换手已计（换手 62%/月），未做 50/80bp 敏感性",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G4": {
+    "status": "not_run",
+    "basis": "未做置换/安慰剂检验",
+    "evidence": []
+   },
+   "G5": {
+    "status": "pass",
+    "basis": "容量中位 4.13 亿（PIT 修正后重算）",
+    "evidence": [
+     "research/reports/s07s08_backtest_20261101.json"
+    ]
+   },
+   "G6": {
+    "status": "not_run",
+    "basis": "未做分层稳健性",
+    "evidence": []
+   },
+   "G7": {
+    "status": "pass",
+    "basis": "PIT 修正后重算（t 1.4→1.3，结论不变）",
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ]
+   },
+   "G8": {
+    "status": "done",
+    "basis": "裁决 needs-more（小仓位影子观察；2027-02 复核）",
+    "evidence": []
+   },
+   "next_action": "待补验：小仓位影子观察至 2027-02；G1 未过前不得升级 PAPER/LIVE；实测超额转负/回撤超限即关闭",
+   "owner": "STRAT1",
+   "validator": "ACAD1",
+   "source_owner": "张松",
+   "registry_owner": "司马微",
+   "data_owner": "DATA1",
+   "reviewer": "ACAD1",
+   "launch_authority": "LEAD",
+   "spec_file": "research/reports/simahui_strict_audit_20261101.json",
+   "source": "research/strategy_specs + strict audit",
+   "chapter": null,
+   "computability": null,
+   "spec_test_status": null,
+   "batch_grade": null,
+   "evidence_ref": "",
+   "evidence_paths": [
+    "agent_platform/catalogs/strategy_registry.json",
+    "research/reports/s07s08_backtest_20261101.json"
+   ]
+  }
+ ],
+ "read_only": true,
+ "boundaries": [
+  "未写 DB、未改任何现有配置（仅新增 config/strategy_gate_matrix.json）",
+  "未改策略注册表/市场目录/审计报告；来源均为只读读取",
+  "strict_verdict 与 market_decision 双列保留，冲突显式标记，不静默覆盖"
+ ]
+}
