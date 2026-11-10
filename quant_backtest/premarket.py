@@ -7,6 +7,7 @@
 """
 
 import argparse
+import glob
 import logging
 import html
 import json
@@ -80,10 +81,16 @@ def _parse_stocks(s):
 
 
 def _stock_a(code, label=None):
-    """行内个股下钻链接 → 门户个股全景页（行情/策略/共振/JEV/AI）。"""
-    return "<a href='/kg/stock/%s'>%s</a>" % (
-        RR._link_code(code),
-        html.escape(label or str(code)),
+    """行内个股下钻链接（11-10 叠加改版）。
+
+    旧版指向门户个股页 /kg/stock/（门户已下线，h5_pack 里被去壳成纯文本，
+    个股名变不可点）。改为站内深链 → 结构日报个股证据卡（pool_report_h5
+    的 findRow 按 300607.SZ 全码匹配，Q.code 自动打开详情）。
+    """
+    c = str(code)
+    return "<a href='pool_report_h5.html?code=%s'>%s</a>" % (
+        c,
+        html.escape(label or c),
     )
 
 
@@ -1346,6 +1353,14 @@ def run(push=False):
         else "—"
     )
     alerts = _risk_alerts(l1, l3, l5)
+    # 11-10 叠加：收盘线产物（结构池/影子台账/板块层）→ 今日行动卡
+    actions = today_actions()
+    # 11-10 叠加：缠论说大盘（同一结构引擎看上证日线）
+    zen = zen_market()
+    # 11-10 深化：综合判断 → 因子分解/轨迹/历史校准（老田：深度不够）
+    deep = deep_verdict({"vals": vals, "overall": overall, "prob": prob,
+                         "verdict": verdict, "l1": l1, "l2": l2, "l3": l3,
+                         "l4": l4, "l5": l5})
     # `trade_date` + 带时区的 `ts` 是 /api/alerts 的 source_health 契约要求的
     # 两个字段（portal/api_common.py:_alert_source_health 的 dated()）：
     # 只有业务日 + 生产者给出的 tz-aware 完成时间，才算"当期证据"。
@@ -1367,6 +1382,9 @@ def run(push=False):
         "prob": prob,
         "verdict": verdict,
         "alerts": alerts,
+        "actions": actions,
+        "zen": zen,
+        "deep": deep,
     }
     with open(
         os.path.join(REPORTS, "premarket_latest.json"), "w", encoding="utf-8"
@@ -1408,6 +1426,518 @@ def run(push=False):
     return data
 
 
+LEG_CN = {
+    "v3": "现役 v3",
+    "d_legacy": "旧方案对照",
+    "F1_v3_stop12": "★F1 主腿候选",
+    "W1_c6_score_cap25_stop12": "W1 组合观察",
+    "A3_slot_score": "A3 评分定仓",
+    "D1_score_cap25": "D1 定仓帽25%",
+}
+
+
+def _latest_glob(prefix, where=REPORTS):
+    fs = sorted(glob.glob(os.path.join(where, prefix + "_2*.json")))
+    return fs[-1] if fs else None
+
+
+def today_actions():
+    """「今日行动卡」数据：收盘线昨天产出、盘前该看的东西（11-10 叠加）。
+
+    盘前页原 11 个分区全是外部环境（外围/政策/流动性/情绪…），自己
+    收盘线 18:30 跑出来的三样能力没进来：
+      ① 结构池五档快照（pool_state_*.json：九态数量 + 买点档 top5）
+      ② 影子台账六腿（data/shadow/<date>.json：F1 转正验收 G-A 门，
+         盘前要按 F1 的止损线管理今日持仓动作）
+      ③ 板块层强度（sector_state_*.json：465 板块 T+1 晨更，5 日强度 top）
+    全 soft：任何一个源缺失/解析失败都给 None，write_page 渲染「未生成」，
+    不阻断 08:20 盘前页生成。
+    """
+    out = {"pool": None, "shadow": None, "sector": None}
+    # ① 结构池
+    try:
+        fp = _latest_glob("pool_state")
+        if fp:
+            j = json.load(open(fp, encoding="utf-8"))
+            bk = j.get("buckets") or {}
+            buy_tiers = ["三买", "二买", "一买", "三买待"]
+            counts = {k: len(bk.get(k) or []) for k in bk}
+            tb = sorted(bk.get("三买") or [], key=lambda r: -(r.get("score") or 0))[:5]
+            out["pool"] = {
+                "asof": j.get("data_asof"),
+                "counts": counts,
+                "buy_counts": {k: counts.get(k, 0) for k in buy_tiers},
+                "top3buy": [
+                    {
+                        "code": r.get("code"),
+                        "name": r.get("name"),
+                        "score": r.get("score"),
+                        "pct": r.get("pct"),
+                        "sig_type": r.get("sig_type"),
+                    }
+                    for r in tb
+                ],
+            }
+    except Exception:
+        pass
+    # ② 影子台账（今天不存在就取最近一份，盘前看的是最新状态）
+    try:
+        fs = sorted(glob.glob(os.path.join(HERE, "data", "shadow", "2*.json")))
+        if fs:
+            j = json.load(open(fs[-1], encoding="utf-8"))
+            legs = []
+            for leg, v in (j.get("legs") or {}).items():
+                if not isinstance(v, dict):
+                    continue
+                legs.append({
+                    "leg": leg,
+                    "cn": LEG_CN.get(leg, leg),
+                    "f1": leg.startswith("F1"),
+                    "last_day": v.get("last_day"),
+                    "ret_pct": (v.get("summary") or {}).get("ret_pct"),
+                    "n_hold": len(v.get("holdings") or []),
+                    "holdings": [
+                        {
+                            "code": h.get("stock"),
+                            "pnl_pct": h.get("pnl_pct"),
+                            "wgt_pct": h.get("wgt_pct"),
+                        }
+                        for h in (v.get("holdings") or [])[:4]
+                    ],
+                })
+            out["shadow"] = {"date": j.get("date"), "legs": legs}
+    except Exception:
+        pass
+    # ③ 板块层（T+1：asof 落后一天是设计内）
+    try:
+        fp = _latest_glob("sector_state")
+        if fp:
+            j = json.load(open(fp, encoding="utf-8"))
+            sc = [s for s in (j.get("sectors") or []) if s.get("r5") is not None]
+            sc.sort(key=lambda s: -(s.get("r5") or 0))
+            out["sector"] = {
+                "asof": j.get("asof"),
+                "top": [
+                    {
+                        "name": s.get("name"),
+                        "stage": s.get("stage"),
+                        "pct": s.get("pct"),
+                        "r5": round((s.get("r5") or 0) * 100, 2),
+                        "n_mem": s.get("n_mem"),
+                    }
+                    for s in sc[:5]
+                ],
+            }
+    except Exception:
+        pass
+    return out
+
+
+def deep_verdict(data, w=None):
+    """综合判断深化（11-10）：一行分数 → 可查证的深度。
+
+    原顶部只有「29 · 96% · 偏多」，三个被老田点名的浅点：
+      ① 分数构成不可见 → 因子贡献分解（五层分数/权重/加权贡献 pp + 事实解读）
+      ② 无时间纵深 → 近 10 日倾向轨迹（SVG sparkline + 今日分位）
+      ③ 概率无校准 → 同分数段历史校准：premarket_history 里同档日子，
+         对齐数据仓上证**次日开盘溢价**的实际胜率与均值——页称概率和
+         历史实况对不上时读者能看到（可证伪，样本小如实标注）。
+    全 soft：history/index_daily 缺源各块降级为「—」，不阻断生成。
+    """
+    w = w or {"外围": 0.35, "流动性": 0.15, "政策": 0.15, "板块": 0.15, "情绪": 0.20}
+    out = {"contrib": [], "trail": None, "calib": None}
+
+    # ① 因子贡献分解（vals 缺源层如实标注，权重归一与 run() 同口径）
+    vals = data.get("vals") or {}
+    live = {k: v for k, v in vals.items() if v is not None}
+    tot = sum(w[k] for k in live) or 1.0
+    l1r = (data.get("l1") or {}).get("rows") or []
+    l1p = [r.get("pct") for r in l1r if r.get("pct") is not None]
+    l3 = data.get("l3") or {}
+    l2 = data.get("l2") or {}
+    jev = l2.get("jev")
+    l4 = data.get("l4") or []
+    mo = (data.get("l5") or {}).get("money") or {}
+
+    def _fact(k):
+        if k == "外围" and l1p:
+            return "隔夜 " + " ".join(
+                "%s%+.1f%%" % (r["name"][:4], r["pct"])
+                for r in l1r[:3] if r.get("pct") is not None
+            )
+        if k == "流动性":
+            s = ""
+            if l3.get("amt_yi"):
+                s += "两市 %s 亿" % l3["amt_yi"]
+            if l3.get("vol_state"):
+                s += " · %s（vs5日均 %+.1f%%）" % (l3["vol_state"], l3.get("vol_pct") or 0)
+            return s or "—"
+        if k == "政策":
+            if jev:
+                return "新闻 %d 条：利多 %d / 利空 %d → %s" % (
+                    jev["n"], jev["bull"], jev["bear"], jev["score"])
+            return "近3天无已判政策新闻（层缺源，权重已归一）"
+        if k == "板块":
+            n4 = [s for s in l4 if s.get("n", 0) >= 2]
+            if n4:
+                avg = round(sum(s["score"] for s in n4) / len(n4))
+                return "%d 个板块代理均值 %s" % (len(n4), avg)
+            return "—"
+        if k == "情绪":
+            if mo.get("date"):
+                return "赚钱效应快照 %s" % mo["date"]
+            return "—"
+        return "—"
+
+    for k in ("外围", "情绪", "流动性", "政策", "板块"):
+        v = vals.get(k)
+        if v is None:
+            out["contrib"].append({"name": k, "score": None, "pp": None,
+                                   "fact": _fact(k), "note": "缺源"})
+        else:
+            out["contrib"].append({
+                "name": k, "score": v, "fact": _fact(k),
+                "pp": round(v * w[k] / tot, 1),
+                "note": "权重 %.0f%%" % (w[k] * 100 / tot * 100) if False
+                else "×%.2f" % (w[k] / tot),
+            })
+
+    # ② 近 10 日轨迹（history 不含今天的行 + 今天，构成含今日的序列）
+    today = datetime.now().strftime("%Y%m%d")
+    hist = []
+    hp = os.path.join(REPORTS, "premarket_history.jsonl")
+    try:
+        hist = [json.loads(l) for l in open(hp, encoding="utf-8") if l.strip()]
+    except Exception:
+        hist = []
+    past = [r for r in hist if r.get("date") != today and r.get("overall") is not None]
+    past.sort(key=lambda r: r["date"])
+    seq = past[-9:] + [{"date": today, "overall": data.get("overall")}]
+    if len(seq) >= 3:
+        wins = [r["overall"] for r in past[-10:]]
+        base = sorted(wins) if wins else []
+        med = base[len(base) // 2] if base else None
+        out["trail"] = {
+            "dates": [r["date"] for r in seq],
+            "overall": [r["overall"] for r in seq],
+            "n_hist": len(past),
+            "med10": med,
+            "hi10": max(base) if base else None,
+            "lo10": min(base) if base else None,
+            "rank_pct": (
+                round(100.0 * len([x for x in base if x <= seq[-1]["overall"]])
+                      / len(base)) if base and seq[-1]["overall"] is not None else None
+            ),
+        }
+
+    # ③ 同分数段历史校准：history 里的历史日 → 上证次日开盘溢价实况
+    try:
+        import datamart as dm
+
+        days = _closed_trade_days()
+        n_ix = min(70, len(days))
+        ix = dm.read(
+            "index_daily", start=days[-n_ix], end=days[-1],
+            codes=["000001.SH"], fields=["ts_code", "trade_date", "open", "close"],
+        )
+        if ix is not None and not ix.empty:
+            s = (ix[ix["ts_code"] == "000001.SH"]
+                 .sort_values("trade_date")
+                 .reset_index(drop=True))
+            px = {str(r.trade_date): (float(r.open), float(r.close))
+                  for r in s.itertuples()}
+            dlist = sorted(px)
+            nxt = {d: dlist[i + 1] for i, d in enumerate(dlist[:-1])}
+            tiers = [("高分档 ≥25", 25, 10**9), ("中档 5~25", 5, 25),
+                     ("低档 <5", -10**9, 5)]
+            calib = []
+            for label, lo, hi in tiers:
+                prems = []
+                for r in past:
+                    ov = r.get("overall")
+                    if ov is None or not (lo <= ov < hi) or r["date"] not in nxt:
+                        continue
+                    c_d = px[r["date"]][1]
+                    o_n = px[nxt[r["date"]]][0]
+                    prems.append((o_n / c_d - 1) * 10000)
+                if prems:
+                    calib.append({
+                        "label": label, "n": len(prems),
+                        "win": round(100.0 * len([p for p in prems if p > 0])
+                                     / len(prems)),
+                        "avg_bp": round(sum(prems) / len(prems)),
+                    })
+            ov_now = data.get("overall")
+            cur = None
+            for c in calib:
+                lo, hi = {"高分档 ≥25": (25, 10**9), "中档 5~25": (5, 25),
+                          "低档 <5": (-10**9, 5)}[c["label"]]
+                if ov_now is not None and lo <= ov_now < hi:
+                    cur = c
+            out["calib"] = {"tiers": calib, "current": cur, "n_hist": len(past),
+                            "max_overall": max(
+                                (r["overall"] for r in past
+                                 if r.get("overall") is not None), default=None)}
+    except Exception:
+        pass
+    return out
+
+
+def _zen_svg(bars, bis, pvs, n_disp=90, W=560, H=170):
+    """说禅配图：近 n_disp 根 K 线 + 中枢矩形（虚线蓝）+ 笔折线（金）。
+
+    中枢/笔取自全窗口结构，超出显示窗的端点钳到画布边缘。
+    """
+    disp = bars[-n_disp:]
+    d0 = disp[0]["dt"]
+    dx = {b["dt"]: i for i, b in enumerate(disp)}
+    lo = min(b["l"] for b in disp)
+    hi = max(b["h"] for b in disp)
+    pad = (hi - lo) * 0.06
+    lo -= pad
+    hi += pad
+
+    def X(dt):
+        i = dx.get(int(dt))
+        return None if i is None else 6 + i * (W - 12) / (len(disp) - 1)
+
+    def Y(v):
+        return H - 14 - (v - lo) / (hi - lo) * (H - 34)
+
+    cw = max(1.5, (W - 12) / len(disp) * 0.55)
+    el = []
+    for b in disp:
+        x = X(b["dt"])
+        col = "#e35d5d" if b["c"] >= b["o"] else "#3aa76d"
+        el.append(
+            "<line x1='%g' y1='%g' x2='%g' y2='%g' stroke='%s' "
+            "stroke-width='1'/>" % (x, Y(b["h"]), x, Y(b["l"]), col)
+        )
+        y1, y2 = Y(max(b["o"], b["c"])), Y(min(b["o"], b["c"]))
+        el.append(
+            "<rect x='%g' y='%g' width='%g' height='%g' fill='%s'/>"
+            % (x - cw / 2, y1, cw, max(0.8, y2 - y1), col)
+        )
+    # 中枢矩形
+    for q in pvs:
+        x1, x2 = X(q["s_dt"]), X(q["e_dt"])
+        if x2 is None and x1 is None:
+            continue
+        x1 = 6 if x1 is None else x1
+        x2 = W - 6 if x2 is None else x2
+        el.append(
+            "<rect x='%g' y='%g' width='%g' height='%g' "
+            "fill='rgba(90,130,190,0.10)' stroke='#5a82be' stroke-width='0.8' "
+            "stroke-dasharray='2,2'/>"
+            % (x1, Y(q["zg"]), max(4, x2 - x1), Y(q["zd"]) - Y(q["zg"]))
+        )
+    q = pvs[-1]
+    lx = min((X(q["e_dt"]) or (W - 6)) + 2, W - 46)
+    el.append(
+        "<text x='%g' y='%g' font-size='9' fill='#8fb0dd'>zg %.0f</text>"
+        % (lx, Y(q["zg"]) - 2, q["zg"])
+    )
+    el.append(
+        "<text x='%g' y='%g' font-size='9' fill='#8fb0dd'>zd %.0f</text>"
+        % (lx, Y(q["zd"]) + 10, q["zd"])
+    )
+    # 笔折线（相邻笔共享端点，去重）
+    pts = []
+    for x in bis:
+        if int(x["e_dt"]) < d0:
+            continue
+        sx, ex = X(x["s_dt"]), X(x["e_dt"])
+        sx = 6 if sx is None else sx
+        ex = W - 6 if ex is None else ex
+        p1 = (sx, Y(x["s_price"]))
+        p2 = (ex, Y(x["e_price"]))
+        if not pts or pts[-1] != p1:
+            pts.append(p1)
+        pts.append(p2)
+    if pts:
+        el.append(
+            "<polyline points='%s' fill='none' stroke='#d8b45a' "
+            "stroke-width='1.6'/>" % " ".join("%g,%g" % t for t in pts)
+        )
+    el.append(
+        "<text x='6' y='10' font-size='9' fill='#7b8698'>%.0f</text>" % hi
+    )
+    el.append(
+        "<text x='6' y='%g' font-size='9' fill='#7b8698'>%.0f</text>"
+        % (H - 2, lo)
+    )
+    return ("<svg width='%d' height='%d' style='margin-top:6px;display:block'>"
+            "%s</svg>" % (W, H, "".join(el)))
+
+
+def zen_market(win_start="20240101", n_disp=90):
+    """缠论说大盘（11-10 叠加）：上证指数日K → 缠论结构 → 说禅式解读。
+
+    口径：
+    - 数据 datamart index_daily 000001.SH（T-1，与板块层同时序）；
+    - 结构 chanlun_signal.analyze —— 与选股全池扫描/回测同一个引擎，
+      笔/中枢/三类买卖点同口径，不为大盘另造一套；
+    - 「说」的部分全部由结构事实驱动：中枢序列（逐级上移/下移）、
+      当前笔方向与位置、最近信号与背驰标注、距中枢上/下沿距离；
+      关键位给可执行数字（zd 回抽界 / 笔起点失效线 / zg 上沿）。
+    全 soft：缺源或结构为空返回 None，渲染「未生成」。
+    """
+    try:
+        import datamart as dm
+        from chanlun_signal import analyze
+
+        b = dm.read(
+            "index_daily", codes=["000001.SH"], start=win_start,
+            end=datetime.now().strftime("%Y%m%d"),
+            fields=["trade_date", "open", "high", "low", "close"],
+        )
+        if b is None or b.empty:
+            return None
+        b = b.sort_values("trade_date")
+        bars = [
+            {"dt": int(r.trade_date), "o": float(r.open), "h": float(r.high),
+             "l": float(r.low), "c": float(r.close)}
+            for r in b.itertuples()
+        ]
+        st = analyze(bars) or {}
+        bis = st.get("bis") or []
+        pvs = st.get("pivots") or []
+        sgs = st.get("signals") or []
+        if not bis or not pvs:
+            return None
+        close = bars[-1]["c"]
+        last_dt = bars[-1]["dt"]
+        p = pvs[-1]
+        zg, zd = float(p["zg"]), float(p["zd"])
+
+        pv_seq = [
+            {"s_dt": q["s_dt"], "e_dt": q["e_dt"],
+             "zg": round(float(q["zg"]), 1), "zd": round(float(q["zd"]), 1),
+             "n_bi": q.get("n_bi")}
+            for q in pvs[-4:]
+        ]
+        rising = len(pvs) >= 2 and float(pvs[-1]["zd"]) > float(pvs[-2]["zg"])
+        below = close < zd
+        above = close > zg
+
+        lb = bis[-1]
+        bi = {
+            "dir": int(lb["dir"]), "s_dt": lb["s_dt"], "e_dt": lb["e_dt"],
+            "s_price": round(float(lb["s_price"]), 1),
+            "e_price": round(float(lb["e_price"]), 1),
+        }
+        bi_gain = (bi["e_price"] / bi["s_price"] - 1) * 100
+        dt_idx = {x["dt"]: i for i, x in enumerate(bars)}
+        bi_open = dt_idx.get(int(lb["e_dt"]), len(bars) - 1) < len(bars) - 1
+        dist_zd = (close / zd - 1) * 100
+        dist_zg = (close / zg - 1) * 100
+
+        sigs = [
+            {"type": s["type"], "dt": s["dt"],
+             "bei": bool(s.get("bei")), "tbe": bool(s.get("tbe")),
+             "mbei": bool(s.get("mbei"))}
+            for s in sgs[-5:]
+        ]
+
+        if above:
+            stage = "离开段（中枢上方）"
+        elif close >= zd:
+            stage = "中枢震荡"
+        else:
+            stage = "中枢下 · 反抽" if bi["dir"] == 1 else "中枢下"
+
+        # ── 说禅叙事：全部由上面的事实驱动 ──
+        seq_txt = " → ".join("%.0f–%.0f" % (q["zd"], q["zg"]) for q in pv_seq)
+        paras = []
+        if rising:
+            paras.append(
+                "日线级别：中枢逐级上移（%s）。每个中枢都站上前一个的头顶，"
+                "这是上涨走势的标准形态——缠师说，中枢是能量结构，中枢上移"
+                "说明多头在这个级别上一直有新的能量接上来。" % seq_txt
+            )
+        else:
+            paras.append(
+                "日线级别：中枢序列（%s，共 %d 个）。" % (seq_txt, len(pvs))
+            )
+        if below:
+            dn = [x for x in bis[-3:] if int(x["dir"]) == -1]
+            dnb = dn[-1] if dn else lb
+            paras.append(
+                "%s 一笔自 %.0f 跌至 %.0f，击穿末中枢下沿 %.0f——向下离开"
+                "成立，中枢上移的走势到此告一段落。跌破中枢，意味着这一级别"
+                "上多头的能量已经用完，后面的走势要用新的中枢重新组织。"
+                % (dnb["e_dt"], float(dnb["s_price"]), float(dnb["e_price"]), zd)
+            )
+            if bi["dir"] == 1:
+                paras.append(
+                    "当前向上笔自 %.0f 反抽至 %.0f（%+.1f%%），现价 %.0f 距"
+                    "中枢下沿 %.0f 还有 %.1f%%——反抽未及中枢，笔未走完。"
+                    "走势终完美：这笔以什么方式结束，决定后面的事。止于 zd "
+                    "之下再走向下笔，三卖结构确认、中枢下移展开；放量站回 zd "
+                    "之上，则中枢扩展，由趋势转为更大级别的盘整。"
+                    % (bi["s_price"], bi["e_price"], bi_gain, close, zd,
+                       abs(dist_zd))
+                )
+            else:
+                paras.append(
+                    "当前向下笔自 %.0f 行至 %.0f，在中枢之下运行——向下的"
+                    "笔里不猜底，等它走完再看反抽的力度。"
+                    % (bi["s_price"], bi["e_price"])
+                )
+        elif above:
+            paras.append(
+                "现价 %.0f 站在中枢上沿 %.0f 之上（%+.1f%%）——离开段中。"
+                "回踩不回中枢（zg 不破），是三买的天下；回到中枢之内，"
+                "就老老实实当震荡做。" % (close, zg, dist_zg)
+            )
+        else:
+            paras.append(
+                "现价 %.0f 在中枢 %s（%.0f–%.0f）之内运行——震荡对待，"
+                "上沿下沿都是边界，不追不杀，等离开方向自己走出来。"
+                % (close, "第 %d 个" % len(pvs), zd, zg)
+            )
+        if sigs:
+            ls = sigs[-1]
+            btxt = "+".join(
+                n for n, v in (("趋势背驰", ls["tbe"]),
+                               ("MACD背驰", ls["mbei"]),
+                               ("盘整背驰", ls["bei"])) if v
+            ) or "无背驰标注"
+            paras.append(
+                "近端信号留痕：最近的 %s 在 %s（%s）。此后结构无新信号——"
+                "没有买点就不动手，这是缠论的纪律；等结构给信号，而不是等"
+                "情绪给勇气。" % (ls["type"], ls["dt"], btxt)
+            )
+        paras.append(
+            "明日只看三处：%s%s%s。位置比方向重要，边界比预测有用。"
+            % (
+                "zd %.0f 的得失" % zd,
+                "、笔起点 %.0f 的失效" % bi["s_price"],
+                "、zg %.0f 的收复" % zg,
+            )
+        )
+
+        levels = [
+            {"label": "中枢上沿 zg（重新走强界）", "v": round(zg, 1)},
+            {"label": "中枢下沿 zd（回抽界/强弱分界）", "v": round(zd, 1)},
+            {"label": "当前笔起点（向上笔失效线）"
+             if bi["dir"] == 1 else "当前笔起点（向下笔失效线）",
+             "v": bi["s_price"]},
+        ]
+        return {
+            "asof": last_dt, "close": close, "stage": stage,
+            "zg": round(zg, 1), "zd": round(zd, 1), "below": below,
+            "n_pivots": len(pvs), "pv_seq": pv_seq, "rising": rising,
+            "bi": bi, "bi_open": bi_open, "bi_gain": round(bi_gain, 2),
+            "dist_zd": round(dist_zd, 2), "dist_zg": round(dist_zg, 2),
+            "sigs": sigs, "levels": levels, "paras": paras,
+            "n_bars": len(bars), "win_start": win_start,
+            "svg": _zen_svg(bars, bis, pvs, n_disp=n_disp),
+        }
+    except Exception:
+        return None
+
+
 def write_page(data, snap):
     d, parts = data, []
     parts.append(
@@ -1416,10 +1946,282 @@ def write_page(data, snap):
         " · 开盘溢价概率 <b>%d%%</b> · %s</div>"
         % (d["ts"], d["overall"], d["prob"], d["verdict"])
     )
+
+    # 综合判断深化（11-10）：因子分解 / 轨迹 / 历史校准
+    deep = d.get("deep") or {}
+    if deep.get("contrib"):
+        trs = "".join(
+            "<tr><td>%s</td><td>%s</td><td>%s</td><td class='%s'>%s</td>"
+            "<td class='dim' style='white-space:normal'>%s</td></tr>"
+            % (
+                c["name"],
+                ("%.0f" % c["score"]) if c["score"] is not None else "<span class='dim'>缺源</span>",
+                c["note"],
+                "buy" if (c["score"] or 0) > 10
+                else ("avoid" if (c["score"] or 0) < -10 else ""),
+                ("贡献 %+.1f pp" % c["pp"]) if c["pp"] is not None else "—",
+                c["fact"],
+            )
+            for c in deep["contrib"]
+        )
+        parts.append(
+            "<div class='env'><b>分数怎么来的（±100 净占比 · 加权）</b>"
+            "<table style='margin-top:6px'><tr><th>因子</th><th>分数</th>"
+            "<th>权重</th><th>贡献</th><th>依据</th></tr>%s</table></div>" % trs
+        )
+    tr = deep.get("trail")
+    if tr:
+        seq = tr["overall"]
+        W, H = 460, 64
+        mn, mx = min(seq), max(seq)
+        sp = (mx - mn) or 1
+        pts = " ".join(
+            "%g,%g" % (2 + i * (W - 4) / (len(seq) - 1),
+                       H - 8 - (v - mn) / sp * (H - 20))
+            for i, v in enumerate(seq)
+        )
+        zero_y = H - 8 - (0 - mn) / sp * (H - 20) if mn < 0 < mx else None
+        last = seq[-1]
+        col = "#e35d5d" if (last or 0) >= 0 else "#3aa76d"
+        zero_line = (
+            "<line x1='0' y1='%g' x2='%d' y2='%g' stroke='#3a4656' "
+            "stroke-dasharray='3,3'/>" % (zero_y, W, zero_y)
+            if zero_y is not None else ""
+        )
+        labels = "".join(
+            "<text x='%g' y='%d' font-size='9' fill='#7b8698'>%s</text>"
+            % (2 + i * (W - 4) / (len(seq) - 1), H,
+               d6[4:6] + "/" + d6[6:])
+            for i, d6 in enumerate(tr["dates"])
+        )
+        parts.append(
+            "<div class='env'><b>近 %d 日倾向轨迹</b>（今日 %s，%d 日中位 %s，"
+            "区间 %s ~ %s，%d 日样本）<br>"
+            "<svg width='%d' height='%d' style='margin-top:6px'>%s"
+            "<polyline points='%s' fill='none' stroke='%s' stroke-width='2'/>"
+            "%s</svg><div class='dim'>今日分位：历史近 10 日中排第 %s%%"
+            "（越高代表越接近近期乐观极值，别把高位当常态）</div></div>"
+            % (
+                len(seq) - 1, last, tr["n_hist"], tr["med10"],
+                tr["lo10"], tr["hi10"], tr["n_hist"], W, H, zero_line, pts, col,
+                labels, tr["rank_pct"],
+            )
+        )
+    cal = deep.get("calib")
+    if cal and cal.get("tiers"):
+        rows = "".join(
+            "<tr><td>%s</td><td>%d</td><td class='%s'>%d%%</td>"
+            "<td class='%s'>%+.0f bp</td></tr>"
+            % (
+                t["label"], t["n"],
+                "buy" if t["win"] > 50 else "avoid", t["win"],
+                "buy" if t["avg_bp"] > 0 else "avoid", t["avg_bp"],
+            )
+            for t in cal["tiers"]
+        )
+        cur = cal.get("current")
+        cur_note = ""
+        if cur:
+            cur_note = (
+                "<div class='dim' style='margin-top:4px'>今日在 %s：页称概率 "
+                "<b>%d%%</b>，历史 %d 个同档日**次日开盘实际**走高 %d%%"
+                "（平均 %+.0f bp）——两数有差是正常的：prob 是当日因子的"
+                " logistic 映射，校准值才是这个分数段的历史兑现率，随台账"
+                "加厚以校准值为准。</div>"
+                % (cur["label"], d["prob"], cur["n"], cur["win"], cur["avg_bp"])
+            )
+        elif cal.get("tiers"):
+            # 高档无样本时如实警示：乐观极值无历史兑现证据
+            cur_note = (
+                "<div class='dim' style='margin-top:4px'>⚠ 今日分数 %s 高于"
+                "全部 %d 个历史日（历史最高 %s）——<b>这个乐观程度没有历史兑现"
+                "样本可对照</b>；且已有样本的校准整体偏冷（%s），页称概率 "
+                "%d%% 请按历史校准打折理解。</div>"
+                % (
+                    d["overall"], cal["n_hist"], cal.get("max_overall"),
+                    "；".join("%s 实际走高 %d%% / %+.0f bp"
+                              % (t["label"], t["win"], t["avg_bp"])
+                              for t in cal["tiers"]),
+                    d["prob"],
+                )
+            )
+        else:
+            cur_note = "<div class='dim'>今日分数落在历史样本之外（无同档对照）</div>"
+        parts.append(
+            "<div class='env'><b>概率的历史校准</b>（premarket_history × "
+            "上证次日开盘，仅 %d 日样本，随台账加厚）"
+            "<table style='margin-top:6px'><tr><th>分数档</th><th>天数</th>"
+            "<th>次日开盘走高</th><th>平均开盘溢价</th></tr>%s</table>%s</div>"
+            % (cal["n_hist"], rows, cur_note)
+        )
     if d["alerts"]:
         parts.append(
             "<h2>⚠ 风险预警</h2><div class='env' style='color:"
             "#e8710a'>%s</div>" % "<br>".join("· " + a for a in d["alerts"])
+        )
+
+    # 零、今日行动卡（11-10 叠加）：收盘线产物，盘前要按它执行
+    acts = d.get("actions") or {}
+    ap = acts.get("pool")
+    ash = acts.get("shadow")
+    ase = acts.get("sector")
+    act_html = []
+    if ap:
+        order = ["三买", "二买", "一买", "三买待"]
+        chips = " ".join(
+            "<b>%s %d</b>" % (k, ap["buy_counts"][k]) for k in order
+            if ap["buy_counts"].get(k)
+        )
+        t5 = "".join(
+            "<tr><td>%s</td><td class='dim'>%s</td><td>%.1f</td>"
+            "<td class='%s'>%+.2f%%</td></tr>"
+            % (
+                _stock_a(r["code"], r["name"]),
+                r["code"],
+                r.get("score") or 0,
+                "buy" if (r.get("pct") or 0) > 0 else "avoid",
+                (r.get("pct") or 0) * 100,
+            )
+            for r in ap["top3buy"]
+        )
+        act_html.append(
+            "<div class='env'><b>① 结构池（数据日 %s）</b>：%s"
+            "<table style='margin-top:6px'><tr><th>三买评分 top5</th>"
+            "<th>代码</th><th>评分</th><th>昨日涨幅</th></tr>%s</table>"
+            "<div class='dim' style='margin-top:4px'>"
+            "<a href='pool_pc2.html'>选股工作台 v2（五档全列表 + 个股全关系）→</a>"
+            " · <a href='pc.html'>结构工作台 →</a></div></div>"
+            % (ap.get("asof") or "?", chips, t5)
+        )
+    if ash and ash.get("legs"):
+        rows = ""
+        for lg in ash["legs"]:
+            hs = " ".join(
+                "%s(%+.1f%%)"
+                % (h.get("code") or "?", h.get("pnl_pct") or 0)
+                for h in lg["holdings"]
+            )
+            rp = lg.get("ret_pct")
+            rows += (
+                "<tr><td>%s%s</td><td>%d</td><td class='%s'>%s</td>"
+                "<td class='dim' style='white-space:normal'>%s</td></tr>"
+                % (
+                    lg["cn"],
+                    "（盘前盯止损 −12%/移动止损）" if lg["f1"] else "",
+                    lg["n_hold"],
+                    "buy" if (rp or 0) > 0 else "avoid",
+                    "%+.2f%%" % rp if rp is not None else "—",
+                    hs or "—",
+                )
+            )
+        act_html.append(
+            "<div class='env'><b>② 影子台账（固化 v1 六腿 · 台账日 %s）</b>"
+            "<table style='margin-top:6px'><tr><th>腿</th><th>持仓</th>"
+            "<th>累计</th><th>持仓明细（浮盈）</th></tr>%s</table>"
+            "<div class='dim' style='margin-top:4px'>六腿影子记账 · "
+            "F1 连续核对无异常后按四条件转正 · 台账产物 data/shadow/</div></div>"
+            % (ash.get("date") or "?", rows)
+        )
+    if ase:
+        t5 = "".join(
+            "<tr><td>%s</td><td>%s</td><td class='%s'>%+.2f%%</td>"
+            "<td class='buy'>%+.2f%%</td></tr>"
+            % (
+                s["name"],
+                s.get("stage") or "—",
+                "buy" if (s.get("pct") or 0) > 0 else "avoid",
+                (s.get("pct") or 0) * 100,
+                s["r5"],
+            )
+            for s in ase["top"]
+        )
+        act_html.append(
+            "<div class='env'><b>③ 板块层强度 top5（asof %s · T+1 晨更为设计内）</b>"
+            "<table style='margin-top:6px'><tr><th>板块</th><th>阶段</th>"
+            "<th>昨日</th><th>5日</th></tr>%s</table>"
+            "<div class='dim' style='margin-top:4px'>"
+            "<a href='sector_platform.html'>板块操作平台（465 板块位置 × 买点占比）→</a></div></div>"
+            % (ase.get("asof") or "?", t5)
+        )
+    if act_html:
+        missing = [
+            nm
+            for nm, v in (
+                ("结构池", ap),
+                ("影子台账", ash),
+                ("板块层", ase),
+            )
+            if v is None
+        ]
+        miss_note = (
+            "<div class='dim'>未生成：%s（对应 18:30 流水线产物缺失，"
+            "看 logs/pool_daily.log）</div>" % "、".join(missing)
+            if missing
+            else ""
+        )
+        parts.append(
+            "<h2>零、今日行动卡 <span class='dim' style='font-weight:400;"
+            "font-size:12px'>（收盘线产物 · 08:20 盘前按此执行）</span></h2>"
+            "%s%s" % ("".join(act_html), miss_note)
+        )
+
+    # 零+、缠论说大盘（11-10 叠加）：同一结构引擎看上证日线
+    zn = d.get("zen")
+    if zn:
+        lvl_html = " ".join(
+            "<span style='display:inline-block;border:1px solid #2a3547;"
+            "border-radius:6px;padding:3px 8px;margin:2px 4px 2px 0;"
+            "font-size:12px'>%s <b>%.0f</b> <span class='dim'>距 %+.1f%%"
+            "</span></span>"
+            % (lv["label"], lv["v"], (zn["close"] / lv["v"] - 1) * 100)
+            for lv in zn["levels"]
+        )
+        sig_rows = "".join(
+            "<tr><td>%s</td><td>%s</td><td class='dim'>%s</td></tr>"
+            % (
+                s["type"],
+                "%d/%d/%d" % (s["dt"] // 10000, s["dt"] // 100 % 100,
+                              s["dt"] % 100),
+                "+".join(n for n, v in (("趋势背驰", s["tbe"]),
+                                        ("MACD背驰", s["mbei"]),
+                                        ("盘整背驰", s["bei"])) if v)
+                or "无背驰标注",
+            )
+            for s in zn["sigs"]
+        )
+        paras_html = "".join(
+            "<p style='margin:6px 0;line-height:1.7'>%s</p>" % p
+            for p in zn["paras"]
+        )
+        seq_txt = " → ".join(
+            "%.0f–%.0f" % (q["zd"], q["zg"]) for q in zn["pv_seq"]
+        )
+        parts.append(
+            "<h2>零+、缠论说大盘 <span class='dim' style='font-weight:400;"
+            "font-size:12px'>（上证日线 · 与全池同一结构引擎 · 数据 T-1 %d）"
+            "</span></h2>"
+            "<div class='env'><b>阶段：%s</b> · 现价 %.0f · 最近中枢 %.0f–%.0f"
+            "（%d 个中枢%s）%s"
+            "<div style='margin-top:4px'>%s</div>%s%s"
+            "<table style='margin-top:6px'><tr><th>近端信号</th><th>日期</th>"
+            "<th>背驰标注</th></tr>%s</table>"
+            "<div class='dim' style='margin-top:4px'>口径：chanlun_signal."
+            "analyze，笔/中枢/三类买卖点与选股全池同引擎（自 20240101 起 %d 根"
+            "日K）；指数数据 T-1；结构随新 K 线自然修正，教学口径非投资建议。"
+            "</div></div>"
+            % (
+                zn["asof"], zn["stage"], zn["close"], zn["zd"], zn["zg"],
+                zn["n_pivots"], "，逐级上移" if zn["rising"] else "",
+                " · 中枢序列 " + seq_txt if zn["rising"] else "",
+                lvl_html,
+                zn["svg"], paras_html, sig_rows, zn["n_bars"],
+            )
+        )
+    elif d.get("zen") is None:
+        parts.append(
+            "<h2>零+、缠论说大盘</h2><div class='env'>未生成：index_daily "
+            "缺源或结构为空（数据仓 index_daily 是 T-1 时序，缺日则跳过，"
+            "不阻断盘前页）</div>"
         )
 
     # 层1
@@ -2082,11 +2884,10 @@ def write_page(data, snap):
     # 层8 共振 Top5（快照时间 + 闸门说明：解释为何某市场缺席）
     res = snap.get("res", [])[:5]
     trs = "".join(
-        "<tr><td><a href='/kg/stock/%s'>%s</a></td><td>%d</td><td "
+        "<tr><td>%s</td><td>%d</td><td "
         "class='%s'>%s</td></tr>"
         % (
-            RR._link_code(r["code"]),
-            r["name"],
+            _stock_a(r["code"], r["name"]),
             r["score"],
             "buy"
             if "买入" in r["action"]
@@ -2118,7 +2919,7 @@ def write_page(data, snap):
         "每日 17:35 更新）</span></h2>"
         "<table><tr><th>标的</th><th>综合</th><th>建议</th></tr>"
         "%s</table>%s<div class='dim' style='margin-top:2px'>"
-        "<a href='/bt'>共振全景（四市场榜单/环境闸门）→</a></div>"
+        "<a href='bt_hub.html'>共振全景 · 选股中心（四市场榜单/环境闸门）→</a></div>"
         % (snap.get("ts") or "—", trs, gate_note)
     )
     parts.append(

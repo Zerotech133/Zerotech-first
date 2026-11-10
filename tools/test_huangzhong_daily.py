@@ -41,8 +41,13 @@ def _fake_verdict(v="PASS", failed=0, rate=1.0):
 
 def test_w1_doc_exists():
     root = _TOOLS.parent
-    p = root / "docs" / "plans" / "2026-10-28_黄忠W1验收样例与批改标准_v1.md"
-    assert p.is_file()
+    name = "2026-10-28_黄忠W1验收样例与批改标准_v1.md"
+    candidates = (
+        root / "docs" / "plans" / name,
+        root / "docs" / "plans" / "_archive_20261110" / name,
+    )
+    p = next((c for c in candidates if c.is_file()), candidates[0])
+    assert p.is_file(), "黄忠W1验收标准文档未找到（含归档回退）：%s" % [str(c) for c in candidates]
     t = p.read_text(encoding="utf-8")
     for key in ("验收判据样例", "七检解读", "回滚点样例", "Rubric", "批改标准"):
         assert key in t

@@ -49,9 +49,10 @@ REPORTS = ps.REPORTS
 BUY_STAGES = ("一买", "二买", "三买", "三买待")
 WEAK_STAGES = ("三卖", "中枢下")
 STAGE_COLOR = {
-    "一买": "#c2410c", "二买": "#c2410c", "三买": "#b91c1c", "三买待": "#b91c1c",
-    "中枢": "#475569", "背驰": "#7c3aed", "离开段": "#0f766e",
-    "三卖": "#3fa96a", "中枢下": "#3fa96a", "中枢下移": "#3fa96a",
+    # 2026-11-10 UI 重调：档位色板统一走 ui_tokens（全站单一事实源）。
+    "一买": "#c9b23f", "二买": "#d9a13b", "三买": "#e35d5d", "三买待": "#e0874f",
+    "中枢": "#6f87a8", "背驰": "#b07fd8", "离开段": "#4fa8a0",
+    "三卖": "#3aa76d", "中枢下": "#8090a4", "中枢下移": "#8090a4",
 }
 
 
@@ -216,7 +217,7 @@ body{background:#0d1117;color:#e6edf3;
 .rps i{display:block;height:100%;background:#5b9bd5;border-radius:2px}
 .res{flex:none;font-variant-numeric:tabular-nums}
 .res.hi{color:#b91c1c;font-weight:650}
-.up{color:#e3554f}.dn{color:#3fa96a}.flat{color:#7b8698}
+.up{color:#e35d5d}.dn{color:#3aa76d}.flat{color:#7b8698}
 
 /* 详情 */
 .back{display:flex;align-items:center;gap:5px;margin:2px 0 9px;
@@ -545,7 +546,7 @@ function goDetail(code){
   document.getElementById('bar').innerHTML =
       '<i style="width:'+w1+'%;background:#b91c1c"></i>'
     + '<i style="width:'+w2+'%;background:#5e6b7a"></i>'
-    + '<i style="width:'+w3+'%;background:#3fa96a"></i>';
+    + '<i style="width:'+w3+'%;background:#3aa76d"></i>';
   document.getElementById('lg1').textContent = cnt.buy;
   document.getElementById('lg2').textContent = cnt.mid;
   document.getElementById('lg3').textContent = cnt.weak;
@@ -693,7 +694,7 @@ def build_html(sec, pool, asof, rows):
     <div class="legend">
       <span><b style="background:#b91c1c"></b>买点类 <span id="lg1">0</span></span>
       <span><b style="background:#5e6b7a"></b>中枢/背驰 <span id="lg2">0</span></span>
-      <span><b style="background:#3fa96a"></b>三卖/中枢下 <span id="lg3">0</span></span>
+      <span><b style="background:#3aa76d"></b>三卖/中枢下 <span id="lg3">0</span></span>
     </div>
   </div>
 

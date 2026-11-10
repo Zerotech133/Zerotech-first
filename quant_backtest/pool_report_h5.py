@@ -50,9 +50,11 @@ STAGE_DESC = {
     "中枢下": "向下离开中枢",
 }
 STAGE_COLOR = {
-    "三买待": "#e0b95c", "三买": "#e3554f", "二买": "#e07b39", "一买": "#c04a8a",
-    "背驰": "#3fa96a", "中枢": "#7b8698", "三卖": "#3fa96a",
-    "离开段": "#c9b184", "中枢下": "#3fa96a",
+    # 2026-11-10 UI 重调：档位色板统一走 ui_tokens（全站单一事实源）。
+    # 原值：一买洋红、背驰绿 —— 与全站九态色板不一致，作废（2026-11-10 UI 重调）。
+    "三买待": "#e0874f", "三买": "#e35d5d", "二买": "#d9a13b", "一买": "#c9b23f",
+    "背驰": "#b07fd8", "中枢": "#6f87a8", "三卖": "#3aa76d",
+    "离开段": "#4fa8a0", "中枢下": "#8090a4",
 }
 # 首屏五张卡
 CARD_STAGES = ["三买待", "三买", "二买", "一买", "背驰"]
@@ -61,7 +63,7 @@ CARD_STAGES = ["三买待", "三买", "二买", "一买", "背驰"]
 # 九态回答「结构是什么」，五层回答「现在能不能动手」——卡片走五层，
 # 页面必须能给同一批票，否则点开找不到卡片上那句话说的是谁。
 LAYER_META = (
-    ("B", "B 可介入", "三买守位在手边（≤8%），跌破守位即认输", "#e3554f"),
+    ("B", "B 可介入", "三买守位在手边（≤8%），跌破守位即认输", "#e35d5d"),
     ("A", "A 今日突破", "刚越中枢上沿，等回踩，不追", "#e8590c"),
     ("E", "E 贴沿未过", "紧贴上沿未过，埋伏不是买", "#e0b95c"),
 )
@@ -274,8 +276,8 @@ def _svg(r, k):
         if ref is not None and abs(ty - ref) < 11:
             ty = ref + 13 if ty >= ref else ref - 5
     ty = min(max(ty, PT + 8), H - PB - 2)
-    out.append(f'<circle cx="{X(len(c)-1):.1f}" cy="{py:.1f}" r="3.2" fill="#e3554f"/>')
-    out.append(f'<text x="{PL+iw+4}" y="{ty:.1f}" font-size="9" fill="#e3554f" '
+    out.append(f'<circle cx="{X(len(c)-1):.1f}" cy="{py:.1f}" r="3.2" fill="#e35d5d"/>')
+    out.append(f'<text x="{PL+iw+4}" y="{ty:.1f}" font-size="9" fill="#e35d5d" '
                f'font-weight="bold">{c[-1]:.2f}</text>')
     out.append(f'<text x="{PL}" y="{H-4}" font-size="8" fill="#7b8698">{k["d0"]}</text>')
     out.append(f'<text x="{PL+iw-34}" y="{H-4}" font-size="8" fill="#7b8698">'
@@ -394,6 +396,12 @@ _BUILD = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 body{{background:#0d1117;color:#e6edf3;
      font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
      max-width:430px;margin:0 auto;min-height:100vh}}
+/* PC 上手机版两侧全空（判例 UI-审计5）：≥768px 放宽到 660px 浮起，
+   手机端不受影响；再宽就破坏竖屏卡片流，不跟 */
+@media (min-width:768px){{
+  html{{background:#070a0f}}
+  body{{max-width:660px;box-shadow:0 0 44px rgba(0,0,0,.5);
+       border-left:1px solid #1d2530;border-right:1px solid #1d2530}}}}
 .screen{{display:none;min-height:100vh;padding:10px 14px 4px}}
 .screen.on{{display:block}}
 .hd{{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}}
@@ -431,7 +439,7 @@ body{{background:#0d1117;color:#e6edf3;
 .row .r{{text-align:right;flex:none}}
 .row .px{{font-size:14px;font-weight:700}}
 .row .dg{{font-size:10.5px;color:#7b8698}}
-.up{{color:#e3554f}}.down{{color:#3fa96a}}
+.up{{color:#e35d5d}}.down{{color:#3aa76d}}
 .arw{{color:#2b3949;font-size:16px;flex:none}}
 .sech{{font-size:11px;color:#7b8698;margin:13px 2px 6px;font-weight:600}}
 .sech .warn{{font-weight:400;color:#b5761a;margin-left:6px}}
@@ -1027,12 +1035,12 @@ def main():
         # 拆成「涨 / 停 62」（390px 实测），读着像错字。
         if px_clock and px_clock != lv_clock:
             sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
-                        f'<b style="color:#e3554f">价 {px_clock}</b>'
+                        f'<b style="color:#e35d5d">价 {px_clock}</b>'
                         f'<br><span style="color:#7b8698">市场 {lv_clock} · </span>'
                         + _tail)
         else:
             sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
-                        f'<b style="color:#e3554f">实时 {lv_clock}</b> ' + _tail)
+                        f'<b style="color:#e35d5d">实时 {lv_clock}</b> ' + _tail)
         if broke_n:
             sub_line += f' · <b style="color:#e8807f">盘中失守 {broke_n}</b>'
     else:
