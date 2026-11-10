@@ -89,6 +89,11 @@ def load_queue(scope):
             hc = json.load(open(hfq, encoding="utf-8"))
             hitems = hc.get(scope) or hc.get("all") or []
             codes |= {i["code"].split(".")[0] for i in hitems}
+            # 候选池(影子池全量)默认不并入 07:00 有头采集管线；
+            # 开关 xq_include_candidates 由上级裁定后置 true 才生效（489 -> 593）
+            if hc.get("xq_include_candidates") is True:
+                ext = hc.get("candidate_pool") or []
+                codes |= {i["code"].split(".")[0] for i in ext}
         except Exception:
             pass
     return sorted(codes)
