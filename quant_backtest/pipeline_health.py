@@ -208,6 +208,34 @@ def main():
     else:
         print("[INFO] 今天未触发缓存重扫（滚动日缓存已在位或检查先于流水线）")
 
+    # 8. 106 课板块强弱影子（2026-11-10 v0 落地，pool_daily 第 8 步）
+    #    产物 sector106_shadow_<asof>.json；影子失败是 soft 不阻断，但连续
+    #    缺失说明第 8 步在静默挂——查最后一次成功的日期。
+    s106 = sorted(glob.glob(os.path.join(REPORTS, "sector106_shadow_*.json")),
+                  key=os.path.getmtime)
+    if not s106:
+        log("WARN", "106 课影子无产物（sector106_shadow_*.json）——"
+                    "第 8 步从未成功，人工跑 sector_beichi106.py --save 排查")
+    else:
+        last_fp = s106[-1]
+        mt = datetime.fromtimestamp(os.path.getmtime(last_fp)).date()
+        try:
+            d106 = json.load(open(last_fp, encoding="utf-8"))
+            n_sec = d106.get("n_sectors")
+            # 本文件 prev_trading_day 吃/吐 date 对象（非 pool_daily 的字符串版）
+            lim1, lim2 = prev_trading_day(today), prev_trading_day(prev_trading_day(today))
+            if mt >= lim1:
+                log("OK", "106 课影子最新 %s（%d 板块）"
+                          % (os.path.basename(last_fp), n_sec or 0))
+            elif mt >= lim2:
+                log("INFO", "106 课影子停在 %s（隔日，影子允许滞后）"
+                            % os.path.basename(last_fp))
+            else:
+                log("WARN", "106 课影子落后两天以上（%s）——第 8 步可能在静默挂"
+                            % os.path.basename(last_fp))
+        except Exception as e:
+            log("WARN", "106 课影子产物解析失败：%s" % e)
+
     print("== 汇总：ALERT %d / WARN %d ==" % (len(ALERTS), len(WARNS)))
     return 2 if ALERTS else (1 if WARNS else 0)
 
