@@ -42,14 +42,18 @@ combine_score，保证打分与信号集与引擎**逐格一致**；本文件只
 #      夏普 1.22 vs 0.80）。增益真因是填单通道（skip_lot 4794→2210、
 #      填单率 55.9%→79.2%，36m 归因占 116%），「低波 alpha」已证伪。
 #    · 已否决：--rank rps / score_resid、--dynamic-n env，勿重开。
-# 5) 待办优先级：NA 桶核查（停牌复牌笔占 24m equal 盈亏 38%）> 五窗口全量
-#    复跑+50bp 双成本终验 > 叠加档冲击成本压测（笔数 +41%，3bp 常数需替换）。
+# 5) 待办已结清（2026-11-07 审查复核，勿重复立项）：NA 桶核查（"38%"实为
+#    停牌复牌票真实跳空，非数据错误，回测数字不修正）；五窗口全量 + 50bp 双
+#    成本终验（36m +117.71% vs equal +73.37%，夏普 1.22 vs 0.80）；叠加档冲击
+#    成本压测（4/5 窗通过）。原注释写于此前的"待办优先级"，已过期。
+#    证据：deliverables/2026-11-07_候风代码审查与遗留清单_v1.md 的 A1~A3。
 # 6) 已知高估方向：跌停无法卖出未建模、冲击成本按常数、集合竞价必成假设。
 
 import argparse
 import json
 import os
 import sys
+import tempfile
 import time
 from collections import Counter
 
@@ -84,6 +88,37 @@ def build_matrices(wide, i0, i1, buy_th=75.0, obs_th=50.0, gate_on=True, log=pri
     def take(k):
         return wide[k].iloc[i0 : i1 + 1]
 
+    def _raw_hh_align(dd):
+        if "_raw_high" not in wide:
+            return dd["close"].to_numpy(dtype="float32")
+        hr = wide["_raw_high"].iloc[i0 : i1 + 1]
+        ca = dd["close"] / wide["_raw_close"].iloc[i0 : i1 + 1]
+        return hr.fillna(0).mul(ca).fillna(dd["close"]).to_numpy(dtype="float32")
+
+    def _struct_matrices(dd):
+        """个股结构价位矩阵（M3 价格计划）：ATR14 / LLV10 / HHI。
+        全部基于对齐后复权链的 OHLC；raw 缺失日回退 close（该日 TR=0，不产生信号影响）。"""
+        c = dd["close"].astype("float64")
+        lo = pd.DataFrame(_raw_low_ffill_aligned(dd), index=dd["close"].index, columns=dd["close"].columns)
+        hi = pd.DataFrame(_raw_hh_align(dd), index=dd["close"].index, columns=dd["close"].columns)
+        pc = c.shift(1)
+        tr = pd.concat([hi - lo, (hi - pc).abs(), (lo - pc).abs()], axis=0).groupby(level=0).max()
+        tr = tr.replace([np.inf, -np.inf], np.nan)
+        atr14 = tr.rolling(14, min_periods=10).mean()
+        llv10 = lo.rolling(10, min_periods=5).min()
+        return (atr14.to_numpy(dtype="float32"), llv10.to_numpy(dtype="float32"),
+                hi.to_numpy(dtype="float32"))
+
+    def _raw_low_ffill_aligned(dd):
+        """_raw_low 对齐 close 后复权链：low_adj = raw_low * close_adj/close_raw。
+        raw 缺失时回退 close（不触发）。仅 --limit-mode exact 时 wide 携带 _raw_low。"""
+        if "_raw_low" not in wide:
+            return dd["close"].to_numpy(dtype="float32")
+        cr = wide["_raw_low"].iloc[i0 : i1 + 1]
+        ca = dd["close"] / wide["_raw_close"].iloc[i0 : i1 + 1]
+        lo = cr * ca
+        return lo.fillna(dd["close"]).to_numpy(dtype="float32")
+
     d = {
         "dates": dates,
         "codes": cols,
@@ -98,6 +133,7 @@ def build_matrices(wide, i0, i1, buy_th=75.0, obs_th=50.0, gate_on=True, log=pri
     env_df = qb.env_gate(d["above20"], d["ret20"])
     chg = {p: take("chg%d" % p) for p in qb.PERIODS}
     mix, _n_avail = qb.cross_rps(chg, qb.RPS_W_CUR)
+    rps50, _ = qb.cross_rps({50: chg[50]}, {50: 1.0})
     tech = qb.tech_score(d["longs"], d["above20"])
     score, buy, _obs = qb.combine_score(
         tech,
@@ -121,18 +157,44 @@ def build_matrices(wide, i0, i1, buy_th=75.0, obs_th=50.0, gate_on=True, log=pri
         "C": close.to_numpy(dtype="float32"),
         # 出场结算用 ffill（K254：出场停牌按最后可得价），链锚在买入日
         "Cff": close.ffill().to_numpy(dtype="float32"),
+        # M3 止损：原始 low 与 close 同为后复权链（own-bar 因子一致），NaN 时回退 close
+        "LLOW": (
+            (d["close"] / d["close"].shift(0) * d["close"])  # 占位不生效，下行立即覆盖
+        ).to_numpy(dtype="float32") if False else (
+            _raw_low_ffill_aligned(d)
+        ),
         "UNF": d["unfill"].to_numpy(dtype=bool),
         "SC": score.to_numpy(dtype="float32"),
         "BUY": buy.to_numpy(dtype=bool),
         "RPS": mix.to_numpy(dtype="float32"),
+        "RPS50": rps50.to_numpy(dtype="float32") if rps50 is not None else mix.to_numpy(dtype="float32"),
         "env_safe": env_df["safe"].to_numpy(dtype=bool),
     }
+    out["ATR14"], out["LLV10"], out["HHI"] = _struct_matrices(d)
+    out["MA10"] = d["close"].rolling(10, min_periods=5).mean().to_numpy(dtype="float32")
     # ── 风险预算层附加矩阵（L2b，默认不参与任何计算路径）────────────
     # VOL20: 单股日收益 20 日滚动 std（逐日截面，收益链来自 K254 后复权 close，
     #        只做同日比值，跨股绝对价不可比问题不存在）
     cl = close.astype("float64")
     vol20 = (cl / cl.shift(1) - 1.0).rolling(20, min_periods=20).std(ddof=1)
     out["VOL20"] = vol20.to_numpy(dtype="float32")
+
+    # DEBETA（P2 入场侧）：score 对 vol20+ret20 双变量截面回归残差。
+    # 全 eligible 池逐日回归（样本<30 退化为 score）；残差=去掉"波动/动量暴露"后的纯分。
+    if "ret20" in d:
+        sc_ = score.to_numpy(dtype="float64")
+        vo_ = out["VOL20"].astype("float64")
+        r2_ = d["ret20"].to_numpy(dtype="float64")
+        el_ = d["eligible"].to_numpy(dtype=bool)
+        db = sc_.copy()
+        for t in range(sc_.shape[0]):
+            idx = np.flatnonzero(el_[t] & np.isfinite(sc_[t]) & np.isfinite(vo_[t]) & np.isfinite(r2_[t]))
+            if idx.size < 30:
+                continue
+            X = np.column_stack([np.ones(idx.size), vo_[t, idx], r2_[t, idx]])
+            beta, *_ = np.linalg.lstsq(X, sc_[t, idx], rcond=None)
+            db[t, idx] = sc_[t, idx] - X @ beta
+        out["DEBETA"] = db.astype("float32")
     # RESID: score 对 vol20 的逐日截面一元 OLS 残差（候选池内）
     #        候选池 = BUY[t]；有效样本 <10 的当日退化为原始 score；
     #        vol 缺失/为 0 的票残差取当日残差中位数
@@ -259,7 +321,9 @@ def _plan_shares(budget, px, half, lot_fill="strict", st=None, max_budget=None):
         if max_budget is not None:
             cap = np.minimum(b, np.asarray(max_budget, dtype="float64"))
             if st is not None:
-                st["recycle_capped"] += int((cap < b - 1e-9).sum())
+                # 2026-11-10 E2E 防御：调用方自建普通 dict 可能缺 recycle_capped 键
+                # （simulate 内是 Counter 不受影响）
+                st["recycle_capped"] = st.get("recycle_capped", 0) + int((cap < b - 1e-9).sum())
             b = cap
         sh = np.floor(b / lot_cost) * LOT
         return np.nan_to_num(sh, nan=0.0, posinf=0.0, neginf=0.0).astype(np.int64)
@@ -276,6 +340,10 @@ def simulate(M, cfg, log=print):
       ④ 按可用现金等权分配（受 --max-weight 与可选 slot 预算约束），下单 T+1
     """
     O, Cff, UNF = M["O"], M["Cff"], M["UNF"]
+    LLOW = M.get("LLOW")
+    ATR14, LLV10, HHI = M.get("ATR14"), M.get("LLV10"), M.get("HHI")
+    DEBETA, RPS50 = M.get("DEBETA"), M.get("RPS50")
+    MA10 = M.get("MA10")
     SC, BUY, RPS = M["SC"], M["BUY"], M["RPS"]
     dates, codes = M["dates"], M["codes"]
     n_days, n_cols = O.shape
@@ -291,6 +359,10 @@ def simulate(M, cfg, log=print):
     weight_scheme = cfg.get("weight_scheme", "equal")
     dynamic_n = cfg.get("dynamic_n", "off")
     lot_fill = cfg.get("lot_fill", "strict")
+    stop_loss = float(cfg.get("stop_loss") or 0.0)  # M3：0=关（默认）；>0 如 0.05=−5% 盘中止损
+    price_plan = bool(cfg.get("price_plan", False))  # M3：个股结构化价格计划
+    drop_p1 = bool(cfg.get("drop_p1", False))  # P2：周期1（RPS50<50）过滤
+    trail_exit = bool(cfg.get("trail_exit", False))  # M3.2：趋势跟踪退出
     trade_diag = bool(cfg.get("trade_diag", False))
     RESID = M.get("RESID")
     VOL20 = M.get("VOL20")
@@ -328,13 +400,26 @@ def simulate(M, cfg, log=print):
                 fee = gross * half
             cash -= gross + fee
             exit_t = t + hold - 1  # 引擎口径：signal T → exit close(T+hold) = entry_t+hold-1
-            pos[j] = {
+            p_rec = {
                 "exit_t": exit_t,
                 "shares": sh,
                 "basis": gross + fee,
                 "entry_px": px,
                 "entry_t": t,
             }
+            if price_plan:
+                # 结构计划价（信号日 t-1 的数据 → 无前视）：
+                #   目标价 = 信号日 high + 1×ATR14（突破动能延续）
+                #   止损价 = max(信号日 LLV10, 买入价 − 1.5×ATR14)（前低/波动双锚取近者）
+                t_sig = t - 1
+                if t_sig >= 0:
+                    a_ = float(ATR14[t_sig, j]) if ATR14 is not None else float("nan")
+                    ll = float(LLV10[t_sig, j]) if LLV10 is not None else float("nan")
+                    hh = float(HHI[t_sig, j]) if HHI is not None else float("nan")
+                    if np.isfinite(a_) and a_ > 0 and np.isfinite(ll) and np.isfinite(hh):
+                        p_rec["plan_tp"] = hh + 1.0 * a_            # 目标价
+                        p_rec["plan_sl"] = max(ll, px - 1.5 * a_)   # 止损价（含 1.5ATR 保底）
+            pos[j] = p_rec
             if trade_diag:
                 # 归因打标：买入日（成交日 t）与信号日（t-1）的 vol20 / 当日截面五分位
                 pos[j]["v_e"] = float(VOL20[t, j]) if VOL20 is not None else np.nan
@@ -349,6 +434,91 @@ def simulate(M, cfg, log=print):
             st["n_buy"] += 1
             st["buy_gross"] += gross
         pending = []
+
+        # ⓪M 盘中计划执行（先于到期）：
+        #    · 全局 --stop-loss：low ≤ entry×(1−sl) → 触发价卖
+        #    · --price-plan：个股计划价 —— low ≤ plan_sl → 止损价卖（保守用触发价）；
+        #      high ≥ plan_tp → 目标价卖（保守：触及即出）。当日买入次日起查。
+        stop_hits = []   # (j, exec_px, reason)
+        if t > 0:
+            for j, p_ in pos.items():
+                if p_.get("entry_t", -99) >= t:
+                    continue  # 买入当日不检查（T+1 语义）
+                low = float(LLOW[t, j]) if LLOW is not None else float("nan")
+                ok_low = np.isfinite(low) and low > 0
+                # 止损侧
+                if stop_loss > 0 and ok_low:
+                    if low <= p_["entry_px"] * (1.0 - stop_loss):
+                        stop_hits.append((j, p_["entry_px"] * (1.0 - stop_loss), "stop_loss"))
+                        continue
+                if price_plan and ok_low and np.isfinite(p_.get("plan_sl", float("nan"))):
+                    if low <= p_["plan_sl"]:
+                        stop_hits.append((j, p_["plan_sl"], "plan_sl"))
+                        continue
+                # 目标价侧（price_plan）：触及 high ≥ tp → tp 价卖
+                if price_plan:
+                    hh_ = float(HHI[t, j]) if HHI is not None else float("nan")
+                    tp = p_.get("plan_tp")
+                    if np.isfinite(hh_) and tp is not None and np.isfinite(tp) and hh_ >= tp:
+                        stop_hits.append((j, tp, "plan_tp"))
+            for j, trig, reason_ in stop_hits:
+                p_ = pos.pop(j)
+                # 从到期表移除
+                by_exit[p_["exit_t"]] = [k for k in by_exit.get(p_["exit_t"], []) if k != j]
+                gross = p_["shares"] * trig
+                fee = gross * half
+                cash += gross - fee
+                st["n_" + reason_] = st.get("n_" + reason_, 0) + 1
+                rec = {
+                    "code": codes[j],
+                    "entry_date": int(dates[p_["entry_t"]]),
+                    "exit_date": int(dates[t]),
+                    "entry_px": round(p_["entry_px"], 4),
+                    "exit_px": round(trig, 4),
+                    "ret": round((gross - fee) / p_["basis"] - 1.0, 6),
+                    "shares": p_["shares"],
+                    "exit_reason": reason_,
+                }
+                if trade_diag:
+                    rec["pnl"] = round(gross - fee - p_["basis"], 2)
+                    rec["basis"] = round(p_["basis"], 2)
+                    rec["vol20_entry"] = round(p_["v_e"], 6) if np.isfinite(p_["v_e"]) else None
+                    rec["volq_entry"] = int(p_["q_e"])
+                trades.append(rec)
+
+        # ⓪T 趋势跟踪退出（M3.2，先于到期）：持仓中收盘 < MA10 → 收盘卖出。
+        #    语义：趋势破坏即离场；趋势在则让利润跑（不设目标价，到期 N 日仍作保底）。
+        if trail_exit and t > 0:
+            trail_hits = []
+            for j, p_ in pos.items():
+                if p_.get("entry_t", -99) >= t:
+                    continue  # 买入当日不判
+                ma = float(MA10[t, j]) if MA10 is not None else float("nan")
+                cl = float(Cff[t, j])
+                if np.isfinite(ma) and np.isfinite(cl) and cl < ma:
+                    trail_hits.append(j)
+            for j in trail_hits:
+                p_ = pos.pop(j)
+                by_exit[p_["exit_t"]] = [k for k in by_exit.get(p_["exit_t"], []) if k != j]
+                px = float(Cff[t, j])
+                gross = p_["shares"] * px
+                fee = gross * half
+                cash += gross - fee
+                st["n_trail"] = st.get("n_trail", 0) + 1
+                rec = {
+                    "code": codes[j],
+                    "entry_date": int(dates[p_["entry_t"]]),
+                    "exit_date": int(dates[t]),
+                    "entry_px": round(p_["entry_px"], 4),
+                    "exit_px": round(px, 4),
+                    "ret": round((gross - fee) / p_["basis"] - 1.0, 6),
+                    "shares": p_["shares"],
+                    "exit_reason": "trail",
+                }
+                if trade_diag:
+                    rec["pnl"] = round(gross - fee - p_["basis"], 2)
+                    rec["basis"] = round(p_["basis"], 2)
+                trades.append(rec)
 
         # ① 到期卖出（收盘价；停牌按最后可得价）
         for j in by_exit.pop(t, []):
@@ -406,6 +576,13 @@ def simulate(M, cfg, log=print):
             if len(cand) and pos:
                 held = np.fromiter(pos.keys(), dtype=np.int64, count=len(pos))
                 cand = cand[~np.isin(cand, held)]
+            if len(cand) and drop_p1:
+                # P2 周期1 过滤：剔除 RPS50 分位 <50 的票（周期1 hold5 −1.18% vs 周期3 +0.56% 判据）
+                p1 = RPS50[t, cand].astype(float)
+                keep = ~np.isnan(p1) & (p1 >= 50.0)
+                if keep.sum() >= 10:  # 过滤后不足 10 只则不过滤（保池）
+                    st["n_p1_drop"] += int((~keep).sum())
+                    cand = cand[keep]
             if len(cand):
                 st["n_signal_cells"] += len(cand)
                 st["n_signal_days"] += 1
@@ -413,6 +590,8 @@ def simulate(M, cfg, log=print):
                     key = SC[t, cand].astype(float)
                 elif rank == "rps":
                     key = RPS[t, cand].astype(float)
+                elif rank == "debeta":  # P2：score 去 beta/动量暴露后的残差分
+                    key = DEBETA[t, cand].astype(float)
                 else:  # score_resid：score 对 vol20 的截面残差（build_matrices 预计算）
                     key = RESID[t, cand].astype(float)
                 order = np.argsort(-np.nan_to_num(key, nan=-1e9), kind="stable")
@@ -718,7 +897,7 @@ def parse_args(argv=None):
     p.add_argument("--cost", type=float, default=None, help="往返成本，缺省从 config 推导")
     p.add_argument("--max-weight", type=float, default=0.05)
     p.add_argument("--alloc", choices=["cash", "slot"], default="cash")
-    p.add_argument("--rank", choices=["score", "rps", "score_resid"], default="score")
+    p.add_argument("--rank", choices=["score", "rps", "score_resid", "debeta"], default="score")
     p.add_argument("--weight-scheme", choices=["equal", "inv_vol"], default="equal")
     p.add_argument("--dynamic-n", choices=["off", "env"], default="off")
     p.add_argument(
@@ -728,6 +907,14 @@ def parse_args(argv=None):
         help="strict=现状（买不起 1 手即跳过）；recycle=回收不足 1 手的预算按当日候选均摊后重判（最多 3 轮）",
     )
     p.add_argument("--limit-mode", choices=["exact", "approx"], default="exact")
+    p.add_argument("--trail-exit", action="store_true",
+                   help="M3.2 趋势跟踪退出：收盘跌破 MA10 即卖，到期 N 日保底")
+    p.add_argument("--drop-p1", action="store_true",
+                   help="P2 周期1 过滤：剔除 RPS50 分位 <50 的信号票（过滤后不足 10 只当日不过滤）")
+    p.add_argument("--price-plan", action="store_true",
+                   help="M3 个股结构化价格计划：目标价=信号日high+1ATR14；止损价=max(LLV10, 买价−1.5ATR14)；触及执行")
+    p.add_argument("--stop-loss", type=float, default=0.0,
+                   help="M3 盘中止损比例，0=关（默认，行为不变）；0.05=−5%% 触发（低点判定，触发价成交）")
     p.add_argument("--stocks-limit", type=int, default=0, help="调试：只读前 N 只")
     p.add_argument("--out", default=None)
     p.add_argument("--out-dir", default=OUT_DIR)
@@ -743,22 +930,30 @@ def parse_args(argv=None):
 
 
 def _atomic_write(path, payload):
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=1)
-    for k in range(5):
-        try:
-            os.replace(tmp, path)
-            return
-        except PermissionError:  # Windows 上目标被扫描/占用时短暂重试
-            time.sleep(0.4 * (k + 1))
-    with open(path, "w", encoding="utf-8") as f:  # 兜底：直接覆盖
-        json.dump(payload, f, ensure_ascii=False, indent=1)
+    d = os.path.dirname(os.path.abspath(path))
+    os.makedirs(d, exist_ok=True)
+    # 并发修正 2026-11-07：临时文件名必须全局唯一。
+    # v1 用 path+".tmp"：多进程/多线程同时写同一产物会互相覆盖 → PermissionError。
+    # v2 用 pid：只隔离了进程，同进程多线程仍抢同一临时名（压测 8 线程 480 次仍失败 218 次）。
+    # v3（当前）用 mkstemp：唯一名 + 独占创建，跨进程跨线程都安全。
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=os.path.basename(path) + ".", suffix=".tmp")
     try:
-        os.remove(tmp)
-    except OSError:
-        pass
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1)
+        for k in range(6):
+            try:
+                os.replace(tmp, path)  # 同盘替换是原子操作，读者永远看到完整文件
+                return
+            except PermissionError:  # Windows 上目标被扫描/占用时短暂重试
+                time.sleep(0.2 * (k + 1))
+        with open(path, "w", encoding="utf-8") as f:  # 兜底：放弃原子性也要有产出
+            json.dump(payload, f, ensure_ascii=False, indent=1)
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
 
 
 # ── beta / 残差诊断（L2b）─────────────────────────────────────
@@ -1068,6 +1263,10 @@ def main(argv=None):
                 "dynamic_n": args.dynamic_n,
                 "lot_fill": args.lot_fill,
                 "trade_diag": args.trade_diag,
+                "stop_loss": args.stop_loss,
+                "price_plan": args.price_plan,
+                "drop_p1": args.drop_p1,
+                "trail_exit": args.trail_exit,
                 "note": "",
             }
         ]
@@ -1150,6 +1349,21 @@ def main(argv=None):
             payload["meta"]["dynamic_n"] = c["dynamic_n"]
             payload["meta"]["dynamic_n_rule"] = (
                 "env score expanding 分位（截至当日，min 20 obs）：≥0.7→30，≤0.3→200，其余→top_n"
+            )
+        if c.get("trail_exit"):
+            payload["meta"]["trail_exit"] = True
+        if c.get("drop_p1"):
+            payload["meta"]["drop_p1"] = True
+        if c.get("price_plan"):
+            payload["meta"]["price_plan"] = True
+            payload["meta"]["semantics"]["exit"] = (
+                "个股结构化价格计划：TP=信号日high+1×ATR14（触及即出）；"
+                "SL=max(LLV10, entry−1.5×ATR14)；未触发则持有 N 日收盘卖"
+            )
+        if c.get("stop_loss"):
+            payload["meta"]["stop_loss"] = c["stop_loss"]
+            payload["meta"]["semantics"]["exit"] = (
+                "持有 N 日收盘卖出；盘中 low≤entry×(1−sl) 提前止损（触发价成交，当日买入次日起查）"
             )
         if c.get("lot_fill", "strict") != "strict":
             payload["meta"]["lot_fill"] = c["lot_fill"]
@@ -1321,22 +1535,6 @@ def main(argv=None):
         _write_m3b_outputs(args.out_dir, rows, results, args, t0, cost, limit_meta, overlap_rows)
         print("[sim] done %.0fs" % (time.time() - t0), flush=True)
         return 0
-
-    _atomic_write(
-        os.path.join(args.out_dir, "_index.json"),
-        {
-            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "batch": args.batch,
-            "cost": cost,
-            "elapsed_sec": round(time.time() - t0, 1),
-            "runs": [
-                {"tag": c["tag"], "params": {k: c[k] for k in ("start", "end", "hold", "top_n", "capital", "max_weight", "alloc", "rank")}, "metrics": m, "file": os.path.basename(f)}
-                for c, m, f in results
-            ],
-        },
-    )
-    print("[sim] done %.0fs" % (time.time() - t0), flush=True)
-    return 0
 
     _atomic_write(
         os.path.join(args.out_dir, "_index.json"),

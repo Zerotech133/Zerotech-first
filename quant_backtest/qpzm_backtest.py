@@ -616,7 +616,7 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
         try:
             df = pd.read_parquet(
                 os.path.join(data_dir, f),
-                columns=["trade_date", "open", "high", "close", "pre_close"],
+                columns=["trade_date", "open", "high", "low", "close", "pre_close"],
             )
         except Exception as ex:  # A5: 坏样本静默消失会让回测样本集悄悄缩水——留痕
             print("[qpzm] 样本读取失败跳过 %s：%s" % (f, str(ex)[:60]))
@@ -661,7 +661,7 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
     }
     above_buf = np.zeros((D, S), dtype=bool)
     unfill_buf = np.zeros((D, S), dtype=bool)  # K254 一字板(T+1 无法成交)
-    raw_buf = {k: blank() for k in ("open", "high", "close")} if keep_raw else None
+    raw_buf = {k: blank() for k in ("open", "high", "low", "close")} if keep_raw else None
     for j, df in enumerate(per):
         rows = np.array([dpos[int(d)] for d in df["trade_date"].to_numpy()])
         c = df["close"].astype(float)
@@ -689,7 +689,10 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
         lim = (
             0.295
             if codes[j].endswith(".BJ")
-            else (0.195 if codes[j][2:4] in ("30", "68") else 0.095)
+            # 2026-11-10 审计修复：原 codes[j][2:4] 取第 3-4 位（301313.SZ→"13"），
+            # 创业板/科创板 20cm 阈值永不命中、主板 003016 类反被误判 20cm。
+            # 板块前缀在代码头两位：30/68 → 0.195。
+            else (0.195 if codes[j][:2] in ("30", "68") else 0.095)
         )
         unfill_buf[rows, j] = (
             (o_raw >= h_raw - 1e-9)
@@ -700,6 +703,7 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
         if keep_raw:
             raw_buf["open"][rows, j] = o_raw.to_numpy()
             raw_buf["high"][rows, j] = h_raw.to_numpy()
+            raw_buf["low"][rows, j] = df["low"].astype(float).to_numpy()
             raw_buf["close"][rows, j] = df["close"].astype(float).to_numpy()
 
     wide = {"dates": union, "codes": codes}
@@ -716,7 +720,7 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
     )
     wide["unfill"] = pd.DataFrame(unfill_buf, index=union, columns=codes)
     if keep_raw:
-        for k in ("open", "high", "close"):
+        for k in ("open", "high", "low", "close"):
             wide["_raw_%s" % k] = pd.DataFrame(raw_buf[k], index=union, columns=codes)
     return wide
 

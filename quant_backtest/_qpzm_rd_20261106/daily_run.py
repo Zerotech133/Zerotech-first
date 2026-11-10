@@ -300,6 +300,10 @@ def run_pick(signal, params, timeout=1800):
         "--cost", str(params["cost"]),
     ]
     cmd += ["--drop-p1"] if params["drop_p1"] else ["--no-drop-p1"]
+    # 2026-11-10 审计修复：lot_fill/limit_mode 必须随冻结口径下传，
+    # 原实现靠子脚本默认值，冻结口径一旦改动就会静默漂移。
+    cmd += ["--lot-fill", str(params["lot_fill"]),
+            "--limit-mode", str(params["limit_mode"])]
     out = os.path.join(OUT_DIR, "_raw_%d.json" % signal)
     cmd += ["--out", out]
     t0 = time.time()
@@ -337,6 +341,10 @@ def verify(payload, params):
         errs.append("cost=%s 与冻结 %s 不符" % (meta.get("cost_roundtrip"), params["cost"]))
     if _as_bool(meta.get("drop_p1"), None) != params["drop_p1"]:
         errs.append("drop_p1=%s 与冻结 %s 不符" % (meta.get("drop_p1"), params["drop_p1"]))
+    if meta.get("lot_fill") != params["lot_fill"]:
+        errs.append("lot_fill=%s 与冻结 %s 不符" % (meta.get("lot_fill"), params["lot_fill"]))
+    if meta.get("limit_mode") != params["limit_mode"]:
+        errs.append("limit_mode=%s 与冻结 %s 不符" % (meta.get("limit_mode"), params["limit_mode"]))
     return errs
 
 
@@ -365,6 +373,65 @@ def diff_prev(signal, picks):
         "exited": sorted(old - new),
         "kept": len(new & old),
     }
+
+
+# ────────────── 产品页一致性断言（只读，不进门禁链，老田 2026-11-10 批） ──────────────
+
+HOUFENG_PAGES = [
+    "HOUFENG_STRATEGY_CARD.html", "HOUFENG_BROCHURE.html",
+    "HOUFENG_ARENA.html", "HOUFENG_ARENA_36M.html",
+    "HOUFENG_HOLDGRID.html", "HOUFENG_PICK_20261106.html",
+    "HOUFENG_PLAYBOOK.html", "HOUFENG_DIVIDEND.html",
+    "M2_DASHBOARD.html",
+]
+
+# 数据页 fetch 的数据包（2026-11-10 实锤漂移：固化只带了 HTML 没带数据，
+# 线上 7 个数据页全部加载失败）——与页面同表断言。
+HOUFENG_DATA = [
+    "houfeng_snapshot.json", "houfeng_playbook.json",
+    "paper_ledger_replay_12m.jsonl", "houfeng_arena.json",
+    "houfeng_arena_36m.json", "houfeng_holdgrid.json",
+    "houfeng_pick_20261106.json", "houfeng_dividend.json",
+    "hf_tokens.css",  # 2026-11-10 P1：候风产品族单一事实源，随页断言
+]
+
+
+def check_houfeng_pages():
+    """portal/houfeng/ 是对外产品真身，dashboard/ 是构建归档。
+    逐页 md5 断言，不一致只报警不阻断（退出码不受影响）。"""
+    here = os.path.dirname(os.path.abspath(__file__))
+    src_dir = os.path.join(here, "dashboard")
+    dst_dir = os.path.join(os.path.dirname(os.path.dirname(here)),
+                           "portal", "houfeng")
+    result = {"checked_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+              "truth": dst_dir, "archive": src_dir, "pages": {}, "drift": []}
+    for name in HOUFENG_PAGES + HOUFENG_DATA:
+        s, d = os.path.join(src_dir, name), os.path.join(dst_dir, name)
+        if not (os.path.isfile(s) and os.path.isfile(d)):
+            result["pages"][name] = "MISSING"
+            result["drift"].append(name)
+            continue
+        ok = (md5_8(s) == md5_8(d))
+        result["pages"][name] = ("OK" if ok else "DRIFT")
+        if not ok:
+            result["drift"].append(name)
+    try:
+        out = os.path.join(OUT_DIR, "houfeng_pages_check.json")
+        with open(out, "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=1)
+    except Exception as e:
+        print("[pages] 状态文件写失败（不影响选股）：%s" % e)
+    if result["drift"]:
+        print("[pages] ⚠ 产品页/数据包漂移 %d/%d：%s"
+              % (len(result["drift"]),
+                 len(HOUFENG_PAGES) + len(HOUFENG_DATA),
+                 ", ".join(result["drift"])))
+        print("[pages]   真身 portal/houfeng/ 与归档 dashboard/ 不一致，"
+              "确认来源后重新复制，禁止带着漂移对外。")
+    else:
+        print("[pages] 产品页一致性 OK：%d 页 + %d 数据包与归档逐位一致"
+              % (len(HOUFENG_PAGES), len(HOUFENG_DATA)))
+    return result
 
 
 # ────────────────────────── 主流程 ──────────────────────────
@@ -546,6 +613,10 @@ def _main(args):
     else:
         print("差异：%s" % dif.get("note"))
     print("产物：%s" % out)
+    try:
+        check_houfeng_pages()
+    except Exception as e:
+        print("[pages] 产品页断言异常（不影响选股，照常退出 0）：%s" % e)
     print("-" * 66)
     return 0
 
