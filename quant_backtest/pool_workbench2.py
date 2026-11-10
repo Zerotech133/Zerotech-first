@@ -252,68 +252,78 @@ def compact(rec):
 
 
 def build_html(asof, payload):
+    """暗色统一主题（2026-11-10 UI 重调，色值单一事实源 = ui_tokens）。
+
+    排版要点：top5 行用三列 grid（名称代码左 / 信号·评分中 / 涨幅右），
+    解决此前行内格式不齐、名称换行错位的问题（判例 UI-3）。
+    """
+    import ui_tokens as UT
     js = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
+    tier_json = json.dumps(UT.TIER_COLORS, ensure_ascii=False)
+    # BASE_CSS 里的 % 需转义才能安全通过 % 模板
+    base_css = UT.BASE_CSS.replace("%", "%%")
     return """<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>选股工作台 v2 · %s</title>
+<title>选股工作台 · %s</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--tx:#1c2330;--tx2:#68738a;
---buy:#c0392b;--sell:#1e8e4e;--acc:#2456c8;--chip:#eef2f8}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font:14px/1.55 "Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
-header h1{font-size:20px}header .sub{color:var(--tx2);font-size:13px}
-.gbar{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
-.gbar b{background:var(--chip);border-radius:6px;padding:4px 10px;font-size:13px;font-weight:600}
-main{max-width:1280px;margin:18px auto;padding:0 16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.tcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s}
-.tcard:hover{box-shadow:0 3px 12px rgba(30,50,90,.12)}
-.tcard h3{font-size:16px;display:flex;align-items:center;gap:8px}
-.tcard h3 .n{font-size:22px;color:var(--acc)}
-.tcard .desc{color:var(--tx2);font-size:12.5px;margin:2px 0 8px}
+%s
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+header .sub{color:var(--tx2);font-size:13px}
+.gbar{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
+.gbar .g{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 11px;font-size:13px;color:var(--tx2)}
+.gbar .g b{font-weight:700;margin-left:4px}
+main{max-width:1440px;margin:18px auto;padding:0 18px 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:background .14s,border-color .14s,box-shadow .14s}
+.tcard:hover{background:var(--panel2);border-color:var(--line2);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.tcard h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:9px}
+.tcard h3 .dot{width:9px;height:9px;border-radius:50%%;flex:none}
+.tcard h3 .n{font-size:21px;font-weight:700;margin-left:2px}
+.tcard h3 .unit{font-size:12px;color:var(--tx3);font-weight:400}
+.tcard .desc{color:var(--tx2);font-size:12.5px;margin:3px 0 10px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.chips span{background:var(--chip);color:var(--tx);font-size:12px;border-radius:5px;padding:2px 8px}
-.top5{display:flex;flex-direction:column;gap:4px}
-.top5 .s{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;border-radius:6px;font-size:13px}
-.top5 .s:hover{background:var(--chip)}
-.top5 .s b{font-weight:600}.top5 .s i{font-style:normal;color:var(--tx2);font-size:12px}
-.more{color:var(--acc);font-size:12.5px;margin-top:8px;display:inline-block}
+.chips .c{display:inline-block;font-size:12px;border-radius:5px;padding:2px 9px;background:var(--panel2);color:var(--tx2);border:1px solid var(--line)}
+.chips .c b{color:var(--tx);font-weight:600}
+.top5{display:flex;flex-direction:column;gap:2px}
+.top5 .s{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:5px 8px;border-radius:6px;font-size:13px}
+.top5 .s:hover{background:var(--panel2)}
+.top5 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top5 .nm b{font-weight:600}
+.top5 .nm i{font-style:normal;color:var(--tx3);font-size:11px;margin-left:5px}
+.top5 .mid{color:var(--tx2);font-size:12px;white-space:nowrap}
+.top5 .pct{font-weight:600;white-space:nowrap}
+.more{color:var(--acc);font-size:12.5px;margin-top:9px;display:inline-block}
 /* 列表层 */
 #listView{display:none}
 .lv-head{display:flex;align-items:center;gap:14px;margin:6px 0 12px;flex-wrap:wrap}
-.lv-head h2{font-size:18px}.lv-head .desc{color:var(--tx2);font-size:13px}
-.lv-head input{padding:6px 10px;border:1px solid var(--line);border-radius:6px;width:220px;font-size:13px}
-.lv-head select{padding:6px;border:1px solid var(--line);border-radius:6px}
-.lv-head button{padding:6px 14px;border:1px solid var(--line);background:var(--card);border-radius:6px;cursor:pointer}
-table{width:100%%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
-th{background:#eef1f5;text-align:left;padding:8px 10px;font-size:12.5px;color:var(--tx2);cursor:pointer;white-space:nowrap}
-td{padding:7px 10px;border-top:1px solid var(--line);font-size:13px;white-space:nowrap}
-tr.r:hover{background:#f2f6fd;cursor:pointer}
-.up{color:var(--buy)}.dn{color:var(--sell)}
-.tag{display:inline-block;border-radius:4px;padding:1px 6px;font-size:11.5px;background:var(--chip)}
-.tag.hs{background:#fdf1e2;color:#a05a00}.tag.gp{background:#e8f3ec;color:#1e6e3d}
+.lv-head .desc{color:var(--tx2);font-size:13px}
+.lv-head input{padding:6px 10px;border:1px solid var(--line);border-radius:7px;width:220px;font-size:13px;background:var(--panel);color:var(--tx)}
+.lv-head select{padding:6px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--tx)}
+.lv-head button{padding:6px 14px;border:1px solid var(--line);background:var(--panel);color:var(--tx);border-radius:7px;cursor:pointer}
+.back{font-size:13px;color:var(--acc);cursor:pointer}
+.up{color:var(--up)}.dn{color:var(--dn)}
 /* 详情层 */
-#detail{position:fixed;top:0;right:-560px;width:560px;height:100vh;background:var(--card);border-left:1px solid var(--line);box-shadow:-6px 0 24px rgba(20,30,60,.18);transition:right .2s;overflow-y:auto;z-index:50;padding:18px 22px}
+#detail{position:fixed;top:0;right:-580px;width:580px;height:100vh;background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 28px rgba(0,0,0,.5);transition:right .2s;overflow-y:auto;z-index:50;padding:18px 22px}
 #detail.open{right:0}
 #detail h2{font-size:19px;display:flex;gap:10px;align-items:baseline}
-#detail h2 .pct{font-size:16px}
+#detail h2 .code{color:var(--tx3);font-size:13px;font-weight:400}
+#detail h2 .pct{font-size:16px;font-weight:600}
 #detail .close{position:absolute;top:14px;right:18px;font-size:20px;cursor:pointer;color:var(--tx2)}
 .sec{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
-.sec h4{font-size:13px;color:var(--acc);margin-bottom:6px}
+.sec h4{font-size:13px;color:var(--acc);margin-bottom:6px;font-weight:600}
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:4px 12px;font-size:13px}
 .kv div span{color:var(--tx2);margin-right:6px}
 .evs{font-size:12.5px;color:var(--tx2);margin-top:4px}
 .badges{display:flex;gap:6px;flex-wrap:wrap}
-.badges .b{border-radius:5px;padding:2px 8px;font-size:12px;background:var(--chip)}
-.badges .b.hs{background:#fdf1e2;color:#a05a00}.badges .b.gp{background:#e8f3ec;color:#1e6e3d}
-.badges .b.hot{background:#fdeaea;color:#b03030}
-canvas{background:#fafbfc;border:1px solid var(--line);border-radius:6px}
-.back{font-size:13px;color:var(--acc);cursor:pointer}
-#mask{position:fixed;inset:0;background:rgba(0,0,0,.25);display:none;z-index:40}
+.badges .b{display:inline-block;border-radius:5px;padding:2px 9px;font-size:12px;background:var(--panel2);border:1px solid var(--line);color:var(--tx2)}
+.badges .b.hs{background:rgba(224,135,79,.12);border-color:rgba(224,135,79,.35);color:#e0874f}
+.badges .b.gp{background:rgba(79,168,160,.12);border-color:rgba(79,168,160,.35);color:#4fa8a0}
+.badges .b.hot{background:rgba(227,93,93,.12);border-color:rgba(227,93,93,.35);color:var(--up)}
+canvas{background:var(--panel2);border:1px solid var(--line);border-radius:6px}
+#mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:40}
 </style></head><body>
-<header><h1>选股工作台 v2</h1><span class="sub" id="hdSub"></span>
+<header><h1>选股工作台</h1><span class="sub" id="hdSub"></span>
 <div class="gbar" id="gbar"></div></header>
 <main>
   <div id="cardView"><div class="grid" id="cards"></div></div>
@@ -335,6 +345,7 @@ canvas{background:#fafbfc;border:1px solid var(--line);border-radius:6px}
 <script>
 const D = JSON.parse(document.getElementById("DATA").textContent);
 const TIER_DESC = %s;
+const TIER_COLORS = %s;
 const IDX = {};
 D.tiers.forEach(t => t.stocks.forEach(s => { IDX[s.code] = s; s._tier = t.name; }));
 const fmt = v => v==null ? "—" : v;
@@ -343,29 +354,33 @@ const pctS = v => v==null ? "—" : (v>0?"+":"") + v + "%%";
 document.getElementById("hdSub").textContent =
   "数据日 " + D.asof + " · 生成 " + D.gen_at + " · 全池 " + D.total + " 只 · 沪深300成分权重日 " + D.hs_day;
 document.getElementById("gbar").innerHTML =
-  D.tiers.map(t => "<b>" + t.name + " " + t.stocks.length + "</b>").join("") +
-  "<b>沪深300成分在池 " + D.n_hs + "</b>";
+  D.tiers.map(t => "<span class='g'>" + t.name + "<b style='color:" +
+    (TIER_COLORS[t.name]||"var(--tx)") + "'>" + t.stocks.length + "</b></span>").join("") +
+  "<span class='g'>沪深300成分在池<b>" + D.n_hs + "</b></span>";
 
 /* ── 层1：档卡片 ── */
 function showCards(){document.getElementById("cardView").style.display="";
   document.getElementById("listView").style.display="none";window.scrollTo(0,0);}
 function renderCards(){
   document.getElementById("cards").innerHTML = D.tiers.map((t,i)=>{
-    const buy = ["三买","二买","一买","三买待"].includes(t.name);
+    const col = TIER_COLORS[t.name]||"var(--acc)";
     const top = t.stocks.slice().sort((a,b)=>b.score-a.score).slice(0,5);
     return '<div class="tcard" onclick="openList('+i+')">' +
-      "<h3>" + t.name + ' <span class="n">' + t.stocks.length + "</span> 只</h3>" +
+      "<h3><span class='dot' style='background:"+col+"'></span>" + t.name +
+      " <span class='n' style='color:"+col+"'>" + t.stocks.length +
+      "</span><span class='unit'>只</span></h3>" +
       '<div class="desc">' + TIER_DESC[t.name] + "</div>" +
       '<div class="chips">' +
-        '<span>沪深300成分 ' + t.n_hs + "</span>" +
-        "<span>市值≥300亿 " + t.n_mv300 + "</span>" +
-        "<span>市值100~300亿 " + t.n_mv100 + "</span>" +
-        "<span>人气榜TOP100 " + t.n_hot + "</span>" +
-        (t.n_lhb ? "<span>龙虎榜 " + t.n_lhb + "</span>" : "") + "</div>" +
+        "<span class='c'>沪深300成分 <b>" + t.n_hs + "</b></span>" +
+        "<span class='c'>市值≥300亿 <b>" + t.n_mv300 + "</b></span>" +
+        "<span class='c'>100~300亿 <b>" + t.n_mv100 + "</b></span>" +
+        "<span class='c'>人气榜TOP100 <b>" + t.n_hot + "</b></span>" +
+        (t.n_lhb ? "<span class='c'>龙虎榜 <b>" + t.n_lhb + "</b></span>" : "") + "</div>" +
       '<div class="top5">' + top.map(s =>
         '<div class="s" data-code="' + s.code + '">' +
-        "<b>" + s.name + ' <span style="color:var(--tx2);font-size:11px">' + s.code + "</span></b>" +
-        "<i>" + s.sig_type + " · 分 " + s.score + " · " + pctS(s.pct) + "</i></div>").join("") +
+        '<div class="nm"><b>' + s.name + '</b><i>' + s.code + "</i></div>" +
+        '<div class="mid">' + s.sig_type + " · 分 " + s.score + "</div>" +
+        '<div class="pct ' + pctCls(s.pct) + '">' + pctS(s.pct) + "</div></div>").join("") +
       "</div>" +
       '<span class="more">查看全部 ' + t.stocks.length + " 只 →</span></div>";
   }).join("");
@@ -390,7 +405,7 @@ function renderList(){
   let rows=t.stocks.filter(s=>!q || s.code.toLowerCase().includes(q) || s.name.includes(q));
   rows=rows.slice().sort((a,b)=>(b[key]||-1e9)-(a[key]||-1e9));
   const th=[["name","名称"],["code","代码"],["sig_type","信号"],["score","评分"],["close","收盘"],["pct","涨幅%%"],["mv","市值(亿)"],["amt","20日额(亿)"],["hs","沪深300"],["hot","人气榜"]];
-  document.getElementById("lvTable").innerHTML = "<table><tr>" +
+  document.getElementById("lvTable").innerHTML = "<table class='pf-table'><tr>" +
     th.map(h=>"<th>"+h[1]+"</th>").join("")+"</tr>" +
     rows.map(s=>'<tr class="r" data-code="' + s.code + '">' +
       "<td><b>"+s.name+"</b></td><td>"+s.code+"</td><td>"+s.sig_type+"</td>" +
@@ -408,10 +423,11 @@ function openDetail(code){
   const s=IDX[code], rel=D.detail[code]; if(!s||!rel)return;
   s.tier = s._tier;
   const kv=(arr)=>'<div class="kv">'+arr.map(x=>"<div><span>"+x[0]+"</span>"+x[1]+"</div>").join("")+"</div>";
-  let h = "<h2>"+s.name+' <span style="color:var(--tx2);font-size:13px">'+s.code+"</span>" +
+  let h = "<h2>"+s.name+' <span class="code">'+s.code+"</span>" +
     ' <span class="pct '+pctCls(s.pct)+'">'+pctS(s.pct)+"</span></h2>" +
     "<div class='badges' style='margin-top:6px'>" +
-      "<span class='b'>"+s.tier+"</span>" +
+      "<span class='b' style='color:"+(TIER_COLORS[s.tier]||"var(--tx)")+
+        ";border-color:"+(TIER_COLORS[s.tier]||"var(--line)")+"'>"+s.tier+"</span>" +
       (s.hs?"<span class='b hs'>沪深300 · 权重 "+s.hs+"%%</span>":"") +
       (s.hsgt?"<span class='b gp'>陆股通标的</span>":"") +
       (s.hot?"<span class='b hot'>东财人气榜 #"+s.hot+"</span>":"") + "</div>";
@@ -432,7 +448,7 @@ function openDetail(code){
     ["信号备注", fmt(s.sig_note)], ["背驰", fmt(s.bei)]]) + "</div>";
   h += '<div class="sec"><h4>30 日走势</h4><canvas id="spk" width="500" height="90"></canvas></div>';
   h += '<div class="sec"><h4>行业与板块</h4>';
-  h += "<div style='font-size:13px;margin-bottom:6px'>申万："+
+  h += "<div style='font-size:13px;margin-bottom:6px;color:var(--tx2)'>申万："+
     (rel.sw?rel.sw.join(" / "):"—")+"</div>";
   h += "<div class='badges'>" + (rel.boards.length ?
     rel.boards.map(b=>"<span class='b'>"+b+"</span>").join("") : "<span class='b'>无同花顺概念记录</span>") + "</div></div>";
@@ -464,16 +480,16 @@ function drawSpark(arr){
   ctx.beginPath();
   arr.forEach((v,i)=>{const x=pad+i*(W-2*pad)/(arr.length-1),
     y=H-pad-(v-mn)/sp*(H-2*pad); i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-  ctx.strokeStyle=up?"#c0392b":"#1e8e4e";ctx.lineWidth=1.6;ctx.stroke();
-  ctx.font="11px sans-serif";ctx.fillStyle="#68738a";
+  ctx.strokeStyle=up?"#e35d5d":"#3aa76d";ctx.lineWidth=1.6;ctx.stroke();
+  ctx.font="11px sans-serif";ctx.fillStyle="#6b7787";
   ctx.fillText("30日前 "+arr[0],pad,12);
   ctx.fillText("今 "+arr[arr.length-1],W-70,12);
 }
 function closeDetail(){document.getElementById("detail").classList.remove("open");
   document.getElementById("mask").style.display="none";}
 renderCards();
-</script></body></html>""" % (asof, js,
-        json.dumps({k: v for k, v in TIERS}, ensure_ascii=False))
+</script></body></html>""" % (asof, base_css, js,
+        json.dumps({k: v for k, v in TIERS}, ensure_ascii=False), tier_json)
 
 
 def main():

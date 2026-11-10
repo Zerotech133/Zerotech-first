@@ -15,7 +15,7 @@
 ------------------
   · CATALOG：24 个页面的单一事实源（域名、标题、数据日来源、发布名）
   · staleness()：用交易日历算「数据距今几个交易日」，>3 标橙、>15 标红归档
-  · patch()：剥死链 + 注入统一导航条 + 服务端路由标灰（保留文字，不假装能点）
+  · patch()：剥死链 + 注入统一导航条（死链按 11-10 裁定整体删除）
   · build_home()：生成平台门面，按能力域分区，每卡带数据日徽标
 
 用法
@@ -156,9 +156,15 @@ CATALOG = [
          asof=("meta",)),
 ]
 
-# 服务端路由：静态托管下必然 404，改成不可点的说明
+# 历史清单留档（判例 UI-1 排查记录）。2026-11-10 起判定口径改为：
+# 静态平台只服务相对文件 —— 任何以 / 开头的绝对路径链接/图片必然 404
+# （旧清单式判断漏了裸 '/bt'、'/' 等短路径，判例 UI-5），统一按 _is_dead_href。
 DEAD_ROUTES = ("/static/", "/bt/", "/bt-report/", "/bt-signals", "/api/",
-               "/portal", "/intel", "/org", "/ops-board", "/kg/", "/pool-watch")
+               "/portal", "/intel", "/org", "/ops-board", "/kg/", "/pool-watch",
+               "/screen", "/premarket", "/afterhours", "/fin", "/quant", "/nl",
+               "/bridge", "/hermes", "/aim", "/algo", "/strategies", "/fut",
+               "/strong", "/paper", "/market", "/council", "/sim", "/debate",
+               "/sellpoint", "/qd", "/picks.html")
 
 
 # ---------------------------------------------------------------- 数据时点
@@ -297,7 +303,6 @@ NAV_CSS = """
  background:#161d27;border:1px solid #232d3a;color:#93a3b6}
 #pf-nav .pf-sib:hover{color:#cfe0f5;border-color:#31414f;text-decoration:none}
 #pf-nav .pf-sib.on{background:#1b2c40;border-color:#33506e;color:#a8cdf0}
-.pf-dead{color:#6b7787;border-bottom:1px dotted #4a5568;cursor:help}
 @media (max-width:640px){#pf-nav{font-size:12px;padding:7px 10px}
  #pf-nav .pf-sub{display:none}
  #pf-nav .pf-sibs{gap:4px;padding-top:6px}
@@ -355,39 +360,130 @@ def strip_nav_js(txt):
     return txt, before != txt
 
 
-DEAD_A_RE = re.compile(r'<a\b([^>]*?)href=["\'](%s)[^"\']*["\']([^>]*)>(.*?)</a>'
-                       % "|".join(re.escape(p) for p in DEAD_ROUTES),
-                       re.S | re.I)
+# 标签体匹配：引号内允许出现 `>`（旧实现 [^>]* 被 onclick 里的 history.length>1
+# 截断，标签后半截变成可见正文 —— bt_hub/premarket/positions 三页泄漏裸代码，
+# 判例 UI-1，2026-11-10）。引号外不允许 `<` 与 `>`。
+_ATTR_SAFE = r'(?:(?:[^>"\'<]|"[^"]*"|\'[^\']*\')*)'
+ANCHOR_RE = re.compile(r'<a\b(' + _ATTR_SAFE + r')>(.*?)</a>', re.S | re.I)
+TAG_RE = re.compile(r'<img\b(' + _ATTR_SAFE + r')>', re.I)
+SRC_HREF_RE = re.compile(r'(?:href|src)=(["\'])(.*?)\1', re.I)
+DIV_TAG_RE = re.compile(r'<(/?)div\b[^>]*>', re.I)
+
+
+def _is_dead_href(href):
+    """静态平台只服务相对文件：以 / 开头的绝对路径一律判死链。"""
+    if not href:
+        return False
+    return href.strip().startswith("/")
+
+
+def _cut_block(txt, s):
+    """从 txt[s:] 的第一个 <div> 开始做标签配对，返回整个块的结束下标。"""
+    depth = 0
+    for t in DIV_TAG_RE.finditer(txt, s):
+        if t.group(1):
+            depth -= 1
+            if depth == 0:
+                return t.end()
+        else:
+            depth += 1
+    return -1
+
+
+PORTAL_BREAD_RE = re.compile(
+    r"<div\s+style=[\"']display:flex;\s*align-items:center;\s*"
+    r"justify-content:space-between", re.I)
+NAV_DIV_RE = re.compile(r"<div\s+class=[\"']nav[\"'][^>]*>", re.I)
+
+
+def _strip_portal_blocks(txt):
+    """整块删除页面自带的门户导航：面包屑（含「域内导航」折叠菜单）与死链 nav 条。
+
+    这两个块里全是指向门户服务的链接，pf-nav 已经承担全部站内跳转，
+    留着只是视觉噪声（判例 UI-1 附带发现：pick 域一屏三条导航）。
+    """
+    n = 0
+    while True:
+        m = PORTAL_BREAD_RE.search(txt)
+        if not m:
+            break
+        e = _cut_block(txt, m.start())
+        if e < 0:
+            break
+        txt = txt[:m.start()] + txt[e:]
+        n += 1
+    return txt, n
+
+
+def _remove_nav_blocks(txt):
+    """删掉 class=nav 的块中已经不含活链的（防止误删含合法相对链接的导航）。"""
+    n = 0
+    out, pos = [], 0
+    for m in NAV_DIV_RE.finditer(txt):
+        s = m.start()
+        if s < pos:
+            continue
+        e = _cut_block(txt, s)
+        if e < 0:
+            continue
+        block = txt[s:e]
+        has_live = False
+        for a in ANCHOR_RE.finditer(block):
+            h = SRC_HREF_RE.search(a.group(1))
+            if h and not _is_dead_href(h.group(2)):
+                has_live = True
+                break
+        out.append(txt[pos:s])
+        if has_live:
+            pos = s  # 保留整块
+        else:
+            pos = e  # 全是死链，删
+            n += 1
+    out.append(txt[pos:])
+    return "".join(out), n
 
 
 def soften_dead_links(txt):
-    """把指向门户路由的 <a> 改成不可点的 span，保留文字，鼠标悬停说明原因。
+    """死链处理（2026-11-10 老田裁定：导航死链整块删，数据死链去壳留文）。
 
-    不删文字：读者需要知道「这里本来可以下钻」，只是这个平台不带那个服务。
+    步骤：① 整块删页面自带的门户面包屑（含「域内导航」折叠菜单）；
+    ② 引号感知地处理指向 DEAD_ROUTES 的 <a>（旧实现 [^>] 被 onclick
+    属性里的 `>` 截断，标签后半截泄漏成可见正文 —— 判例 UI-1）：
+    去壳保留内文，股票名等数据不能丢（判例 UI-4）；
+    ③ 删死链 <img>；④ 删已被去壳后不含活链的 class=nav 死链条。
+    返回 (txt, 处理的 a 数, 删除的 img 数)。
     """
-    n = 0
+    txt, _n_bread = _strip_portal_blocks(txt)
+    n_a = [0]
 
     def rep(m):
-        nonlocal n
-        n += 1
-        inner = re.sub(r"<[^>]+>", "", m.group(4)).strip()
-        if not inner:
+        h = SRC_HREF_RE.search(m.group(1))
+        if not (h and _is_dead_href(h.group(2))):
+            return m.group(0)
+        n_a[0] += 1
+        inner = m.group(2)
+        t = re.sub(r"<[^>]+>", "", inner).strip()
+        # 装饰性入口（箭头引导、进入模块、见模块页）删干净；
+        # 数据文本（股票名等）去壳保留 —— 判例 UI-4。
+        if re.match(r"^[←↓→↑]", t) or "见模块页" in t or t == "进入模块 →":
             return ""
-        return ('<span class="pf-dead" title="需本机门户服务（127.0.0.1:8091），'
-                '本平台为静态托管，此跳转不提供">%s</span>' % inner)
+        return inner
 
-    txt = DEAD_A_RE.sub(rep, txt)
-    # <img src="/bt-report/..."> —— 静态下 404，换成占位文字
-    img_n = [0]
+    txt = ANCHOR_RE.sub(rep, txt)
+
+    n_img = [0]
 
     def img_rep(m):
-        img_n[0] += 1
-        return ('<span class="pf-dead" title="图片由门户服务提供，静态站点不含">'
-                '[图 · 需门户服务]</span>')
+        h = SRC_HREF_RE.search(m.group(1))
+        if h and _is_dead_href(h.group(2)):
+            n_img[0] += 1
+            return ""
+        return m.group(0)
 
-    txt = re.sub(r'<img\b[^>]*src=["\']/bt-report/[^"\']*["\'][^>]*>', img_rep, txt,
-                 flags=re.I)
-    return txt, n, img_n[0]
+    txt = TAG_RE.sub(img_rep, txt)
+
+    txt, _n_nav = _remove_nav_blocks(txt)
+    return txt, n_a[0], n_img[0]
 
 
 def inject(txt, bar, css=NAV_CSS):
@@ -565,8 +661,8 @@ def build_home(rows=None):
              '② 选股、回测、模拟各条线的更新节奏不同（盘前 08:20 · 按需 · 手动），'
              '卡片上的日期是那页数据自己的，不是本页生成时间。'
              '<b>模拟域当前没有计划任务在跑</b>，账本停在卡片写的那个日期。<br>'
-             '③ 灰色虚线文字是原本能下钻到门户服务（127.0.0.1:8091）的入口，'
-             '静态托管下不提供，保留文字只为让你知道有这条路。</div>')
+             '③ 旧门户（127.0.0.1:8091）的入口链接已按 11-10 裁定整体移除，'
+             '站内跳转全部走每页顶部的导航条。</div>')
 
     h.append('<div class="foot">数据源：tushare / tdx / 雪球 三源同步；'
              '交易日历双源交叉验证（2026 全年 0 差异）。<br>'
