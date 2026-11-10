@@ -780,6 +780,12 @@ class BacktestConfig:
     #   slip     = 目标价 × (1 − tp_slip)——模拟挂单滑点
     tp_fill_mode: str = "limit"
     tp_slip: float = 0.0
+    # 盘中止损（2026-11-10 老田「跳空保护」）：默认 open_next 保持原行为——
+    # 收盘触发→次日开盘卖，实测 −8% 设定笔均 −9.4%，差额全是隔夜跳空。
+    # intraday = 止损价当日挂限价单：low 触价当日成交；开盘已跳穿则按开盘价（不吃便宜）。
+    # 与止盈「盘中触价=成交」假设对称；同日高低点双越界按止损优先（本块排在止盈块之前）。
+    stop_fill_mode: str = "open_next"
+    stop_slip: float = 0.0  # 仅作用于触价成交档（跳空开盘价本身即市价，不叠加）
     # 五档仓位（2026-11-10 老田「更细的分档」）：三档只有 high/mid/low，high 内部强度差
     # 三倍却同帽。cap_mode="regime_tiers" 时按池指数相对 MA20/MA60 的位置分 0~4 档，
     # cap 从 cap_tiers[0]（最弱）线性取到 cap_tiers[-1]（最强·实测高出 MA20 5% 以上）。
@@ -1271,6 +1277,51 @@ def run_backtest(
                 }
             )
             eqv = cash + sum(p["val"] for p in pos.values())
+
+        # A3b. 盘中止损（2026-11-10 老田「跳空保护」）：stop_fill_mode="intraday" 时启用。
+        # 原口径「收盘触发→次日开盘卖」的 −8% 实测笔均 −9.4%，差额全是隔夜跳空；
+        # 本块把止损当日挂出：low 触价即按止损价成交，开盘已跳穿则按开盘价。
+        # T+1 与 min_holding_days 守卫与止盈块同源；排在止盈块之前 = 同日双触止损优先。
+        if cfg.stop_pct < 0 and cfg.stop_fill_mode == "intraday" and pos:
+            for s in sorted(pos):
+                p = pos[s]
+                if s in pending_sell or p.get("exit_why"):
+                    continue
+                _held = di - holding_since.get(s, di)
+                if _held < max(1, cfg.min_holding_days):
+                    continue  # A 股 T+1：当日买入当日不可卖
+                base = p.get("entry_px") or p["ref_px"]
+                if not base:
+                    continue
+                _stop_px = base * (1 + cfg.stop_pct)
+                lo = px(s, day, "low")
+                if lo is None or lo > _stop_px:
+                    continue
+                op = px(s, day, "open")
+                _gap = op is not None and op < _stop_px
+                fill = op if _gap else _stop_px
+                if not _gap and cfg.stop_slip > 0:
+                    fill *= (1.0 - min(0.05, cfg.stop_slip))
+                val = p["val"] * fill / p["ref_px"]
+                pnl = val / p["cost"] - 1
+                cash += val * (1 - cfg.cost)
+                del pos[s]
+                holding_since.pop(s, None)
+                actions.append(
+                    {
+                        "type": "sell",
+                        "stock": s,
+                        "note": ("硬止损·盘中跳空（开盘较入场 %+.1f%%）"
+                                 % ((op / base - 1) * 100))
+                        if _gap else "硬止损·盘中触价",
+                        "pnl_pct": round(pnl * 100, 2),
+                    }
+                )
+                rec(day, "SELL", s, "stop_loss", pnl,
+                    want=round(_stop_px, 3), fill=round(fill, 3),
+                    d_open=(round(op, 3) if op is not None else None),
+                    d_low=(round(lo, 3) if lo is not None else None),
+                    stop_gap=_gap, stop_mode="intraday")
 
         # A4. 盘中止盈：固定目标位 + 时间衰减（2026-11-10 老田「按反抽重设退出」）
         # 为什么不是均线跟随：这套三买买入时六成价格在个股 MA20 下方（超跌反抽），
@@ -2097,6 +2148,14 @@ def run_job(params: dict, job_id: str, progress=None):
                 else "limit"
             ),
             tp_slip=max(0.0, min(0.05, _num("tp_slip", 0.0))),
+            # 止损成交口径：字符串直读（同 tp_fill_mode 前车之鉴，不走 _r）
+            stop_fill_mode=(
+                str(p.get("stop_fill_mode") or "open_next").strip().lower()
+                if str(p.get("stop_fill_mode") or "open_next").strip().lower()
+                in ("open_next", "intraday")
+                else "open_next"
+            ),
+            stop_slip=max(0.0, min(0.05, _num("stop_slip", 0.0))),
             cap_tiers=tuple(
                 max(0.0, min(1.0, float(x)))
                 for x in (
