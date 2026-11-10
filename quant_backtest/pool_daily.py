@@ -38,7 +38,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 
@@ -197,14 +197,28 @@ def main():
             log("[abort] %s 失败，后面的步骤依赖它，停在这里。" % lab)
             return 2
 
-    # 板块层与个股层必须是同一个交易日：两条同步链路各自跑，
-    # 一条到了另一条没到，页面就会出现「个股 11-09 / 板块 11-06」的错配。
+    # 板块层与个股层的日期一致性（T+1 感知，2026-11-10 裁定）：
+    # tdx 板块指数链每天 04:33 更新 D-1，个股日线当天 16:47 更新 D，
+    # 所以 18:30 运行时板块层落后个股「一个交易日」是设计内常态——不告警，
+    # 只提示；落后两个交易日及以上才是同步链断裂，仍然告警。
+    def prev_trading_day(dstr):
+        d = datetime.strptime(dstr, "%Y%m%d").date() - timedelta(days=1)
+        while d.weekday() >= 5:
+            d -= timedelta(days=1)
+        return d.strftime("%Y%m%d")
+
     sp = os.path.join(REPORTS, "sector_state_%s.json" % asof)
     if not os.path.exists(sp):
         got = sorted(glob.glob(os.path.join(REPORTS, "sector_state_*.json")))
-        log("[warn] 板块层没有落到 %s，最新是 %s —— 板块页用的是旧日期，"
-            "个股页的「所属板块」会因跨天而不挂载。"
-            % (asof, os.path.basename(got[-1]) if got else "无"))
+        latest = os.path.basename(got[-1]) if got else ""
+        got_day = latest.replace("sector_state_", "").replace(".json", "")
+        if got_day and got_day >= prev_trading_day(asof):
+            log("[note] 板块层 %s（T+1 晨更，落后个股一天为设计内；"
+                "个股页「所属板块」跨天不挂载是已知现状，非故障）" % latest)
+        else:
+            log("[warn] 板块层停在 %s，落后个股层（%s）两个交易日以上"
+                "——tdx 板块指数同步链断了，需人工排查。"
+                % (latest or "无", asof))
     log("完成，合计 %.1fs" % (time.time() - t_all))
     return 0
 
