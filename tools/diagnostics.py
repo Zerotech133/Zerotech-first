@@ -55,7 +55,11 @@ KEY_PORTS = [8091, 8734, 8796, 8795, 8787, 8096, 8094, 8080, 8101]
 HERMES_BASE = "http://127.0.0.1:8787"
 HEALTH_URLS = {
     "portal_api_8091": "http://127.0.0.1:8091/health",
-    "portal_8734": "http://127.0.0.1:8734/",
+    # 2026-11-10 探针口径修正（统一入口复活排查判例）：8734 链路是
+    # iphlpsvc portproxy → 8080（ai-portal 容器 nginx），顶层无 /health 路由——
+    # 打 / 200 只证明 nginx 活；打 /api/health 200 才证明反代+后端全链路通。
+    # 历史坑：当日探针打 /health 得 404 误判 8734 下线，实为探针口径错。
+    "portal_8734": "http://127.0.0.1:8734/api/health",
     "legion_8796_mcp": "http://127.0.0.1:8796/api/zhaoyun/mcp",
     "gateway_8795": "http://127.0.0.1:8795/health",
 }

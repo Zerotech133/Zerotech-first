@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zero-bound.local/schemas/workline-view.v0.1.json",
+  "title": "workline_view v0.1",
+  "description": "M1 只读投影字段；不是领域数据库 schema。未列字段放 extra，M1 不校验。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "message_type", "sender", "target", "state", "trace_id"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^WL-[0-9]{8}-[0-9]{3}$"
+    },
+    "message_type": {
+      "type": "string",
+      "enum": ["message", "confirm", "delivery"]
+    },
+    "sender": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity"],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "enum": ["notify", "command", "qa", "exec", "service"]
+        },
+        "bot_id": {"type": "string"},
+        "display": {"type": "string"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display"],
+      "properties": {
+        "display": {"type": "string", "minLength": 1},
+        "type": {
+          "type": "string",
+          "enum": ["chat", "user", "customer_domain", "subscription", "unknown"]
+        },
+        "ref": {"type": "string"},
+        "member_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "preview_ready",
+        "preflight_passed",
+        "preflight_blocked",
+        "approval_pending",
+        "approved",
+        "rejected",
+        "sending",
+        "sent",
+        "delivered",
+        "failed",
+        "closed"
+      ]
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"}
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {"type": "string"},
+        "summary": {"type": "string"},
+        "buttons": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "action"],
+            "properties": {
+              "label": {"type": "string", "minLength": 1},
+              "action": {"type": "string", "minLength": 1},
+              "style": {"type": "string", "enum": ["primary", "default", "danger"]}
+            }
+          }
+        }
+      }
+    },
+    "trace_id": {"type": "string", "minLength": 1},
+    "extra": {
+      "type": "object",
+      "description": "M1 扩展位；source/sla/owner/evidence 等未定字段放这里，不参与 v0.1 校验。",
+      "additionalProperties": true
+    }
+  }
+}

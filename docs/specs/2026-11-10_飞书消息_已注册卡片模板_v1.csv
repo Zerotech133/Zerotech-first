@@ -1,0 +1,9 @@
+﻿kind,registered,module,function,live_count,template_version,owner,status_note
+ai_finance_daily,yes,portal/card_templates.py,,0,unversioned,TBD,M0 需补 version/owner
+alert,yes,portal/card_templates.py,,0,unversioned,TBD,M0 需补 version/owner
+announcement,yes,portal/card_templates.py,,0,unversioned,TBD,M0 需补 version/owner
+inbound:feed,yes,portal/card_templates.py,,8,unversioned,TBD,M0 需补 version/owner
+km_card,yes,portal/card_templates.py,,1,unversioned,TBD,M0 需补 version/owner
+subscription_expiring,yes,portal/card_templates.py,,0,unversioned,TBD,M0 需补 version/owner
+subscription_guide,yes,portal/card_templates.py,,0,unversioned,TBD,M0 需补 version/owner
+watch_strategy,yes,portal/card_templates.py,,0,unversioned,TBD,M0 需补 version/owner

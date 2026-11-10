@@ -101,6 +101,12 @@ footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex
     <b>RPS50&lt;50 剔除</b>（drop_p1）。信号池由 <code>build_matrices(buy_th=75, obs_th=50, gate_on=True)</code> 生成，与回测逐位同源。
   </div>
 
+  <div class="caliber" style="margin-top:8px">
+    <b>这是哪条链的数字</b>：本页全部数字属于 <b>M2.1 引擎信号链</b>（环境闸门择时，闸门关 = 0 只不建仓）。
+    候风「信号台账」页的批次（如 11-06 池 46 只）属于另一条独立的 <b>因子链信号</b>（多因子共振池），
+    两条链各自独立出信号、各自建仓，<b>数字不互通也不该相等</b>——对不上不是 bug。
+  </div>
+
   <div id="verdict"></div>
   <div class="kpis" id="envkpi"></div>
 

@@ -60,7 +60,12 @@ def main():
     day = a.day or dt.date.today().strftime("%Y%m%d")
     log("=== run_social_fetch_daily day=%s force=%s dry=%s ==="
         % (day, a.force, a.dry))
-    if not a.force and not is_trading_day(day):
+    if a.force:
+        daily_ok = os.path.exists(os.path.join(DAILY_DIR, "d_%s.parquet" % day))
+        if not daily_ok:
+            log("WARN force 绕过门控，但当日 daily 未落盘 → 选票走盘中降级"
+                "(xtcloud 实时分钟)，快照口径与盘后不一致")
+    elif not is_trading_day(day):
         log("%s 非交易日或 daily 未就绪，跳过（不写盘）" % day)
         return 0
 
@@ -68,7 +73,24 @@ def main():
     if a.dry:
         cmd.append("--dry")
     log("调用: %s" % " ".join(cmd))
-    rc = subprocess.run(cmd).returncode
+
+    # 长跑输出必须实时落文件：逐行 tee 到日志，判进度看进程 + 产物 mtime + 日志 tail。
+    # 强制子进程 UTF-8 输出，避免 Windows 控制台 GBK 与日志编码打架。
+    env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "utf-8"
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True,
+                            encoding="utf-8", errors="replace",
+                            env=env, bufsize=1)
+    try:
+        for line in proc.stdout:
+            log("  " + line.rstrip())
+        rc = proc.wait()
+    except KeyboardInterrupt:
+        proc.kill()
+        proc.wait()
+        log("INTERRUPTED: 已终止子进程")
+        return 130
     log("jev_social_fetch 退出码=%d" % rc)
     return rc
 
