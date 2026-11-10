@@ -1,0 +1,28 @@
+{
+ "gate3_approved_by": "老田（WorkBuddy 指令 2026-11-10 09:53 「顺手批：门 3 发布」）",
+ "approved_at": "2026-11-10 10:00:34",
+ "check_pre_publish": "daily/houfeng_pages_check.json drift=[] 18/18 OK（2026-11-10 08:41 + check-only 09:59 复跑通过）",
+ "publish_set": [
+  {
+   "page": "HOUFENG_STRATEGY_CARD.html",
+   "md5": "418793aa831da457aa5f42184ee82f86",
+   "size": 29300
+  },
+  {
+   "page": "HOUFENG_BROCHURE.html",
+   "md5": "677802ca38fa634c4636d86a1c99e110",
+   "size": 20765
+  },
+  {
+   "page": "M2_DASHBOARD.html",
+   "md5": "e86f93f9fcdd10222c7ccd4758a03036",
+   "size": 17802
+  }
+ ],
+ "excluded": {
+  "HOUFENG_DIVIDEND.html": "实验档·未冻结（上轮门 2 结论：不进发布集）",
+  "HOUFENG_ARENA.html / HOUFENG_ARENA_36M.html / HOUFENG_HOLDGRID.html / HOUFENG_PICK_20261106.html / HOUFENG_PLAYBOOK.html": "内部页，正文含内部符号，不对外",
+  "index.html": "合规数据层，不对外"
+ },
+ "note": "发布=纳入对外可访问集合的资格认定；真实外网通道部署另行审批（涉及生产变更五要素）"
+}
