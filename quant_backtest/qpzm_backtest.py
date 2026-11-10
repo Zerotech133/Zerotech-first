@@ -1473,7 +1473,128 @@ def run_backtest(args):
             _st.update({"label": _wl2, "desc": _wdesc,
                         "avg_w": round(float(_ws.reindex(_dates_all).fillna(0).mean()), 4)})
             _wrap["results"].append(_st)
+            # P68 E2：留日频净值，供 β 工具做滚动估计（JSON 体积可控，~243 点）
+            if _wl2 == "w_gate_binary" and len(_nav) > 2:
+                _wrap["nav"] = {
+                    "dates": [int(d) for d in _nav.index],
+                    "values": [round(float(v), 6) for v in _nav.to_numpy()],
+                }
         portfolio_ab["holds"].append(_wrap)
+
+    # ---- P68 E1：maxret20 作排除项实测（老田 2026-11-11 裁定）----
+    # 因子 IC 筛查里 maxret20（过去 20 日单日最大涨幅，彩票效应）是最强负 IC：
+    # -0.067、t=-5.42、IS/OOS 同号。但它的多空 spread 只有 0.26%，低于 0.30% 往返成本，
+    # 单独做多空不划算。唯一低成本用法是「排除项」——不新增交易，只把该批信号剔掉。
+    # 陷阱（P64 教训）：排除必然减笔数，减笔数本身就可能带来增益。
+    # 所以每档都要配一个「同笔数的纯 score 阈值」对照，才能剥离变相加严。
+    # ⚠ 必须用全历史 close 算，不能用 close_in。close_in 是 in_win 切片，
+    # 切片首月起点的前 20 日不存在 → maxret20 整月 NaN → 被当成「次新」误剔，
+    # 上一版就是这么把 202511 整月（8,422 笔、−2.93%）当成次新股给切掉的。
+    # min_periods=20 严格要求 20 个完整 bar，NaN 才真的是次新。
+    _mr20 = (
+        wide["close"].pct_change().rolling(20, min_periods=20).max().loc[in_win]
+    )
+    _mr_q = _mr20.rank(axis=1, pct=True)  # 每日截面分位，1=最极端
+
+    def _mr_row(mask, desc=""):
+        out = {"n_buy": int(mask.sum().sum()), "desc": desc}
+        for _n in holds:
+            _r, _ = trade_returns(mask, open_in, close_in, _n, args.cost, unfill=unfill_in)
+            out["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+        return out
+
+    maxret_ab = {
+        "note": "maxret20=过去20个交易日单日最大涨幅（后复权 close 环比）；"
+        "截面分位按日算（1=最极端）；排除项不新增交易只减笔数，"
+        "故每档配「同笔数纯 score 阈值」对照，剥离变相加严",
+        "bands": {},
+        "monthly": {},
+        "th_scan": [],
+    }
+    # ⚠ NaN 必须「不排除」：写成 (q <= 0.80) 时 NaN 比较为 False，会把
+    # maxret20 缺失（上市不足 20 日的新股）整批顺带剔除，增益归因全部失真。
+    # 上一版就是这么错的：base 108,535 与 q1~q5 合计 99,935 差 8,600 笔全是新股。
+    _MR_VARIANTS = [
+        ("base", buy_in, "现行买入，不排除"),
+        ("ex_new", buy_in & _mr20.notna(), "只剔除次新（maxret20 缺失）"),
+        ("ex_p80", buy_in & ~(_mr_q > 0.80), "剔除截面最高 20%"),
+        ("ex_p70", buy_in & ~(_mr_q > 0.70), "剔除截面最高 30%"),
+        ("ex_abs10", buy_in & ~(_mr20 >= 0.095), "剔除 20 日内涨幅≥9.5%（含涨停）"),
+        ("ex_abs07", buy_in & ~(_mr20 >= 0.07), "剔除 20 日内涨幅≥7%"),
+        ("ex_abs05", buy_in & ~(_mr20 >= 0.05), "剔除 20 日内涨幅≥5%"),
+    ]
+    for _lb, _mk, _desc in _MR_VARIANTS:
+        maxret_ab["bands"][_lb] = _mr_row(_mk, _desc)
+    # 买入样本内的分位分档：验证「越极端越差」是否单调（单调才有排除价值）
+    for _i, (_lo, _hi) in enumerate(
+        ((0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.01))
+    ):
+        _mk = buy_in & _mr_q.notna() & (_mr_q > _lo) & (_mr_q <= _hi)
+        maxret_ab["bands"]["q%d" % (_i + 1)] = _mr_row(
+            _mk, "买入样本内分位 %.0f-%.0f%%" % (_lo * 100, _hi * 100)
+        )
+    maxret_ab["bands"]["q_nan"] = _mr_row(
+        buy_in & _mr20.isna(), "买入样本内 maxret20 缺失（次新）"
+    )
+    # 逐月：只有逐月才能看出增益是不是某一个月贡献的
+    for _lb in ("base", "ex_new", "ex_p80", "ex_p70", "ex_abs10"):
+        _mk = dict((a, b) for a, b, _c in _MR_VARIANTS)[_lb]
+        _rows = []
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _mk & pd.DataFrame(
+                np.broadcast_to(_mm, _mk.shape), index=_mk.index, columns=_mk.columns
+            )
+            _r = {"month": "%04d%02d" % (_y, _m), "n_buy": int(_sel.sum().sum())}
+            for _n in (5, 10):
+                _rr, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _r["t%d" % _n] = round(float(_rr.mean()), 6) if len(_rr) else None
+            _rows.append(_r)
+        maxret_ab["monthly"][_lb] = _rows
+    # 纯 score 阈值扫描：只为给上面的排除档找「同笔数」参照物
+    for _th in np.arange(TH_CUR[0], TH_CUR[0] + 12.01, 0.5):
+        _m = elig_in & (~mix_in.isna()) & safe_mat & (_sc_cur_in >= _th)
+        _r = {"buy_th": round(float(_th), 1), "n_buy": int(_m.sum().sum())}
+        for _n in (5, 10, 20):
+            _rr, _ = trade_returns(_m, open_in, close_in, _n, args.cost, unfill=unfill_in)
+            _r["t%d" % _n] = round(float(_rr.mean()), 6) if len(_rr) else None
+        maxret_ab["th_scan"].append(_r)
+
+    # ---- P68 E2：β 估计所需的三个序列 ----
+    # ⚠ 口径必须同频。上一版拿 nav 的「日」收益去对基准的「5 日批次」收益回归，
+    # 量纲错配，β 被压到 0.08（真值 1.3 量级），完全不可用。
+    # 这里分开给：
+    #   market[j]      全市场 eligible 的 close 日环比等权 → 标准市场日收益
+    #   bench[n]       全市场 n 日批次收益 → 与 strategy[n] 同窗口
+    #   strategy[n]    现行买入信号集的 n 日批次收益（按信号日聚合）→ 选股端暴露
+    _mkt = close_in.pct_change().where(elig_in).mean(axis=1)
+    bench_daily = {
+        "note": "market=全市场 eligible 日等权收益；bench[n]/strategy[n]=n 日批次收益"
+        "按信号日聚合（同窗口，可直接相互回归）",
+        "by_hold": {},
+        "market": {
+            "dates": [int(d) for d in _mkt.dropna().index],
+            "values": [round(float(v), 6) for v in _mkt.dropna().to_numpy()],
+        },
+        "strategy": {},
+    }
+    for _n in holds:
+        _br = bench_returns(elig_in, open_in, close_in, _n, args.cost, unfill=unfill_in)
+        if len(_br):
+            _g = _br.groupby(level="date").mean()
+            bench_daily["by_hold"][str(_n)] = {
+                "dates": [int(d) for d in _g.index],
+                "values": [round(float(v), 6) for v in _g.to_numpy()],
+            }
+        _sr, _ = trade_returns(buy_in, open_in, close_in, _n, args.cost, unfill=unfill_in)
+        if len(_sr):
+            _gs = _sr.groupby(level="date").mean()
+            bench_daily["strategy"][str(_n)] = {
+                "dates": [int(d) for d in _gs.index],
+                "values": [round(float(v), 6) for v in _gs.to_numpy()],
+            }
 
 
 
@@ -1556,6 +1677,8 @@ def run_backtest(args):
         "weight_ab": weight_ab,
         "env_split": env_split,
         "portfolio_ab": portfolio_ab,
+        "maxret_ab": maxret_ab,
+        "bench_daily": bench_daily,
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
