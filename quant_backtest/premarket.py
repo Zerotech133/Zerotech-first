@@ -1355,6 +1355,8 @@ def run(push=False):
     alerts = _risk_alerts(l1, l3, l5)
     # 11-10 叠加：收盘线产物（结构池/影子台账/板块层）→ 今日行动卡
     actions = today_actions()
+    # 11-10 叠加：缠论说大盘（同一结构引擎看上证日线）
+    zen = zen_market()
     # 11-10 深化：综合判断 → 因子分解/轨迹/历史校准（老田：深度不够）
     deep = deep_verdict({"vals": vals, "overall": overall, "prob": prob,
                          "verdict": verdict, "l1": l1, "l2": l2, "l3": l3,
@@ -1381,6 +1383,7 @@ def run(push=False):
         "verdict": verdict,
         "alerts": alerts,
         "actions": actions,
+        "zen": zen,
         "deep": deep,
     }
     with open(
@@ -1680,6 +1683,261 @@ def deep_verdict(data, w=None):
     return out
 
 
+def _zen_svg(bars, bis, pvs, n_disp=90, W=560, H=170):
+    """说禅配图：近 n_disp 根 K 线 + 中枢矩形（虚线蓝）+ 笔折线（金）。
+
+    中枢/笔取自全窗口结构，超出显示窗的端点钳到画布边缘。
+    """
+    disp = bars[-n_disp:]
+    d0 = disp[0]["dt"]
+    dx = {b["dt"]: i for i, b in enumerate(disp)}
+    lo = min(b["l"] for b in disp)
+    hi = max(b["h"] for b in disp)
+    pad = (hi - lo) * 0.06
+    lo -= pad
+    hi += pad
+
+    def X(dt):
+        i = dx.get(int(dt))
+        return None if i is None else 6 + i * (W - 12) / (len(disp) - 1)
+
+    def Y(v):
+        return H - 14 - (v - lo) / (hi - lo) * (H - 34)
+
+    cw = max(1.5, (W - 12) / len(disp) * 0.55)
+    el = []
+    for b in disp:
+        x = X(b["dt"])
+        col = "#e35d5d" if b["c"] >= b["o"] else "#3aa76d"
+        el.append(
+            "<line x1='%g' y1='%g' x2='%g' y2='%g' stroke='%s' "
+            "stroke-width='1'/>" % (x, Y(b["h"]), x, Y(b["l"]), col)
+        )
+        y1, y2 = Y(max(b["o"], b["c"])), Y(min(b["o"], b["c"]))
+        el.append(
+            "<rect x='%g' y='%g' width='%g' height='%g' fill='%s'/>"
+            % (x - cw / 2, y1, cw, max(0.8, y2 - y1), col)
+        )
+    # 中枢矩形
+    for q in pvs:
+        x1, x2 = X(q["s_dt"]), X(q["e_dt"])
+        if x2 is None and x1 is None:
+            continue
+        x1 = 6 if x1 is None else x1
+        x2 = W - 6 if x2 is None else x2
+        el.append(
+            "<rect x='%g' y='%g' width='%g' height='%g' "
+            "fill='rgba(90,130,190,0.10)' stroke='#5a82be' stroke-width='0.8' "
+            "stroke-dasharray='2,2'/>"
+            % (x1, Y(q["zg"]), max(4, x2 - x1), Y(q["zd"]) - Y(q["zg"]))
+        )
+    q = pvs[-1]
+    lx = min((X(q["e_dt"]) or (W - 6)) + 2, W - 46)
+    el.append(
+        "<text x='%g' y='%g' font-size='9' fill='#8fb0dd'>zg %.0f</text>"
+        % (lx, Y(q["zg"]) - 2, q["zg"])
+    )
+    el.append(
+        "<text x='%g' y='%g' font-size='9' fill='#8fb0dd'>zd %.0f</text>"
+        % (lx, Y(q["zd"]) + 10, q["zd"])
+    )
+    # 笔折线（相邻笔共享端点，去重）
+    pts = []
+    for x in bis:
+        if int(x["e_dt"]) < d0:
+            continue
+        sx, ex = X(x["s_dt"]), X(x["e_dt"])
+        sx = 6 if sx is None else sx
+        ex = W - 6 if ex is None else ex
+        p1 = (sx, Y(x["s_price"]))
+        p2 = (ex, Y(x["e_price"]))
+        if not pts or pts[-1] != p1:
+            pts.append(p1)
+        pts.append(p2)
+    if pts:
+        el.append(
+            "<polyline points='%s' fill='none' stroke='#d8b45a' "
+            "stroke-width='1.6'/>" % " ".join("%g,%g" % t for t in pts)
+        )
+    el.append(
+        "<text x='6' y='10' font-size='9' fill='#7b8698'>%.0f</text>" % hi
+    )
+    el.append(
+        "<text x='6' y='%g' font-size='9' fill='#7b8698'>%.0f</text>"
+        % (H - 2, lo)
+    )
+    return ("<svg width='%d' height='%d' style='margin-top:6px;display:block'>"
+            "%s</svg>" % (W, H, "".join(el)))
+
+
+def zen_market(win_start="20240101", n_disp=90):
+    """缠论说大盘（11-10 叠加）：上证指数日K → 缠论结构 → 说禅式解读。
+
+    口径：
+    - 数据 datamart index_daily 000001.SH（T-1，与板块层同时序）；
+    - 结构 chanlun_signal.analyze —— 与选股全池扫描/回测同一个引擎，
+      笔/中枢/三类买卖点同口径，不为大盘另造一套；
+    - 「说」的部分全部由结构事实驱动：中枢序列（逐级上移/下移）、
+      当前笔方向与位置、最近信号与背驰标注、距中枢上/下沿距离；
+      关键位给可执行数字（zd 回抽界 / 笔起点失效线 / zg 上沿）。
+    全 soft：缺源或结构为空返回 None，渲染「未生成」。
+    """
+    try:
+        import datamart as dm
+        from chanlun_signal import analyze
+
+        b = dm.read(
+            "index_daily", codes=["000001.SH"], start=win_start,
+            end=datetime.now().strftime("%Y%m%d"),
+            fields=["trade_date", "open", "high", "low", "close"],
+        )
+        if b is None or b.empty:
+            return None
+        b = b.sort_values("trade_date")
+        bars = [
+            {"dt": int(r.trade_date), "o": float(r.open), "h": float(r.high),
+             "l": float(r.low), "c": float(r.close)}
+            for r in b.itertuples()
+        ]
+        st = analyze(bars) or {}
+        bis = st.get("bis") or []
+        pvs = st.get("pivots") or []
+        sgs = st.get("signals") or []
+        if not bis or not pvs:
+            return None
+        close = bars[-1]["c"]
+        last_dt = bars[-1]["dt"]
+        p = pvs[-1]
+        zg, zd = float(p["zg"]), float(p["zd"])
+
+        pv_seq = [
+            {"s_dt": q["s_dt"], "e_dt": q["e_dt"],
+             "zg": round(float(q["zg"]), 1), "zd": round(float(q["zd"]), 1),
+             "n_bi": q.get("n_bi")}
+            for q in pvs[-4:]
+        ]
+        rising = len(pvs) >= 2 and float(pvs[-1]["zd"]) > float(pvs[-2]["zg"])
+        below = close < zd
+        above = close > zg
+
+        lb = bis[-1]
+        bi = {
+            "dir": int(lb["dir"]), "s_dt": lb["s_dt"], "e_dt": lb["e_dt"],
+            "s_price": round(float(lb["s_price"]), 1),
+            "e_price": round(float(lb["e_price"]), 1),
+        }
+        bi_gain = (bi["e_price"] / bi["s_price"] - 1) * 100
+        dt_idx = {x["dt"]: i for i, x in enumerate(bars)}
+        bi_open = dt_idx.get(int(lb["e_dt"]), len(bars) - 1) < len(bars) - 1
+        dist_zd = (close / zd - 1) * 100
+        dist_zg = (close / zg - 1) * 100
+
+        sigs = [
+            {"type": s["type"], "dt": s["dt"],
+             "bei": bool(s.get("bei")), "tbe": bool(s.get("tbe")),
+             "mbei": bool(s.get("mbei"))}
+            for s in sgs[-5:]
+        ]
+
+        if above:
+            stage = "离开段（中枢上方）"
+        elif close >= zd:
+            stage = "中枢震荡"
+        else:
+            stage = "中枢下 · 反抽" if bi["dir"] == 1 else "中枢下"
+
+        # ── 说禅叙事：全部由上面的事实驱动 ──
+        seq_txt = " → ".join("%.0f–%.0f" % (q["zd"], q["zg"]) for q in pv_seq)
+        paras = []
+        if rising:
+            paras.append(
+                "日线级别：中枢逐级上移（%s）。每个中枢都站上前一个的头顶，"
+                "这是上涨走势的标准形态——缠师说，中枢是能量结构，中枢上移"
+                "说明多头在这个级别上一直有新的能量接上来。" % seq_txt
+            )
+        else:
+            paras.append(
+                "日线级别：中枢序列（%s，共 %d 个）。" % (seq_txt, len(pvs))
+            )
+        if below:
+            dn = [x for x in bis[-3:] if int(x["dir"]) == -1]
+            dnb = dn[-1] if dn else lb
+            paras.append(
+                "%s 一笔自 %.0f 跌至 %.0f，击穿末中枢下沿 %.0f——向下离开"
+                "成立，中枢上移的走势到此告一段落。跌破中枢，意味着这一级别"
+                "上多头的能量已经用完，后面的走势要用新的中枢重新组织。"
+                % (dnb["e_dt"], float(dnb["s_price"]), float(dnb["e_price"]), zd)
+            )
+            if bi["dir"] == 1:
+                paras.append(
+                    "当前向上笔自 %.0f 反抽至 %.0f（%+.1f%%），现价 %.0f 距"
+                    "中枢下沿 %.0f 还有 %.1f%%——反抽未及中枢，笔未走完。"
+                    "走势终完美：这笔以什么方式结束，决定后面的事。止于 zd "
+                    "之下再走向下笔，三卖结构确认、中枢下移展开；放量站回 zd "
+                    "之上，则中枢扩展，由趋势转为更大级别的盘整。"
+                    % (bi["s_price"], bi["e_price"], bi_gain, close, zd,
+                       abs(dist_zd))
+                )
+            else:
+                paras.append(
+                    "当前向下笔自 %.0f 行至 %.0f，在中枢之下运行——向下的"
+                    "笔里不猜底，等它走完再看反抽的力度。"
+                    % (bi["s_price"], bi["e_price"])
+                )
+        elif above:
+            paras.append(
+                "现价 %.0f 站在中枢上沿 %.0f 之上（%+.1f%%）——离开段中。"
+                "回踩不回中枢（zg 不破），是三买的天下；回到中枢之内，"
+                "就老老实实当震荡做。" % (close, zg, dist_zg)
+            )
+        else:
+            paras.append(
+                "现价 %.0f 在中枢 %s（%.0f–%.0f）之内运行——震荡对待，"
+                "上沿下沿都是边界，不追不杀，等离开方向自己走出来。"
+                % (close, "第 %d 个" % len(pvs), zd, zg)
+            )
+        if sigs:
+            ls = sigs[-1]
+            btxt = "+".join(
+                n for n, v in (("趋势背驰", ls["tbe"]),
+                               ("MACD背驰", ls["mbei"]),
+                               ("盘整背驰", ls["bei"])) if v
+            ) or "无背驰标注"
+            paras.append(
+                "近端信号留痕：最近的 %s 在 %s（%s）。此后结构无新信号——"
+                "没有买点就不动手，这是缠论的纪律；等结构给信号，而不是等"
+                "情绪给勇气。" % (ls["type"], ls["dt"], btxt)
+            )
+        paras.append(
+            "明日只看三处：%s%s%s。位置比方向重要，边界比预测有用。"
+            % (
+                "zd %.0f 的得失" % zd,
+                "、笔起点 %.0f 的失效" % bi["s_price"],
+                "、zg %.0f 的收复" % zg,
+            )
+        )
+
+        levels = [
+            {"label": "中枢上沿 zg（重新走强界）", "v": round(zg, 1)},
+            {"label": "中枢下沿 zd（回抽界/强弱分界）", "v": round(zd, 1)},
+            {"label": "当前笔起点（向上笔失效线）"
+             if bi["dir"] == 1 else "当前笔起点（向下笔失效线）",
+             "v": bi["s_price"]},
+        ]
+        return {
+            "asof": last_dt, "close": close, "stage": stage,
+            "zg": round(zg, 1), "zd": round(zd, 1), "below": below,
+            "n_pivots": len(pvs), "pv_seq": pv_seq, "rising": rising,
+            "bi": bi, "bi_open": bi_open, "bi_gain": round(bi_gain, 2),
+            "dist_zd": round(dist_zd, 2), "dist_zg": round(dist_zg, 2),
+            "sigs": sigs, "levels": levels, "paras": paras,
+            "n_bars": len(bars), "win_start": win_start,
+            "svg": _zen_svg(bars, bis, pvs, n_disp=n_disp),
+        }
+    except Exception:
+        return None
+
+
 def write_page(data, snap):
     d, parts = data, []
     parts.append(
@@ -1905,6 +2163,65 @@ def write_page(data, snap):
             "<h2>零、今日行动卡 <span class='dim' style='font-weight:400;"
             "font-size:12px'>（收盘线产物 · 08:20 盘前按此执行）</span></h2>"
             "%s%s" % ("".join(act_html), miss_note)
+        )
+
+    # 零+、缠论说大盘（11-10 叠加）：同一结构引擎看上证日线
+    zn = d.get("zen")
+    if zn:
+        lvl_html = " ".join(
+            "<span style='display:inline-block;border:1px solid #2a3547;"
+            "border-radius:6px;padding:3px 8px;margin:2px 4px 2px 0;"
+            "font-size:12px'>%s <b>%.0f</b> <span class='dim'>距 %+.1f%%"
+            "</span></span>"
+            % (lv["label"], lv["v"], (zn["close"] / lv["v"] - 1) * 100)
+            for lv in zn["levels"]
+        )
+        sig_rows = "".join(
+            "<tr><td>%s</td><td>%s</td><td class='dim'>%s</td></tr>"
+            % (
+                s["type"],
+                "%d/%d/%d" % (s["dt"] // 10000, s["dt"] // 100 % 100,
+                              s["dt"] % 100),
+                "+".join(n for n, v in (("趋势背驰", s["tbe"]),
+                                        ("MACD背驰", s["mbei"]),
+                                        ("盘整背驰", s["bei"])) if v)
+                or "无背驰标注",
+            )
+            for s in zn["sigs"]
+        )
+        paras_html = "".join(
+            "<p style='margin:6px 0;line-height:1.7'>%s</p>" % p
+            for p in zn["paras"]
+        )
+        seq_txt = " → ".join(
+            "%.0f–%.0f" % (q["zd"], q["zg"]) for q in zn["pv_seq"]
+        )
+        parts.append(
+            "<h2>零+、缠论说大盘 <span class='dim' style='font-weight:400;"
+            "font-size:12px'>（上证日线 · 与全池同一结构引擎 · 数据 T-1 %d）"
+            "</span></h2>"
+            "<div class='env'><b>阶段：%s</b> · 现价 %.0f · 最近中枢 %.0f–%.0f"
+            "（%d 个中枢%s）%s"
+            "<div style='margin-top:4px'>%s</div>%s%s"
+            "<table style='margin-top:6px'><tr><th>近端信号</th><th>日期</th>"
+            "<th>背驰标注</th></tr>%s</table>"
+            "<div class='dim' style='margin-top:4px'>口径：chanlun_signal."
+            "analyze，笔/中枢/三类买卖点与选股全池同引擎（自 20240101 起 %d 根"
+            "日K）；指数数据 T-1；结构随新 K 线自然修正，教学口径非投资建议。"
+            "</div></div>"
+            % (
+                zn["asof"], zn["stage"], zn["close"], zn["zd"], zn["zg"],
+                zn["n_pivots"], "，逐级上移" if zn["rising"] else "",
+                " · 中枢序列 " + seq_txt if zn["rising"] else "",
+                lvl_html,
+                zn["svg"], paras_html, sig_rows, zn["n_bars"],
+            )
+        )
+    elif d.get("zen") is None:
+        parts.append(
+            "<h2>零+、缠论说大盘</h2><div class='env'>未生成：index_daily "
+            "缺源或结构为空（数据仓 index_daily 是 T-1 时序，缺日则跳过，"
+            "不阻断盘前页）</div>"
         )
 
     # 层1
