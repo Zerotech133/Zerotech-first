@@ -40,6 +40,8 @@
      才允许 F1 转正为唯一主腿。
 
 用法：python bt10m_frozen.py          # 跑自检
+变更执行口径后的验证入口：python bt10m_exec_verify.py（quick，~3s）；
+发版/改口径前用 --full 档（真重跑 7+4 腿回归，~2.5min）。
 """
 import json
 import os
