@@ -32,7 +32,7 @@ SCHEMA = """
 CREATE TABLE news (
   id TEXT PRIMARY KEY, source TEXT, ts TEXT, title TEXT, content TEXT,
   hit INTEGER DEFAULT 0, pushed INTEGER DEFAULT 0, digested INTEGER DEFAULT 0,
-  created_at TEXT, stocks TEXT, jev TEXT);
+  created_at TEXT, stocks TEXT, jev TEXT, tag_conf TEXT);
 CREATE TABLE runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, ts TEXT,
   ok INTEGER, new_count INTEGER, push_count INTEGER, detail TEXT);

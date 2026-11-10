@@ -28,7 +28,7 @@ def _tmp_db(tmp_path):
     db.execute(
         "CREATE TABLE news(id TEXT PRIMARY KEY, source TEXT, ts TEXT, "
         "title TEXT, content TEXT, hit INTEGER, pushed INTEGER, "
-        "digested INTEGER, created_at TEXT, stocks TEXT, jev TEXT)"
+        "digested INTEGER, created_at TEXT, stocks TEXT, jev TEXT, tag_conf TEXT)"
     )
     db.execute(
         "CREATE TABLE runs(id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, "

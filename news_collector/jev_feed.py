@@ -154,12 +154,28 @@ def _ann_prefix_ts(title) -> str:
     return ""
 
 
-def _row_stocks(row, title) -> list:
-    """新行 stocks：上游 ts_code/symbol 优先，缺失才用公告前缀兜底。"""
+def _row_stocks(row, title, content="", source_kind=""):
+    """新行 stocks：上游 ts_code/symbol 优先 → 公告前缀兜底 → 名称抽取兜底（P5.4）。
+
+    返回 (codes, tag_conf)：
+      tag_conf=None   上游结构化码 / 公告结构化前缀 / 无命中（历史行为，最高可信）
+      tag_conf='high' 标题点名（P5.4 名称抽取，强相关）
+      tag_conf='low'  仅正文提及（P5.4）——下游只作「有信号」判定，不得作 Δmin 锚点
+                      （防污染 P-01/P-05/P-06/P-09 的分钟级锚点，见 docs/jev_gate_a2_spec.md）
+    名称抽取失败时静默退化为旧行为（[]），不阻断采集主流程。
+    """
     code = str(_pick(row, "ts_code") or _pick(row, "symbol") or "")
-    if not code:
-        code = _ann_prefix_ts(title)
-    return [code] if code else []
+    if code:
+        return [code], None
+    code = _ann_prefix_ts(title)
+    if code:
+        return [code], None
+    try:
+        import _stock_tagger
+        return _stock_tagger.tag_stocks(title, content, source_kind)
+    except Exception as _e:
+        sys.stderr.write("[jev_feed] stock tagger degraded: %r\n" % (_e,))
+        return [], None
 
 
 def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
@@ -217,11 +233,11 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
             cur = db.execute("SELECT 1 FROM news WHERE id=?", (nid,)).fetchone()
             if cur:
                 continue
-            stocks = _row_stocks(row, title)
+            stocks, tag_conf = _row_stocks(row, title, str(_pick(row, "content")), kind)
             db.execute(
                 "INSERT INTO news(id, source, ts, title, content, hit, "
-                "pushed, digested, created_at, stocks, jev) "
-                "VALUES (?,?,?,?,?,0,0,0,?,?,NULL)",
+                "pushed, digested, created_at, stocks, jev, tag_conf) "
+                "VALUES (?,?,?,?,?,0,0,0,?,?,NULL,?)",
                 (
                     nid,
                     "xd_%s" % kind,
@@ -230,6 +246,7 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
                     str(_pick(row, "content")),
                     now,
                     json.dumps(stocks, ensure_ascii=False),
+                    tag_conf,
                 ),
             )
             n_ins += 1
@@ -322,11 +339,11 @@ def feed_source_v2(alias, kind, wm_raw, days, cap, dryrun=False):
                     max_date = d
                 if db.execute("SELECT 1 FROM news WHERE id=?", (nid,)).fetchone():
                     continue
-                stocks = _row_stocks(row, title)
+                stocks, tag_conf = _row_stocks(row, title, str(_pick(row, "content")), kind)
                 db.execute(
                     "INSERT INTO news(id, source, ts, title, content, hit, "
-                    "pushed, digested, created_at, stocks, jev) "
-                    "VALUES (?,?,?,?,?,0,0,0,?,?,NULL)",
+                    "pushed, digested, created_at, stocks, jev, tag_conf) "
+                    "VALUES (?,?,?,?,?,0,0,0,?,?,NULL,?)",
                     (
                         nid,
                         "xd_%s" % kind,
@@ -335,6 +352,7 @@ def feed_source_v2(alias, kind, wm_raw, days, cap, dryrun=False):
                         str(_pick(row, "content")),
                         now,
                         json.dumps(stocks, ensure_ascii=False),
+                        tag_conf,
                     ),
                 )
                 n_ins += 1
