@@ -136,3 +136,8 @@ tables:
     reason: >-
       情绪阶梯表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
       本地止于 2026-10-14。
+  intraday_board:
+    lifecycle: planned
+    reason: >-
+      盘中板块表 catalog 仍为 placeholder_empty（files=0、manifest missing），
+      采集未接入；落盘后删除本条。
