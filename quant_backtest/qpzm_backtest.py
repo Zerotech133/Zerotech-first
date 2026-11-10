@@ -1114,6 +1114,19 @@ def run_backtest(args):
         "holds": [int(h) for h in holds if int(h) <= 10],
         "rows": [],
     }
+    # 逐月基准（全市场等权同口径），用于把「策略亏损」拆成 alpha 与 beta
+    _bench_month = {}
+    for _n in gate_ab["monthly"]["holds"]:
+        _bret = bench_returns(
+            elig_in, open_in, close_in, _n, args.cost, unfill=unfill_in
+        )
+        if len(_bret):
+            _bm_idx = [
+                "%04d%02d" % _ym(d) for d in _bret.index.get_level_values("date")
+            ]
+            _bench_month[_n] = pd.Series(
+                _bret.to_numpy(dtype=float), index=_bm_idx
+            ).groupby(level=0).mean()
     for _lab, _mask in _CFG:
         for _y, _m in _MONTHS:
             _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
@@ -1130,6 +1143,12 @@ def run_backtest(args):
                     _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
                 )
                 _row["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+                _bm = _bench_month.get(_n)
+                _row["bench_t%d" % _n] = (
+                    round(float(_bm.get(_row["month"])), 6)
+                    if _bm is not None and _row["month"] in _bm.index
+                    else None
+                )
             gate_ab["monthly"]["rows"].append(_row)
 
     # ---- P64 连续加权：RPS 权重 0.25 → 0.30/0.35/0.40（2026-11-11 老田裁定方案 A）----
@@ -1295,6 +1314,169 @@ def run_backtest(args):
                 _trow["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
             weight_ab["th_monthly"]["rows"].append(_trow)
 
+    # ---- P65 env 分层：回答「该全停还是该降仓」（2026-11-11 老田裁定 D1 前置取证）----
+    # 现行闸门是二值：breadth<0.40 或 med20<-3% → 当日信号全部作废。
+    # D1 想把「全停」换成「降仓」，前提是**被停掉的那些日子里仍有正期望信号**。
+    # 若被砍掉的档位后验本就是负的，降仓只是少亏，改不动结论；
+    # 若某些档位后验为正、只是波动大，那才是「该降不该停」。
+    # 做法：用 gate_off 的买入掩码（不看闸门），按 breadth / med20 分档看后验。
+    # 注意：这里比的是「闸门如果不存在」的反事实，不是现行体系的后验。
+    _, buy_nogate, _ = combine_score(
+        tech_w,
+        mix_cur,
+        env_df,
+        buy_th=TH_CUR[0],
+        obs_th=TH_CUR[1],
+        gate_on=False,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
+    _bn = buy_nogate.loc[in_win]
+    _br_vec = env_df.loc[in_win, "breadth"].to_numpy(dtype=float)
+    _md_vec = env_df.loc[in_win, "med20"].to_numpy(dtype=float)
+    _sf_vec = env_df.loc[in_win, "safe"].to_numpy(dtype=bool)
+    _br_mat = np.broadcast_to(_br_vec[:, None], _bn.shape)
+    _md_mat = np.broadcast_to(_md_vec[:, None], _bn.shape)
+    _sf_mat = np.broadcast_to(_sf_vec[:, None], _bn.shape)
+
+    def _band_row(mask):
+        row = {"n_buy": int(mask.sum().sum()),
+               "n_safe": int((mask & _sf_mat).sum().sum()),
+               "holds": {}}
+        for _n in holds:
+            _r, _ = trade_returns(
+                mask, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            row["holds"][str(_n)] = {
+                "n_trades": int(len(_r)),
+                "mean": round(float(_r.mean()), 6) if len(_r) else None,
+                "median": round(float(_r.median()), 6) if len(_r) else None,
+                "win_rate": round(float((_r > 0).mean()), 4) if len(_r) else None,
+            }
+        return row
+
+    BR_EDGES = ((0.0, 0.30, "br<30"), (0.30, 0.40, "br30_40"),
+                (0.40, 0.50, "br40_50"), (0.50, 0.60, "br50_60"),
+                (0.60, 0.70, "br60_70"), (0.70, 1.01, "br>=70"))
+    MED_EDGES = ((-9.0, -0.05, "med<-5"), (-0.05, -0.03, "med-5_-3"),
+                 (-0.03, 0.0, "med-3_0"), (0.0, 9.0, "med>=0"))
+    env_split = {
+        "note": "反事实分层：买入掩码含 score>=buy_th 但**不含** env 闸门；"
+        "按当日 breadth / med20 分档看后验；n_safe=该档中被现行闸门放行的笔数；"
+        "用于判断「全停」与「降仓」哪个更接近最优",
+        "breadth": {},
+        "med20": {},
+    }
+    for _lo, _hi, _lb in BR_EDGES:
+        _m = _bn & (_br_mat >= _lo) & (_br_mat < _hi)
+        env_split["breadth"][_lb] = _band_row(_m)
+        # 逐月：band 内按月拆，检验「甜点区」是否只在样本内成立
+        _bk = {"n_buy": int(_m.sum().sum()), "rows": []}
+        for _y, _mth in _MONTHS:
+            _mmk = np.array([_y == _a and _mth == _b for _a, _b in _YM])[:, None]
+            _selk = _m & pd.DataFrame(
+                np.broadcast_to(_mmk, _m.shape), index=_m.index, columns=_m.columns
+            )
+            _kr = {"month": "%04d%02d" % (_y, _mth), "n_buy": int(_selk.sum().sum())}
+            for _n in (5, 10):
+                _rr, _ = trade_returns(
+                    _selk, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _kr["t%d" % _n] = round(float(_rr.mean()), 6) if len(_rr) else None
+            _bk["rows"].append(_kr)
+        env_split["breadth_monthly"] = env_split.get("breadth_monthly", {})
+        env_split["breadth_monthly"][_lb] = _bk
+    for _lo, _hi, _lb in MED_EDGES:
+        _m = _bn & (_md_mat >= _lo) & (_md_mat < _hi)
+        env_split["med20"][_lb] = _band_row(_m)
+
+    # 现行闸门的两组对照：被放行的 vs 被砍掉的（同为 gate_off 信号集）
+    env_split["gate_effect"] = {
+        "note": "同一信号集（gate_off）按现行闸门是否放行拆分，直接量化「砍掉了什么」",
+        "passed": _band_row(_bn & _sf_mat),
+        "blocked": _band_row(_bn & ~_sf_mat),
+    }
+
+    # ---- P66 组合层 A/B：连续仓位的唯一有效检验口径 ----
+    # 逐笔平均收益会把仓位系数归一化掉（分子分母同时乘 w），看不见任何差别。
+    # 必须在「总资金」口径下模拟：每日按 w_t 投入现金的 1/n，持有 n 日到期回收，
+    # 稳态 w=1 时满仓。三方案同一引擎、同一信号集（gate_off），只换 w。
+    def _portfolio_curve(batch_ret, w_ser, n, all_dates):
+        rec = batch_ret.reindex(all_dates)
+        ww = w_ser.reindex(all_dates).fillna(0.0)
+        cash = 1.0
+        due = {}
+        navs = []
+        for i, _d in enumerate(all_dates):
+            if i in due:
+                cash += due.pop(i)
+            total = cash + sum(due.values())
+            _r = rec.loc[_d]
+            if pd.notna(_r) and float(ww.loc[_d]) > 0:
+                amt = total * float(ww.loc[_d]) / n
+                if amt > 0:
+                    cash -= amt
+                    _k = i + n
+                    due[_k] = due.get(_k, 0.0) + amt * (1.0 + float(_r))
+            navs.append(cash + sum(due.values()))
+        return pd.Series(navs, index=all_dates)
+
+    def _curve_stats(nav):
+        if len(nav) < 2:
+            return {}
+        dd = float((nav / nav.cummax() - 1.0).min())
+        tot = float(nav.iloc[-1] / nav.iloc[0] - 1.0)
+        days = max(1, len(nav))
+        ann = (1.0 + tot) ** (243.0 / days) - 1.0 if tot > -1 else -1.0
+        return {
+            "total_ret": round(tot, 5),
+            "annual": round(ann, 5),
+            "max_dd": round(dd, 5),
+            "calmar": round(ann / abs(dd), 3) if dd < 0 else None,
+        }
+
+    _br_s = env_df.loc[in_win, "breadth"].astype(float)
+    _md_s = env_df.loc[in_win, "med20"].astype(float)
+    _sf_s = env_df.loc[in_win, "safe"].astype(float)
+    W_LIN = ((_br_s - 0.30) / 0.30).clip(0.0, 1.0)
+    W_LIN_MED = (W_LIN * ((_md_s + 0.05) / 0.05).clip(0.0, 1.0)).astype(float)
+    _dates_all = tech_in.index
+
+    portfolio_ab = {
+        "note": "总资金口径：每日投入 现金×w/n，持有 n 日到期回收；"
+        "信号集统一用 gate_off（闸门交还给 w），三方案只换仓位系数；"
+        "w_lin=(breadth-0.30)/0.30 clip，w_lin_med 再乘 med20 线性惩罚",
+        "holds": [],
+        "variants": [],
+    }
+    W_VARIANTS = [
+        ("w_gate_binary", _sf_s, "现行二值闸门：safe?1:0"),
+        ("w_full", pd.Series(1.0, index=_br_s.index), "满仓不做闸门"),
+        ("w_lin", W_LIN, "breadth 线性 (0.30→0, 0.60→1)"),
+        ("w_lin_med", W_LIN_MED, "breath 线性 × med20 线性（-5%→0, 0→1）"),
+    ]
+    for _n in (5, 10):
+        _batch = _bn
+        _rets, _ = trade_returns(
+            _batch, open_in, close_in, _n, args.cost, unfill=unfill_in
+        )
+        _bydate = _rets.groupby(level="date").mean() if len(_rets) else pd.Series(dtype=float)
+        _n_nav = _n
+        _wrap = {"hold": _n, "results": []}
+        for _wl2, _ws, _wdesc in W_VARIANTS:
+            try:
+                _nav = _portfolio_curve(_bydate, _ws, _n_nav, _dates_all)
+                _st = _curve_stats(_nav)
+            except Exception as _e:  # pragma: no cover
+                _st = {"error": str(_e)}
+            _st.update({"label": _wl2, "desc": _wdesc,
+                        "avg_w": round(float(_ws.reindex(_dates_all).fillna(0).mean()), 4)})
+            _wrap["results"].append(_st)
+        portfolio_ab["holds"].append(_wrap)
+
+
+
     all_ret_hold = {}
     for n in holds:
         ret, _drop = trade_returns(
@@ -1372,6 +1554,8 @@ def run_backtest(args):
         "gate_ab": gate_ab,
         "floor_ab": floor_ab,
         "weight_ab": weight_ab,
+        "env_split": env_split,
+        "portfolio_ab": portfolio_ab,
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
