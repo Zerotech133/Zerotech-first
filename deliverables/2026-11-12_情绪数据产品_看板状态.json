@@ -1,0 +1,154 @@
+{
+  "task_id": "ZB-DATA-SENT-20261112-T01",
+  "title": "情绪数据产品化",
+  "subtitle": "数据仓一等数据产品 · KG 只读接入的前置工程",
+  "generated_at": "2026-11-12 05:51:43",
+  "signoffs": [
+    {
+      "id": "mada",
+      "name": "马岱",
+      "role": "数据仓主办",
+      "kind": "signoff",
+      "status": "sent",
+      "due": "2026-11-12 18:00",
+      "evidence": "任务单 ZB-DATA-SENT-20261112-T01；MSG-20261112052759-463970",
+      "note": "经 DATA1 席位送达；hr 下暂无马岱独立席位"
+    },
+    {
+      "id": "zhangsong",
+      "name": "张松",
+      "role": "DATA1 / Owner",
+      "kind": "signoff",
+      "status": "sent",
+      "due": "2026-11-12 18:00",
+      "evidence": "契约 §13 签收请求；MSG-20261112053642-2b3b14",
+      "note": "确认 e互动缺口、个股 forward-only、市场 60 天回填"
+    },
+    {
+      "id": "majun",
+      "name": "马钧",
+      "role": "DEV1 / KG",
+      "kind": "input",
+      "status": "hold",
+      "due": "2026-11-14 18:00",
+      "evidence": "只读消费通知 ZB-DATA-SENT-20261112-N01；MSG-20261112052759-dda750",
+      "note": "只交查询需求，不写代码、不建节点、不写图"
+    },
+    {
+      "id": "laotian",
+      "name": "老田",
+      "role": "A0 / 发布批准",
+      "kind": "approval",
+      "status": "pending",
+      "due": "2026-11-18 18:00",
+      "evidence": "发布闸门：验收回执齐备后提交批准",
+      "note": "不代替批准；发布前必须显式确认"
+    }
+  ],
+  "milestones": [
+    {
+      "id": "m1",
+      "date": "2026-11-12 18:00",
+      "title": "签收：马岱 / 张松",
+      "owner": "马岱 / 张松",
+      "status": "in_progress",
+      "gate": true,
+      "evidence": "签收回复 + 契约 §13 确认"
+    },
+    {
+      "id": "m2",
+      "date": "2026-11-13 18:00",
+      "title": "建表 + loader 干跑",
+      "owner": "马岱",
+      "status": "pending",
+      "gate": true,
+      "evidence": "DDL、dry-run 日志、manifest 样例行"
+    },
+    {
+      "id": "m3",
+      "date": "2026-11-14 18:00",
+      "title": "KG 只读查询需求",
+      "owner": "马钧",
+      "status": "pending",
+      "gate": false,
+      "evidence": "一页查询需求 + 查询草案；不写代码"
+    },
+    {
+      "id": "m4",
+      "date": "2026-11-16 18:00",
+      "title": "市场 60 天回填 + 个股首日",
+      "owner": "马岱",
+      "status": "pending",
+      "gate": true,
+      "evidence": "回填 manifest、行数、覆盖率、异常清单"
+    },
+    {
+      "id": "m5",
+      "date": "2026-11-17 18:00",
+      "title": "契约 §13 验收",
+      "owner": "张松 / 陈群",
+      "status": "pending",
+      "gate": true,
+      "evidence": "验收记录 + 质量查询结果"
+    },
+    {
+      "id": "m6",
+      "date": "2026-11-18 18:00",
+      "title": "回执 + 数据仓发布",
+      "owner": "马岱 / 张松",
+      "status": "pending",
+      "gate": true,
+      "evidence": "发布回执、catalog 登记、回滚点"
+    },
+    {
+      "id": "m7",
+      "date": "2026-11-18 18:00",
+      "title": "老田批准发布",
+      "owner": "老田",
+      "status": "pending",
+      "gate": true,
+      "evidence": "显式批准记录"
+    },
+    {
+      "id": "m8",
+      "date": "发布后",
+      "title": "另发 KG 接入实施单",
+      "owner": "马钧 / 张松",
+      "status": "blocked",
+      "gate": false,
+      "evidence": "数据仓 v1 发布回执之后"
+    }
+  ],
+  "blockers": [
+    {
+      "level": "high",
+      "text": "签收未完成：马岱、张松均未签收，禁止建表。"
+    },
+    {
+      "level": "medium",
+      "text": "e互动当前无生产者：权重 0.10 但 sentiment_card.py 无采集；允许空，不补 0 行。"
+    },
+    {
+      "level": "medium",
+      "text": "个股/来源历史无法回填：只能从 2026-11-12 起 forward-only；市场级最多回填 60 天。"
+    },
+    {
+      "level": "low",
+      "text": "马岱无独立 hr 席位：任务经 DATA1 送达，标题/正文明确主办。"
+    }
+  ],
+  "notes": [
+    {
+      "at": "2026-11-12 05:28",
+      "text": "三份文书 + 回执提交：136359878 / 7e2506e45。"
+    },
+    {
+      "at": "2026-11-12 05:36",
+      "text": "张松签收请求送达 DATA1：MSG-20261112053642-2b3b14。"
+    },
+    {
+      "at": "2026-11-12 05:46",
+      "text": "执行跟踪表建立并提交：e549f28d6；五个检查点已设。"
+    }
+  ]
+}

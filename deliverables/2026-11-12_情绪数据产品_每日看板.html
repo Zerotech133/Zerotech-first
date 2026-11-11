@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>情绪数据产品 · 每日看板</title>
+<style>
+:root{
+  --bg:#08101c;--panel:#0e1a2b;--panel2:#122238;--line:#20344d;--text:#e8f1ff;--muted:#8fa5c0;
+  --cyan:#41d1ff;--green:#3ddc97;--amber:#ffb84d;--red:#ff6b7a;--violet:#a78bfa;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 700px at 80% -10%,#123454 0%,var(--bg) 55%);color:var(--text);font:14px/1.55 "Segoe UI","Microsoft YaHei",sans-serif}
+.wrap{max-width:1420px;margin:0 auto;padding:28px 26px 54px}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:18px}
+.kicker{color:var(--cyan);font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+h1{font-size:34px;line-height:1.15;margin:6px 0 8px;letter-spacing:-.02em}
+.sub{color:var(--muted);max-width:760px}
+.meta{text-align:right;color:var(--muted);font-size:12px;white-space:nowrap}
+.meta b{color:var(--text);font-weight:600}
+.banner{margin:20px 0 16px;padding:18px 22px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(120deg,rgba(65,209,255,.10),rgba(167,139,250,.06));display:flex;justify-content:space-between;gap:18px;align-items:center}
+.banner.bad{border-color:rgba(255,107,122,.42);background:linear-gradient(120deg,rgba(255,107,122,.13),rgba(255,184,77,.06))}
+.banner.ok{border-color:rgba(61,220,151,.45);background:linear-gradient(120deg,rgba(61,220,151,.13),rgba(65,209,255,.06))}
+.banner h2{margin:0;font-size:24px}
+.banner p{margin:4px 0 0;color:var(--muted)}
+.big{font-size:36px;font-weight:800;letter-spacing:-.03em;color:var(--amber);white-space:nowrap}
+.banner.ok .big{color:var(--green)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 22px}
+.sign-card{border:1px solid var(--line);border-radius:14px;padding:15px 15px 12px;background:linear-gradient(180deg,var(--panel2),var(--panel));min-height:198px}
+.sign-card.ok{border-color:rgba(61,220,151,.42)} .sign-card.bad{border-color:rgba(255,107,122,.45)}
+.sign-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sign-icon{display:inline-flex;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:var(--amber);font-weight:800}
+.sign-card.ok .sign-icon{color:var(--green)} .sign-card.bad .sign-icon{color:var(--red)}
+.sign-card h3{margin:2px 0 0;font-size:19px}
+.role{color:var(--cyan);font-size:12px;margin-bottom:7px}
+.due{color:var(--muted);font-size:12px;margin-bottom:7px} .due b{color:var(--text)}
+.ev{color:#c6d6e8;font-size:12px;border-left:2px solid var(--line);padding-left:8px;margin:7px 0}
+.note{color:var(--muted);font-size:12px;margin-top:7px}
+.pill{display:inline-block;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;border:1px solid transparent;white-space:nowrap}
+.pill.ok{color:var(--green);border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.10)}
+.pill.warn{color:var(--amber);border-color:rgba(255,184,77,.4);background:rgba(255,184,77,.10)}
+.pill.bad{color:var(--red);border-color:rgba(255,107,122,.4);background:rgba(255,107,122,.10)}
+.pill.info{color:var(--cyan);border-color:rgba(65,209,255,.4);background:rgba(65,209,255,.10)}
+.pill.muted{color:var(--muted);border-color:var(--line);background:rgba(255,255,255,.03)}
+.section{margin-top:20px;border:1px solid var(--line);border-radius:16px;background:rgba(14,26,43,.82);overflow:hidden}
+.section-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.section-h h2{margin:0;font-size:16px;letter-spacing:.02em}
+.section-h .hint{color:var(--muted);font-size:12px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid rgba(32,52,77,.65);vertical-align:top}
+th{color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+tr:last-child td{border-bottom:0}
+.num{color:var(--muted);font-variant-numeric:tabular-nums;width:46px}
+.m-title{font-weight:700;font-size:14px} .m-owner{color:var(--muted);font-size:12px;margin-top:2px}
+.m-date{white-space:nowrap;font-variant-numeric:tabular-nums} .m-left{color:var(--muted);font-size:11px;margin-top:2px}
+.m-ev{color:var(--muted);font-size:12px;max-width:420px}
+.two{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:20px}
+.panel{border:1px solid var(--line);border-radius:16px;background:rgba(14,26,43,.82);padding:16px 18px}
+.panel h2{margin:0 0 10px;font-size:16px}
+.blockers{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.blockers li{display:flex;gap:9px;padding:9px 10px;border-radius:9px;background:rgba(255,255,255,.025);color:#c9d8ea;font-size:12px}
+.blockers li:before{content:"";flex:0 0 7px;width:7px;height:7px;border-radius:50%;margin-top:6px;background:var(--amber)}
+.blockers .block-high:before{background:var(--red)} .block-low:before{background:var(--muted)}
+.focus{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px 16px;border-radius:12px;background:linear-gradient(90deg,rgba(65,209,255,.12),rgba(167,139,250,.06));border:1px solid rgba(65,209,255,.24)}
+.focus b{display:block;font-size:15px} .focus span{color:var(--muted);font-size:12px}
+.notes{list-style:none;margin:0;padding:0;display:grid;gap:9px;max-height:230px;overflow:auto}
+.notes li{display:grid;grid-template-columns:94px 1fr;gap:10px;font-size:12px;color:#c9d8ea}
+.notes time{color:var(--muted);font-variant-numeric:tabular-nums}
+.footer{display:flex;justify-content:space-between;gap:14px;margin-top:22px;color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:12px}
+code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#cfe4ff}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+@media(max-width:700px){.wrap{padding:18px 14px 40px}h1{font-size:26px}.top{display:block}.meta{text-align:left;margin-top:10px}.grid{grid-template-columns:1fr}.banner{display:block}.big{margin-top:8px}th,td{padding:9px}.m-ev{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="kicker">零界 · 数据仓 · 每日看板</div>
+      <h1>情绪数据产品化</h1>
+      <div class="sub">数据仓一等数据产品 · KG 只读接入的前置工程</div>
+    </div>
+    <div class="meta">
+      <div>任务 <b>ZB-DATA-SENT-20261112-T01</b></div>
+      <div>生成 <b>2026-11-12 05:54:02</b></div>
+      <div>数据源 <b>看板状态 JSON</b></div>
+    </div>
+  </div>
+
+  <div class="banner bad">
+    <div><h2>不可发布</h2><p>闸门完成 0/9，未签收/未验收前不得发布</p></div>
+    <div class="big">0/9</div>
+  </div>
+
+  <div class="focus">
+    <div><b>今日焦点</b><span><b>马岱签收</b><span>数据仓主办 · 11-12 18:00 · 今天</span></span></div>
+    <div style="color:var(--muted);font-size:12px">闸门完成度 0%</div>
+  </div>
+
+  <div class="grid">
+    
+        <article class="sign-card warn">
+          <div class="sign-top"><span class="sign-icon">…</span><span class="pill warn">已送达·待签收</span></div>
+          <h3>马岱</h3>
+          <div class="role">数据仓主办</div>
+          <div class="due">截止 <b>11-12 18:00</b> · 今天</div>
+          <div class="ev">任务单 ZB-DATA-SENT-20261112-T01；MSG-20261112052759-463970</div>
+          <div class="note">经 DATA1 席位送达；hr 下暂无马岱独立席位</div>
+        </article>
+        <article class="sign-card warn">
+          <div class="sign-top"><span class="sign-icon">…</span><span class="pill warn">已送达·待签收</span></div>
+          <h3>张松</h3>
+          <div class="role">DATA1 / Owner</div>
+          <div class="due">截止 <b>11-12 18:00</b> · 今天</div>
+          <div class="ev">契约 §13 签收请求；MSG-20261112053642-2b3b14</div>
+          <div class="note">确认 e互动缺口、个股 forward-only、市场 60 天回填</div>
+        </article>
+        <article class="sign-card warn">
+          <div class="sign-top"><span class="sign-icon">…</span><span class="pill warn">HOLD·待需求</span></div>
+          <h3>马钧</h3>
+          <div class="role">DEV1 / KG</div>
+          <div class="due">截止 <b>11-14 18:00</b> · 2 天后</div>
+          <div class="ev">只读消费通知 ZB-DATA-SENT-20261112-N01；MSG-20261112052759-dda750</div>
+          <div class="note">只交查询需求，不写代码、不建节点、不写图</div>
+        </article>
+        <article class="sign-card muted">
+          <div class="sign-top"><span class="sign-icon">…</span><span class="pill muted">未开始</span></div>
+          <h3>老田</h3>
+          <div class="role">A0 / 发布批准</div>
+          <div class="due">截止 <b>11-18 18:00</b> · 6 天后</div>
+          <div class="ev">发布闸门：验收回执齐备后提交批准</div>
+          <div class="note">不代替批准；发布前必须显式确认</div>
+        </article>
+  </div>
+
+  <div class="section">
+    <div class="section-h"><h2>里程碑</h2><div class="hint">红=逾期/阻塞 · 黄=待办 · 绿=完成 · 蓝=进行中</div></div>
+    <table>
+      <thead><tr><th>#</th><th>里程碑</th><th>截止</th><th>状态</th><th>验收证据</th></tr></thead>
+      <tbody>
+        <tr class="row-info">
+          <td class="num">01</td>
+          <td><div class="m-title">签收：马岱 / 张松</div><div class="m-owner">马岱 / 张松 · 闸门</div></td>
+          <td class="m-date">11-12 18:00<div class="m-left">今天</div></td>
+          <td><span class="pill info">进行中</span></td>
+          <td class="m-ev">签收回复 + 契约 §13 确认</td>
+        </tr>
+        <tr class="row-muted">
+          <td class="num">02</td>
+          <td><div class="m-title">建表 + loader 干跑</div><div class="m-owner">马岱 · 闸门</div></td>
+          <td class="m-date">11-13 18:00<div class="m-left">1 天后</div></td>
+          <td><span class="pill muted">未开始</span></td>
+          <td class="m-ev">DDL、dry-run 日志、manifest 样例行</td>
+        </tr>
+        <tr class="row-muted">
+          <td class="num">03</td>
+          <td><div class="m-title">KG 只读查询需求</div><div class="m-owner">马钧 · 并行</div></td>
+          <td class="m-date">11-14 18:00<div class="m-left">2 天后</div></td>
+          <td><span class="pill muted">未开始</span></td>
+          <td class="m-ev">一页查询需求 + 查询草案；不写代码</td>
+        </tr>
+        <tr class="row-muted">
+          <td class="num">04</td>
+          <td><div class="m-title">市场 60 天回填 + 个股首日</div><div class="m-owner">马岱 · 闸门</div></td>
+          <td class="m-date">11-16 18:00<div class="m-left">4 天后</div></td>
+          <td><span class="pill muted">未开始</span></td>
+          <td class="m-ev">回填 manifest、行数、覆盖率、异常清单</td>
+        </tr>
+        <tr class="row-muted">
+          <td class="num">05</td>
+          <td><div class="m-title">契约 §13 验收</div><div class="m-owner">张松 / 陈群 · 闸门</div></td>
+          <td class="m-date">11-17 18:00<div class="m-left">5 天后</div></td>
+          <td><span class="pill muted">未开始</span></td>
+          <td class="m-ev">验收记录 + 质量查询结果</td>
+        </tr>
+        <tr class="row-muted">
+          <td class="num">06</td>
+          <td><div class="m-title">回执 + 数据仓发布</div><div class="m-owner">马岱 / 张松 · 闸门</div></td>
+          <td class="m-date">11-18 18:00<div class="m-left">6 天后</div></td>
+          <td><span class="pill muted">未开始</span></td>
+          <td class="m-ev">发布回执、catalog 登记、回滚点</td>
+        </tr>
+        <tr class="row-muted">
+          <td class="num">07</td>
+          <td><div class="m-title">老田批准发布</div><div class="m-owner">老田 · 闸门</div></td>
+          <td class="m-date">11-18 18:00<div class="m-left">6 天后</div></td>
+          <td><span class="pill muted">未开始</span></td>
+          <td class="m-ev">显式批准记录</td>
+        </tr>
+        <tr class="row-bad">
+          <td class="num">08</td>
+          <td><div class="m-title">另发 KG 接入实施单</div><div class="m-owner">马钧 / 张松 · 并行</div></td>
+          <td class="m-date">发布后<div class="m-left">发布后</div></td>
+          <td><span class="pill bad">阻塞</span></td>
+          <td class="m-ev">数据仓 v1 发布回执之后</td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <div class="two">
+    <div class="panel"><h2>阻断项 / 边界</h2><ul class="blockers"><li class="block-high"><span>签收未完成：马岱、张松均未签收，禁止建表。</span></li><li class="block-medium"><span>e互动当前无生产者：权重 0.10 但 sentiment_card.py 无采集；允许空，不补 0 行。</span></li><li class="block-medium"><span>个股/来源历史无法回填：只能从 2026-11-12 起 forward-only；市场级最多回填 60 天。</span></li><li class="block-low"><span>马岱无独立 hr 席位：任务经 DATA1 送达，标题/正文明确主办。</span></li></ul></div>
+    <div class="panel"><h2>最近动作</h2><ul class="notes"><li><time>2026-11-12 05:46</time><span>执行跟踪表建立并提交：e549f28d6；五个检查点已设。</span></li><li><time>2026-11-12 05:36</time><span>张松签收请求送达 DATA1：MSG-20261112053642-2b3b14。</span></li><li><time>2026-11-12 05:28</time><span>三份文书 + 回执提交：136359878 / 7e2506e45。</span></li></ul></div>
+  </div>
+
+  <div class="footer">
+    <div>每日 08:05 自动重生成 · <code>python -X utf8 tools/ops/sentiment_product_dashboard.py --render</code></div>
+    <div>状态文件 <code>deliverables/2026-11-12_情绪数据产品_看板状态.json</code></div>
+  </div>
+</div>
+</body>
+</html>
