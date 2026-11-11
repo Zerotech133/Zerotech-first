@@ -190,6 +190,10 @@ def main():
     # 文件会被这里正常覆盖重算（幂等，同输入同输出）。
     steps.append(("影子台账（shadow --daily）",
                   ["shadow_ab.py", "--daily"], True))
+    # P0 观察腿（2026-11-11 想法1）：外部组合 × 结构池每日对照。
+    # soft——data/external_portfolio.json 不存在时脚本自己跳过；
+    # 纯观察层不产信号，失败不挡流水线。
+    steps.append(("外部组合 P0 观察", ["portfolio_watch.py"], True))
 
     if a.dry:
         log("计划执行：")

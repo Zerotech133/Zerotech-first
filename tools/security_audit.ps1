@@ -3,7 +3,7 @@
 # 审计 py312 的依赖冻结清单（-r），bandit 仍用 py312 扫仓库代码。
 $ErrorActionPreference = 'Continue'
 $env:PYTHONUTF8 = '1'
-$py312 = 'C:\项目\py312\python.exe'
+$py312 = 'C:\Program Files\Python311\python.exe'
 $py311 = 'C:\Program Files\Python311\python.exe'
 $log = 'C:\Temp\security_audit_latest.log'
 $status = 'C:\Temp\security_audit_status.json'
@@ -80,3 +80,4 @@ if (Test-Path $base) {
     bandit_json = 'C:\Temp\bandit_latest.json'
 } | ConvertTo-Json | Out-File $status -Encoding utf8
 exit 0
+

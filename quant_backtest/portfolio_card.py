@@ -69,7 +69,13 @@ def build_rows():
     bank = PLAN["银行减半线"]
     keep = set(PLAN["小盘保留"])
     for h in pf["holdings"]:
-        c, nm, grp = h["code"], h["name"], h["group"]
+        c, nm, grp = h.get("code"), h["name"], h["group"]
+        if not c:  # v2 占位票（复盘未点名）：只占位不出价位
+            out.append({"code": "—", "name": nm, "group": grp,
+                        "tier": "unconfirmed", "close": None, "zg": None,
+                        "zd": None, "hi": None, "lo": None, "dist_zg": None,
+                        "act": "待补名单", "l1": "—", "l2": "—", "pct": None})
+            continue
         r = idx.get(c) or {}
         close = r.get("close")
         zg, zd = r.get("zg"), r.get("zd")

@@ -33,3 +33,27 @@ def test_norm_concept_strips_whitespace_case():
     existing = [{"concept": "中大 盘股", "q": "q1"}]
     generated = [{"concept": "中大 盘股", "q": "q2"}]
     assert len(lc.merge_cards(existing, generated)) == 1
+
+
+def test_main_rerun_keeps_1096_cards_and_merge_info(tmp_path, monkeypatch):
+    """重跑生成器：已导入的 1096 张卡不减少，且 merge_info 批次台账保留。"""
+    import json
+    cards = [{"concept": f"C{i}", "q": f"q{i}", "a": f"a{i}", "source": "s", "topic": "交易体系", "evidence": "e"} for i in range(1096)]
+    merge_info = {
+        "video_corpus_top100_20261108": {"count": 72},
+        "video_corpus_batch28_20261109": {"count": 81},
+        "video_corpus_gapfill_20261109": {"count": 54},
+        "video_corpus_mix500_20261110": {"count": 383},
+        "chanlun108_20261111": {"count": 106},
+    }
+    out = tmp_path / "kb_learning_cards.json"
+    out.write_text(json.dumps({"cards": cards, "merge_info": merge_info}, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(lc, "OUT_JSON", out)
+    monkeypatch.setattr(lc, "CARDS_DIR", tmp_path / "cards")
+    # 生成卡与现有卡同 concept，确保不新增（重跑后应恰好 1096）
+    monkeypatch.setattr(lc, "load_units", lambda: [{"book": "b", "chapter": "c", "concept": "C0", "claim": "x", "evidence": "e"}])
+    assert lc.main(["--n", "1"]) == 0
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert len(doc["cards"]) == 1096
+    assert doc["merge_info"] == merge_info
+    assert [c["q"] for c in doc["cards"][:3]] == ["q0", "q1", "q2"]

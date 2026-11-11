@@ -175,11 +175,32 @@ def test_denominator_is_codes_not_by_code():
     assert row["coverage_posts"] in (0.0, 1.0)
 
 
-def test_two_tiers_listed_ge_posts():
+def test_two_tiers_each_bounded_by_targets_not_by_each_other():
+    """两档各自 <= 分母，互不比较（裁定撤销 posts <= listed 包含关系）。"""
     m = C.classify(_doc())
     row = C.coverage_row(_doc(), m)
-    assert row["n_listed"] >= row["n_posts"]
-    assert row["coverage_listed"] >= row["coverage_posts"]
+    assert row["n_listed"] <= row["n_targets"]
+    assert row["n_posts"] <= row["n_targets"]
+    assert row["coverage_listed"] <= 1.0
+    assert row["coverage_posts"] <= 1.0
+
+
+def test_posts_may_exceed_listed_without_clamping():
+    """真实数据形态：每只目标票都拉到帖子，但只有部分上榜。
+
+    posts 与 listed 是并列独立口径，posts > listed 合法；
+    覆盖率实现不得为迎合任何包含关系而截断 posts。
+    """
+    d = _doc()
+    for c in d["codes"]:
+        d["by_code"].setdefault(C._code6(c), {})["posts"] = 1
+    row = C.coverage_row(d, C.classify(d))
+    assert row["n_posts"] == len(d["codes"])
+    assert row["n_posts"] > row["n_listed"]
+    assert row["n_posts"] <= row["n_targets"]
+    assert row["n_listed"] <= row["n_targets"]
+    assert row["coverage_posts"] <= 1.0
+    assert row["coverage_listed"] <= 1.0
 
 
 def test_empty_targets_yields_none_not_zero():

@@ -622,9 +622,12 @@ def main():
     ap.add_argument("--start", default="2024-01-01")
     ap.add_argument("--end", default="2026-12-31")
     ap.add_argument("--step", type=int, default=STEP_DEFAULT)
-    ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 4) - 4))
+    ap.add_argument("--workers", type=int, default=min(max(1, (os.cpu_count() or 4) - 4), 16),
+                    help="进程数上限 16（32 核留一半给系统/其他任务）")
     ap.add_argument("--limit", type=int, default=0)
     args = ap.parse_args()
+    # 强制护栏：进程数硬限 16，避免 32 核机器上 multiprocessing 把 CPU 打满
+    args.workers = max(1, min(args.workers, 16))
     if args.run:
         return cmd_run(args)
     if args.report:

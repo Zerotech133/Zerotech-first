@@ -4,7 +4,7 @@
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Continue'
 $repo = 'C://aios'
-$python = 'C://项目//py312//python.exe'
+$python = 'C:\Program Files\Python311\python.exe'
 $gate = 'C://aios//tools//scheduled//data_freshness_gate.py'
 $log = 'C://Temp//factor_daily_task.log'
 $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -37,3 +37,4 @@ try {
     Write-TaskLog ('factor_daily EXCEPTION: ' + $_.Exception.Message)
     exit 1
 }
+

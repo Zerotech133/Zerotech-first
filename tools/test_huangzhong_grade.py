@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 
 _TOOLS = Path(__file__).resolve().parent
+_FIXTURE = _TOOLS.parent / "agent_platform" / "tests" / "fixtures" / "huangzhong_w1"
 
 
 def _load():
@@ -69,7 +70,14 @@ def test_grade_readonly(tmp_path):
     assert sorted(p.name for p in d.iterdir()) == before
 
 
-def test_grade_default_template_exists():
+def test_grade_fixture_template_exists():
+    assert (_FIXTURE / "2026-10-28_黄忠W1提交模板").is_dir()
+    assert len(list((_FIXTURE / "2026-10-28_黄忠W1提交模板").glob("*.md"))) >= 8
+    assert (_FIXTURE / "2026-10-28_黄忠W1验收样例与批改标准_v1.md").is_file()
+
+
+def test_grade_default_dir_fallback_exists():
+    """A 方案兜底：生产默认目录仍可解析到原路径或归档路径。"""
     g = _load()
     assert g.DEFAULT_DIR.is_dir()
     assert len(list(g.DEFAULT_DIR.glob("*.md"))) >= 8

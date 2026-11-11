@@ -1,0 +1,412 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-10T18:20:26+08:00",
+ "date": "2026-11-10",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.5,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.4,
+  "avg_elapsed_seconds": 12.21,
+  "avg_completeness_score": 5.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-10】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 7,
+  "answerable_rate": 0.7857,
+  "guard_pass_rate": 0.7857,
+  "fallback_rate": 0.0714,
+  "avg_citations": 1.8571,
+  "avg_elapsed_seconds": 14.88,
+  "window": 7,
+  "date_from": "2026-11-04",
+  "date_to": "2026-11-10"
+ },
+ "history_entries": 9,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-06",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.2,
+    "avg_elapsed_seconds": 21.9,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_ef78939178",
+     "q2_87eff8d7a3"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-07",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 3.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.195,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_0d7db24320",
+     "q2_4f34cbb059"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-08",
+    "n": 2,
+    "answerable_rate": 0.5,
+    "guard_pass_rate": 0.5,
+    "fallback_rate": 0.5,
+    "avg_citations": 1.0,
+    "avg_citation_resolvable_rate": 0.5,
+    "avg_inference_ratio": 0.25,
+    "avg_elapsed_seconds": 37.885,
+    "avg_completeness_score": 3.0,
+    "guard_pass_count": 1,
+    "sample_ids": [
+     "q2_7274d52791",
+     "q2_1595bd5290"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "FALLBACK_HIGH",
+     "TREND_DOWN"
+    ]
+   },
+   {
+    "date": "2026-11-09",
+    "n": 2,
+    "answerable_rate": 0.0,
+    "guard_pass_rate": 0.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 0.0,
+    "avg_citation_resolvable_rate": 0.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 0.0,
+    "avg_completeness_score": 0.0,
+    "guard_pass_count": 0,
+    "sample_ids": [
+     "q2_4b27690260",
+     "q2_b74f8cebda"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "TREND_DOWN"
+    ]
+   },
+   {
+    "date": "2026-11-10",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4,
+    "avg_elapsed_seconds": 12.21,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_5cb2ec9a7b",
+     "q2_960b202685"
+    ],
+    "alerts": []
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 7,
+   "answerable_rate": 0.7857,
+   "guard_pass_rate": 0.7857,
+   "fallback_rate": 0.0714,
+   "avg_citations": 1.8571,
+   "avg_elapsed_seconds": 14.88,
+   "window": 7,
+   "date_from": "2026-11-04",
+   "date_to": "2026-11-10"
+  },
+  "updated_at": "2026-11-10T18:20:26+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_5cb2ec9a7b",
+   "category": "风险限制",
+   "theme": "AI算力/半导体",
+   "question": "供应链风险管理的限制条件与适用边界是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 13.92,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "4abb63751e3c",
+     "f186cfdfba1a"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】现有的联邦网络安全框架可作为管理和控制空间与地面段风险的起点，但需针对轨道数据中心架构明确软件保证、加密、认证及跨域事件响应等具体期望（[4abb63751e3c] p.6）。\n【事实】监管机构应阐明现有网络安全期望如何适用于轨道计算架构，包括供应链风险管理以及跨太空和地面的事件响应（[4abb63751e3c] p.6）。\n【事实】英伟达、Palantir 等科技巨头因客户对数据安全的顾虑，开始限制其前沿 AI 模型处理源代码、供应链及网络安全等敏感业务（[f186cfdfba1a] p.1）。\n【推断】\n【推断】供应链风险管理的适用边界受限于具体架构的明确需求，需针对轨道数据中心等新兴技术补充软件保证、加密及跨域响应等具体期望（依据：[4abb63751e3c] p.6）。\n【推断】供应链风险管理的限制条件包括客户对数据安全的顾虑，导致科技巨头限制模型处理敏感供应链数据，推动“零数据留存”成为默认设置（依据：[f186cfdfba1a] p.1）。",
+   "answer_length": 443,
+   "citations": [
+    {
+     "unit_id": "4abb63751e3c",
+     "book": "rp_AP202609301830015406",
+     "chapter": "供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。",
+     "page": 6,
+     "text": "现有的联邦网络安全框架可作为管理和控制空间与地面段风险的起点，但需针对轨道数据中心架构明确软件保证、加密、认证及跨域事件响应等具体期望。 监管机构应主动确定轨道数据中心等新兴技术将如何融入现行合规体系...最后，监管机构应阐明现有网络安全期望如何适用于轨道计算架构，包括软件保证、加密和认证、身份管理、供应链风险管理以及跨太空和地面的事件响应。"
+    },
+    {
+     "unit_id": "f186cfdfba1a",
+     "book": "rp_AP202610021830105301",
+     "chapter": "市场研究部 2026 年9 月18 日",
+     "page": 1,
+     "text": "英伟达、Palantir 等科技巨头因客户对数据安全的顾虑，开始限制其前沿 AI 模型（如 Fable）处理源代码、供应链及网络安全等敏感业务，并推动“零数据留存”成为默认设置。 英伟达、Palantir 和博思艾伦等企业开始限制 Anthropic 前沿模型 Fable 处理源代码、供应链和网络安全等敏感数据...英伟达企业人工智能副总裁 Justin Boitano 表示，零数据留存应成为默认设置。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_960b202685",
+   "category": "影响如何",
+   "theme": "宏观/策略/贸易",
+   "question": "中国畜禽肉产品贸易总体规模的传导路径与受益环节是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 10.5,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 3,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "3b570c6a6239",
+     "3a090c1f19a8",
+     "ec1388a6d658"
+    ],
+    "citation_invalid": [],
+    "citation_total": 3,
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 3,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】2026 年 8 月，中国畜禽肉产品进出口总额为 2261.1 百万美元，其中进口额（1968.4 百万美元）远高于出口额（292.6 百万美元），呈现显著的净进口状态（[3b570c6a6239] p.2）。\n【事实】禽肉是中国最主要的进口来源品类，其进口额占累计进口总额的比重超过 85%（[3a090c1f19a8] p.2）。\n【事实】本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别（[ec1388a6d658] p.2）。\n【推断】\n【推断】由于禽肉占据进口总额超 85% 的绝对主导地位，禽肉供应链的波动或政策变化将直接决定中国畜禽肉贸易的整体规模（依据：[3a090c1f19a8] p.2）。\n【推断】贸易结构高度依赖进口且净进口规模巨大，意味着国内养殖环节难以完全满足需求，进口替代或跨境物流环节是核心受益点（依据：[3b570c6a6239] p.2）。",
+   "answer_length": 412,
+   "citations": [
+    {
+     "unit_id": "3b570c6a6239",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2026 年 8 月，中国畜禽肉产品进出口总额为 2261.1 百万美元，其中进口额（1968.4 百万美元）远高于出口额（292.6 百万美元），呈现显著的净进口状态。 2026 年 8 月，中国畜禽肉产品进出口 2261.1 百万美元...其中，出口 292.6 百万美元...进口 1968.4 百万美元；当月净出口-1675.8 百万美元。"
+    },
+    {
+     "unit_id": "3a090c1f19a8",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2026 年 1-8 月累计数据显示，禽肉是中国最主要的进口来源品类，其进口额占累计进口总额的比重超过 85%。 2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。"
+    },
+    {
+     "unit_id": "ec1388a6d658",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉..."
+    }
+   ],
+   "citation_count": 3,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 3,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261110.json",
+ "elapsed_seconds": 24.48,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

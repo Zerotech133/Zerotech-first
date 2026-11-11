@@ -1,7 +1,7 @@
 {
   "source": "portal/daily_report/cohorts/cohort_*_{main,auto}.json",
   "asof": "20261109",
-  "generated_at": "2026-11-10T17:33:59",
+  "generated_at": "2026-11-11T07:58:06",
   "note": "两池为出票记录/影子池入场批次；只补标的公开情报，非研判",
   "pools": {
     "main": {

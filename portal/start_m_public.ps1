@@ -1,11 +1,11 @@
-# start_m_public.ps1 - mobile public entry (ASCII only, Windows PowerShell 5.1 safe)
+﻿# start_m_public.ps1 - mobile public entry (ASCII only, Windows PowerShell 5.1 safe)
 # 2026-10-25: start m_public_gate (127.0.0.1:8081) + cloudflared quick tunnel,
 # print the public https URL and update portal/work/m_link.json automatically.
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File portal\start_m_public.ps1
 $ErrorActionPreference = 'Stop'
 $root = 'C:\aios'                       # junction -> project root (ASCII path)
 $portal = Join-Path $root 'portal'
-$py = 'C:\项目\py312\python.exe'
+$py = 'C:\Program Files\Python311\python.exe'
 $cfg = Join-Path $portal 'work\m_link.json'
 $gateLog = 'C:\Temp\m_public_gate.log'
 $cfLog = 'C:\Temp\m_cloudflared.log'
@@ -63,3 +63,4 @@ Set-Content -Path $tmpPy -Value $pyUpdate -Encoding UTF8
 & $py $tmpPy $url
 Write-Output ('PUBLIC_URL=' + $url)
 Write-Output 'NOTE: restart old bot + exec bot to load new card links (m_links is imported at process start).'
+

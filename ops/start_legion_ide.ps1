@@ -23,7 +23,7 @@ param(
     [string]$Action = "start",
     [int]$Port = 8103,
     [string]$Repo = "C:\项目\老田的AI助手",
-    [string]$Python = "C:\项目\py312\python.exe",
+    [string]$Python = "C:\Program Files\Python311\python.exe",
     [string]$LogFile = "C:\Temp\legion_ide_launcher.log",
     [string]$Bundle = "",
     [switch]$EnableWrite,
@@ -133,3 +133,4 @@ switch ($Action) {
         exit 0
     }
 }
+

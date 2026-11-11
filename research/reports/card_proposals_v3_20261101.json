@@ -1,12 +1,12 @@
 {
  "schema_version": 1,
  "date": "20261101",
- "generated_at": "2026-11-10T02:30:45+08:00",
+ "generated_at": "2026-11-11T02:30:42+08:00",
  "generator": "tools/kb_corpus/card_proposal_v3.py",
  "status": "pending_review",
  "baseline": {
-  "expected_total": 607,
-  "cards_file": 607,
+  "expected_total": 1096,
+  "cards_file": 1096,
   "note": "70 张基线 = 现有 cards 文件 + 清单 pass36（已授权合并）+ 修订 merge_fix14；按 concept 去重"
  },
  "coverage": {
@@ -15,21 +15,21 @@
   "covered_after": 21,
   "coverage_rate_before": 1.0,
   "coverage_rate_after": 1.0,
-  "depth_covered_before": 19,
-  "depth_covered_after": 19,
-  "depth_coverage_rate_before": 0.9048,
-  "depth_coverage_rate_after": 0.9048,
+  "depth_covered_before": 21,
+  "depth_covered_after": 21,
+  "depth_coverage_rate_before": 1.0,
+  "depth_coverage_rate_after": 1.0,
   "units_total": 516,
-  "unit_coverage_before": 1.1764,
-  "unit_coverage_after": 1.2422,
-  "cards_before": 607,
-  "cards_after": 641,
+  "unit_coverage_before": 2.124,
+  "unit_coverage_after": 2.1899,
+  "cards_before": 1096,
+  "cards_after": 1130,
   "rows": [
    {
     "theme": "其他",
     "units": 117,
-    "cards_before": 371,
-    "cards_after": 374,
+    "cards_before": 742,
+    "cards_after": 745,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -37,8 +37,8 @@
    {
     "theme": "AI算力/硬件",
     "units": 108,
-    "cards_before": 46,
-    "cards_after": 49,
+    "cards_before": 61,
+    "cards_after": 64,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -46,8 +46,8 @@
    {
     "theme": "新能源/电力",
     "units": 71,
-    "cards_before": 19,
-    "cards_after": 22,
+    "cards_before": 23,
+    "cards_after": 26,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -55,8 +55,8 @@
    {
     "theme": "宏观/政策",
     "units": 42,
-    "cards_before": 25,
-    "cards_after": 28,
+    "cards_before": 34,
+    "cards_after": 37,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -64,8 +64,8 @@
    {
     "theme": "量学/交易",
     "units": 31,
-    "cards_before": 36,
-    "cards_after": 39,
+    "cards_before": 80,
+    "cards_after": 83,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -73,8 +73,8 @@
    {
     "theme": "消费/零售",
     "units": 27,
-    "cards_before": 8,
-    "cards_after": 11,
+    "cards_before": 13,
+    "cards_after": 16,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -82,8 +82,8 @@
    {
     "theme": "金融/地产",
     "units": 25,
-    "cards_before": 19,
-    "cards_after": 22,
+    "cards_before": 25,
+    "cards_after": 28,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -91,8 +91,8 @@
    {
     "theme": "机械/制造",
     "units": 17,
-    "cards_before": 12,
-    "cards_after": 15,
+    "cards_before": 19,
+    "cards_after": 22,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -100,8 +100,8 @@
    {
     "theme": "军工/航天",
     "units": 16,
-    "cards_before": 7,
-    "cards_after": 10,
+    "cards_before": 9,
+    "cards_after": 12,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -136,8 +136,8 @@
    {
     "theme": "有色/金属",
     "units": 7,
-    "cards_before": 9,
-    "cards_after": 10,
+    "cards_before": 17,
+    "cards_after": 18,
     "delta": 1,
     "covered_before": true,
     "covered_after": true
@@ -154,8 +154,8 @@
    {
     "theme": "半导体/电子",
     "units": 5,
-    "cards_before": 8,
-    "cards_after": 8,
+    "cards_before": 13,
+    "cards_after": 13,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -163,23 +163,14 @@
    {
     "theme": "评级/研报方法论",
     "units": 5,
-    "cards_before": 8,
-    "cards_after": 10,
+    "cards_before": 11,
+    "cards_after": 13,
     "delta": 2,
     "covered_before": true,
     "covered_after": true
    },
    {
     "theme": "建筑/建材",
-    "units": 4,
-    "cards_before": 4,
-    "cards_after": 4,
-    "delta": 0,
-    "covered_before": true,
-    "covered_after": true
-   },
-   {
-    "theme": "通信/互联网",
     "units": 4,
     "cards_before": 5,
     "cards_after": 5,
@@ -188,10 +179,19 @@
     "covered_after": true
    },
    {
+    "theme": "通信/互联网",
+    "units": 4,
+    "cards_before": 6,
+    "cards_after": 6,
+    "delta": 0,
+    "covered_before": true,
+    "covered_after": true
+   },
+   {
     "theme": "医药/生物",
     "units": 3,
-    "cards_before": 4,
-    "cards_after": 4,
+    "cards_before": 6,
+    "cards_after": 6,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -199,8 +199,8 @@
    {
     "theme": "传媒/文化",
     "units": 2,
-    "cards_before": 1,
-    "cards_after": 1,
+    "cards_before": 6,
+    "cards_after": 6,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -208,8 +208,8 @@
    {
     "theme": "汽车/智驾",
     "units": 2,
-    "cards_before": 2,
-    "cards_after": 2,
+    "cards_before": 3,
+    "cards_after": 3,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -221,12 +221,12 @@
    "theme": "AI算力/硬件",
    "count": 3,
    "units": 108,
-   "before": 46,
-   "after": 49,
+   "before": 61,
+   "after": 64,
    "card_ids": [
-    "CP3-20261101-029",
-    "CP3-20261101-030",
-    "CP3-20261101-031"
+    "CP3-20261101-026",
+    "CP3-20261101-027",
+    "CP3-20261101-028"
    ]
   },
   {
@@ -243,8 +243,8 @@
    "theme": "其他",
    "count": 3,
    "units": 117,
-   "before": 371,
-   "after": 374,
+   "before": 742,
+   "after": 745,
    "card_ids": [
     "CP3-20261101-032",
     "CP3-20261101-033",
@@ -255,8 +255,8 @@
    "theme": "军工/航天",
    "count": 3,
    "units": 16,
-   "before": 7,
-   "after": 10,
+   "before": 9,
+   "after": 12,
    "card_ids": [
     "CP3-20261101-005",
     "CP3-20261101-006",
@@ -279,8 +279,8 @@
    "theme": "宏观/政策",
    "count": 3,
    "units": 42,
-   "before": 25,
-   "after": 28,
+   "before": 34,
+   "after": 37,
    "card_ids": [
     "CP3-20261101-023",
     "CP3-20261101-024",
@@ -291,8 +291,8 @@
    "theme": "新能源/电力",
    "count": 3,
    "units": 71,
-   "before": 19,
-   "after": 22,
+   "before": 23,
+   "after": 26,
    "card_ids": [
     "CP3-20261101-017",
     "CP3-20261101-018",
@@ -303,8 +303,8 @@
    "theme": "有色/金属",
    "count": 1,
    "units": 7,
-   "before": 9,
-   "after": 10,
+   "before": 17,
+   "after": 18,
    "card_ids": [
     "CP3-20261101-013"
    ]
@@ -313,8 +313,8 @@
    "theme": "机械/制造",
    "count": 3,
    "units": 17,
-   "before": 12,
-   "after": 15,
+   "before": 19,
+   "after": 22,
    "card_ids": [
     "CP3-20261101-014",
     "CP3-20261101-015",
@@ -325,43 +325,43 @@
    "theme": "消费/零售",
    "count": 3,
    "units": 27,
-   "before": 8,
-   "after": 11,
+   "before": 13,
+   "after": 16,
    "card_ids": [
-    "CP3-20261101-008",
-    "CP3-20261101-009",
-    "CP3-20261101-010"
+    "CP3-20261101-010",
+    "CP3-20261101-011",
+    "CP3-20261101-012"
    ]
   },
   {
    "theme": "评级/研报方法论",
    "count": 2,
    "units": 5,
-   "before": 8,
-   "after": 10,
+   "before": 11,
+   "after": 13,
    "card_ids": [
-    "CP3-20261101-011",
-    "CP3-20261101-012"
+    "CP3-20261101-008",
+    "CP3-20261101-009"
    ]
   },
   {
    "theme": "量学/交易",
    "count": 3,
    "units": 31,
-   "before": 36,
-   "after": 39,
+   "before": 80,
+   "after": 83,
    "card_ids": [
-    "CP3-20261101-026",
-    "CP3-20261101-027",
-    "CP3-20261101-028"
+    "CP3-20261101-029",
+    "CP3-20261101-030",
+    "CP3-20261101-031"
    ]
   },
   {
    "theme": "金融/地产",
    "count": 3,
    "units": 25,
-   "before": 19,
-   "after": 22,
+   "before": 25,
+   "after": 28,
    "card_ids": [
     "CP3-20261101-020",
     "CP3-20261101-021",
@@ -374,10 +374,10 @@
   "themes_covered_after": 21,
   "coverage_rate_before": 1.0,
   "coverage_rate_after": 1.0,
-  "depth_coverage_rate_before": 0.9048,
-  "depth_coverage_rate_after": 0.9048,
-  "unit_coverage_before": 1.1764,
-  "unit_coverage_after": 1.2422,
+  "depth_coverage_rate_before": 1.0,
+  "depth_coverage_rate_after": 1.0,
+  "unit_coverage_before": 2.124,
+  "unit_coverage_after": 2.1899,
   "gap_themes": [
    "AI算力/硬件",
    "交运/物流",
@@ -648,118 +648,13 @@
   {
    "card_id": "CP3-20261101-008",
    "status": "pending_review",
-   "theme": "消费/零售",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「海外监管与关税政策风险」有哪些关键事实或数据？",
-   "a": "表2显示：欧盟2026年7月取消150欧元以下小额包裹免关税；美国2026年8月实施新一轮301关税；法国自2026年9月起实施反超快时尚法征收生态罚金。企业应对措施包括调整定价、设立海外仓及转型品牌化。",
-   "concept": "海外监管与关税政策风险",
-   "unit_id": "u008",
-   "unit_key": {
-    "book": "rp_AP202610021830111804",
-    "chapter": "行业研究 · 行业专题",
-    "p1": 1,
-    "p2": 13
-   },
-   "book": "rp_AP202610021830111804",
-   "chapter": "行业研究 · 行业专题",
-   "page_start": 1,
-   "page_end": 13,
-   "evidence": "表2显示：欧盟2026年7月取消150欧元以下小额包裹免关税；美国2026年8月实施新一轮301关税；法国自2026年9月起实施反超快时尚法征收生态罚金。企业应对措施包括调整定价、设立海外仓及转型品牌化。",
-   "claim": "欧美多国在2026年加码监管与关税，如欧盟取消150欧元以下免关税、美国实施新一轮301关税及高额罚金，企业需调整定价、布局海外仓或转型高客单品牌以应对。",
-   "source_tag": "研报",
-   "quality_score": 61.2,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-009",
-   "status": "pending_review",
-   "theme": "消费/零售",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「房地产投资建议」的影响与传导是什么？",
-   "a": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优的企业，如华润置地、招商蛇口、贝壳-W 等。 依据：建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
-   "concept": "房地产投资建议",
-   "unit_id": "u009",
-   "unit_key": {
-    "book": "rp_AP202609301830023754",
-    "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
-    "p1": 1,
-    "p2": 2
-   },
-   "book": "rp_AP202609301830023754",
-   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
-   "page_start": 1,
-   "page_end": 2,
-   "evidence": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
-   "claim": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优的企业，如华润置地、招商蛇口、贝壳-W 等。",
-   "source_tag": "研报",
-   "quality_score": 60.6,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-010",
-   "status": "pending_review",
-   "theme": "消费/零售",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「二手手机市场承接中低端需求」？",
-   "a": "在新机市场整体激活量下滑及3K以下新机市场大幅下滑的背景下，重点流通价位二手机市场仍实现增长，规模已接近3K以下新机市场，正在承接部分中低端用户需求迁移。",
-   "concept": "二手手机市场承接中低端需求",
-   "unit_id": "u010",
-   "unit_key": {
-    "book": "rp_AP202609301830015422",
-    "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
-    "p1": 2,
-    "p2": 11
-   },
-   "book": "rp_AP202609301830015422",
-   "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
-   "page_start": 2,
-   "page_end": 11,
-   "evidence": "在新机市场整体激活量同比下滑 6%、3K 以下市场下滑 15% 的背景下，重点流通价位二手机市场仍实现+3% 增长，规模达到 5500 万台，已接近 3K 以下新机市场。",
-   "claim": "在新机市场整体激活量下滑及3K以下新机市场大幅下滑的背景下，重点流通价位二手机市场仍实现增长，规模已接近3K以下新机市场，正在承接部分中低端用户需求迁移。",
-   "source_tag": "研报",
-   "quality_score": 58.4,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-011",
-   "status": "pending_review",
    "theme": "评级/研报方法论",
    "angle": "key_fact",
    "angle_cn": "关键事实",
    "q": "「趋势模板」有哪些关键事实或数据？",
    "a": "米勒维尼用一张清单筛股，称之为趋势模板；八条：50/150/200 均线上方且多头排列；200 日线上升≥1 个月；52 周低点+30%以上；52 周高点-25%以内；相对强度≥70（最好90+）。先筛出领涨股，再找买点。",
    "concept": "趋势模板",
-   "unit_id": "u011",
+   "unit_id": "u008",
    "unit_key": {
     "book": "米勒维尼_趋势交易体系",
     "chapter": "一、趋势模板（00:00–00:26）",
@@ -786,7 +681,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-012",
+   "card_id": "CP3-20261101-009",
    "status": "pending_review",
    "theme": "评级/研报方法论",
    "angle": "impact",
@@ -794,7 +689,7 @@
    "q": "「RS 评级口径」的影响与传导是什么？",
    "a": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。 依据：来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
    "concept": "RS 评级口径",
-   "unit_id": "u012",
+   "unit_id": "u009",
    "unit_key": {
     "book": "米勒维尼_趋势交易体系",
     "chapter": "十二、资源：O'Neil RS Rating 方法",
@@ -809,6 +704,111 @@
    "claim": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。",
    "source_tag": "策略经典",
    "quality_score": 66.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-010",
+   "status": "pending_review",
+   "theme": "消费/零售",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「海外监管与关税政策风险」？",
+   "a": "欧美多国在2026年加码监管与关税，如欧盟取消150欧元以下免关税、美国实施新一轮301关税及高额罚金，企业需调整定价、布局海外仓或转型高客单品牌以应对。",
+   "concept": "海外监管与关税政策风险",
+   "unit_id": "u010",
+   "unit_key": {
+    "book": "rp_AP202610021830111804",
+    "chapter": "行业研究 · 行业专题",
+    "p1": 1,
+    "p2": 13
+   },
+   "book": "rp_AP202610021830111804",
+   "chapter": "行业研究 · 行业专题",
+   "page_start": 1,
+   "page_end": 13,
+   "evidence": "表2显示：欧盟2026年7月取消150欧元以下小额包裹免关税；美国2026年8月实施新一轮301关税；法国自2026年9月起实施反超快时尚法征收生态罚金。企业应对措施包括调整定价、设立海外仓及转型品牌化。",
+   "claim": "欧美多国在2026年加码监管与关税，如欧盟取消150欧元以下免关税、美国实施新一轮301关税及高额罚金，企业需调整定价、布局海外仓或转型高客单品牌以应对。",
+   "source_tag": "研报",
+   "quality_score": 61.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-011",
+   "status": "pending_review",
+   "theme": "消费/零售",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「房地产投资建议」有哪些关键事实或数据？",
+   "a": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
+   "concept": "房地产投资建议",
+   "unit_id": "u011",
+   "unit_key": {
+    "book": "rp_AP202609301830023754",
+    "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+    "p1": 1,
+    "p2": 2
+   },
+   "book": "rp_AP202609301830023754",
+   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+   "page_start": 1,
+   "page_end": 2,
+   "evidence": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
+   "claim": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优的企业，如华润置地、招商蛇口、贝壳-W 等。",
+   "source_tag": "研报",
+   "quality_score": 60.6,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-012",
+   "status": "pending_review",
+   "theme": "消费/零售",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「二手手机市场承接中低端需求」的影响与传导是什么？",
+   "a": "在新机市场整体激活量下滑及3K以下新机市场大幅下滑的背景下，重点流通价位二手机市场仍实现增长，规模已接近3K以下新机市场，正在承接部分中低端用户需求迁移。 依据：在新机市场整体激活量同比下滑 6%、3K 以下市场下滑 15% 的背景下，重点流通价位二手机市场仍实现+3% 增长，规模达到 5500 万台，已接近 3K 以下新机市场。",
+   "concept": "二手手机市场承接中低端需求",
+   "unit_id": "u012",
+   "unit_key": {
+    "book": "rp_AP202609301830015422",
+    "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
+    "p1": 2,
+    "p2": 11
+   },
+   "book": "rp_AP202609301830015422",
+   "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
+   "page_start": 2,
+   "page_end": 11,
+   "evidence": "在新机市场整体激活量同比下滑 6%、3K 以下市场下滑 15% 的背景下，重点流通价位二手机市场仍实现+3% 增长，规模达到 5500 万台，已接近 3K 以下新机市场。",
+   "claim": "在新机市场整体激活量下滑及3K以下新机市场大幅下滑的背景下，重点流通价位二手机市场仍实现增长，规模已接近3K以下新机市场，正在承接部分中低端用户需求迁移。",
+   "source_tag": "研报",
+   "quality_score": 58.4,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1278,118 +1278,13 @@
   {
    "card_id": "CP3-20261101-026",
    "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「伏击涨停第三定律」有哪些关键事实或数据？",
-   "a": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
-   "concept": "伏击涨停第三定律",
-   "unit_id": "u026",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "第一节",
-    "p1": 13,
-    "p2": 25
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "第一节",
-   "page_start": 13,
-   "page_end": 25,
-   "evidence": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
-   "claim": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
-   "source_tag": "书籍",
-   "quality_score": 54.3,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-027",
-   "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「量学核心逻辑」的影响与传导是什么？",
-   "a": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。 依据：第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
-   "concept": "量学核心逻辑",
-   "unit_id": "u027",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "第一节",
-    "p1": 13,
-    "p2": 25
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "第一节",
-   "page_start": 13,
-   "page_end": 25,
-   "evidence": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
-   "claim": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。",
-   "source_tag": "书籍",
-   "quality_score": 54.2,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-028",
-   "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「拐点形成规律」？",
-   "a": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
-   "concept": "拐点形成规律",
-   "unit_id": "u028",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "序言1",
-    "p1": 5,
-    "p2": 6
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "序言1",
-   "page_start": 5,
-   "page_end": 6,
-   "evidence": "但是，A 点、B 点（拐点）的形成并不是随机的，某些位置是它们出现的大概率位置，这些位置经常出现在重 要的量柱上！如果说股价走势的历史对当下有什么影响的话，那就体现在量线上。",
-   "claim": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
-   "source_tag": "书籍",
-   "quality_score": 52.2,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-029",
-   "status": "pending_review",
    "theme": "AI算力/硬件",
    "angle": "key_fact",
    "angle_cn": "关键事实",
    "q": "「CoWoP封装方案」有哪些关键事实或数据？",
    "a": "CoWoP（Chip-on-Wafer-on-PCB）...核心思路简洁却极具革命性：在传统CoWoS方案中，芯片需依次经过硅中介层、ABF封装基板与BGA焊球三级结构才能安装到主板上；而CoWoP方案直接去掉ABF封装基板与BGA焊球，将硅中介层（Si Interposer）与GPU/HBM组合直接安装在强化型基板级PCB（Platform PCB）上。",
    "concept": "CoWoP封装方案",
-   "unit_id": "u029",
+   "unit_id": "u026",
    "unit_key": {
     "book": "rp_AP202610071830180005",
     "chapter": "图表目录",
@@ -1416,7 +1311,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-030",
+   "card_id": "CP3-20261101-027",
    "status": "pending_review",
    "theme": "AI算力/硬件",
    "angle": "impact",
@@ -1424,7 +1319,7 @@
    "q": "「M9 材料体系」的影响与传导是什么？",
    "a": "M9 级覆铜板通过升级增强骨架（第三代Low DK 石英布）、导电层（HVLP4/5 超低轮廓铜箔）及树脂粘结剂（碳氢或苊烯树脂），将介电损耗压低至0.0015以下，支持224Gbps超高速信号传输与78层超高密度PCB量产。 依据：M9级覆铜板体系的代际升级，本质上是树脂、增强材料、导电层与填料四个维度的系统性跃迁...英伟达Rubin/Rubin Ultra全面采用M9体系：增强骨架材料由传统玻纤布升级为第三代Low DK石英布（Q布），导电层铜箔升级为HVLP4/5超低轮廓铜箔，树脂粘结剂体系升级为碳氢树脂（PCH）或苊烯树脂（EX）。",
    "concept": "M9 材料体系",
-   "unit_id": "u030",
+   "unit_id": "u027",
    "unit_key": {
     "book": "rp_AP202610071830180005",
     "chapter": "图表目录",
@@ -1451,7 +1346,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-031",
+   "card_id": "CP3-20261101-028",
    "status": "pending_review",
    "theme": "AI算力/硬件",
    "angle": "definition",
@@ -1459,7 +1354,7 @@
    "q": "什么是「Meta Ray-Ban Meta Audio」？",
    "a": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
    "concept": "Meta Ray-Ban Meta Audio",
-   "unit_id": "u031",
+   "unit_id": "u028",
    "unit_key": {
     "book": "rp_AP202610031830126605",
     "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
@@ -1474,6 +1369,111 @@
    "claim": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
    "source_tag": "研报",
    "quality_score": 73.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-029",
+   "status": "pending_review",
+   "theme": "量学/交易",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「伏击涨停第三定律」有哪些关键事实或数据？",
+   "a": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "concept": "伏击涨停第三定律",
+   "unit_id": "u029",
+   "unit_key": {
+    "book": "伏击涨停(2)",
+    "chapter": "第一节",
+    "p1": 13,
+    "p2": 25
+   },
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "evidence": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "claim": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
+   "source_tag": "书籍",
+   "quality_score": 54.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-030",
+   "status": "pending_review",
+   "theme": "量学/交易",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「量学核心逻辑」的影响与传导是什么？",
+   "a": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。 依据：第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "concept": "量学核心逻辑",
+   "unit_id": "u030",
+   "unit_key": {
+    "book": "伏击涨停(2)",
+    "chapter": "第一节",
+    "p1": 13,
+    "p2": 25
+   },
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "evidence": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "claim": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。",
+   "source_tag": "书籍",
+   "quality_score": 54.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-031",
+   "status": "pending_review",
+   "theme": "量学/交易",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「拐点形成规律」？",
+   "a": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
+   "concept": "拐点形成规律",
+   "unit_id": "u031",
+   "unit_key": {
+    "book": "伏击涨停(2)",
+    "chapter": "序言1",
+    "p1": 5,
+    "p2": 6
+   },
+   "book": "伏击涨停(2)",
+   "chapter": "序言1",
+   "page_start": 5,
+   "page_end": 6,
+   "evidence": "但是，A 点、B 点（拐点）的形成并不是随机的，某些位置是它们出现的大概率位置，这些位置经常出现在重 要的量柱上！如果说股价走势的历史对当下有什么影响的话，那就体现在量线上。",
+   "claim": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
+   "source_tag": "书籍",
+   "quality_score": 52.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1603,8 +1603,8 @@
   },
   "cards": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
-   "sha256_before": "22ca4bae29b420bd8c358adb600e0cecee5a5d9a1252797a251d66bfa0c45c02",
-   "sha256_after": "22ca4bae29b420bd8c358adb600e0cecee5a5d9a1252797a251d66bfa0c45c02"
+   "sha256_before": "e9ed33c0a0cedb22fdd2d11003d451e3f58b09345410f21a69cc9dbedc4d09d0",
+   "sha256_after": "e9ed33c0a0cedb22fdd2d11003d451e3f58b09345410f21a69cc9dbedc4d09d0"
   },
   "checklist": {
    "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json",

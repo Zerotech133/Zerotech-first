@@ -1,0 +1,422 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-11T18:20:32+08:00",
+ "date": "2026-11-11",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.0,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.3667,
+  "avg_elapsed_seconds": 13.99,
+  "avg_completeness_score": 5.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-11】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 7,
+  "answerable_rate": 0.7857,
+  "guard_pass_rate": 0.7857,
+  "fallback_rate": 0.0714,
+  "avg_citations": 1.8571,
+  "avg_elapsed_seconds": 16.0436,
+  "window": 7,
+  "date_from": "2026-11-05",
+  "date_to": "2026-11-11"
+ },
+ "history_entries": 10,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-06",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.2,
+    "avg_elapsed_seconds": 21.9,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_ef78939178",
+     "q2_87eff8d7a3"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-07",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 3.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.195,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_0d7db24320",
+     "q2_4f34cbb059"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-08",
+    "n": 2,
+    "answerable_rate": 0.5,
+    "guard_pass_rate": 0.5,
+    "fallback_rate": 0.5,
+    "avg_citations": 1.0,
+    "avg_citation_resolvable_rate": 0.5,
+    "avg_inference_ratio": 0.25,
+    "avg_elapsed_seconds": 37.885,
+    "avg_completeness_score": 3.0,
+    "guard_pass_count": 1,
+    "sample_ids": [
+     "q2_7274d52791",
+     "q2_1595bd5290"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "FALLBACK_HIGH",
+     "TREND_DOWN"
+    ]
+   },
+   {
+    "date": "2026-11-09",
+    "n": 2,
+    "answerable_rate": 0.0,
+    "guard_pass_rate": 0.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 0.0,
+    "avg_citation_resolvable_rate": 0.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 0.0,
+    "avg_completeness_score": 0.0,
+    "guard_pass_count": 0,
+    "sample_ids": [
+     "q2_4b27690260",
+     "q2_b74f8cebda"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "TREND_DOWN"
+    ]
+   },
+   {
+    "date": "2026-11-10",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4,
+    "avg_elapsed_seconds": 12.21,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_5cb2ec9a7b",
+     "q2_960b202685"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-11",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.3667,
+    "avg_elapsed_seconds": 13.99,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6b334e4e8c",
+     "q2_a4f5637316"
+    ],
+    "alerts": []
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 7,
+   "answerable_rate": 0.7857,
+   "guard_pass_rate": 0.7857,
+   "fallback_rate": 0.0714,
+   "avg_citations": 1.8571,
+   "avg_elapsed_seconds": 16.0436,
+   "window": 7,
+   "date_from": "2026-11-05",
+   "date_to": "2026-11-11"
+  },
+  "updated_at": "2026-11-11T18:20:32+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_6b334e4e8c",
+   "category": "是什么",
+   "theme": "消费/医药",
+   "question": "传媒主体投资并购策略的核心结论与主要依据是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 18.78,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "bc46cbc09681",
+     "bd355b0e4b66"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.3333,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】具备内容资源、治理能力及资金实力的传媒主体，可通过投资并购补齐技术、平台与传播渠道能力（[bc46cbc09681] p.1）。\n【事实】传媒行业面临整合不及预期、政策不及预期以及商誉减值等潜在风险（[bd355b0e4b66] p.1）。\n【推断】\n【推断】传媒主体并购核心在于利用自身优势补齐短板并推进融合，但需警惕整合与政策风险（依据：[bc46cbc09681] p.1、[bd355b0e4b66] p.1）。",
+   "answer_length": 221,
+   "citations": [
+    {
+     "unit_id": "bc46cbc09681",
+     "book": "rp_AP202609301830035720",
+     "chapter": "新华传媒拟收购界面财联社，关注出版行业并购整 合机遇 ⚫ 事件",
+     "page": 1,
+     "text": "具备内容资源、治理能力及资金实力的传媒主体，可通过投资并购补齐技术、平台与传播渠道能力，在落实导向管理责任的基础上推进融合发展。 我们认为，上述政策分别从产业发展与组织治理层面明确要求，有望推动具备内容资源、治理能力及资金实力的传媒主体，通过投资并购补齐技术、平台与传播渠道能力，在落实导向管理责任的基础上推进融合发展。"
+    },
+    {
+     "unit_id": "bd355b0e4b66",
+     "book": "rp_AP202609301830035720",
+     "chapter": "新华传媒拟收购界面财联社，关注出版行业并购整 合机遇 ⚫ 事件",
+     "page": 1,
+     "text": "传媒行业面临整合不及预期、政策不及预期以及商誉减值等潜在风险。 整合不及预期，政策不及预期、商誉减值风险等。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.3333,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_a4f5637316",
+   "category": "竞争格局",
+   "theme": "新能源/电池",
+   "question": "宁夏新能源发展目标的竞争格局与主要参与者有哪些？",
+   "http_status": 200,
+   "elapsed_seconds": 9.2,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 2,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "6ee3bdfa28fe",
+     "9788baf273ca"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】宁夏力争到“十五五”期末新能源装机规模突破 1 亿千瓦（[6ee3bdfa28fe] p.1）。\n【事实】规划提到持续提高新能源供给占比，积极推进“千乡万村驭风行动”（[6ee3bdfa28fe] p.1）。\n【事实】广发证券、江苏金租、华泰证券、中国平安、中国财险等被推荐为非银金融行业受益标的（[9788baf273ca] p.1）。\n【推断】\n【推断】宁夏新能源发展主要聚焦光伏与氢能领域，头部券商及金融机构可能参与相关产业链投资（依据：[6ee3bdfa28fe] p.1、[9788baf273ca] p.1）。\n【推断】非银金融行业受益标的名单中未明确列出宁夏本地新能源企业，显示竞争格局中外部资本或央企参与度较高（依据：[9788baf273ca] p.1）。",
+   "answer_length": 348,
+   "citations": [
+    {
+     "unit_id": "6ee3bdfa28fe",
+     "book": "rp_AP202610021830105330",
+     "chapter": "市场研究部 2026 年9 月22 日",
+     "page": 1,
+     "text": "根据宁夏回族自治区印发的《美丽宁夏建设“十五五”规划》，力争到“十五五”期末新能源装机规模突破 1 亿千瓦，并大力发展分布式光伏及氢能等可再生能源。 9 月 16 日，宁夏回族自治区人民政府印发《美丽宁夏建设“十五五”规划》。规划提到，持续提高新能源供给占比，积极推进“千乡万村驭风行动”，力争新能源装机规模突破 1 亿千瓦。"
+    },
+    {
+     "unit_id": "9788baf273ca",
+     "book": "rp_AP202610071830185864",
+     "chapter": "2026 年10 月07 日",
+     "page": 1,
+     "text": "广发证券、江苏金租、华泰证券、中国平安、中国财险等被推荐为非银金融行业的受益标的。 推荐标的组合：广发证券、江苏金租、华泰证券、中国平安、中国财险；中信证券、中金公司 H、中国太保、同花顺、国泰海通、香港交易所、财通证券。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261111.json",
+ "elapsed_seconds": 29.19,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

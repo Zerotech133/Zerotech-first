@@ -54,8 +54,13 @@ def main():
     import pandas as pd
     rows = []
     for h in hold:
-        code = h["code"]
-        r = {"code": code, "name": h["name"], "group": h["group"]}
+        code = h.get("code")
+        # 2026-11-11 v2：未点名占位票（code=null）只计数，不出数据不出价位
+        r = {"code": code or "—", "name": h["name"], "group": h["group"],
+             "tier": "unconfirmed" if not code else None}
+        if not code:
+            rows.append(r)
+            continue
         p = idx.get(code)
         r["in_pool"] = p is not None
         if p:

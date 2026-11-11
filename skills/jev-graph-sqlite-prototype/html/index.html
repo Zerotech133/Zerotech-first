@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JEV 板块联动网 · 快照查看器</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 22px 24px 40px; background: #12151b; color: #e6e9ef;
+         font: 13px/1.65 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  h1 { font-size: 19px; margin: 0; letter-spacing: .02em; }
+  h2 { font-size: 13px; margin: 0 0 10px; color: #cdd5e0; font-weight: 600; }
+  h2 small { color: #7f8b9c; font-weight: 400; margin-left: 8px; }
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .sub { color: #8b97a8; font-size: 12px; }
+  select { background: #1b2029; color: #e6e9ef; border: 1px solid #354052;
+           border-radius: 5px; padding: 4px 8px; font-size: 12px; }
+  .disclaimer { border: 1px solid #6b5a2a; background: #2a2418; color: #e8d7a6;
+                border-radius: 7px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; }
+  .disclaimer b { color: #ffd97a; }
+  .disclaimer .row { margin-top: 5px; color: #c9b98e; }
+  .badge { display: inline-block; border: 1px solid #6b5a2a; border-radius: 4px;
+           padding: 0 6px; margin-right: 6px; font-family: Consolas, monospace; font-size: 11px; }
+  .badge.warn { border-color: #8a4a4a; color: #ffb4b4; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+          gap: 10px; margin-bottom: 16px; }
+  .kpi { background: #1b2029; border: 1px solid #2c3442; border-radius: 7px; padding: 9px 12px; }
+  .kpi .k { color: #8b97a8; font-size: 11px; }
+  .kpi b { display: block; font-size: 17px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr); gap: 14px; }
+  .panel { background: #1b2029; border: 1px solid #2c3442; border-radius: 8px;
+           padding: 13px 15px; margin-bottom: 14px; }
+  svg { width: 100%; height: auto; display: block; background: #151a22;
+        border: 1px solid #232b38; border-radius: 6px; }
+  .legend { color: #8b97a8; font-size: 11px; margin-top: 8px; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+              margin: 0 4px 0 12px; vertical-align: -1px; }
+  .legend i:first-child { margin-left: 0; }
+  .legend em { font-style: normal; color: #cdd5e0; }
+  .brow { display: grid; grid-template-columns: 1fr 62px; gap: 8px; align-items: center;
+          padding: 3px 0; font-size: 12px; }
+  .brow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .brow .rk { color: #7f8b9c; font-size: 10px; margin-right: 6px; }
+  .brow .vv { text-align: right; font-variant-numeric: tabular-nums; }
+  .track { grid-column: 1 / -1; height: 3px; background: #232b38; border-radius: 2px; }
+  .track span { display: block; height: 100%; border-radius: 2px; }
+  .up { color: #f2555a; } .dn { color: #2eb37c; } .muted { color: #8b97a8; }
+  .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+  .kv div { background: #171c25; border-radius: 5px; padding: 6px 9px; }
+  .kv .k { color: #8b97a8; font-size: 11px; }
+  .kv .v { font-size: 14px; font-variant-numeric: tabular-nums; }
+  .list { font-size: 12px; }
+  .list > div { padding: 4px 0; border-bottom: 1px solid #232b38; }
+  .list > div:last-child { border-bottom: 0; }
+  .list .r { float: right; font-variant-numeric: tabular-nums; }
+  .mono { font-family: Consolas, "Courier New", monospace; font-size: 11px; }
+  .empty { color: #7f8b9c; font-size: 12px; padding: 6px 0; }
+  .tag { border: 1px solid #354052; border-radius: 3px; padding: 0 5px;
+         font-size: 10px; color: #a9b4c4; margin-left: 6px; }
+  .note { color: #8b97a8; font-size: 12px; margin-top: 8px; }
+  #note { color: #9aa6b6; font-size: 12px; margin-top: 6px; }
+  .sect { margin-top: 12px; }
+  .sect > .t { color: #8b97a8; font-size: 11px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>JEV 板块联动网 · 快照查看器</h1>
+  <span class="sub">选票日
+    <select id="daySel"><option>读取中…</option></select>
+  </span>
+  <span class="sub mono" id="builtAt">—</span>
+</header>
+
+<div class="disclaimer" id="disclaimer">
+  <b>未校准快照 · 不得进判定闸 A / B</b>
+  <div class="row" id="flags">三旗标读取中…</div>
+  <div class="row" id="offlineNote">离线档说明读取中…</div>
+  <div class="row">数据源：ingest 写入的图结果快照，经数据桥只读查询；页面不重算、不联网、不补值。
+    与 8091 完整档（fund / chain / 分钟远端兜底开启）不同，差异属已知档位降级。</div>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="layout">
+  <div>
+    <div class="panel">
+      <h2>板块联动网 <small id="netStat">—</small></h2>
+      <svg id="net" viewBox="0 0 760 560" role="img" aria-label="板块联动网络图"></svg>
+      <div class="legend">
+        <i style="background:#f2555a"></i><em>板块（涨）</em>
+        <i style="background:#2eb37c"></i><em>板块（跌）</em>
+        <i style="background:#8b97a8"></i><em>个股</em>
+        <i style="background:#5b9bff"></i><em>消息</em>
+        <span style="margin-left:12px">边：<em>实线</em>=跨板块传播 / 领涨传导 ·
+          <em>虚线</em>=无消息同涨 / 消息追认</span>
+        <div>布局为按节点类型的确定性分环示意，不表达权重或地理关系；悬停节点看详情。
+          端点不在节点集合的边<strong>不伪造节点、不绘制</strong>，标题栏如实披露未绘条数；
+          跨板块传播信息由右侧「跨板块传播」面板以 cross_summary 呈现。</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>板块强度榜 <small id="boardStat">—</small></h2>
+      <div id="boards"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel"><h2>焦点板块</h2><div id="focus"></div></div>
+    <div class="panel"><h2>跨板块传播</h2><div id="cross"></div></div>
+    <div class="panel"><h2>分钟三档台账</h2><div id="minute"></div></div>
+    <div class="panel"><h2>社交覆盖</h2><div id="social"></div></div>
+    <div class="panel"><h2>口径与来源</h2><div id="basis"></div></div>
+    <div class="panel"><h2>审计台账 <small>append-only</small></h2><div id="audit"></div></div>
+  </div>
+</div>
+
+<div id="note">正在通过同源数据桥读取…</div>
+<noscript><div class="disclaimer">本页需要 JavaScript 渲染。</div></noscript>
+
+<script>
+var CONTRACT = {
+  "graph": [
+    "ok", "day", "day_cn", "board_kind", "basis_note", "partial",
+    "universe.stocks", "universe.boards", "universe.up", "universe.down",
+    "universe.limit_up", "universe.touch_only", "universe.median_pct",
+    "minute_coverage.read_ok", "minute_coverage.read_asked", "minute_coverage.ratio",
+    "minute_coverage.fallback", "minute_coverage.note",
+    "minute_read.asked", "minute_read.ok", "minute_read.local", "minute_read.remote",
+    "minute_read.partial", "minute_read.fail", "minute_read.fallback",
+    "boards", "boards[].name", "boards[].med", "boards[].n", "boards[].rank",
+    "boards[].limit_up", "boards[].up_ratio",
+    "network.nodes", "network.edges", "network.cross_summary", "network.edge_types",
+    "network.n_members", "network.nodes[].id", "network.nodes[].type",
+    "network.nodes[].label", "network.nodes[].n", "network.nodes[].med",
+    "network.edges[].type", "network.edges[].from", "network.edges[].to",
+    "network.edges[].label", "network.cross_summary[].hm",
+    "network.cross_summary[].label", "network.cross_summary[].n_boards",
+    "focus.name", "focus.rank", "focus.n", "focus.med", "focus.basis", "focus.lead",
+    "focus.unpriced", "focus.laggards", "focus.timeline", "focus.events.items",
+    "focus.flow.has", "focus.disclosures.has",
+    "fund.has", "fund.note", "chain.has", "chain.note", "theme.has", "theme.note",
+    "social.has", "social.fetched_at", "social.board", "social.hot", "social.note",
+    "social.board.n_members", "social.board.n_with_posts", "social.board.posts",
+    "_bridge.day", "_bridge.builtAt", "_bridge.flags", "_bridge.sourceSig",
+    "_bridge.sourceSig.offline"
+  ],
+  "summary": ["empty", "path", "count", "days", "latestBuiltAt"],
+  "audit": ["path", "empty", "count", "rows", "rows[].seq", "rows[].day",
+            "rows[].builtAt", "rows[].payloadSha", "rows[].nFiles",
+            "rows[].blockedOutbound"]
+};
+
+(function () {
+  "use strict";
+
+  var UP = "#f2555a", DN = "#2eb37c", MUTED = "#8b97a8",
+      STOCK = "#8b97a8", NEWS = "#5b9bff", CROSS = "#e0a458", SILENT = "#46617d";
+  var note = document.getElementById("note");
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;",
+               "'": "&#39;" }[c];
+    });
+  }
+  function num(v, d) {
+    if (v == null || v === "" || isNaN(Number(v))) { return "—"; }
+    return Number(v).toFixed(d == null ? 0 : d);
+  }
+  function pct(v) {
+    if (v == null || v === "" || isNaN(Number(v))) { return "—"; }
+    var n = Number(v);
+    return (n > 0 ? "+" : "") + n.toFixed(2) + "%";
+  }
+  function cls(v) {
+    var n = Number(v);
+    if (isNaN(n) || n === 0) { return ""; }
+    return n > 0 ? "up" : "dn";
+  }
+  function color(v) { return cls(v) === "dn" ? DN : UP; }
+  function put(id, html) { document.getElementById(id).innerHTML = html; }
+  function txt(id, s) { document.getElementById(id).textContent = s; }
+  function short(s, n) {
+    var t = String(s == null ? "" : s);
+    return esc(t.length > n ? t.slice(0, n) + "…" : t);
+  }
+  function api(path, query) {
+    var qs = "";
+    if (query) {
+      var parts = [];
+      Object.keys(query).forEach(function (k) {
+        parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(query[k]));
+      });
+      if (parts.length) { qs = "?" + parts.join("&"); }
+    }
+    return fetch("../../api/" + path + qs, { credentials: "include" })
+      .then(function (r) { return r.json(); });
+  }
+  function kv(pairs) {
+    return '<div class="kv">' + pairs.map(function (p) {
+      return '<div><div class="k">' + esc(p[0]) + '</div><div class="v ' +
+             (p[2] || "") + '">' + esc(p[1]) + "</div></div>";
+    }).join("") + "</div>";
+  }
+  function section(title, html) {
+    return '<div class="sect"><div class="t">' + esc(title) + "</div>" + html + "</div>";
+  }
+  function emptyRow(s) { return '<div class="empty">' + esc(s || "无") + "</div>"; }
+
+  function renderFlags(g) {
+    var b = g._bridge || {}, f = b.flags || {}, off = (b.sourceSig || {}).offline || {};
+    var keys = ["coverage_only", "gate_eligible", "calibrated"];
+    put("flags", keys.map(function (k) {
+      var v = f[k];
+      var bad = (k === "gate_eligible" || k === "calibrated") && v === true;
+      return '<span class="badge' + (bad ? " warn" : "") + '">' + esc(k) + "=" +
+             esc(String(v == null ? "缺失" : v)) + "</span>";
+    }).join(""));
+    txt("offlineNote", "离线档：" +
+      "出站拦截 " + (off.blocked_outbound == null ? "—" : off.blocked_outbound) +
+      " · chain=" + esc(String((g.chain || {}).has)) +
+      " · fund=" + esc(String((g.fund || {}).has)) +
+      " · 分钟兜底=" + esc(String((g.minute_read || {}).fallback)) +
+      " · 本站快照未校准，仅作 OSINT 信号收集与演化推演，不构成预测或判定依据。");
+    txt("builtAt", "built_at " + String(b.builtAt || "—"));
+  }
+
+  function renderKpis(g) {
+    var u = g.universe || {}, mc = g.minute_coverage || {};
+    var items = [
+      ["选票日", g.day_cn || g.day, ""],
+      ["股票 / 板块", num(u.stocks) + " / " + num(u.boards), ""],
+      ["上涨 / 下跌", num(u.up) + " / " + num(u.down), ""],
+      ["全市场涨停", num(u.limit_up), "up"],
+      ["触板未封", num(u.touch_only), ""],
+      ["中位涨幅", pct(u.median_pct), cls(u.median_pct)],
+      ["分钟已读", num(mc.read_ok) + " / " + num(mc.read_asked), ""],
+      ["板块数", num(u.boards), ""]
+    ];
+    put("kpis", items.map(function (p) {
+      return '<div class="kpi"><div class="k">' + esc(p[0]) +
+             '</div><b class="' + p[2] + '">' + esc(p[1]) + "</b></div>";
+    }).join(""));
+  }
+
+  function renderBoards(g) {
+    var bs = g.boards || [];
+    txt("boardStat", bs.length + " 个 · 按当日强度排序");
+    if (!bs.length) { put("boards", emptyRow("当日无板块数据")); return; }
+    var mx = Math.max.apply(null, bs.map(function (b) {
+      return Math.abs(Number(b.med) || 0);
+    }).concat([0.01]));
+    put("boards", bs.map(function (b) {
+      var w = Math.min(100, Math.abs(Number(b.med) || 0) / mx * 100);
+      return '<div class="brow"><div class="nm"><span class="rk">#' +
+             esc(b.rank == null ? "—" : b.rank) + "</span>" + esc(b.name) +
+             (b.limit_up ? '<span class="tag">' + esc(b.limit_up) + " 板</span>" : "") +
+             '</div><div class="vv ' + cls(b.med) + '">' + pct(b.med) +
+             '</div><div class="track"><span style="width:' + w.toFixed(1) +
+             "%;background:" + color(b.med) + '"></span></div></div>';
+    }).join(""));
+  }
+
+  function renderNet(g) {
+    var N = g.network || {}, nodes = N.nodes || [], edges = N.edges || [];
+    var W = 760, H = 560, cx = W / 2, cy = H / 2;
+    var groups = { board: [], stock: [], news: [] };
+    nodes.forEach(function (n) {
+      var t = groups[n.type] ? n.type : "stock";
+      groups[t].push(n);
+    });
+    var pos = {};
+    function ring(arr, rad) {
+      arr.forEach(function (n, i) {
+        var deg = -90 + 360 * i / Math.max(1, arr.length);
+        var a = deg * Math.PI / 180;
+        pos[n.id] = { x: cx + Math.cos(a) * rad, y: cy + Math.sin(a) * rad };
+      });
+    }
+    ring(groups.board, 108);
+    ring(groups.stock, 196);
+    ring(groups.news, 248);
+
+    var out = [], drawn = 0, skipped = 0;
+    edges.forEach(function (e) {
+      var a = pos[e.from], b = pos[e.to];
+      if (!a || !b) { skipped++; return; }
+      drawn++;
+      var t = e.type;
+      var solid = t === "cross" || t === "lead";
+      var col = t === "cross" ? CROSS : (t === "lead" ? UP
+                : (t === "echo" ? NEWS : SILENT));
+      out.push('<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) +
+               '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) +
+               '" stroke="' + col +
+               '" stroke-width="' + (solid ? "1.3" : "1") +
+               '" opacity="' + (solid ? ".7" : ".45") + '"' +
+               (solid ? "" : ' stroke-dasharray="4 3"') +
+               "><title>" + esc((e.label || t) + " · " + t) + "</title></line>");
+    });
+    nodes.forEach(function (n) {
+      var p = pos[n.id];
+      if (!p) { return; }
+      var label = esc(n.label || n.id);
+      if (n.type === "board") {
+        var r = 9 + Math.min(13, Math.sqrt(Math.max(0, Number(n.n) || 0)) / 2);
+        out.push('<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
+                 '" r="' + r.toFixed(1) + '" fill="#1b2029" stroke="' + color(n.med) +
+                 '" stroke-width="2"><title>' + label + " · " + pct(n.med) +
+                 " · " + num(n.n) + " 只</title></circle>");
+        out.push('<text x="' + p.x.toFixed(1) + '" y="' + (p.y + 3).toFixed(1) +
+                 '" text-anchor="middle" font-size="10" fill="#e6e9ef">' +
+                 esc(String(n.label || "").slice(0, 4)) + "</text>");
+      } else if (n.type === "news") {
+        out.push('<rect x="' + (p.x - 4).toFixed(1) + '" y="' + (p.y - 4).toFixed(1) +
+                 '" width="8" height="8" rx="2" fill="' + NEWS +
+                 '"><title>消息 · ' + label + "</title></rect>");
+      } else {
+        out.push('<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
+                 '" r="4.5" fill="' + STOCK + '" opacity=".8"><title>个股 · ' +
+                 label + "</title></circle>");
+      }
+    });
+    var svg = document.getElementById("net");
+    svg.innerHTML = out.join("");
+    var et = N.edge_types || {};
+    var ets = Object.keys(et).map(function (k) { return k + " " + et[k]; }).join(" · ");
+    txt("netStat", nodes.length + " 点 / " + edges.length + " 边（已绘 " + drawn +
+        " · 端点缺失未绘 " + skipped + "）" + (ets ? " · " + ets : ""));
+  }
+
+  function stockList(arr, max) {
+    if (!arr || !arr.length) { return emptyRow("无"); }
+    return '<div class="list">' + arr.slice(0, max || 8).map(function (s) {
+      return "<div>" + esc(s.name) + ' <span class="muted mono">' + esc(s.code) +
+             '</span><span class="r ' + cls(s.pct) + '">' + pct(s.pct) +
+             (s.limit_up ? '<span class="tag">涨停</span>' : "") + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function renderFocus(g) {
+    var f = g.focus || {};
+    var html = '<div><b>' + esc(f.name || "—") + "</b> " +
+               '<span class="muted">第 ' + num(f.rank) + " 强 · " + num(f.n) +
+               " 只 · " + pct(f.med) + "</span></div>";
+    var lead = f.lead;
+    html += section("领涨锚点", lead
+      ? '<div class="list"><div>' + esc(lead.name) +
+        ' <span class="muted mono">' + esc(lead.code) + '</span><span class="r ' +
+        cls(lead.pct) + '">' + pct(lead.pct) + "</span></div></div>" +
+        '<div class="note">' + (lead.limit_up ? "涨停" : "未涨停") +
+        " · 首次异动 " + esc(lead.first_move || "无分钟数据") +
+        " · 封板 " + esc(lead.seal_time || "—") + " · 判据 " + esc(f.basis || "—") + "</div>"
+      : emptyRow("当日无领涨锚点"));
+    html += section("无分钟定价 unpriced", stockList(f.unpriced, 8));
+    html += section("滞后 laggards", stockList(f.laggards, 5));
+    var tl = f.timeline || [];
+    html += section("演化时间线", tl.length
+      ? '<div class="list">' + tl.slice(0, 8).map(function (t) {
+          return '<div><span class="mono muted">' + esc(t.t) + "</span> " +
+                 esc(t.name || t.kind) + " " + short(t.text, 22) + "</div>";
+        }).join("") + "</div>"
+      : emptyRow("无时间线"));
+    var ev = f.events || {}, items = ev.items || [];
+    var intra = items.filter(function (e) { return e.ts_kind === "intraday"; }).length;
+    html += section("事件与披露",
+      kv([["原始事件", num(ev.raw)], ["聚类", num(ev.clusters)],
+          ["盘中可用", num(intra)], ["资金流", String((f.flow || {}).has)],
+          ["披露", String((f.disclosures || {}).has)]]));
+    put("focus", html);
+  }
+
+  function renderCross(g) {
+    var cs = (g.network || {}).cross_summary || [];
+    if (!cs.length) { put("cross", emptyRow("当日无跨板块传播链")); return; }
+    put("cross", '<div class="list">' + cs.map(function (c) {
+      return '<div><span class="mono muted">' + esc(c.hm) + "</span> " +
+             esc(c.label) + '<span class="r muted">' + num(c.n_boards) + " 板块 / " +
+             num(c.n_edges) + " 边</span>" +
+             '<div class="muted mono">' + short((c.boards || []).join(" · "), 46) +
+             " · " + esc(c.quality) + "</div></div>";
+    }).join("") + "</div>");
+  }
+
+  function renderMinute(g) {
+    var mr = g.minute_read || {}, mc = g.minute_coverage || {};
+    var html = kv([
+      ["asked 请求", num(mr.asked)], ["ok 成功", num(mr.ok)],
+      ["local 本地", num(mr.local)], ["remote 远端", num(mr.remote)],
+      ["partial 部分", num(mr.partial)], ["fail 失败", num(mr.fail)]
+    ]);
+    html += section("覆盖率",
+      kv([["分钟已读", num(mc.read_ok) + " / " + num(mc.read_asked)],
+          ["有分钟", num(mc.with_minute) + " / " + num(mc.total)],
+          ["比例", pct((Number(mc.ratio) || 0) * 100)],
+          ["月份", String(mc.month || "—")]]));
+    html += '<div class="note">fallback（分钟三档）=' + esc(mr.fallback) +
+            " · fallback（覆盖）=" + esc(mc.fallback) +
+            "。remote / fail 为真实台账读数，不补值、不美化；原型离线档关闭远端兜底。" +
+            esc(mc.note || "") + "</div>";
+    put("minute", html);
+  }
+
+  function renderSocial(g) {
+    var s = g.social || {}, b = s.board || {};
+    if (!s.has) {
+      put("social", emptyRow((s.note || "社交快照不可用")));
+      return;
+    }
+    var html = kv([
+      ["板块成员", num(b.n_members)], ["有帖子", num(b.n_with_posts)],
+      ["帖子数", num(b.posts)], ["阅读数", num(b.reads)]
+    ]);
+    html += '<div class="note mono">fetched_at ' + esc(s.fetched_at) + "</div>";
+    html += section("热度榜（前 5）", stockList(s.hot, 5));
+    html += '<div class="note">' + esc(s.note || "") + "</div>";
+    put("social", html);
+  }
+
+  function renderBasis(g) {
+    var b = g._bridge || {}, sig = b.sourceSig || {}, off = sig.offline || {};
+    var html = '<div class="note">' + esc(g.basis_note || "—") + "</div>";
+    html += section("档位说明",
+      kv([["板块口径", String(g.board_kind || "—")],
+          ["题材", String((g.theme || {}).has)],
+          ["资金", String((g.fund || {}).has)],
+          ["连板梯队", String((g.chain || {}).has)]]));
+    html += '<div class="note">' + esc((g.theme || {}).note || "") + " " +
+            esc((g.fund || {}).note || "") + " " +
+            esc((g.chain || {}).note || "") + "</div>";
+    html += section("快照来源",
+      '<div class="mono muted">' +
+      "day " + esc(b.day || "—") + " · built_at " + esc(b.builtAt || "—") +
+      " · source_sig " + esc(String(sig.sha256 || "—").slice(0, 16)) +
+      " · n_files " + num(sig.n_files) +
+      " · 出站拦截 " + num(off.blocked_outbound) + "</div>");
+    html += '<div class="note">source_sig.files 为本机绝对路径明细，数据桥只下发摘要级元信息，页面不可见。</div>';
+    put("basis", html);
+  }
+
+  function renderAudit(a) {
+    var rows = (a && a.rows) || [];
+    if (!rows.length) { put("audit", emptyRow("台账无记录（启用前的 ingest 不可回溯）")); return; }
+    put("audit", '<div class="list">' + rows.slice().reverse().slice(0, 6).map(function (r) {
+      return '<div><span class="mono muted">#' + num(r.seq) + " " + esc(r.day) +
+             "</span> " + esc(String(r.payloadSha || "").slice(0, 12)) +
+             '<span class="r muted">' + num(r.nFiles) + " 文件 · 拦截 " +
+             num(r.blockedOutbound) + "</span>" +
+             '<div class="mono muted">' + esc(r.builtAt) + "</div></div>";
+    }).join("") + "</div>" +
+    '<div class="note">共 ' + num(a.count) + " 行 · 只 INSERT，永不 UPDATE / DELETE。</div>");
+  }
+
+  function renderAll(g) {
+    if (g.ok === false) {
+      note.textContent = "快照标记失败：" + String(g.partial_note || g.message || "未知原因");
+    } else {
+      note.textContent = "数据桥已打通：ingest 写库 → api 只读查询 → 页面渲染；payload 原样搬运，页面不重算。";
+    }
+    renderFlags(g);
+    renderKpis(g);
+    renderBoards(g);
+    renderNet(g);
+    renderFocus(g);
+    renderCross(g);
+    renderMinute(g);
+    renderSocial(g);
+    renderBasis(g);
+  }
+
+  function boot() {
+    Promise.all([api("summary"), api("graph"), api("audit")])
+      .then(function (r) {
+        var s = r[0] || {}, g = r[1] || {}, a = r[2] || {};
+        var sel = document.getElementById("daySel");
+        var days = s.days || [];
+        if (days.length) {
+          sel.innerHTML = days.map(function (d) {
+            return '<option value="' + esc(d) + '">' + esc(d) + "</option>";
+          }).join("");
+          sel.value = days[days.length - 1];
+        } else {
+          sel.innerHTML = '<option value="">库内无选票日</option>';
+        }
+        renderAudit(a);
+        if (g.empty) {
+          note.textContent = "库为空：" + esc(g.hint || g.reason || "请先运行 ingest.py");
+          return;
+        }
+        renderAll(g);
+        sel.onchange = function () {
+          var q = sel.value ? { day: sel.value } : null;
+          api("graph", q).then(function (d) {
+            if (d.empty) {
+              note.textContent = "该选票日无快照：" + esc(d.reason || "no_rows");
+              return;
+            }
+            renderAll(d);
+          }).catch(function (e) {
+            note.textContent = "切换选票日失败：" + esc(e.message);
+          });
+        };
+      })
+      .catch(function (e) {
+        note.textContent = "数据桥读取失败：" + esc(e.message) +
+          "（本地直接打开 HTML 时无数据桥路由，属预期；需在技能页面环境运行）";
+      });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

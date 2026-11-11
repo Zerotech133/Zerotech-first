@@ -1,0 +1,2 @@
+{"ref_id": "irm:1_2340469208548495360", "src": "irm", "code": "002626", "field": "content", "source_tier": 3, "fact_type": "neutral", "hit_plan": [], "hit_fact": [], "quote": "据说公司的子公司金达威生物技术（江苏）有限公司拥有mRNA技术，请问是否属实？", "ref_ts": "2026-08-20 13:07:57", "annotated_at": "2026-11-11 08:20:20"}
+{"ref_id": "irm:11_2335360207397793792", "src": "irm", "code": "002626", "field": "content", "source_tier": 3, "fact_type": "fact", "hit_plan": [], "hit_fact": ["已经", "投产"], "quote": "公司万吨油脂项目目前进度到哪一步了？试生产还是已经投产了？", "ref_ts": "2026-08-13 15:55:11", "annotated_at": "2026-11-11 08:20:20"}

@@ -1,90 +1,101 @@
-# master 推送与远端 HEAD 核对回执
+# master 推送、main 快进与远端 HEAD 核对回执
 
-- 日期：2026-11-11 06:55（Asia/Shanghai）
-- 操作：将本地 `master` 普通推送到 GitHub `origin`，未使用 force，未推送其他分支。
-- 推送目标提交：`51d9449160831cab8329a6b6fcb2cf1e1dd7add1`
-- 结果：**推送成功**；`origin/master` 已指向该提交。
+- 日期：2026-11-11 07:20（Asia/Shanghai）
+- 操作：普通推送 `master`，并将 `main` 快进到同一收口提交；未使用 force，未推送其他分支。
+- 最终收口提交：`5f6fcadb58e0d48599851b503ed98cbfc86901e9`
 
-## 1. 推送前差距检查
+## 1. master 推送（首次）
+
+推送前：
 
 ```text
 本地 master：51d9449160831cab8329a6b6fcb2cf1e1dd7add1
-远端 master（推送前）：fe0f1a4f0c182ce3b68b2fd3e947d2533556780c
+远端 master：fe0f1a4f0c182ce3b68b2fd3e947d2533556780c
+本地相对远端：5 ahead / 0 behind
 ```
 
-本地相对远端 master：
+推送：
 
 ```text
-5 ahead / 0 behind
+fe0f1a4f0..51d944916  master -> master
 ```
 
-结论：本地仅领先、未落后、未分叉，允许普通推送。
+随后回执文件作为 docs-only 提交 `5f6fcadb5` 追加并再次推送到 `master`。
 
-## 2. 推送
+## 2. main 快进到 5f6fcadb5
+
+推送前：
+
+```text
+origin/main：fe0f1a4f0c182ce3b68b2fd3e947d2533556780c
+目标提交：5f6fcadb58e0d48599851b503ed98cbfc86901e9
+```
+
+`fe0f1a4f0` 是 `5f6fcadb5` 的祖先，可 fast-forward。
+
+普通推送（无 force）：
 
 ```powershell
-git -c http.proxy=http://127.0.0.1:7890 `
-    -c https.proxy=http://127.0.0.1:7890 `
-    push origin master
+git push origin 5f6fcadb58e0d48599851b503ed98cbfc86901e9:main
 ```
 
-输出：
+结果：
 
 ```text
-To https://github.com/Zerotech133/Zerotech-first.git
-   fe0f1a4f0..51d944916  master -> master
+fe0f1a4f0..5f6fcadb5  5f6fcadb58e0d48599851b503ed98cbfc86901e9 -> main
 ```
 
-- 普通 push；
-- 未使用 `--force`；
-- 只推 `master`，未推 `main` 或其他分支。
-
-## 3. 推送后 `ls-remote` 结果
+## 3. 远端 `ls-remote` 最终结果
 
 ```text
 $ git ls-remote --symref origin HEAD
 ref: refs/heads/main  HEAD
-fe0f1a4f0c182ce3b68b2fd3e947d2533556780c  HEAD
+5f6fcadb58e0d48599851b503ed98cbfc86901e9  HEAD
 
-$ git ls-remote --heads origin master main
-fe0f1a4f0c182ce3b68b2fd3e947d2533556780c  refs/heads/main
-51d9449160831cab8329a6b6fcb2cf1e1dd7add1  refs/heads/master
+$ git ls-remote --heads origin main master
+5f6fcadb58e0d48599851b503ed98cbfc86901e9  refs/heads/main
+5f6fcadb58e0d48599851b503ed98cbfc86901e9  refs/heads/master
 
 $ git ls-remote --tags origin refs/tags/v0.9.0-internal*
 4b5f2df1713affe5e3b1f50afa27c6527ac56275  refs/tags/v0.9.0-internal
 7ab9e55240d2261fe55715a535c70a043edb92cd  refs/tags/v0.9.0-internal^{}
 ```
 
+- `origin/main` = `5f6fcadb5`
+- `origin/master` = `5f6fcadb5`
+- 默认 `HEAD` → `refs/heads/main` = `5f6fcadb5`
+- **GitHub 默认 HEAD 与远端 master 已一致。**
+
 ## 4. 分支与 tag 一致性
 
 - tag `v0.9.0-internal` 的 peeled commit：`7ab9e55240d2261fe55715a535c70a043edb92cd`
 - `7ab9e5524` 是 `master` 的祖先：✅
 - `7ab9e5524` 是 `main` 的祖先：✅
-- 因此 tag 已包含在 `master` 与 `main` 两条分支的历史中。
+- tag 已包含在两条远端分支历史中。
 
-### 远端 HEAD 说明
+## 5. 本地 master 的并行推进说明
 
-GitHub 仓库默认分支是 `main`，不是 `master`：
+执行 main 快进前后，本地 `master` 被其他并行会话继续推进：
 
 ```text
-HEAD -> refs/heads/main -> fe0f1a4f0
-refs/heads/master       -> 51d944916
+本地 master：20943bf92a133315e5acb5bf58dc7059d18b3d01
+远端 master：5f6fcadb58e0d48599851b503ed98cbfc86901e9
 ```
 
-- `origin/master` 已与本地 `master` 一致（`51d944916`）；
-- GitHub 远端 **HEAD 仍指向 `main`**（`fe0f1a4f0`），比 `master` 落后 5 个提交；
-- 这是“只推 master、不推其他分支”的直接结果，未擅自推送 `main`。
+- 本次**只**把 `main` 快进到 `5f6fcadb5`，未推送新的本地 `master` 提交；
+- 因此 GitHub 上 `main` 与 `master` 都是 `5f6fcadb5`，但本地 `master` 已领先；
+- 这属于其他会话的并行提交，不是本次推送造成的分叉。
 
-## 5. 结论
+## 6. 结论
 
 | 项 | 结果 |
 |---|---|
-| 本地 master 与推送前 origin/master | 仅领先 5，未落后/分叉 |
-| 普通 push master | ✅ 成功 |
-| origin/master | `51d9449160831cab8329a6b6fcb2cf1e1dd7add1` |
-| origin HEAD（默认 main） | `fe0f1a4f0c182ce3b68b2fd3e947d2533556780c` |
+| 普通 push master | ✅ 成功，无 force |
+| main 快进 | ✅ `fe0f1a4f0..5f6fcadb5` |
+| origin/master | `5f6fcadb58e0d48599851b503ed98cbfc86901e9` |
+| origin/main | `5f6fcadb58e0d48599851b503ed98cbfc86901e9` |
+| origin HEAD | `refs/heads/main` → `5f6fcadb5` |
 | tag 目标 | `7ab9e55240d2261fe55715a535c70a043edb92cd` |
-| tag 是否在 master/main 历史 | 两者均为祖先关系 ✅ |
 | force / 其他分支 | 未使用 force；未推送其他分支 |
 
-> 本回执文件是在上述推送完成后追加的 docs-only 提交；其自身提交会使 `master` 再前进 1 个文档提交，远端最终 HEAD 以最后一次 `git ls-remote` 为准。
+> 本回执的更新内容停留在工作区，未再提交/推送；否则会再次推进 master，破坏本次“main/master/HEAD 三者均为 5f6fcadb5”的目标状态。

@@ -1,9 +1,9 @@
 # 学习门禁报告
 
-> 2026-11-10T16:03:17+08:00｜stage=intake｜项目 7｜检查 7｜失败 0
+> 2026-11-10T23:33:17+08:00｜stage=intake｜项目 8｜检查 8｜失败 1
 
 ## learnpdf_liangxue（archived）
-- ✅ archive
+- ❌ archive（manifest.v2 artifact sha mismatch: research/strategy_specs/005_金线战法三步曲.yaml）
 
 ## laomu_notes（distilling）
 - ✅ intake
@@ -21,4 +21,7 @@
 - ✅ intake
 
 ## 视频号学习_全部文案_20261108（distilling）
+- ✅ intake
+
+## 微信公众号_缠论108课_20261110（intake_pending）
 - ✅ intake

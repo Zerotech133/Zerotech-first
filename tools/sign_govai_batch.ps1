@@ -24,7 +24,7 @@
 param(
     [Parameter(Mandatory = $true)][string[]]$Dirs,
     [string]$PrivateKey = "C:\项目\_vault\keys\principal_private.pem",
-    [string]$Python = "C:\项目\py312\python.exe",
+    [string]$Python = "C:\Program Files\Python311\python.exe",
     [string]$Repo = "C:\项目\老田的AI助手",
     [string]$PassphraseEnv = "DSH_PRINCIPAL_PASSPHRASE"
 )
@@ -83,3 +83,4 @@ Write-Host "签名完成：$($payloads.Count) 个 payload。"
 Write-Host "下一步（Agent 可执行，需公钥 env）："
 Write-Host "  `$env:EVOLVE_PRINCIPAL_PUBKEY_FILE = 'C:\项目\_vault\keys\principal_pub.hex'"
 Write-Host "  `$env:EVOLVE_SIGNATURE_STRICT = '1'"
+

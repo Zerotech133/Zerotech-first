@@ -3,9 +3,10 @@ param(
     [switch]$Apply,
     [switch]$Rollback
 )
-$py = 'C:\项目\py312\python.exe'
+$py = 'C:\Program Files\Python311\python.exe'
 $pyArgs = @('tools/ops/dw_page_swap_20261105.py')
 if ($Rollback) { $pyArgs += '--rollback' }
 elseif ($Apply) { $pyArgs += '--apply' }
 & $py -X utf8 @pyArgs
 exit $LASTEXITCODE
+

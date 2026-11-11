@@ -10,7 +10,7 @@
 # 注意：本文件必须存为 UTF-8 BOM，Windows PowerShell 5.1 才能正确解析中文路径。
 $ErrorActionPreference = "Stop"
 $Repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$Py = "C:\项目\py312\python.exe"
+$Py = "C:\Program Files\Python311\python.exe"
 $BaseFile = "C:\项目\_vault\secrets\dashscope_base_url.txt"
 $Log = "C:\Temp\rag_weekly_eval.log"
 $Model = "qwen2.5-14b-instruct-a57a3521e4e0"
@@ -26,3 +26,4 @@ $env:PYTHONIOENCODING = "utf-8"
     --out-json $outJson --out-md $outMd *>> $Log
 if ($LASTEXITCODE -ne 0) { throw "bailian_eval failed rc=$LASTEXITCODE (see $Log)" }
 Write-Output "weekly eval done: $outJson"
+

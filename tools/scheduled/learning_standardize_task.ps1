@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = 'utf-8'
 $repo = 'C:\aios'
-$py = 'C:\项目\py312\python.exe'
+$py = 'C:\Program Files\Python311\python.exe'
 $log = 'C:\Temp\zero_learning_standardize.log'
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -18,3 +18,4 @@ $rc2 = $LASTEXITCODE
 [System.IO.File]::AppendAllText($log, "$ts learning_standardize_task.ps1 rc_pipeline=$rc1 rc_gate=$rc2`r`n", $utf8)
 if ($rc1 -ne 0) { exit $rc1 }
 exit $rc2
+

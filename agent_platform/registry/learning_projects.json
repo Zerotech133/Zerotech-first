@@ -83,7 +83,7 @@
    "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\manifest.json",
    "updated_at": "2026-11-02T04:11:50+08:00",
-   "stage_updated_at": "2026-11-09T20:00:02+08:00",
+   "stage_updated_at": "2026-11-11T20:00:03+08:00",
    "schema_version": "learning_project.v1",
    "lifecycle": {
     "stage": "distilling",
@@ -111,7 +111,7 @@
     "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\source"
    ],
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\manifest.json",
-   "stage_updated_at": "2026-11-09T20:00:02+08:00",
+   "stage_updated_at": "2026-11-11T20:00:03+08:00",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": "2026-11-03T06:44:27+08:00",
@@ -138,7 +138,7 @@
     "C:\\项目\\知识库\\05_学习源件\\视频号学习_第二期\\source"
    ],
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_第二期\\manifest.json",
-   "stage_updated_at": "2026-11-09T20:00:02+08:00",
+   "stage_updated_at": "2026-11-11T20:00:03+08:00",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": null,
@@ -166,7 +166,7 @@
     "C:\\项目\\知识库\\05_学习源件\\视频号学习_北斗股术1688\\source"
    ],
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_北斗股术1688\\manifest.json",
-   "stage_updated_at": "2026-11-09T20:00:02+08:00",
+   "stage_updated_at": "2026-11-11T20:00:03+08:00",
    "schema_version": "learning_project.v1",
    "lifecycle": {
     "stage": "distilling",
@@ -228,7 +228,7 @@
     ]
    },
    "updated_at": "2026-11-04T06:18:07+08:00",
-   "stage_updated_at": "2026-11-09T20:00:02+08:00"
+   "stage_updated_at": "2026-11-11T20:00:03+08:00"
   },
   {
    "project_id": "视频号学习_全部文案_20261108",
@@ -240,7 +240,7 @@
     "C:\\项目\\知识库\\05_学习源件\\视频号学习_全部文案_20261108\\source"
    ],
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_全部文案_20261108\\manifest.json",
-   "stage_updated_at": "2026-11-09T20:00:02+08:00",
+   "stage_updated_at": "2026-11-11T20:00:03+08:00",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": null,
@@ -249,6 +249,51 @@
      "ok": true,
      "checked_at": "2026-11-09T10:00:02+08:00"
     }
+   }
+  },
+  {
+   "project_id": "微信公众号_缠论108课_20261110",
+   "name": "微信公众号_缠论108课_20261110",
+   "type": "auto_intake",
+   "status": "distilling",
+   "owner": "DATA1",
+   "source": [
+    "C:\\项目\\知识库\\05_学习源件\\微信公众号_缠论108课_20261110\\source"
+   ],
+   "manifest_path": "C:\\项目\\知识库\\05_学习源件\\微信公众号_缠论108课_20261110\\manifest.json",
+   "stage_updated_at": "2026-11-11T20:00:03+08:00",
+   "updated_at": "2026-11-10T23:38:50+08:00",
+   "schema_version": "learning_project.v1",
+   "note": "微信原文 108 课链接被 wappoc 风控；改用 GitHub MIT 镜像 stockServ/chzhshch-108-plus 补齐全文（813,689 字/108 课）；学习入库 3 文件、2,929 单元、108 观点卡（全部证据通过）。",
+   "artifacts": {
+    "videos": 108,
+    "units": 2929,
+    "cards": 108
+   },
+   "lifecycle": {
+    "stage": "distilling",
+    "stage_updated_at": "2026-11-10T23:38:50+08:00",
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-10T23:38:50+08:00"
+    },
+    "history": [
+     {
+      "stage": "intake_pending",
+      "at": "2026-11-10T22:42:33+08:00",
+      "source": "learning_intake.py ingest --write（索引/摘要）"
+     },
+     {
+      "stage": "intake_pending",
+      "at": "2026-11-10T22:58:21+08:00",
+      "source": "learning_intake.py ingest --write（全文）"
+     },
+     {
+      "stage": "distilling",
+      "at": "2026-11-10T23:38:50+08:00",
+      "source": "units_v2.build_units + chzhshch108 batch cards (qwen3.5:9b)"
+     }
+    ]
    }
   }
  ],

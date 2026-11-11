@@ -169,11 +169,13 @@ def work(path, verify=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 只（试点用）")
-    ap.add_argument("--workers", type=int, default=10)
+    ap.add_argument("--workers", type=int, default=10,
+                    help="进程数上限 16")
     ap.add_argument("--verify", action="store_true",
                     help="逐候选截断重放，剔掉当天还确认不了的前视信号（推荐开）")
     ap.add_argument("--out", default=OUT)
     a = ap.parse_args()
+    a.workers = max(1, min(a.workers, 16))
 
     files = sorted(glob.glob(os.path.join(ASH, "*.parquet")))
     if a.limit:

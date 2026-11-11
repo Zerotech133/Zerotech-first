@@ -164,10 +164,72 @@
         "obs_negative": 2,
         "day_number": 3
       }
+    },
+    "2026-11-10": {
+      "preliminary": {
+        "generated_at": "2026-11-10T18:10:12+08:00",
+        "overall_status": "PRELIMINARY_AT_RISK",
+        "checks": {
+          "data_dates": "FAIL",
+          "reports_on_time": "PENDING",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 0,
+        "report_on_time": 0,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 23,
+        "obs_negative": 2,
+        "day_number": 4
+      },
+      "final": {
+        "generated_at": "2026-11-11T10:05:03+08:00",
+        "overall_status": "FAIL",
+        "checks": {
+          "data_dates": "FAIL",
+          "reports_on_time": "FAIL",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 0,
+        "report_on_time": 0,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 26,
+        "obs_negative": 2,
+        "day_number": 4
+      }
+    },
+    "2026-11-11": {
+      "preliminary": {
+        "generated_at": "2026-11-11T18:10:09+08:00",
+        "overall_status": "PRELIMINARY_AT_RISK",
+        "checks": {
+          "data_dates": "FAIL",
+          "reports_on_time": "PENDING",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 0,
+        "report_on_time": 0,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 14,
+        "obs_total": 26,
+        "obs_negative": 3,
+        "day_number": 5
+      },
+      "final": null
     }
   },
-  "consecutive_fail_days": 3,
-  "max_consecutive_fail_days": 3,
+  "consecutive_fail_days": 4,
+  "max_consecutive_fail_days": 4,
   "stop_recommended": true,
-  "updated_at": "2026-11-10T10:05:06+08:00"
+  "updated_at": "2026-11-11T18:10:12+08:00"
 }

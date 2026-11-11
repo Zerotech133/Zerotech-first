@@ -1,0 +1,4 @@
+﻿strategy_id,market,signal_date,entry_date,code,name,signal,ret_t1,max_dd,market_ret,excess,draft_category
+chanlun,CN,2026-11-09,2026-11-10,300829.SZ,金丹科技,"3买,CHAN_V7",-0.009558,-0.009558,,,小幅负收益/待复盘
+v1-cn-strat-2,CN,2026-11-09,2026-11-10,605100.SH,华丰股份,均值回归,-0.003925,-0.003925,,,小幅负收益/待复盘
+v1-cn-strat-4,CN,2026-11-09,2026-11-10,002223.SZ,鱼跃医疗,"CHAN,CHAN_V7",-0.014134,-0.014134,,,小幅负收益/待复盘

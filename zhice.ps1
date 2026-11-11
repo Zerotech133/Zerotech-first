@@ -7,7 +7,7 @@
 param([Parameter(Position=0)][ValidateSet('start','stop','status','restart','watchdog')][string]$Action='status', [switch]$Legacy)
 
 $Code = 'C:\项目\zhice-os-v2-windows-20260920\code'
-$Py  = 'C:\项目\py312\python.exe'   # K-NEW2(2026-10-16)：嵌入式 3.12.10，替代失效 venv
+$Py  = 'C:\Program Files\Python311\python.exe'   # K-NEW2(2026-10-16)：嵌入式 3.12.10，替代失效 venv
 $JevPy = "C:\Program Files\Python311\python.exe"   # Jev 四件套产线解释器（双 Python 治理：禁止裸 python，回退只改此行）
 $ApiLog  = "$env:TEMP\zhice-api.log"
 $SchedLog = "$env:TEMP\zhice-scheduler.log"
@@ -281,3 +281,4 @@ switch ($Action) {
     }
   }
 }
+

@@ -1,0 +1,2 @@
+{"ref_id": "irm:11_2390937764322738176", "src": "irm", "code": "002234", "field": "content", "source_tier": 3, "fact_type": "plan", "hit_plan": ["计划"], "hit_fact": [], "quote": "近期股票走势持续下跌，贵公司有回购计划吗？", "ref_ts": "2026-10-27 13:09:50", "annotated_at": "2026-11-11 08:20:20"}
+{"ref_id": "irm:11_2346452417042944000", "src": "irm", "code": "002234", "field": "content", "source_tier": 3, "fact_type": "neutral", "hit_plan": [], "hit_fact": [], "quote": "你好，贵公司淘汰鸡业务是什么概念，是否用来做副食品还是其他方面的业务", "ref_ts": "2026-08-28 14:36:54", "annotated_at": "2026-11-11 08:20:20"}

@@ -1,6 +1,6 @@
 {
   "schema": "osint1.strategy_picks_summary/v1",
-  "generated_at": "2026-11-10T17:34:42",
+  "generated_at": "2026-11-11T06:39:42",
   "note": "只读盘点各策略出票与 OSINT 覆盖缺口；不产生研判；接入采集范围归上级裁定",
   "lines": {
     "k_stock": {
@@ -33,7 +33,7 @@
       },
       "n_holdings_rows": 18,
       "recent_buy_window_days": 14,
-      "recent_buy_cutoff": "20261027",
+      "recent_buy_cutoff": "20261028",
       "recent_buy_codes": [
         "01299",
         "01810",
