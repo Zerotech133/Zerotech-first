@@ -22,7 +22,7 @@ $dir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $log  = 'C:\Temp\houfeng_settle_task.log'   # 不含用户名的通用临时目录；与已注册任务保持一致
 $arg  = '-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "' + $ps1 +
-        '" -Phases "settle,snap" -Log "' + $log + '" -Tag houfeng_settle'
+        '" -Phases "settle,snap,arena" -Log "' + $log + '" -Tag houfeng_settle'
 
 if (-not (Test-Path $ps1)) { throw ('脚本不存在: ' + $ps1) }
 

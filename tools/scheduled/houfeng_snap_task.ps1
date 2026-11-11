@@ -17,7 +17,7 @@
 #   所以 15:10 与 16:40 各跑一次是安全的：第二次顺手补齐第一次的待结算项。
 param(
     [switch]$WhatIf,
-    [string]$Phases = 'settle,snap,health',
+    [string]$Phases = 'settle,snap,arena,health',
     [string]$Log    = 'C:\Temp\houfeng_snap_task.log',
     [string]$Tag    = 'houfeng_snap'
 )
@@ -61,6 +61,7 @@ try {
     if ($WhatIf) {
         if ($ph -contains 'settle') { Write-Output ('将执行: ' + $py + ' -X utf8 cohort_track.py --settle') }
         if ($ph -contains 'snap')   { Write-Output ('将执行: ' + $py + ' -X utf8 cohort_track.py --snap') }
+        if ($ph -contains 'arena')  { Write-Output ('将执行: ' + $py + ' -X utf8 paper_arena.py → build_arena.py') }
         if ($ph -contains 'health') { Write-Output ('将执行: ' + $py + ' -X utf8 data_health.py --target prev') }
         Write-Output ('阶段: ' + ($ph -join ','))
         Write-Output ('工作目录: ' + $wd)
@@ -101,7 +102,30 @@ try {
         }
     }
 
-    # 3) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
+    # 3) 多策略模拟盘（2026-11-11 立）：把「某天选了什么 × 几种打法 × 后来怎样」
+    #    逐日钉下来，产出 arena/latest.json + paper_arena.html。
+    #    依赖当日日线（收盘价估值），与 settle 同一个原因：15:10 那趟日线还没发布，
+    #    只能是「未就绪、跳过」，不是故障 —— 这两种情况必须分开记，否则
+    #    「跳过」会被 WARN 的措辞吞掉（11-11 结算静默失败那个判例）。
+    if ($ph -contains 'arena') {
+        $arOut = (& $py -X utf8 'paper_arena.py' 2>&1 | Out-String)
+        $arRc  = $LASTEXITCODE
+        Write-TaskOut 'arena' $arOut 24
+        if ($arOut -match '行情未就绪') {
+            Write-TaskLog 'NOTE: 当日日线未就绪，arena 跳过（16:40 那趟重跑即可，不丢数据）'
+        } elseif ($arOut -match 'Traceback' -or $arRc -ne 0) {
+            Write-TaskLog ('WARN: arena 失败（rc=' + $arRc + '），模拟盘页面不会更新；上几行即为原因')
+        } else {
+            $bdOut = (& $py -X utf8 'build_arena.py' 2>&1 | Out-String)
+            $bdRc  = $LASTEXITCODE
+            Write-TaskOut 'page' $bdOut 6
+            if ($bdOut -match 'Traceback' -or $bdRc -ne 0) {
+                Write-TaskLog ('WARN: 页面构建失败（rc=' + $bdRc + '），latest.json 已更新但 html 未刷新')
+            }
+        }
+    }
+
+    # 4) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
     #    只检 prev：当天的日线还在交易所侧，检 today 必然报零采集。
     #    这一检正对着「11-10 整天没采数据、旧脚本却判七表全绿」那次漏判 ——
     #    旧判据先取 max(trade_date) 再查那天齐不齐，于是永远自洽。

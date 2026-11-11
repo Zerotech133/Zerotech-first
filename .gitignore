@@ -432,6 +432,12 @@ portal/daily_report/hold_*.json
 portal/daily_report/index.html
 portal/daily_report/houfeng.html
 
+# 2026-11-11 多策略模拟盘：账本与页面都是运行态产物（每天重算），只入代码与模板。
+# arena/ 用尾部斜杠匹配整棵目录（递归），不做 dir/* 那种只管一级的写法。
+portal/daily_report/arena/
+portal/daily_report/paper_arena.html
+portal/daily_report/_shot_arena*.png
+
 # 2026-11-10 瞬态运行日志（不入库）
 quant_backtest/logs_*.txt
 portal/_social_fetch_run_log.md
