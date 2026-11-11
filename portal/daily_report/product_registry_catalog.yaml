@@ -1,0 +1,6214 @@
+version: 1
+updated: '2026-11-12'
+generated_by: portal/daily_report/gen_registry_catalog.py
+source: quant_backtest/data/catalog.json
+note: '本文件由脚本生成，不要手改。里面的 writer / promise 是从 catalog.freq 推断的，未经写方确认，标记 derived: true；契约层见 product_registry.yaml。'
+clock: quote_daily
+products:
+- id: adj_factor
+  name: A股复权因子（tushare 按日，回测前复权源）
+  derived: true
+  purpose: A股复权因子（tushare 按日，回测前复权源）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_acad1_pool_contract.py
+  - agent_platform/tools/dw_catalog_mcp.py
+  - data_sources/cnopendata/fepu_ic_test.py
+  - portal/api_factor.py
+  - portal/board_bt.py
+  - portal/build_pick_verdicts.py
+  - portal/daily_report/cohort_track.py
+  - portal/daily_report/lens_engine.py
+  - portal/tests/test_p0e_governance.py
+  - quant_backtest/_voltarget_ab_20261014.py
+  - quant_backtest/adj_factor_sync.py
+  - quant_backtest/baseline_factors.py
+  reader_count: 104
+  readers_private: 12
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/adj_factor/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,adj_factor
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4306854
+  deprecated: false
+- id: anns_d
+  name: 公告（按日分片，tushare 兜底源）
+  derived: true
+  purpose: 公告（按日分片，tushare 兜底源）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/config.py
+  - analysis/event_backtest.py
+  - analysis/events.py
+  - analysis/snapshot.py
+  - jev-eval/jev-gate.effects.ps1
+  - jev-eval/jev_source_guard.py
+  - jev-eval/replay_review.py
+  - jev-eval/signal_review_gate.py
+  - jev-eval/tests/test_source_guard.py
+  - news_collector/jev_feed.py
+  - portal/daily_report/_patches/_rewrite_readable.py
+  - portal/daily_report/_patches/_wire_data.py
+  reader_count: 65
+  readers_private: 28
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/anns_d/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ann_date,ts_code,name,title,url
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: null
+  deprecated: false
+- id: bak_basic
+  name: 备选基础信息（逐码）
+  derived: true
+  purpose: 备选基础信息（逐码）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_backtest_pages_a1.py
+  - portal/daily_report/check_products.py
+  - quant_backtest/_water_level_probe_20261111.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_health.py
+  - quant_backtest/premarket.py
+  - quant_backtest/test_drill_visual.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  reader_count: 22
+  readers_private: 5
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/bak_basic/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=trade_date,ts_code,name,industry,area
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261112'
+  rows: null
+  deprecated: false
+- id: balancesheet
+  name: A股资产负债表（全字段152列，逐码）
+  derived: true
+  purpose: A股资产负债表（全字段152列，逐码）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - analysis/config.py
+  - analysis/features.py
+  - analysis/snapshot.py
+  - portal/api_common_assets.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/datamart.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/test_datamart_integrity.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - tools/build_dw_prototype.py
+  - tools/data_lag_audit.py
+  reader_count: 26
+  readers_private: 4
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/balancesheet/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,ann_date,f_ann_date,end_date,report_type
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: null
+  deprecated: false
+- id: cashflow
+  name: A股现金流量表（全字段97列，逐码，FCFF/FCFE）
+  derived: true
+  purpose: A股现金流量表（全字段97列，逐码，FCFF/FCFE）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - analysis/config.py
+  - analysis/features.py
+  - analysis/snapshot.py
+  - portal/api_common_assets.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/datamart.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/test_datamart_integrity.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - tools/build_dw_prototype.py
+  - tools/data_lag_audit.py
+  reader_count: 25
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/cashflow/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,ann_date,f_ann_date,end_date,comp_type
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: null
+  deprecated: false
+- id: cb_basic
+  name: 可转债基础
+  derived: true
+  purpose: 可转债基础
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 7
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/cb_basic/part_*.parquet
+    date_from: column:list_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,bond_full_name,bond_short_name,cb_type,cb_code
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: list_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261113'
+  rows: 1179
+  deprecated: false
+- id: cb_daily
+  name: 可转债日线（逐码）
+  derived: true
+  purpose: 可转债日线（逐码）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_common_assets.py
+  - quant_backtest/afterhours.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_health.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/datamart.py
+  - quant_backtest/kg_dt_gap.py
+  - quant_backtest/premarket.py
+  - quant_backtest/test_data_integrity.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/tushare_sync.py
+  reader_count: 22
+  readers_private: 5
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/cb_daily/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,pre_close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 836509
+  deprecated: false
+- id: crypto_daily
+  name: 加密货币日线（37 交易对，BTC/ETH 等，逐对单文件）
+  derived: true
+  purpose: 加密货币日线（37 交易对，BTC/ETH 等，逐对单文件）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_common_assets.py
+  - portal/api_screen.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/council_shadow.py
+  - quant_backtest/crypto_sync.py
+  - quant_backtest/datamart.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/portfolio.py
+  - quant_backtest/premarket.py
+  - quant_backtest/start_crypto_sync.ps1
+  - quant_backtest/stock_council.py
+  - quant_backtest/test_kg_source_rating_wo108.py
+  reader_count: 16
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/crypto/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261109'
+  rows: null
+  deprecated: false
+- id: cyq_chips
+  name: 筹码分布（逐码，文件名提供证券身份）
+  derived: true
+  purpose: 筹码分布（逐码，文件名提供证券身份）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_backtest_pages_stock.py
+  - portal/api_common_stock.py
+  - portal/api_screen.py
+  - portal/portal_api.py
+  - portal/portal_report.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/factor_lib/learning_factors.py
+  - quant_backtest/test_warehouse_inventory.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/kb_corpus/data_governance_overview.py
+  - tools/kb_corpus/dataset_requirements.py
+  reader_count: 15
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/cyq_chips/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=trade_date,price,percent
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 76374
+  deprecated: false
+- id: cyq_perf
+  name: 筹码胜率与成本指标
+  derived: true
+  purpose: 筹码胜率与成本指标
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/config.py
+  - analysis/snapshot.py
+  - portal/daily_report/_patches/_rewrite_readable.py
+  - portal/daily_report/_patches/_wire_data.py
+  - portal/daily_report/data_health.py
+  - portal/kg/kg_pages_misc.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_bclass.py
+  - quant_backtest/source_col_audit.py
+  - quant_backtest/test_kg_bclass_cyq.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  reader_count: 25
+  readers_private: 9
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/cyq_perf/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,his_low,his_high,cost_5pct
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1508210
+  deprecated: false
+- id: czyx
+  name: 中国财政可持续性指数（省级六维面板：收入/支出/债务/社保/公共服务/均等化，6
+  derived: true
+  purpose: 中国财政可持续性指数（省级六维面板：收入/支出/债务/社保/公共服务/均等化，6 分片同省年网格，2008–2019，31 省；dim 列标识来源工作表；末片 part_0005 为宽表无 year 列；prov 已做空白归一（归一前 91 个取值 / 归一后各分片内 31 省），prov_std 为官方全称归一列（上海→上海市、内蒙古→内蒙古自治区；原 prov 保留源值，片 0000 用简称 / 片 0001–0004 用全称），跨表按省份 join 请用 prov_std；静态历史包，非按日更新）
+  writer: 未认领（节奏由 freq=Y 推断，未经写方确认）
+  readers:
+  - data_sources/cnopendata/ingest_open.py
+  - portal/daily_report/check_products.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_kg_source_rating_wo108.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/cnopendata/czyx/part_*.parquet
+    date_from: column:year
+    date_role: period
+    role: catalog layout=part，schema=prov,year,人口,省平减指数,一般公共预算收入
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: 最新year不早于当前年往前 400 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '2019'
+  rows: 1995
+  deprecated: false
+- id: daily
+  name: A股日线深历史（tushare 按日，1990→2023-07）
+  derived: true
+  purpose: A股日线深历史（tushare 按日，1990→2023-07）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - AI/111111/test_a9_supervision.py
+  - AI/111111/test_web_ui.py
+  - AI/111111/web_chat.py
+  - AI/111111/web_ui.py
+  - Hermes/cowbridge/cowbridge.py
+  - Hermes/cowbridge/test_provider_plugin.py
+  - agent_platform/a0_agent.py
+  - agent_platform/engine/emp_numbering.py
+  - agent_platform/engine/lookahead_guard.py
+  - agent_platform/engine/quant_double_knife.py
+  - agent_platform/engine/quant_double_knife_entry.py
+  - agent_platform/legion_command/hq_acceptance.py
+  reader_count: 732
+  readers_private: 166
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/daily/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4281951
+  deprecated: false
+- id: daily_basic
+  name: daily_basic
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/legion_command/zhaoyun_quant.py
+  - agent_platform/tests/test_acad1_pool_contract.py
+  - agent_platform/tests/test_h1b_data_adapter.py
+  - analysis/backtest.py
+  - analysis/config.py
+  - analysis/curated_update.py
+  - analysis/features.py
+  - analysis/monitor.py
+  - analysis/screener.py
+  - analysis/snapshot.py
+  - analysis/tests/test_monitor.py
+  - deliverables/2026-11-06_MON一致性证据/monitor_master.py
+  reader_count: 111
+  readers_private: 13
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/daily_basic/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,close,turnover_rate,turnover_rate_f
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4979665
+  deprecated: false
+- id: dkknife_snap
+  name: dkknife_snap
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/dkknife_snap/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261030'
+  rows: null
+  deprecated: false
+- id: dknife_snap
+  name: dknife_snap
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/tests/test_p0e_governance.py
+  - quant_backtest/_327_paired.py
+  - quant_backtest/backtest_engine_v2.py
+  - quant_backtest/dknife_snap.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  reader_count: 6
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/dknife_snap/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 548956
+  deprecated: false
+- id: etf_mins
+  name: ETF 1 分钟线（逐码月度）
+  derived: true
+  purpose: ETF 1 分钟线（逐码月度）
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/dw_dashboard.py
+  - tools/kb_corpus/dataset_requirements.py
+  reader_count: 10
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/etf_mins/*.parquet
+    date_from: column:trade_time
+    date_role: observation
+    role: catalog layout=by_code_month，schema=ts_code,trade_time,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: null
+  deprecated: false
+- id: express
+  name: express
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/extras.py
+  - analysis/render.py
+  - analysis/sync.py
+  - portal/watch_admin_route_chanlun.py
+  - pylibs/PIL/IcoImagePlugin.py
+  - quant_backtest/test_ts_tail_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/ts_tail_sync.py
+  - tools/build_dw_prototype.py
+  - tools/data_lag_audit.py
+  - tools/dw_dashboard.py
+  - tools/kb_corpus/dataset_requirements.py
+  reader_count: 32
+  readers_private: 17
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/express/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,revenue,n_income
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261021'
+  rows: 5947
+  deprecated: false
+- id: fepu
+  name: 企业年报前瞻性信息披露（fepu 句子级/词级强度，A股 2006–2024，5
+  derived: true
+  purpose: 企业年报前瞻性信息披露（fepu 句子级/词级强度，A股 2006–2024，57044 行，(stkcd,year) 唯一；静态历史包，非按日更新）
+  writer: 未认领（节奏由 freq=Y 推断，未经写方确认）
+  readers:
+  - data_sources/cnopendata/fepu_ic_test.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_kg_source_rating_wo108.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/tests/test_data_hub.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/cnopendata/fepu/part_*.parquet
+    date_from: column:year
+    date_role: period
+    role: catalog layout=part，schema=stkcd,year,fepu_sentence,fepu_word
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: 最新year不早于当前年往前 400 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '2024'
+  rows: 57044
+  deprecated: false
+- id: fina_indicator
+  name: A股财务指标（全字段108列，逐码，ROE/ROA/ROIC）
+  derived: true
+  purpose: A股财务指标（全字段108列，逐码，ROE/ROA/ROIC）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - analysis/backtest.py
+  - analysis/screener.py
+  - analysis/snapshot.py
+  - portal/api_common_assets.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/datamart.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/magic_pool.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/nine_dim_backtest.py
+  - quant_backtest/nine_dim_source_snapshot.py
+  - quant_backtest/test_nine_dim_source_snapshot.py
+  reader_count: 35
+  readers_private: 5
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/fina_indicator/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,ann_date,end_date,eps,dt_eps
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: null
+  deprecated: false
+- id: firm-level-climate-change-exposure
+  name: 公司层面气候变化暴露指数（OSF 2024Q4 版，81759 行，2001–2
+  derived: true
+  purpose: 公司层面气候变化暴露指数（OSF 2024Q4 版，81759 行，2001–2024；主表按年度 year 登记，同表另含季度面板 quarter（firmquarter，年度片无该列）；静态历史包，非按日更新）
+  writer: 未认领（节奏由 freq=Y 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/cnopendata/firm-level-climate-change-exposure/part_*.parquet
+    date_from: column:year
+    date_role: period
+    role: catalog layout=part，schema=isin,year,quarter,cc_expo_ew,cc_risk_ew
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: 最新year不早于当前年往前 400 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '2024'
+  rows: 81759
+  deprecated: false
+- id: forecast
+  name: forecast
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/domains/pitch_wiring.py
+  - agent_platform/tests/test_pitch_wiring.py
+  - analysis/extras.py
+  - analysis/render.py
+  - analysis/scoring.py
+  - analysis/sync.py
+  - analysis/tests/test_nonrecurring.py
+  - analysis/tests/test_p0n.py
+  - analysis/verdict.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/nine_dim_backtest.py
+  - quant_backtest/nine_dim_source_snapshot.py
+  reader_count: 39
+  readers_private: 7
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/forecast/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,type,p_change_min
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261102'
+  rows: 110471
+  deprecated: false
+- id: fx_daily
+  name: fx_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/data_lag_audit.py
+  - tools/dw_dashboard.py
+  - tools/fx_fill.py
+  - tools/research/ah_premium.py
+  - tools/research/legacy/ah_monitor.py
+  - tools/research/legacy/ah_premium_shortable.py
+  - tools/research/legacy/h16_ah_strat.py
+  - tools/research/legacy/h17_hsgt_leadlag.py
+  - tools/research/legacy/h20_hkhold_ah.py
+  - tools/research/legacy/h20_hkhold_ah_v2.py
+  - tools/research/legacy/h22_ah_regime_timing.py
+  reader_count: 12
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/fx_daily/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,close,source
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 5415
+  deprecated: false
+- id: gjzfssfc
+  name: 国家政府支出财政分成（中央/地方/省本级/市本级各税种占比，31 省 1994–
+  derived: true
+  purpose: 国家政府支出财政分成（中央/地方/省本级/市本级各税种占比，31 省 1994–2014，651 行；省份代码 为数字代码（11/12…），省份 为源简称，prov_std 为官方全称归一列，跨表 join 请用 prov_std；静态历史包，非按日更新）
+  writer: 未认领（节奏由 freq=Y 推断，未经写方确认）
+  readers:
+  - data_sources/cnopendata/ingest_open.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_kg_source_rating_wo108.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/cnopendata/gjzfssfc/part_*.parquet
+    date_from: column:年
+    date_role: period
+    role: catalog layout=part，schema=省份代码,省份,年,一般公共预算中央本级占比,税收收入中央本级占比
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: 最新年不早于当前年往前 400 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '2014'
+  rows: 651
+  deprecated: false
+- id: hk_balancesheet
+  name: 港股资产负债表（Tushare）
+  derived: true
+  purpose: 港股资产负债表（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）；港股仅半年报/年报，按半年频判定（catalog freq=Q 不适用）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 5
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/hk_balancesheet/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,name,end_date,ind_name,ind_value
+  merge: max
+  promise:
+    cadence: semiannual
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260630'
+  rows: null
+  deprecated: false
+- id: hk_cashflow
+  name: 港股现金流量表（Tushare）
+  derived: true
+  purpose: 港股现金流量表（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）；港股仅半年报/年报，按半年频判定（catalog freq=Q 不适用）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 5
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/hk_cashflow/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,end_date,name,ind_name,ind_value
+  merge: max
+  promise:
+    cadence: semiannual
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260630'
+  rows: null
+  deprecated: false
+- id: hk_daily
+  name: hk_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_common_assets.py
+  - portal/api_screen.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/council_shadow.py
+  - quant_backtest/data_health.py
+  - quant_backtest/datamart.py
+  - quant_backtest/portfolio.py
+  - quant_backtest/stock_council.py
+  - quant_backtest/test_ts_tail_sync.py
+  - quant_backtest/tools/research/diag_p1.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/warehouse_reader.py
+  reader_count: 32
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/hk_daily/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 1546562
+  deprecated: false
+- id: hk_fina_indicator
+  name: 港股财务指标（Tushare）
+  derived: true
+  purpose: 港股财务指标（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）；港股仅半年报/年报，按半年频判定（catalog freq=Q 不适用）
+  readers:
+  - portal/api_screen.py
+  - quant_backtest/source_col_audit.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 7
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/hk_fina_indicator/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,name,end_date,report_type,std_report_date
+  merge: max
+  promise:
+    cadence: semiannual
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260630'
+  rows: null
+  deprecated: false
+- id: hk_hold
+  name: hk_hold
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/test_ts_tail_sync.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - quant_backtest/warehouse_update.py
+  - tools/dw_dashboard.py
+  - tools/hk_connect_sync.py
+  - tools/research/legacy/h17_hsgt_leadlag.py
+  - tools/research/legacy/h20_hkhold_ah.py
+  - tools/research/legacy/h20_hkhold_ah_v2.py
+  reader_count: 14
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/hk_hold/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=code,trade_date,ts_code,name,vol
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1969305
+  deprecated: false
+- id: hk_income
+  name: 港股利润表（Tushare）
+  derived: true
+  purpose: 港股利润表（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）；港股仅半年报/年报，按半年频判定（catalog freq=Q 不适用）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 5
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/hk_income/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,end_date,name,ind_name,ind_value
+  merge: max
+  promise:
+    cadence: semiannual
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260630'
+  rows: null
+  deprecated: false
+- id: idx_mins
+  name: 指数 1 分钟线（逐码月度）
+  derived: true
+  purpose: 指数 1 分钟线（逐码月度）
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - quant_backtest/bar_sources.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_health.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tests/test_bar_sources.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/dw_dashboard.py
+  - tools/kb_corpus/dataset_requirements.py
+  - tools/kb_corpus/training_data_matrix.py
+  reader_count: 15
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/idx_mins/*.parquet
+    date_from: column:trade_time
+    date_role: observation
+    role: catalog layout=by_code_month，schema=ts_code,trade_time,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: null
+  deprecated: false
+- id: income
+  name: A股利润表（全字段85列，逐码，图谱质量因子源）
+  derived: true
+  purpose: A股利润表（全字段85列，逐码，图谱质量因子源）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - analysis/config.py
+  - analysis/features.py
+  - analysis/render.py
+  - analysis/snapshot.py
+  - portal/api_common_assets.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/datamart.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/test_data_integrity.py
+  - quant_backtest/test_datamart_integrity.py
+  reader_count: 31
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/income/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,ann_date,f_ann_date,end_date,report_type
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: null
+  deprecated: false
+- id: index_daily
+  name: index_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/legion_command/zhaoyun_quant.py
+  - agent_platform/tests/test_acad1_pool_contract.py
+  - analysis/backtest.py
+  - analysis/curated_update.py
+  - analysis/event_backtest.py
+  - analysis/event_v2.py
+  - portal/api_common_assets.py
+  - portal/api_factor.py
+  - portal/daily_report/lens_engine.py
+  - quant_backtest/_fix_index_daily_20261111.py
+  - quant_backtest/afterhours.py
+  - quant_backtest/build_catalog.py
+  reader_count: 55
+  readers_private: 8
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/index_daily/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 9584346
+  deprecated: false
+- id: index_global
+  name: 全球指数日线（20 指数 HSI/SPX/DJI/IXIC/N225 等，逐指数
+  derived: true
+  purpose: 全球指数日线（20 指数 HSI/SPX/DJI/IXIC/N225 等，逐指数单文件）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_health.py
+  - quant_backtest/kg_build_p3.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/premarket.py
+  - quant_backtest/pull_global_idx.py
+  - quant_backtest/source_col_audit.py
+  - quant_backtest/test_warehouse_inventory.py
+  - tools/data_lag_audit.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/recent_data_fill.py
+  reader_count: 16
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/index_global/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,open,close,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: null
+  deprecated: false
+- id: index_weight
+  name: 指数成分及权重（成分身份见 con_code）
+  derived: true
+  purpose: 指数成分及权重（成分身份见 con_code）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/screener.py
+  - portal/watch_tower_linkage.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/test_ts_tail_sync.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - quant_backtest/warehouse_update.py
+  reader_count: 20
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/index_weight/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code_month，schema=index_code,con_code,trade_date,weight
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261030'
+  rows: 112800
+  deprecated: false
+- id: intraday_board
+  name: intraday_board
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/jev_graph.py
+  - skills/jev-graph-sqlite-prototype/scripts/ingest.py
+  reader_count: 4
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/intraday_board/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: ''
+  rows: null
+  deprecated: false
+- id: irm_qa_sh
+  name: 互动易问答-沪（逐码）
+  derived: true
+  purpose: 互动易问答-沪（逐码）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/extras.py
+  - analysis/sync.py
+  - quant_backtest/_water_level_probe_20261111.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/corpus_incr_sync.py
+  - quant_backtest/test_ts_tail_sync.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_incr_state.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/merge_parquet.py
+  reader_count: 13
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/irm_qa_sh/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,q,a
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: null
+  deprecated: false
+- id: irm_qa_sh_probe
+  name: 沪市互动问答单日探针（不代表全量覆盖）
+  derived: true
+  purpose: 沪市互动问答单日探针（不代表全量覆盖）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_warehouse_inventory.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/irm_qa_sh_probe/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,q,a
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260924'
+  rows: 3000
+  deprecated: false
+- id: irm_qa_sz
+  name: 互动易问答-深（逐码）
+  derived: true
+  purpose: 互动易问答-深（逐码）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/extras.py
+  - analysis/sync.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/corpus_incr_sync.py
+  - quant_backtest/ts_tail_sync.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_incr_state.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 10
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/irm_qa_sz/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,q,a
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: null
+  deprecated: false
+- id: irm_qa_sz_probe
+  name: 深市互动问答单日探针（不代表全量覆盖）
+  derived: true
+  purpose: 深市互动问答单日探针（不代表全量覆盖）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_warehouse_inventory.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/irm_qa_sz_probe/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,q,a
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260924'
+  rows: 3000
+  deprecated: false
+- id: limit_list_d
+  name: 每日涨跌停明细
+  derived: true
+  purpose: 每日涨跌停明细
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/sync.py
+  - portal/board_bt.py
+  - portal/daily_report/_patches/_rewrite_readable.py
+  - portal/daily_report/_patches/_wire_data.py
+  - portal/daily_report/data_health.py
+  - portal/jev_graph.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/emotion_cycle.py
+  - quant_backtest/factor_lib/learning_factors.py
+  - quant_backtest/kg_bclass.py
+  - quant_backtest/kg_schema.py
+  - quant_backtest/limit_list_fix_sync.py
+  reader_count: 45
+  readers_private: 14
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/limit_list_d/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=trade_date,ts_code,industry,name,close
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 28859
+  deprecated: false
+- id: major_news
+  name: 大事提醒（tushare）
+  derived: true
+  purpose: 大事提醒（tushare）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/corpus_incr_sync.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_incr_state.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/dw_dashboard.py
+  - tools/kb_corpus/dataset_requirements.py
+  - tools/kb_corpus/training_data_matrix.py
+  reader_count: 11
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/major_news/part_*.parquet
+    date_from: column:pub_time
+    date_role: observation
+    role: catalog layout=part，schema=title,pub_time,src,url
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(pub_time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 800
+  deprecated: false
+- id: margin_detail
+  name: margin_detail
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_acad1_pool_contract.py
+  - analysis/config.py
+  - analysis/snapshot.py
+  - portal/daily_report/_check_drift.py
+  - portal/daily_report/_patches/_fix_margin_ev.py
+  - portal/daily_report/_patches/_rewrite_readable.py
+  - portal/daily_report/_patches/_wire_data.py
+  - portal/daily_report/data_health.py
+  - quant_backtest/build_history_backfill_plan.py
+  - quant_backtest/build_history_runstore_candidate.py
+  - quant_backtest/history_backfill.py
+  - quant_backtest/increment_guard.py
+  reader_count: 48
+  readers_private: 13
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/margin_detail/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=trade_date,ts_code,rzye,rqye,rzmre
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 3684697
+  deprecated: false
+- id: moneyflow
+  name: moneyflow
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_acad1_pool_contract.py
+  - analysis/backtest.py
+  - analysis/config.py
+  - analysis/curated_update.py
+  - analysis/features.py
+  - analysis/render.py
+  - analysis/scoring.py
+  - analysis/snapshot.py
+  - analysis/tests/test_nonrecurring.py
+  - analysis/tests/test_p0m.py
+  - analysis/tests/test_p0n.py
+  - analysis/verdict.py
+  reader_count: 76
+  readers_private: 18
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/moneyflow/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=ts_code,trade_date,buy_sm_vol,buy_sm_amount,sell_sm_vol
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4767371
+  deprecated: false
+- id: moneyflow_hsgt
+  name: moneyflow_hsgt
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/sync.py
+  - quant_backtest/kg_bclass.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/nine_dim_backtest.py
+  - quant_backtest/premarket.py
+  - quant_backtest/ts_tail_sync.py
+  - tools/dw_dashboard.py
+  - tools/hk_connect_sync.py
+  - tools/kb_corpus/dataset_requirements.py
+  - tools/kb_corpus/training_data_matrix.py
+  - tools/research/legacy/h17_hsgt_leadlag.py
+  reader_count: 15
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/moneyflow_hsgt/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=trade_date,ggt_ss,ggt_sz,hgt,sgt
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 904
+  deprecated: false
+- id: news
+  name: 新闻快讯（tushare）
+  derived: true
+  purpose: 新闻快讯（tushare）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - AI/111111/test_web_chat.py
+  - AI/111111/web_chat.py
+  - agent_platform/intel_ab_harness.py
+  - agent_platform/intel_context.py
+  - agent_platform/run_shadow.py
+  - agent_platform/tests/test_d1_intel_evidence.py
+  - agent_platform/tests/test_evidence_bundle_raw_refs.py
+  - agent_platform/tests/test_intel_ab_harness.py
+  - agent_platform/tests/test_intel_context.py
+  - agent_platform/tests/test_intel_to_n1.py
+  - agent_platform/tools/s0_cwd_variant_probe.py
+  - analysis/config.py
+  reader_count: 480
+  readers_private: 158
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/news/part_*.parquet
+    date_from: column:datetime
+    date_role: observation
+    role: catalog layout=part，schema=datetime,content,title
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(datetime) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 6000
+  deprecated: false
+- id: npr
+  name: 停复牌（tushare，事件驱动节奏）
+  derived: true
+  purpose: 停复牌（tushare，事件驱动节奏）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_chanlun_buy.py
+  - quant_backtest/bt10m_10m_cand.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/corpus_incr_sync.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/dw_dashboard.py
+  reader_count: 10
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/npr/part_*.parquet
+    date_from: column:pubtime
+    date_role: observation
+    role: catalog layout=part，schema=pubtime,title,pcode,puborg,ptype
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(pubtime) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 19103
+  deprecated: false
+- id: research_report
+  name: 研报（tushare 兜底源）
+  derived: true
+  purpose: 研报（tushare 兜底源）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_academy_ops.py
+  - agent_platform/tools/academy_ops.py
+  - agent_platform/tools/research_seat_ops.py
+  - analysis/config.py
+  - analysis/snapshot.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/corpus_incr_sync.py
+  - quant_backtest/intel_bridge.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tests/test_research_report_dedup.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 31
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/research_report/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,title,report_type,author,name
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 24
+  deprecated: false
+- id: sf_month
+  name: 社融月度（增量/累计/存量，月份 6 位）
+  derived: true
+  purpose: 社融月度（增量/累计/存量，月份 6 位）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/dw_dashboard.py
+  reader_count: 8
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/sf_month/part_*.parquet
+    date_from: column:month
+    date_role: period
+    role: catalog layout=part，schema=month,inc_month,inc_cumval,stk_endval
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: 最新month不早于当前月往前 35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '202609'
+  rows: 297
+  deprecated: false
+- id: shibor
+  name: 'Shibor 隔夜/1w/2y（tushare，按日分片，footer 日期列 '
+  derived: true
+  purpose: Shibor 隔夜/1w/2y（tushare，按日分片，footer 日期列 date）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/tests/test_p0e_governance.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/premarket.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tools/research/option_iv_probe.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/gen_health_card.py
+  - tools/kb_corpus/dataset_requirements.py
+  - tools/tests/test_rate_freshness.py
+  reader_count: 13
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/shibor/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,on,1w,2w,1m
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2000
+  deprecated: false
+- id: shibor_lpr
+  name: LPR 利率 1y/5y（monetary_policy 收紧后的替代）
+  derived: true
+  purpose: LPR 利率 1y/5y（monetary_policy 收紧后的替代）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/data_hub/govern.py
+  - tools/dw_dashboard.py
+  - tools/gen_health_card.py
+  - tools/tests/test_ops_tools.py
+  - tools/tests/test_rate_freshness.py
+  reader_count: 11
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/shibor_lpr/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,1y,5y
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(date) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260820'
+  rows: 1532
+  deprecated: false
+- id: stk_holdernumber
+  name: 股东户数
+  derived: true
+  purpose: 股东户数
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/snapshot.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_bclass.py
+  - quant_backtest/source_col_audit.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/kb_corpus/dataset_requirements.py
+  reader_count: 9
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/stk_holdernumber/*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,ann_date,end_date,holder_num
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261106'
+  rows: null
+  deprecated: false
+- id: stk_managers
+  name: 上市公司管理层信息
+  derived: true
+  purpose: 上市公司管理层信息
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/kg_build_p2.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/ontology.py
+  - quant_backtest/source_col_audit.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/build_dw_prototype.py
+  - tools/dw_dashboard.py
+  reader_count: 12
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/stk_managers/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,name,gender,lev
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260929'
+  rows: 575201
+  deprecated: false
+- id: stk_mins
+  name: A股 1 分钟线（中证800成分，逐码月度）
+  derived: true
+  purpose: A股 1 分钟线（中证800成分，逐码月度）
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - portal/api_jev_intraday.py
+  - portal/jev_graph.py
+  - portal/jev_pattern.py
+  - portal/test_jev_intraday.py
+  - portal/test_jev_pattern.py
+  - portal/tests/test_jev_intraday_pick.py
+  - quant_backtest/_325b_backfill.py
+  - quant_backtest/backtest_li122_vs_single.py
+  - quant_backtest/bar_sources.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/chanlun_data.py
+  - quant_backtest/data_health.py
+  reader_count: 71
+  readers_private: 23
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/stk_mins/*.parquet
+    date_from: column:trade_time
+    date_role: observation
+    role: catalog layout=by_code_month，schema=ts_code,trade_time,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261106'
+  rows: null
+  deprecated: false
+- id: stk_pledge
+  name: stk_pledge
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/daily_report/gen_registry_catalog.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/merge_parquet.py
+  - tools/refresh_curated.py
+  reader_count: 16
+  readers_private: 11
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/stk_pledge/*.parquet
+    date_from: column:end_date
+    date_role: schedule
+    role: catalog layout=by_code，schema=ts_code,end_date,pledge_count,unrest_pledge,rest_pledge
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: end_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261231'
+  rows: 3445
+  deprecated: false
+- id: stock_basic
+  name: A股基础信息（tushare）
+  derived: true
+  purpose: A股基础信息（tushare）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/legion_command/serve.py
+  - agent_platform/legion_command/zhaoyun_quant.py
+  - agent_platform/tests/test_h1b_data_adapter.py
+  - agent_platform/tests/test_zhaoyun_quant.py
+  - analysis/event_v2.py
+  - analysis/intraday_watch.py
+  - analysis/screener.py
+  - analysis/snapshot.py
+  - analysis/tests/test_p0m.py
+  - analysis/tests/test_screener.py
+  - news_collector/_stock_tagger.py
+  - portal/api_backtest_pages_a1.py
+  reader_count: 170
+  readers_private: 40
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/stock_basic/part_*.parquet
+    date_from: column:list_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,symbol,name,area,industry
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: list_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261110'
+  rows: 5580
+  deprecated: false
+- id: sw_mins
+  name: 申万指数 1 分钟线（逐码月度）
+  derived: true
+  purpose: 申万指数 1 分钟线（逐码月度）
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/verify_tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/dw_dashboard.py
+  reader_count: 10
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/sw_mins/*.parquet
+    date_from: column:trade_time
+    date_role: observation
+    role: catalog layout=by_code_month，schema=ts_code,trade_time,open,close,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: null
+  deprecated: false
+- id: tdx_sector_daily
+  name: 通达信板块日线
+  derived: true
+  purpose: 通达信板块日线
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_common_stock.py
+  - portal/api_pages_portal.py
+  - portal/warehouse_dashboard.py
+  - quant_backtest/_strong_proxy_20261111.py
+  - quant_backtest/_ths_t1_20261111.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/build_history_backfill_plan.py
+  - quant_backtest/build_history_runstore_candidate.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/full_refresh_plan.py
+  - quant_backtest/gap_remediation.py
+  reader_count: 41
+  readers_private: 5
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/tdx_sector_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261022'
+  rows: 1457343
+  deprecated: false
+- id: tdx_sector_min
+  name: 通达信板块分钟线
+  derived: true
+  purpose: 通达信板块分钟线
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - portal/api_pages_portal.py
+  - portal/test_watch_tower_linkage.py
+  - portal/watch_tower_linkage.py
+  - quant_backtest/bar_sources.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/build_history_backfill_plan.py
+  - quant_backtest/build_history_runstore_candidate.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/full_refresh_plan.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/linkage.py
+  reader_count: 32
+  readers_private: 4
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/tdx_sector_min/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=code,trade_date,trade_time,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260924'
+  rows: 32672233
+  deprecated: false
+- id: tdx_sector_min_tail
+  name: 通达信板块分钟线增量尾部
+  derived: true
+  purpose: 通达信板块分钟线增量尾部
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - quant_backtest/bar_sources.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/linkage.py
+  - quant_backtest/test_datamart_integrity.py
+  - quant_backtest/test_minute_integrity_regressions.py
+  - quant_backtest/tests/test_bar_sources.py
+  - quant_backtest/upstream_health.py
+  reader_count: 8
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/tdx_sector_min_tail/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=code,trade_date,trade_time,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261012'
+  rows: 1606697
+  deprecated: false
+- id: top10_floatholders
+  name: 十大流通股东（报告期分片）
+  derived: true
+  purpose: 十大流通股东（报告期分片）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/intel_lhb_shadow.py
+  - quant_backtest/kg_bclass.py
+  - quant_backtest/kg_schema.py
+  - quant_backtest/ontology.py
+  - quant_backtest/source_col_audit.py
+  - quant_backtest/test_data_integrity.py
+  - quant_backtest/test_datamart_integrity.py
+  - quant_backtest/tests/test_intel_lhb_shadow.py
+  reader_count: 53
+  readers_private: 37
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/top10_floatholders/p_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=by_period，schema=ts_code,ann_date,end_date,holder_name,hold_amount
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260831'
+  rows: 456121
+  deprecated: false
+- id: top10_holders
+  name: 十大股东（报告期分片，公告日查询）
+  derived: true
+  purpose: 十大股东（报告期分片，公告日查询）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - analysis/config.py
+  - analysis/snapshot.py
+  - portal/api_intel_graph.py
+  - quant_backtest/_graph_cost_probe_20261111.py
+  - quant_backtest/_graph_cover_probe_20261111.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/intel_bridge.py
+  - quant_backtest/intel_lhb_shadow.py
+  - quant_backtest/intel_relation_rules.py
+  reader_count: 23
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/top10_holders/p_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=by_period，schema=ts_code,ann_date,end_date,holder_name,hold_amount
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260929'
+  rows: 462529
+  deprecated: false
+- id: top_inst
+  name: top_inst
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - analysis/extras.py
+  - analysis/sync.py
+  - analysis/tests/test_p0t.py
+  - portal/api_intel_graph.py
+  - portal/kg/kg_pages_misc.py
+  - portal/tests/test_api_intel_graph.py
+  - quant_backtest/_graph_cost_probe_20261111.py
+  - quant_backtest/intel_seat_shadow.py
+  - quant_backtest/kg_communities.py
+  - quant_backtest/kg_dt_gap.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/nine_dim_backtest.py
+  reader_count: 36
+  readers_private: 9
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/top_inst/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=trade_date,ts_code,exalter,side,buy
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 216331
+  deprecated: false
+- id: top_list
+  name: 龙虎榜每日明细（tushare 兜底源）
+  derived: true
+  purpose: 龙虎榜每日明细（tushare 兜底源）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_h1b_data_adapter.py
+  - agent_platform/tests/test_lcs1_h1b_caliber.py
+  - analysis/__init__.py
+  - analysis/extras.py
+  - analysis/sync.py
+  - analysis/tests/test_p0t.py
+  - portal/jev_chain.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/chanlun_topk_backtest.py
+  - quant_backtest/event_study.py
+  - quant_backtest/intel_lhb_shadow.py
+  - quant_backtest/intel_rights_matrix.py
+  reader_count: 50
+  readers_private: 8
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/top_list/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=trade_date,ts_code,name,close,pct_change
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 1584
+  deprecated: false
+- id: trade_cal
+  name: 交易日历（SSE 全量）
+  derived: true
+  purpose: 交易日历（SSE 全量）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/legion_command/zhaoyun_quant.py
+  - agent_platform/tests/test_h1b_data_adapter.py
+  - analysis/curated_update.py
+  - analysis/intraday_watch.py
+  - analysis/snapshot.py
+  - analysis/sync.py
+  - analysis/tests/test_p0s.py
+  - jev-eval/rotate_tushare_token.ps1
+  - news_collector/alert_watch.py
+  - news_collector/sentiment_backtest.py
+  - news_collector/test_alert_watch_skip.py
+  - news_collector/trading_cal.py
+  reader_count: 99
+  readers_private: 13
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/trade_cal/part_*.parquet
+    date_from: column:cal_date
+    date_role: horizon
+    role: catalog layout=part，schema=exchange,cal_date,is_open,pretrade_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: cal_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20271231'
+  rows: 13514
+  deprecated: false
+- id: ts_adj_factor
+  name: 复权因子（tushare 直连，adj_factor_sync 维护，AdjFa
+  derived: true
+  purpose: 复权因子（tushare 直连，adj_factor_sync 维护，AdjFactorSync 18:10）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - data_sources/cnopendata/fepu_ic_test.py
+  - portal/build_pick_verdicts.py
+  - quant_backtest/adj_factor_sync.py
+  - quant_backtest/baseline_factors.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/chanlun_month_replay.py
+  - quant_backtest/chanlun_quality_layering.py
+  - quant_backtest/chanlun_scan.py
+  - quant_backtest/increment_guard.py
+  - quant_backtest/lcs1_harness.py
+  - quant_backtest/pick_layer_verdicts.py
+  - quant_backtest/run_three_year_history.py
+  reader_count: 37
+  readers_private: 6
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_adj_factor/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,adj_factor
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4318019
+  deprecated: false
+- id: ts_anns_d
+  name: ts_anns_d
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/jev_flow.py
+  - quant_backtest/badnews_lookup.py
+  - quant_backtest/notice_lookup.py
+  - quant_backtest/tdx_read.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tests/test_notice_lookup.py
+  - quant_backtest/tests/test_tdx_read_date_col.py
+  - tools/xtcloud_client.py
+  reader_count: 9
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_anns_d/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ann_date,ts_code,name,title,url
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 5764897
+  deprecated: false
+- id: ts_bak_basic
+  name: ts_bak_basic
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 7
+  readers_private: 7
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_bak_basic/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,industry,area
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 8127110
+  deprecated: false
+- id: ts_balancesheet
+  name: A股资产负债表（xtcloud）
+  derived: true
+  purpose: A股资产负债表（xtcloud）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/tdx_read.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_warehouse_inventory.py
+  reader_count: 7
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_balancesheet/part_*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=part，schema=ts_code,end_date,ann_date,f_ann_date,total_assets
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 288234
+  deprecated: false
+- id: ts_balancesheet_vip
+  name: ts_balancesheet_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_balancesheet_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,f_ann_date,end_date,report_type
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 143773
+  deprecated: false
+- id: ts_block_trade
+  name: ts_block_trade
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/event_study.py
+  - quant_backtest/tools/research/block_cb_probe.py
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tools/research/p2_entity_probe.py
+  reader_count: 6
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_block_trade/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,price,vol,amount
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 42800
+  deprecated: false
+- id: ts_cashflow
+  name: A股现金流量表（xtcloud）
+  derived: true
+  purpose: A股现金流量表（xtcloud）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_read.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_warehouse_inventory.py
+  reader_count: 6
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cashflow/part_*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=part，schema=ts_code,end_date,ann_date,f_ann_date,net_profit
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 310912
+  deprecated: false
+- id: ts_cashflow_vip
+  name: ts_cashflow_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cashflow_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,f_ann_date,end_date,comp_type
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 145292
+  deprecated: false
+- id: ts_cb_call
+  name: ts_cb_call
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cb_call/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,call_type,is_call,ann_date,call_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2996
+  deprecated: false
+- id: ts_cb_daily
+  name: ts_cb_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/block_cb_probe.py
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/diag_p1.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cb_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,pre_close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 329762
+  deprecated: false
+- id: ts_cb_issue
+  name: ts_cb_issue
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cb_issue/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,res_ann_date,plan_issue_size,issue_size
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261105'
+  rows: 785
+  deprecated: false
+- id: ts_cb_price_chg
+  name: ts_cb_price_chg
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cb_price_chg/part_*.parquet
+    date_from: column:publish_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,bond_short_name,publish_date,change_date,convert_price_initial
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(publish_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 6157
+  deprecated: false
+- id: ts_cb_share
+  name: ts_cb_share
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/daily_report/gen_registry_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cb_share/part_*.parquet
+    date_from: column:end_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,bond_short_name,publish_date,end_date,issue_size
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: end_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261110'
+  rows: 90175
+  deprecated: false
+- id: ts_cctv_news
+  name: ts_cctv_news
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cctv_news/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,title,content
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 37325
+  deprecated: false
+- id: ts_cn_cpi
+  name: ts_cn_cpi
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cn_cpi/part_*.parquet
+    date_from: column:month
+    date_role: period
+    role: catalog layout=part，schema=month,nt_val,nt_yoy,nt_mom,nt_accu
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: 最新month不早于当前月往前 35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '202608'
+  rows: 80
+  deprecated: false
+- id: ts_cn_gdp
+  name: ts_cn_gdp
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cn_gdp/part_*.parquet
+    date_from: column:quarter
+    date_role: period
+    role: catalog layout=part，schema=quarter,gdp,gdp_yoy,pi,pi_yoy
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新quarter不早于当前季往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: ''
+  rows: 26
+  deprecated: false
+- id: ts_cn_m
+  name: ts_cn_m
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cn_m/part_*.parquet
+    date_from: column:month
+    date_role: period
+    role: catalog layout=part，schema=month,m0,m0_yoy,m0_mom,m1
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: 最新month不早于当前月往前 35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '202608'
+  rows: 80
+  deprecated: false
+- id: ts_cn_pmi
+  name: ts_cn_pmi
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cn_pmi/part_*.parquet
+    date_from: column:MONTH
+    date_role: period
+    role: catalog layout=part，schema=MONTH,PMI010401,PMI010900,PMI011000,PMI011400
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: 最新MONTH不早于当前月往前 35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '202609'
+  rows: 81
+  deprecated: false
+- id: ts_cn_ppi
+  name: ts_cn_ppi
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_cn_ppi/part_*.parquet
+    date_from: column:month
+    date_role: period
+    role: catalog layout=part，schema=month,ppi_yoy,ppi_mp_yoy,ppi_mp_qm_yoy,ppi_mp_rm_yoy
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: 最新month不早于当前月往前 35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '202608'
+  rows: 80
+  deprecated: false
+- id: ts_cyq_perf
+  name: ts_cyq_perf
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_cyq_perf/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,his_low,his_high,cost_5pct
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261109'
+  rows: 8169948
+  deprecated: false
+- id: ts_daily
+  name: A股日线行情（xtcloud，真源）
+  derived: true
+  purpose: A股日线行情（xtcloud，真源）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_data_lineage.py
+  - agent_platform/tests/test_intel_wiring.py
+  - agent_platform/tests/test_lcs1_h1b_harness.py
+  - agent_platform/tests/test_lineage_freshness.py
+  - agent_platform/tests/test_research_seat_ops.py
+  - agent_platform/tools/data_lineage.py
+  - agent_platform/tools/dw_catalog_mcp.py
+  - data_sources/cnopendata/fepu_ic_test.py
+  - k_stock/paper/riskguard_topics.py
+  - k_stock/tests/test_riskguard_topics.py
+  - news_collector/jev_calib.py
+  - news_collector/jev_decay.py
+  reader_count: 203
+  readers_private: 58
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4292723
+  deprecated: false
+- id: ts_daily_basic
+  name: A股每日指标（xtcloud）
+  derived: true
+  purpose: A股每日指标（xtcloud）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/warehouse_dashboard.py
+  - quant_backtest/baseline_factors.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/build_history_backfill_plan.py
+  - quant_backtest/build_history_runstore_candidate.py
+  - quant_backtest/data_health.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/full_refresh_plan.py
+  - quant_backtest/history_backfill.py
+  - quant_backtest/increment_guard.py
+  reader_count: 60
+  readers_private: 11
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_daily_basic/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,turnover_rate,volume_ratio,pe
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4292723
+  deprecated: false
+- id: ts_daily_info
+  name: ts_daily_info
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_daily_info/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,ts_name,com_count,total_share
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 22194
+  deprecated: false
+- id: ts_dc_daily
+  name: ts_dc_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/ths_dc_incr_sync.py
+  - quant_backtest/upstream_health.py
+  - quant_backtest/verify_incr_state.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_dc_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1257265
+  deprecated: false
+- id: ts_dc_hot
+  name: ts_dc_hot
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/pool_workbench2.py
+  - quant_backtest/ths_dc_incr_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/jev_social_fetch.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_dc_hot/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,data_type,ts_code,ts_name,rank
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 22465
+  deprecated: false
+- id: ts_dc_index
+  name: ts_dc_index
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_dc_index/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,name,leading,leading_code
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 322617
+  deprecated: false
+- id: ts_dc_member
+  name: ts_dc_member
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_dc_member/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,con_code,name
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 19921284
+  deprecated: false
+- id: ts_disclosure_date
+  name: ts_disclosure_date
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_disclosure_date/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,pre_date,actual_date
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261012'
+  rows: 303492
+  deprecated: false
+- id: ts_dividend
+  name: ts_dividend
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_tdx_incremental.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_dividend/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,end_date,ann_date,div_proc,stk_div
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 199249
+  deprecated: false
+- id: ts_dividend_vip
+  name: ts_dividend_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_dividend_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,end_date,ann_date,div_proc,stk_div
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 103960
+  deprecated: false
+- id: ts_eco_cal
+  name: ts_eco_cal
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_eco_cal/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: ''
+  rows: 8716
+  deprecated: false
+- id: ts_emotion_daily
+  name: 打板情绪周期日频面板（涨停/炸板/最高板/封板率/晋级率/封单额）
+  derived: true
+  purpose: 打板情绪周期日频面板（涨停/炸板/最高板/封板率/晋级率/封单额）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/emotion_cycle.py
+  - quant_backtest/emotion_gate_validate.py
+  - quant_backtest/emotion_threshold_draft.py
+  - quant_backtest/regime_emotion_matrix.py
+  - quant_backtest/upstream_health.py
+  reader_count: 6
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_emotion_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=single，schema=trade_date,涨停家数,跌停家数,炸板家数,最高连板
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261014'
+  rows: 268
+  deprecated: false
+- id: ts_emotion_ladder
+  name: 连板梯队明细（≥2板：连板数/炸板/封单额/首末封/流通市值）
+  derived: true
+  purpose: 连板梯队明细（≥2板：连板数/炸板/封单额/首末封/流通市值）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/emotion_cycle.py
+  - quant_backtest/emotion_threshold_draft.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_emotion_ladder/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=single，schema=trade_date,ts_code,name,industry,limit_times
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261014'
+  rows: 3489
+  deprecated: false
+- id: ts_express
+  name: ts_express
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_express/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,revenue,operate_profit
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 11664
+  deprecated: false
+- id: ts_express_vip
+  name: ts_express_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_express_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,revenue,operate_profit
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 11664
+  deprecated: false
+- id: ts_fina_audit
+  name: ts_fina_audit
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_tdx_incremental.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fina_audit/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,audit_result,audit_fees
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260831'
+  rows: 95704
+  deprecated: false
+- id: ts_fina_indicator
+  name: A股财务指标（xtcloud）
+  derived: true
+  purpose: A股财务指标（xtcloud）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/tdx_read.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_tdx_read.py
+  - quant_backtest/test_warehouse_inventory.py
+  reader_count: 12
+  readers_private: 5
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fina_indicator/part_*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=part，schema=ts_code,end_date,ann_date,eps,grossprofit_margin
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 266088
+  deprecated: false
+- id: ts_fina_indicator_vip
+  name: ts_fina_indicator_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fina_indicator_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,eps,dt_eps
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 157142
+  deprecated: false
+- id: ts_fina_mainbz
+  name: ts_fina_mainbz
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fina_mainbz/part_*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=part，schema=ts_code,end_date,bz_item,bz_code,bz_sales
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260630'
+  rows: 784383
+  deprecated: false
+- id: ts_fina_mainbz_vip
+  name: ts_fina_mainbz_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fina_mainbz_vip/part_*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=part，schema=ts_code,end_date,bz_item,bz_code,bz_sales
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 962492
+  deprecated: false
+- id: ts_forecast
+  name: ts_forecast
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  - tools/datawarehouse/quality_legacy_repair.py
+  - tools/kb_corpus/data_governance_overview.py
+  - tools/tests/test_datawarehouse_quality.py
+  reader_count: 7
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_forecast/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,type,p_change_min
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 33451
+  deprecated: false
+- id: ts_forecast_vip
+  name: ts_forecast_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_forecast_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,type,p_change_min
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 40054
+  deprecated: false
+- id: ts_fund_adj
+  name: ts_fund_adj
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_adj/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,adj_factor
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2196872
+  deprecated: false
+- id: ts_fund_company
+  name: ts_fund_company
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_company/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: ''
+  rows: 214
+  deprecated: false
+- id: ts_fund_daily
+  name: 基金日线
+  derived: true
+  purpose: 基金日线
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/option_iv_probe.py
+  - quant_backtest/tools/research/option_iv_series.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 1271522
+  deprecated: false
+- id: ts_fund_div
+  name: ts_fund_div
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_div/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,imp_anndate,base_date,div_proc
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 46837
+  deprecated: false
+- id: ts_fund_manager
+  name: ts_fund_manager
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_manager/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,name,gender,birth_year
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261012'
+  rows: 36186
+  deprecated: false
+- id: ts_fund_portfolio
+  name: ts_fund_portfolio
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_portfolio/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,symbol,mkv
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260831'
+  rows: 5574899
+  deprecated: false
+- id: ts_fund_share
+  name: ts_fund_share
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fund_share/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,fd_share,fund_type,market
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261109'
+  rows: 1554074
+  deprecated: false
+- id: ts_fut_daily
+  name: ts_fut_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/global_fut_sync.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fut_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,pre_close,pre_settle,open
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 1261482
+  deprecated: false
+- id: ts_fut_holding
+  name: ts_fut_holding
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fut_holding/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,symbol,broker,vol,vol_chg
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 14125547
+  deprecated: false
+- id: ts_fut_mapping
+  name: ts_fut_mapping
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fut_mapping/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,mapping_ts_code
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 284797
+  deprecated: false
+- id: ts_fut_settle
+  name: ts_fut_settle
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fut_settle/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,settle,trading_fee_rate,trading_fee
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1108364
+  deprecated: false
+- id: ts_fut_weekly_monthly
+  name: ts_fut_weekly_monthly
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=W 推断，未经写方确认）；表名示 monthly，catalog freq=W 与之不符，按表名判定
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tools/tdx_zero_done_audit.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fut_weekly_monthly/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,end_date,freq,open
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(trade_date) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261030'
+  rows: 0
+  deprecated: false
+- id: ts_fut_wsr
+  name: ts_fut_wsr
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fut_wsr/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,symbol,fut_name,warehouse,pre_vol
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1494509
+  deprecated: false
+- id: ts_fx_daily
+  name: ts_fx_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - tools/datawarehouse/final_acceptance.py
+  - tools/datawarehouse/tdx_sync_probe.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_fx_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,bid_open,bid_close,bid_high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 30395
+  deprecated: false
+- id: ts_ggt_daily
+  name: ts_ggt_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_ggt_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,buy_amount,buy_volume,sell_amount,sell_volume
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1567
+  deprecated: false
+- id: ts_ggt_top10
+  name: ts_ggt_top10
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_ggt_top10/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,close,p_change
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 20492
+  deprecated: false
+- id: ts_global_fut
+  name: 外盘商品期货日线（GF_CL00Y/GC00Y/HG00Y 逐品种单文件，glo
+  derived: true
+  purpose: 外盘商品期货日线（GF_CL00Y/GC00Y/HG00Y 逐品种单文件，global_fut_sync 维护；2026-10-16 收编回 data/）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/global_fut_sync.py
+  - quant_backtest/upstream_health.py
+  - quant_backtest/verify_incr_state.py
+  - tools/build_dw_prototype.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_global_fut/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,pre_close,pre_settle,open
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261106'
+  rows: 16019
+  deprecated: false
+- id: ts_hk_daily
+  name: 港股日线（xtcloud，真源）
+  derived: true
+  purpose: 港股日线（xtcloud，真源）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - k_stock/paper/hk_market.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/chanlun_data.py
+  - tools/datawarehouse/final_acceptance.py
+  - tools/datawarehouse/tdx_sync_probe.py
+  reader_count: 6
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_hk_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 465789
+  deprecated: false
+- id: ts_hk_daily_adj
+  name: ts_hk_daily_adj
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_hk_daily_adj/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 3293826
+  deprecated: false
+- id: ts_hk_hold
+  name: ts_hk_hold
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_hk_hold/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=code,trade_date,ts_code,name,vol
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 2553357
+  deprecated: false
+- id: ts_hk_tradecal
+  name: ts_hk_tradecal
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=A 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_hk_tradecal/part_*.parquet
+    date_from: column:cal_date
+    date_role: horizon
+    role: catalog layout=part，schema=cal_date,is_open,pretrade_date
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: cal_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261111'
+  rows: 2508
+  deprecated: false
+- id: ts_hm_detail
+  name: ts_hm_detail
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/jev_chain.py
+  - portal/jev_graph.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tests/test_jev_chain.py
+  - tools/xtcloud_client.py
+  reader_count: 7
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_hm_detail/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,ts_name,buy_amount,sell_amount
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 151282
+  deprecated: false
+- id: ts_hsgt_top10
+  name: ts_hsgt_top10
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_hsgt_top10/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,close,change
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 8540
+  deprecated: false
+- id: ts_income
+  name: A股利润表（xtcloud）
+  derived: true
+  purpose: A股利润表（xtcloud）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_read.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tests/test_tdx_read_date_col.py
+  reader_count: 7
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_income/part_*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=part，schema=ts_code,end_date,ann_date,f_ann_date,total_revenue
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 346985
+  deprecated: false
+- id: ts_income_vip
+  name: ts_income_vip
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_income_vip/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,f_ann_date,end_date,report_type
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 145476
+  deprecated: false
+- id: ts_index_daily
+  name: 指数日线（xtcloud）
+  derived: true
+  purpose: 指数日线（xtcloud）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_dataops.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/chan_oos_tushare.py
+  - quant_backtest/increment_guard.py
+  - quant_backtest/index_daily.py
+  - quant_backtest/kg_build_p3.py
+  - quant_backtest/kg_source_rating.py
+  - quant_backtest/run_three_year_history.py
+  - quant_backtest/tail_fill_capture.py
+  - quant_backtest/test_kg_source_rating_wo108.py
+  - quant_backtest/tools/research/linkage_hitrate_backtest.py
+  - quant_backtest/upstream_health.py
+  reader_count: 50
+  readers_private: 6
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,open,high,low
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 6441468
+  deprecated: false
+- id: ts_index_dailybasic
+  name: ts_index_dailybasic
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_dailybasic/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,total_mv,float_mv,total_share
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 24079
+  deprecated: false
+- id: ts_index_global
+  name: ts_index_global
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_global/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,open,close,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 34977
+  deprecated: false
+- id: ts_index_member_all
+  name: ts_index_member_all
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - portal/api_chanlun_buy.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/pool_workbench2.py
+  - quant_backtest/upstream_health.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_member_all/part_*.parquet
+    date_from: column:in_date
+    date_role: schedule
+    role: catalog layout=part，schema=l1_code,l1_name,l2_code,l2_name,l3_code
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: in_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20260924'
+  rows: 5914
+  deprecated: false
+- id: ts_index_monthly
+  name: ts_index_monthly
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）；表名示 monthly，catalog freq=D 与之不符，按表名判定
+  readers:
+  - portal/daily_report/gen_registry_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_monthly/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(trade_date) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 316978
+  deprecated: false
+- id: ts_index_weekly
+  name: ts_index_weekly
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=W 推断，未经写方确认）
+  readers:
+  - portal/daily_report/gen_registry_catalog.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_upstream_health.py
+  - quant_backtest/upstream_health.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_weekly/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: weekly
+    lag_ok: 10
+    basis: calendar
+  success: max(trade_date) 不早于今天-10 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261009'
+  rows: 1324185
+  deprecated: false
+- id: ts_index_weight
+  name: 指数成分权重
+  derived: true
+  purpose: 指数成分权重
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - portal/test_watch_tower_linkage.py
+  - portal/watch_tower_linkage.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/pool_workbench2.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_datamart_integrity.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  reader_count: 10
+  readers_private: 2
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_index_weight/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=index_code,con_code,trade_date,weight,_fetched_at
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(trade_date) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261030'
+  rows: 25494
+  deprecated: false
+- id: ts_kpl_concept
+  name: ts_kpl_concept
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/jev_graph.py
+  - portal/jev_theme.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  - tools/jev_concept_fetch.py
+  - tools/xtcloud_client.py
+  reader_count: 6
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_kpl_concept/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,z_t_num,up_num
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20241117'
+  rows: 5000
+  deprecated: false
+- id: ts_kpl_concept_cons
+  name: ts_kpl_concept_cons
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/board_bt.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/jev_concept_fetch.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_kpl_concept_cons/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,con_name,con_code,trade_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4929751
+  deprecated: false
+- id: ts_kpl_list
+  name: ts_kpl_list
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  - tools/jev_concept_fetch.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_kpl_list/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,lu_time,ld_time
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 206348
+  deprecated: false
+- id: ts_limit_cpt_list
+  name: ts_limit_cpt_list
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_limit_cpt_list/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,days,up_stat
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 14515
+  deprecated: false
+- id: ts_limit_list_ths
+  name: ts_limit_list_ths
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - tools/research/entry_timing_3y.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_limit_list_ths/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,price,pct_chg
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 56777
+  deprecated: false
+- id: ts_limit_step
+  name: ts_limit_step
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/jev_chain.py
+  - portal/jev_graph.py
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tests/test_jev_chain.py
+  - tools/xtcloud_client.py
+  reader_count: 6
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_limit_step/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,trade_date,nums
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 6731
+  deprecated: false
+- id: ts_major_news
+  name: ts_major_news
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - tools/datawarehouse/qualify_probe.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_major_news/part_*.parquet
+    date_from: column:pub_time
+    date_role: observation
+    role: catalog layout=part，schema=title,pub_time,src,url
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(pub_time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2704376
+  deprecated: false
+- id: ts_margin
+  name: ts_margin
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_margin/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,exchange_id,rzye,rzmre,rzche
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 4219
+  deprecated: false
+- id: ts_margin_detail
+  name: 融资融券明细
+  derived: true
+  purpose: 融资融券明细
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/warehouse_dashboard.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/build_history_backfill_plan.py
+  - quant_backtest/build_history_runstore_candidate.py
+  - quant_backtest/data_integrity.py
+  - quant_backtest/full_refresh_baseline.py
+  - quant_backtest/full_refresh_plan.py
+  - quant_backtest/fund_lookup.py
+  - quant_backtest/gap_remediation.py
+  - quant_backtest/history_backfill.py
+  - quant_backtest/increment_guard.py
+  reader_count: 44
+  readers_private: 9
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_margin_detail/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,rzye,rzmre,rzche
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 2793579
+  deprecated: false
+- id: ts_margin_secs
+  name: ts_margin_secs
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_margin_secs/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,exchange
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 6000516
+  deprecated: false
+- id: ts_moneyflow
+  name: 个股资金流向
+  derived: true
+  purpose: 个股资金流向
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/jev_flow.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/fund_lookup.py
+  - quant_backtest/increment_guard.py
+  - quant_backtest/kg_portal.py
+  - quant_backtest/nine_dim.py
+  - quant_backtest/run_three_year_history.py
+  - quant_backtest/tail_fill_capture.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_nine_dim_tdx.py
+  - quant_backtest/test_tdx_read.py
+  reader_count: 25
+  readers_private: 5
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,buy_sm_vol,buy_sm_amount,sell_sm_vol
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 4094739
+  deprecated: false
+- id: ts_moneyflow_dc
+  name: ts_moneyflow_dc
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - tools/xtcloud_client.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow_dc/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,pct_change,close
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 4045407
+  deprecated: false
+- id: ts_moneyflow_hsgt
+  name: 沪深港通资金
+  derived: true
+  purpose: 沪深港通资金
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow_hsgt/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ggt_ss,ggt_sz,hgt,sgt
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 768
+  deprecated: false
+- id: ts_moneyflow_ind_dc
+  name: ts_moneyflow_ind_dc
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - tools/xtcloud_client.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow_ind_dc/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,content_type,ts_code,name,pct_change
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 389201
+  deprecated: false
+- id: ts_moneyflow_ind_ths
+  name: ts_moneyflow_ind_ths
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow_ind_ths/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,industry,lead_stock,close
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 46710
+  deprecated: false
+- id: ts_moneyflow_mkt_dc
+  name: ts_moneyflow_mkt_dc
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow_mkt_dc/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,close_sh,pct_change_sh,close_sz,pct_change_sz
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 863
+  deprecated: false
+- id: ts_moneyflow_ths
+  name: ts_moneyflow_ths
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_moneyflow_ths/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,pct_change,latest
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2328109
+  deprecated: false
+- id: ts_monthly
+  name: ts_monthly
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - portal/api_dataops.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tools/research/xq_sentiment_factor_probe.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_monthly/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(trade_date) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261030'
+  rows: 412419
+  deprecated: false
+- id: ts_namechange
+  name: ts_namechange
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/tests/test_lcs1_h1b_harness.py
+  - quant_backtest/a3_st_pit_diff_probe.py
+  - quant_backtest/market_scan.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tests/test_n3_engine_pit_integration.py
+  - quant_backtest/tests/test_n3_st_pit_blocked.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/acad1_pool_adapter.py
+  - tools/h1b_data_adapter.py
+  - tools/lcs1_h1b_harness.py
+  - tools/tests/test_acad1_pool_adapter.py
+  reader_count: 11
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_namechange/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,start_date,end_date,ann_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261029'
+  rows: 4062
+  deprecated: false
+- id: ts_new_share
+  name: ts_new_share
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_tdx_incremental.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_new_share/part_*.parquet
+    date_from: column:ipo_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,sub_code,name,ipo_date,issue_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: ipo_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261111'
+  rows: 2074
+  deprecated: false
+- id: ts_news
+  name: ts_news
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_tdx_incremental.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  reader_count: 7
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_news/part_*.parquet
+    date_from: column:datetime
+    date_role: observation
+    role: catalog layout=part，schema=datetime,content,title
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(datetime) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2505506
+  deprecated: false
+- id: ts_opt_daily
+  name: ts_opt_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/diag_p1.py
+  - quant_backtest/tools/research/option_iv_probe.py
+  - quant_backtest/tools/research/option_iv_series.py
+  - quant_backtest/tools/tdx_zero_done_audit.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_opt_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,exchange,pre_settle,pre_close
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 24091000
+  deprecated: false
+- id: ts_pledge_detail
+  name: ts_pledge_detail
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/p2_entity_probe.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_pledge_detail/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,holder_name,pledge_amount,start_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261010'
+  rows: 97062
+  deprecated: false
+- id: ts_pledge_stat
+  name: ts_pledge_stat
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=W 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_pledge_stat/part_*.parquet
+    date_from: column:end_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,end_date,pledge_count,unrest_pledge,rest_pledge
+  merge: max
+  promise:
+    cadence: weekly
+    lag_ok: 10
+    basis: calendar
+  success: end_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261106'
+  rows: 871928
+  deprecated: false
+- id: ts_repo_daily
+  name: ts_repo_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/option_iv_probe.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_repo_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,repo_maturity,pre_close,open
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 54924
+  deprecated: false
+- id: ts_report_rc
+  name: ts_report_rc
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - tools/build_dw_prototype.py
+  - tools/datawarehouse/k10_e2e_verify.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/datawarehouse/quality_legacy_repair.py
+  reader_count: 9
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_report_rc/part_*.parquet
+    date_from: column:report_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,name,report_date,report_title,report_type
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(report_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 532382
+  deprecated: false
+- id: ts_repurchase
+  name: ts_repurchase
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_repurchase/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,proc,exp_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 48125
+  deprecated: false
+- id: ts_rt_min
+  name: 实时分钟行情（xtcloud，按实际 time 字段核验）
+  derived: true
+  purpose: 实时分钟行情（xtcloud，按实际 time 字段核验）
+  writer: 未认领（节奏由 freq=1min 推断，未经写方确认）
+  readers:
+  - portal/jev_graph.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/dknife_snap.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tdx_tail_sync.py
+  - quant_backtest/test_data_health_regressions.py
+  - quant_backtest/test_tdx_sync_hardening.py
+  - quant_backtest/test_tdx_tail_sync.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/upstream_health.py
+  - quant_backtest/warehouse_update.py
+  reader_count: 16
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_rt_min/part_*.parquet
+    date_from: column:time
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,time,open,close,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(time) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261023'
+  rows: 600000
+  deprecated: false
+- id: ts_sge_daily
+  name: ts_sge_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_sge_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 42864
+  deprecated: false
+- id: ts_share_float
+  name: ts_share_float
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_share_float/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,float_date,float_share,float_ratio
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261027'
+  rows: 2257380
+  deprecated: false
+- id: ts_slb_len
+  name: ts_slb_len
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/upstream_health.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_slb_len/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ob,auc_amount,repo_amount,repay_amount
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20250725'
+  rows: 1347
+  deprecated: false
+- id: ts_slb_sec
+  name: ts_slb_sec
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/upstream_health.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_slb_sec/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,name,ope_inv,lent_qnt
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20240930'
+  rows: 2137157
+  deprecated: false
+- id: ts_stk_ah_comparison
+  name: ts_stk_ah_comparison
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_ah_comparison/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=hk_code,ts_code,trade_date,hk_name,hk_pct_chg
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 32034
+  deprecated: false
+- id: ts_stk_auction
+  name: ts_stk_auction
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_auction/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,vol,price,amount
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 2403929
+  deprecated: false
+- id: ts_stk_auction_c
+  name: ts_stk_auction_c
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_auction_c/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261109'
+  rows: 8561217
+  deprecated: false
+- id: ts_stk_auction_o
+  name: ts_stk_auction_o
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_auction_o/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 8163189
+  deprecated: false
+- id: ts_stk_factor
+  name: ts_stk_factor
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_factor/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 8447623
+  deprecated: false
+- id: ts_stk_factor_pro
+  name: ts_stk_factor_pro
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 12
+  readers_private: 12
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_factor_pro/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,open,open_hfq,open_qfq
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 8453268
+  deprecated: false
+- id: ts_stk_holdernumber
+  name: ts_stk_holdernumber
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_holdernumber/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,holder_num
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 285707
+  deprecated: false
+- id: ts_stk_holdertrade
+  name: ts_stk_holdertrade
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/broad_asset_inventory.py
+  - quant_backtest/tools/research/p2_entity_probe.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_holdertrade/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,holder_name,holder_type,in_de
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 74953
+  deprecated: false
+- id: ts_stk_limit
+  name: ts_stk_limit
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/qpzm_backtest.py
+  - quant_backtest/tdx_api_client.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/kb_corpus/training_data_matrix.py
+  reader_count: 5
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_limit/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,up_limit,down_limit
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 8290486
+  deprecated: false
+- id: ts_stk_managers
+  name: ts_stk_managers
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/p2_entity_probe.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_managers/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,name,gender,lev
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(ann_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261012'
+  rows: 318364
+  deprecated: false
+- id: ts_stk_premarket
+  name: ts_stk_premarket
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_premarket/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,total_share,float_share,pre_close
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 8182180
+  deprecated: false
+- id: ts_stk_rewards
+  name: ts_stk_rewards
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/test_tdx_incremental.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  reader_count: 5
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_rewards/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,name,title
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260930'
+  rows: 1643408
+  deprecated: false
+- id: ts_stk_surv
+  name: ts_stk_surv
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_surv/part_*.parquet
+    date_from: column:surv_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,name,surv_date,fund_visitors,rece_place
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: surv_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261106'
+  rows: 29730
+  deprecated: false
+- id: ts_stk_week_month_adj
+  name: ts_stk_week_month_adj
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=W 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/tools/research/xq_sentiment_factor_probe.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_week_month_adj/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,end_date,freq,open
+  merge: max
+  promise:
+    cadence: weekly
+    lag_ok: 10
+    basis: calendar
+  success: max(trade_date) 不早于今天-10 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261031'
+  rows: 4421418
+  deprecated: false
+- id: ts_stk_weekly_monthly
+  name: ts_stk_weekly_monthly
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=W 推断，未经写方确认）；表名示 monthly，catalog freq=W 与之不符，按表名判定
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stk_weekly_monthly/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,end_date,freq,open
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(trade_date) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261031'
+  rows: 4370441
+  deprecated: false
+- id: ts_stock_company
+  name: ts_stock_company
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_stock_company/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: ''
+  rows: 6298
+  deprecated: false
+- id: ts_stock_hsgt
+  name: ts_stock_hsgt
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_stock_hsgt/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,type,name,type_name
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 1404595
+  deprecated: false
+- id: ts_suspend_d
+  name: ts_suspend_d
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/event_study.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_suspend_d/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,suspend_timing,suspend_type
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 30625
+  deprecated: false
+- id: ts_sz_daily_info
+  name: ts_sz_daily_info
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers: []
+  reader_count: 0
+  readers_private: 0
+  orphan: true
+  compose:
+  - path: quant_backtest/data/tdx/ts_sz_daily_info/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,ts_code,count,amount,vol
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 14280
+  deprecated: false
+- id: ts_tdx_index
+  name: ts_tdx_index
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_tdx_index/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,name,idx_type,idx_count
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20250417'
+  rows: 1000
+  deprecated: false
+- id: ts_tdx_member
+  name: ts_tdx_member
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/upstream_health.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_tdx_member/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,con_code,con_name
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261111'
+  rows: 24803520
+  deprecated: false
+- id: ts_ths_daily
+  name: 同花顺板块日线
+  derived: true
+  purpose: 同花顺板块日线
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - agent_platform/sector_regime.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/emotion_cycle.py
+  - quant_backtest/pool_daily.py
+  - quant_backtest/sector_state.py
+  - quant_backtest/ths_dc_incr_sync.py
+  - quant_backtest/ths_sector_probe.py
+  - quant_backtest/upstream_health.py
+  - quant_backtest/verify_incr_state.py
+  reader_count: 10
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_ths_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1296480
+  deprecated: false
+- id: ts_ths_hot
+  name: ts_ths_hot
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/ths_dc_incr_sync.py
+  - tools/jev_social_fetch.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_ths_hot/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=trade_date,data_type,ts_code,ts_name,rank
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 4828
+  deprecated: false
+- id: ts_ths_member
+  name: 同花顺板块成分
+  derived: true
+  purpose: 同花顺板块成分
+  writer: 未认领（节奏由 freq=M 推断，未经写方确认）
+  readers:
+  - agent_platform/sector_regime.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/kg_ths_concepts.py
+  - quant_backtest/pool_report_h5.py
+  - quant_backtest/pool_workbench2.py
+  - quant_backtest/refresh_snapshot.py
+  - quant_backtest/sector_member_snapshot.py
+  - quant_backtest/sector_replay.py
+  - quant_backtest/sector_state.py
+  - quant_backtest/start_refresh_ths_member.ps1
+  - quant_backtest/tdx_read.py
+  - quant_backtest/tdx_tail_sync.py
+  reader_count: 22
+  readers_private: 4
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_ths_member/part_*.parquet
+    date_from: column:_fetched_at
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,con_code,con_name,_fetched_at
+  merge: max
+  promise:
+    cadence: monthly
+    lag_ok: 35
+    basis: calendar
+  success: max(_fetched_at) 不早于今天-35 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 382731
+  deprecated: false
+- id: ts_top10_floatholders
+  name: ts_top10_floatholders
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_sync.py
+  - quant_backtest/tools/research/p2_entity_probe.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_top10_floatholders/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,holder_name,hold_amount
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 1341915
+  deprecated: false
+- id: ts_top10_holders
+  name: ts_top10_holders
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/p2_entity_probe.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_top10_holders/part_*.parquet
+    date_from: column:ann_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,ann_date,end_date,holder_name,hold_amount
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: max(ann_date) 不早于今天-150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261013'
+  rows: 1408560
+  deprecated: false
+- id: ts_top_inst
+  name: 龙虎榜机构明细
+  derived: true
+  purpose: 龙虎榜机构明细
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/api_backtest_pages_a1.py
+  - portal/api_backtest_pages_a2.py
+  - portal/api_intel_graph.py
+  - portal/tests/test_round2_p1c.py
+  - quant_backtest/_graph_cover_probe_20261111.py
+  - quant_backtest/badnews_lookup.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/entity_resolution.py
+  - quant_backtest/intel_bridge.py
+  - quant_backtest/intel_seat_shadow.py
+  - quant_backtest/kg_build_cl1.py
+  reader_count: 53
+  readers_private: 25
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_top_inst/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,exalter,side,buy
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 439195
+  deprecated: false
+- id: ts_top_list
+  name: 龙虎榜
+  derived: true
+  purpose: 龙虎榜
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - news_collector/target_audit.py
+  - portal/api_backtest_pages_a1.py
+  - portal/api_backtest_pages_a2.py
+  - portal/jev_chain.py
+  - portal/jev_graph.py
+  - portal/portal_report.py
+  - quant_backtest/badnews_lookup.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/event_study.py
+  - quant_backtest/event_study_selftest.py
+  - quant_backtest/kg_bclass.py
+  - quant_backtest/kg_dt_gap.py
+  reader_count: 39
+  readers_private: 9
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_top_list/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,name,close,pct_change
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 55016
+  deprecated: false
+- id: ts_trade_cal
+  name: ts_trade_cal
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tdx_api_client.py
+  - tools/acad_d4_freeze_check.py
+  - tools/datawarehouse/quality_legacy_repair.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  - tools/h1b_data_adapter.py
+  - tools/test_acad_d4_freeze_check.py
+  - tools/test_acad_d4_tiebreak.py
+  reader_count: 9
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_trade_cal/part_*.parquet
+    date_from: column:cal_date
+    date_role: horizon
+    role: catalog layout=part，schema=exchange,cal_date,is_open,pretrade_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: cal_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20271231'
+  rows: 22287
+  deprecated: false
+- id: ts_us_daily
+  name: ts_us_daily
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/tools/a3_heal_batch.py
+  reader_count: 1
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_us_daily/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 9164802
+  deprecated: false
+- id: ts_us_tbr
+  name: ts_us_tbr
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_us_tbr/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,w4_bd,w4_ce,w8_bd,w8_ce
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1713
+  deprecated: false
+- id: ts_us_tradecal
+  name: ts_us_tradecal
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=A 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_us_tradecal/part_*.parquet
+    date_from: column:cal_date
+    date_role: horizon
+    role: catalog layout=part，schema=cal_date,is_open,pretrade_date
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: cal_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261111'
+  rows: 2508
+  deprecated: false
+- id: ts_us_trycr
+  name: ts_us_trycr
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_us_trycr/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,y5,y7,y10,y20
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1713
+  deprecated: false
+- id: ts_us_tycr
+  name: ts_us_tycr
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_us_tycr/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,m1,m2,m3,m6
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: 1713
+  deprecated: false
+- id: ts_weekly
+  name: ts_weekly
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=W 推断，未经写方确认）
+  readers:
+  - portal/api_dataops.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - tools/build_dw_prototype.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_weekly/part_*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=part，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: weekly
+    lag_ok: 10
+    basis: calendar
+  success: max(trade_date) 不早于今天-10 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261106'
+  rows: 1759876
+  deprecated: false
+- id: ts_wz_index
+  name: ts_wz_index
+  derived: true
+  purpose: （catalog 无描述）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 2
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tdx/ts_wz_index/part_*.parquet
+    date_from: column:date
+    date_role: observation
+    role: catalog layout=part，schema=date,comp_rate,center_rate,micro_rate,cm_rate
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261103'
+  rows: 1528
+  deprecated: false
+- id: us_balancesheet
+  name: 美股资产负债表（Tushare）
+  derived: true
+  purpose: 美股资产负债表（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 6
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/us_balancesheet/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,end_date,ind_type,name,ind_name
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260801'
+  rows: null
+  deprecated: false
+- id: us_basic
+  name: 美股基础信息
+  derived: true
+  purpose: 美股基础信息
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_warehouse_update.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/acad1_pool_adapter.py
+  - tools/build_dw_prototype.py
+  - tools/dw_dashboard.py
+  - tools/tests/test_acad1_pool_adapter.py
+  reader_count: 9
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/us_basic/part_*.parquet
+    date_from: column:list_date
+    date_role: schedule
+    role: catalog layout=part，schema=ts_code,name,enname,classify,list_date
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: list_date 是计划/覆盖端点，本身允许落在未来，不作新鲜度判定；只断言「有数据」，落后与否需按业务口径另判
+  catalog_freshness: '20261110'
+  rows: 23648
+  deprecated: false
+- id: us_cashflow
+  name: 美股现金流量表（Tushare）
+  derived: true
+  purpose: 美股现金流量表（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 6
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/us_cashflow/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,end_date,ind_type,name,ind_name
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260801'
+  rows: null
+  deprecated: false
+- id: us_daily
+  name: 美股日线（逐码，建设中）
+  derived: true
+  purpose: 美股日线（逐码，建设中）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - portal/api_common_assets.py
+  - portal/api_screen.py
+  - portal/tests/test_catalog_data_api.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/council_shadow.py
+  - quant_backtest/data_health.py
+  - quant_backtest/datamart.py
+  - quant_backtest/portfolio.py
+  - quant_backtest/stock_council.py
+  - quant_backtest/test_table_preview.py
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/test_warehouse_update.py
+  reader_count: 28
+  readers_private: 3
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/us_daily/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261110'
+  rows: null
+  deprecated: false
+- id: us_fina_indicator
+  name: 美股财务指标（Tushare）
+  derived: true
+  purpose: 美股财务指标（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/datawarehouse/tests/test_qualify_probe.py
+  - tools/dw_dashboard.py
+  - tools/merge_parquet.py
+  reader_count: 7
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/us_fina_indicator/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,end_date,ind_type,security_name_abbr,accounting_standards
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260801'
+  rows: null
+  deprecated: false
+- id: us_income
+  name: 美股利润表（Tushare）
+  derived: true
+  purpose: 美股利润表（Tushare）
+  writer: 未认领（节奏由 freq=Q 推断，未经写方确认）
+  readers:
+  - quant_backtest/test_warehouse_inventory.py
+  - quant_backtest/tushare_sync.py
+  - quant_backtest/warehouse_sync_spec.py
+  - tools/build_dw_prototype.py
+  - tools/datawarehouse/qualify_probe.py
+  - tools/dw_dashboard.py
+  reader_count: 7
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/tushare/us_income/*.parquet
+    date_from: column:end_date
+    date_role: period
+    role: catalog layout=by_code，schema=ts_code,end_date,ind_type,name,ind_name
+  merge: max
+  promise:
+    cadence: quarterly
+    lag_ok: 150
+    basis: calendar
+  success: 最新end_date不早于当前期往前 150 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20260801'
+  rows: null
+  deprecated: false
+- id: us_legacy
+  name: 旧美股日线（逐股单文件，待 us_daily 收口后废弃）
+  derived: true
+  purpose: 旧美股日线（逐股单文件，待 us_daily 收口后废弃）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  - quant_backtest/upstream_health.py
+  reader_count: 3
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/us/*.parquet
+    date_from: column:trade_date
+    date_role: observation
+    role: catalog layout=by_code，schema=ts_code,trade_date,close,open,high
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261106'
+  rows: null
+  deprecated: true
+- id: xq_quote_snap
+  name: 雪球收盘快照（quotec 免 token，缠论池）
+  derived: true
+  purpose: 雪球收盘快照（quotec 免 token，缠论池）
+  writer: 未认领（节奏由 freq=D 推断，未经写方确认）
+  readers:
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_xueqiu_common.py
+  - quant_backtest/test_xueqiu_crawl.py
+  - quant_backtest/test_xueqiu_sync.py
+  - quant_backtest/tests/test_xq_quote_alt_probe.py
+  - quant_backtest/tools/lineage1_intel.py
+  - quant_backtest/tools/xq_quote_alt_probe.py
+  - quant_backtest/xq_quote_router.py
+  - quant_backtest/xueqiu_crawl.py
+  - quant_backtest/xueqiu_sync.py
+  - tools/kb_corpus/apply_asset_decisions.py
+  reader_count: 12
+  readers_private: 1
+  orphan: false
+  compose:
+  - path: quant_backtest/data/xueqiu/xq_quote_snap/d_*.parquet
+    date_from: filename
+    date_role: observation
+    role: catalog layout=by_date，schema=symbol,ts_code,current,percent,chg
+  merge: max
+  promise:
+    cadence: daily
+    lag_ok: 3
+    basis: calendar
+  success: max(trade_date) 不早于今天-3 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '20261016'
+  rows: 0
+  deprecated: false
+- id: yspl
+  name: 省级预算决算收支面板（四本预算：一般公共/政府性基金/国有资本/社会保险，决算+
+  derived: true
+  purpose: 省级预算决算收支面板（四本预算：一般公共/政府性基金/国有资本/社会保险，决算+预算口径，31 省 1994–2017，744 行；省份 为源简称，prov_std 为官方全称归一列，跨表 join 请用 prov_std；静态历史包，非按日更新）
+  writer: 未认领（节奏由 freq=Y 推断，未经写方确认）
+  readers:
+  - data_sources/cnopendata/ingest_open.py
+  - quant_backtest/build_catalog.py
+  - quant_backtest/test_kg_source_rating_wo108.py
+  - quant_backtest/tools/research/metadata_backfill.py
+  reader_count: 4
+  readers_private: 0
+  orphan: false
+  compose:
+  - path: quant_backtest/data/cnopendata/yspl/part_*.parquet
+    date_from: column:年份
+    date_role: period
+    role: catalog layout=part，schema=序号,省份,年份,决算：一般预算收入（全省）,决算：一般预算总收入（全省，包括补助、国债转贷等、结余结转、调入）
+  merge: max
+  promise:
+    cadence: yearly
+    lag_ok: 400
+    basis: calendar
+  success: 最新年份不早于当前年往前 400 个自然日（口径来自 sources.yaml freshness_sla_days）
+  catalog_freshness: '2017'
+  rows: 744
+  deprecated: false
+skipped:
+- id: chinese-dictionary-of-financial-sentiment
+  layout: part
+  why: 静态维度表，无日期列
+- id: factor_list
+  layout: parquet_snapshot
+  why: 静态维度表，无日期列
+- id: guba_posts
+  layout: jsonl
+  why: 无列语义，日期在 JSON 字段里
+- id: hk_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: index_member_all
+  layout: part
+  why: catalog 无 date_col
+- id: quarantine_prod_overwrite
+  layout: part
+  why: 隔离区目录（存放被挡下的写入），不是数据表
+- id: report_rc
+  layout: by_code_month
+  why: catalog 无 date_col
+- id: stock_company
+  layout: part
+  why: catalog 无 date_col
+- id: stock_news
+  layout: sqlite
+  why: 需 SQL 查询取日期，本生成器不猜
+- id: stock_notice
+  layout: sqlite
+  why: 需 SQL 查询取日期，本生成器不猜
+- id: stock_report
+  layout: sqlite
+  why: 需 SQL 查询取日期，本生成器不猜
+- id: sw_classify_l1
+  layout: part
+  why: catalog 无 date_col
+- id: sw_l1_member
+  layout: by_code
+  why: catalog 无 date_col
+- id: sw_l2_member
+  layout: by_code
+  why: catalog 无 date_col
+- id: tdx_sector_def
+  layout: part
+  why: catalog 无 date_col
+- id: tdx_sector_member
+  layout: part
+  why: catalog 无 date_col
+- id: ts_broker_recommend
+  layout: part
+  why: catalog 无 date_col
+- id: ts_bse_mapping
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_cb_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_cb_rate
+  layout: part
+  why: catalog 无 date_col
+- id: ts_etf_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_fund_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_fut_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_fut_weekly_detail
+  layout: part
+  why: catalog 无 date_col
+- id: ts_fx_obasic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_hk_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_hm_list
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_hs_const
+  layout: part
+  why: catalog 无 date_col
+- id: ts_index_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_index_classify
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_opt_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_sge_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_stock_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_ths_index
+  layout: part
+  why: 静态维度表，无日期列
+- id: ts_us_basic
+  layout: part
+  why: 静态维度表，无日期列
+- id: v2_bar_daily
+  layout: pg
+  why: 远端库，需连接才能取日期
+- id: xq_capital_flow
+  layout: parquet
+  why: catalog 无 date_col
+- id: xq_comment
+  layout: sqlite
+  why: 需 SQL 查询取日期，本生成器不猜
+- id: xq_earningforecast
+  layout: parquet
+  why: catalog 无 date_col
+- id: xq_hot_deal
+  layout: parquet
+  why: catalog 无 date_col
+- id: xq_hot_post
+  layout: sqlite
+  why: 需 SQL 查询取日期，本生成器不猜
+- id: xq_inner_trade
+  layout: parquet
+  why: catalog 无 date_col
+- id: xq_kline_d
+  layout: parquet
+  why: catalog 无 date_col
+- id: xq_northbound
+  layout: parquet
+  why: catalog 无 date_col
+- id: xq_status
+  layout: sqlite
+  why: 需 SQL 查询取日期，本生成器不猜

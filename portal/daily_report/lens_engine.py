@@ -423,6 +423,63 @@ def _fresh_or_missing(name, fname, asof, extra_note=None):
     return best
 
 
+def sector_dim(asof):
+    """板块轮动维度：读本地自合成行业日线（sector_synth.py 产）。
+
+    为什么不再读上游 sector_daily.parquet（2026-11-12）：
+      直连上游实测 start_date=20261023 → total=0 / total_exact=true，
+      首页首条即 20261022，_fetched_at 停在 10-22 17:00 —— 上游自那天收盘后
+      没再供数。继续读它只能得到「落后 22 个交易日」的过期维度，等于没有。
+      改用 index_member_all（31 个申万 L1）+ daily 等权自合成，随 daily 日更。
+
+    口径差异必须写在 note 里：等权 ≠ 申万官方市值加权指数，
+    只可用于「行业间谁强谁弱」「上涨行业占比」，不可与官方指数比绝对水平。
+    """
+    p = os.path.join(LENS, "sector_daily_synth.parquet")
+    base = {"key": "sector", "name": "板块轮动", "value": None,
+            "source": "local_synth"}
+    if not os.path.exists(p):
+        base.update({"status": "missing",
+                     "note": "本地自合成产物不存在，先跑 sector_synth.py"})
+        return base
+    try:
+        df = pd.read_parquet(p)
+        if df.empty:
+            base.update({"status": "missing", "note": "自合成产物为空"})
+            return base
+        d8 = df["trade_date"].astype(str)
+        latest = d8.max()
+        cur = df[d8 == latest]
+        # 截面：最强 / 最弱 / 上涨行业占比 / 行业间离散度
+        cur = cur.sort_values("ret")
+        val = {
+            "date": latest, "n": int(len(cur)),
+            "best": [str(cur.iloc[-1]["sector_name"]), float(cur.iloc[-1]["ret"])],
+            "worst": [str(cur.iloc[0]["sector_name"]), float(cur.iloc[0]["ret"])],
+            "up_ratio": float((cur["ret"] > 0).mean()),
+            # 离散度 = 最强 − 最弱（百分点），衡量「行业分化程度」
+            "dispersion": float(cur.iloc[-1]["ret"] - cur.iloc[0]["ret"]),
+        }
+        cal = trading_cal()
+        lag = (cal.index(asof) - cal.index(latest)) if (asof in cal and latest in cal) else None
+        st = "fresh" if latest == asof else ("lag" if lag is not None and lag <= 1 else "stale")
+        # note 里必须带数字：只写「可用」等于让读的人自己去翻 parquet
+        # （2026-11-09 定的可读性铁律：每个数字要有参照物，结论要一句人话）
+        note = ("本地自合成 %d 个申万 L1 等权（%s）：最强 %s %+.2f%% / 最弱 %s %+.2f%%，"
+                "%d/%d 上涨，行业间最大差距 %.1f 个百分点；非市值加权，勿与官方指数比绝对水平"
+                % (val["n"], latest, val["best"][0], val["best"][1],
+                   val["worst"][0], val["worst"][1],
+                   int((cur["ret"] > 0).sum()), val["n"], val["dispersion"]))
+        base.update({"status": st, "value": val, "latest": latest, "lag_days": lag,
+                     "note": note})
+        if st != "fresh":
+            base["note"] = "自合成产物停在 %s，落后 %s 个交易日；%s" % (latest, lag, note)
+        return base
+    except Exception as e:
+        base.update({"status": "error", "note": "读取自合成产物失败：%s" % str(e)[:60]})
+        return base
+
+
 def market_dimensions(asof):
     cal = trading_cal()
     dims = []
@@ -555,11 +612,8 @@ def market_dimensions(asof):
         "涨停情绪", ["limit_list_d_full.parquet", "limit_list_d_delta.parquet"], asof,
         extra_note="T+1 早间补前一交易日，落后 1 日属正常节奏"))
 
-    # 7) 板块轮动（全量快照维护，非日更；落后＝上游断供，不是本轮采集失败）
-    dims.append(_fresh_or_missing(
-        "板块轮动", "sector_daily.parquet", asof,
-        extra_note="此维度由一次性全量快照维护，不作日更；落后说明上游数据源未再供数，"
-                   "不等于「当日无异常」，也不等于「本轮采集漏跑」"))
+    # 7) 板块轮动（2026-11-12 换源：改为本地自合成，不再读上游已断供的快照）
+    dims.append(sector_dim(asof))
 
     for i, d in enumerate(dims):
         d.setdefault("key", "dim%d" % i)
@@ -959,6 +1013,30 @@ def main():
                         if nlg > 30 else
                         ("neutral", "大单净流入 %.0f 亿，推动力一般" % nlg))
             return "na", "资金流不直接支撑这条解释"
+
+        if k == "sector":
+            v = d.get("value") or {}
+            ur = v.get("up_ratio")
+            sp = v.get("dispersion")
+            if ur is None:
+                return "na", "无板块数据"
+            if hid == "H1":
+                return (("support", "仅 %.0f%% 行业上涨，是普跌环境不是个股问题" % (ur * 100))
+                        if ur < 0.40 else
+                        ("against", "%.0f%% 行业上涨，行业层面不构成逆风" % (ur * 100))
+                        if ur > 0.60 else
+                        ("neutral", "%.0f%% 行业上涨，行业层面方向不明显" % (ur * 100)))
+            if hid == "H4":
+                if sp is None:
+                    return "neutral", "无分化数据"
+                return (("support", "行业间最大差距仅 %.1f 个百分点，分化很小，几天的超额读不出方向" % sp)
+                        if sp < 2.0 else
+                        ("neutral", "行业间最大差距 %.1f 个百分点" % sp))
+            if hid == "H6":
+                return (("support", "当日 %.0f%% 行业上涨，次日回吐会吃掉隔夜收益" % (ur * 100))
+                        if ur > 0.70 else
+                        ("neutral", "%.0f%% 行业上涨，未见普涨" % (ur * 100)))
+            return "na", "板块结构不直接支撑这条解释"
 
         if hid == "H6":
             return "na", "由「持有窗口」那张表判，不看市场维度"

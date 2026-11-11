@@ -79,26 +79,42 @@ products:
 
   - id: sector_daily
     name: 板块轮动
-    purpose: 多棱镜「板块轮动」维度；行业层面的资金去向
-    writer: factor_proto/pull_tdx.py（一次性全量重写，无日更任务）
+    purpose: 多棱镜「板块轮动」维度；行业层面的资金去向与分化程度
+    writer: sector_synth.py（本地自合成，随 daily 日更）；原 pull_tdx.py 上游已断供
     readers: [lens_engine]
     compose:
+      - path: "portal/daily_report/lens/sector_daily_synth.parquet"
+        date_from: "column:trade_date"
+        min_rows_per_day: 20
+        role: >-
+          当前主片：31 个申万 L1 行业等权日线，由 index_member_all + daily 现算，
+          覆盖 100% 个股（5574/5574）。等权 ≠ 官方市值加权指数，只用于行业间
+          强弱与上涨行业占比，不可比绝对水平。阈值按 31 个行业设 20。
       - path: "${extra}/sector_daily.parquet"
         date_from: "column:trade_date"
         min_rows_per_day: 100
         role: >-
-          全量快照，每个交易日 132 个板块（只含 industry_l1 + old_industry 两个段，
-          pull_tdx 的 SEG_WITH_DAILY 仅此两段，不是全板块）；7920 行 / 60 个交易日。
-          阈值按本产物实际密度设 100，不要按落湖那份的 1119 去卡。
+          原主片，已降级为「历史参照」：一次性全量快照，每个交易日 132 个板块
+          （只含 industry_l1 + old_industry 两段）；上游自 10-22 断供，
+          合并时会被自合成片盖过，不再用于判定。
     merge: max
-    promise: {cadence: oneoff, lag_ok: 0}
-    success: "上游有新增即重跑 pull_tdx 全量；非日更产物，落后不等于本轮采集失败"
+    promise: {cadence: daily, lag_ok: 0}
+    success: "自合成片 max(trade_date) == 当日交易日；与 daily 同源，daily 有它就该有"
+    # 已知违约登记（2026-11-12）。必须带到期日：到期后自动恢复硬违约+告警。
+    # 为什么不直接静音：断供是事实、不是已解决；静音会把「有新违约」也一起吞掉。
+    # 现已被自合成片接管，这条例登记留着当保险：自合成若断，它到期后会重新告警。
+    ack:
+      until: "2026-11-25"
+      reason: "上游自 10-22 断供的 TDX 快照；已由本地自合成接管，本登记仅作兜底"
+      owner: 张松
+      ticket: "OPS-1112-01"
     history: >-
       2026-11-12 直连上游实测：start_date=20261023 返回 total=0 / total_exact=true，
       无过滤首页首条即 20261022，_fetched_at=2026-10-22 17:00:33 —— 上游自 10-22
       收盘后未再供数。另一份落湖产物 tdx_sector_daily 到 20261022，但 10-13 起
       每天只 2~3 个板块（24 行/10 天），等于没有，故不登记为可用片。
       配套假成功：TdxTailSync 每天 04:30 exit=0、日志写 DONE、1 秒完成、parts 数不变。
+      处置：换源不是换外部接口，而是本地自合成（sector_synth.py），彻底去依赖。
 
   - id: margin_detail
     name: 两融杠杆

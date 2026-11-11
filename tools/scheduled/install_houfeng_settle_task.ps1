@@ -6,8 +6,12 @@
 #   16:40 这次运行让当日结清落到当天，同时产生第二个收盘后快照，
 #   使价格守卫 R1「两轮收盘后快照互比」有对比对象（一天一跑时那一级永不触发）。
 #
-# 与 15:10 任务的差别：跑 settle + snap + arena + lens，不跑数据巡检
+# 与 15:10 任务的差别：跑 settle + snap + arena + sector + lens + registry，不跑数据巡检
 # （同日同批数据，重复检无信息）。
+#
+# 2026-11-12 再补：加 registry（逻辑产物新鲜度）。它只在 16:40 这趟跑——
+# 15:10 时当日行情日线还没落盘，lag 的 clock 会退回上一交易日，判定虽自洽
+# 但与盘后口径不同，同一天出两套结论没有意义。rc=2 直接调 alert_fail.py 发飞书。
 #
 # 2026-11-12 补：原注册参数是 "settle,snap"，导致后来加的 arena / lens 阶段
 # 从未在调度里真正跑过（脚本支持 ≠ 任务参数已更新）。用 -Update 改参数，
@@ -27,7 +31,7 @@ $dir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $log  = 'C:\Temp\houfeng_settle_task.log'   # 不含用户名的通用临时目录；与已注册任务保持一致
 $arg  = '-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "' + $ps1 +
-        '" -Phases "settle,snap,arena,lens" -Log "' + $log + '" -Tag houfeng_settle'
+        '" -Phases "settle,snap,arena,sector,lens,registry" -Log "' + $log + '" -Tag houfeng_settle'
 
 if (-not (Test-Path $ps1)) { throw ('脚本不存在: ' + $ps1) }
 
@@ -45,7 +49,7 @@ Write-Output ('动作:   ' + $exe)
 Write-Output ('参数:   ' + $arg)
 Write-Output ('目录:   ' + $dir)
 Write-Output ('触发:   周一至周五 16:40（当日日线此时已发布，11-11 实测 15:50 就可拉到）')
-Write-Output ('内容:   cohort_track.py --settle 再 --snap；跳过数据巡检')
+Write-Output ('内容:   settle + snap + arena + sector + lens + registry（跳过数据巡检）；registry rc=2 发飞书告警')
 Write-Output ('日志:   ' + $log + '（与 15:10 那趟分开，避免交错）')
 Write-Output ('设置:   StartWhenAvailable=开, MultipleInstances=IgnoreNew, 单次上限 30 分钟')
 Write-Output ('身份:   ' + $env:USERNAME + ' / Interactive / Limited')

@@ -30,6 +30,7 @@ $py  = 'C:\Program Files\Python311\python.exe'
 # 工作目录从脚本自身位置推导（本仓对外可见，不写死本机绝对路径；2026-11-11 脱敏）
 if (-not $PSScriptRoot) { throw '需以 -File 方式执行本脚本（$PSScriptRoot 为空时无法推导工作目录）' }
 $wd  = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'portal\daily_report'
+$proj = Split-Path -Parent (Split-Path -Parent $wd)   # 仓根，用于定位 quant_backtest 下的告警器
 $log = $Log
 
 # 每行独立取时刻（2026-11-11 修）。此前 $stamp 在脚本开头只算一次，整份日志
@@ -62,8 +63,10 @@ try {
         if ($ph -contains 'settle') { Write-Output ('将执行: ' + $py + ' -X utf8 cohort_track.py --settle') }
         if ($ph -contains 'snap')   { Write-Output ('将执行: ' + $py + ' -X utf8 cohort_track.py --snap') }
         if ($ph -contains 'arena')  { Write-Output ('将执行: ' + $py + ' -X utf8 paper_arena.py → build_arena.py') }
+        if ($ph -contains 'sector') { Write-Output ('将执行: ' + $py + ' -X utf8 sector_synth.py → --check') }
         if ($ph -contains 'lens')   { Write-Output ('将执行: ' + $py + ' -X utf8 lens_engine.py → build_lens.py') }
         if ($ph -contains 'health') { Write-Output ('将执行: ' + $py + ' -X utf8 data_health.py --target prev') }
+        if ($ph -contains 'registry') { Write-Output ('将执行: ' + $py + ' -X utf8 check_products.py  （rc=2 时调 alert_fail.py 发飞书）') }
         Write-Output ('阶段: ' + ($ph -join ','))
         Write-Output ('工作目录: ' + $wd)
         Write-Output ('日志: ' + $log)
@@ -126,7 +129,30 @@ try {
         }
     }
 
-    # 4) 多棱镜（2026-11-12 立）：一份事实 × 多种解释 × 数据判定。
+    # 4) 板块自合成（2026-11-12 立）：上游板块快照自 10-22 断供，改为
+    #    index_member_all + daily 现算行业等权日线，随 daily 一起走。
+    #    必须排在 lens 之前 —— lens 的「板块轮动」维度读的就是它的产物。
+    #    依赖当日日线，未就绪就跳过（与 settle/arena 同因），跳过 ≠ 故障。
+    if ($ph -contains 'sector') {
+        $global:LASTEXITCODE = 0
+        $scOut = (& $py -X utf8 'sector_synth.py' --days 120 2>&1 | Out-String -Width 4096)
+        $scRc  = $LASTEXITCODE
+        Write-TaskOut 'sector' $scOut 6
+        if ($scOut -match 'Traceback' -or $scRc -ne 0) {
+            Write-TaskLog ('WARN: 板块自合成失败（rc=' + $scRc + '），lens 的板块维度会显示过期')
+        } else {
+            # 自证：产物 max(date) 必须等于 clock 最新日，否则「跑完」不等于「前进了一天」
+            $global:LASTEXITCODE = 0
+            $ckOut = (& $py -X utf8 'sector_synth.py' --check 2>&1 | Out-String -Width 4096)
+            $ckRc  = $LASTEXITCODE
+            Write-TaskOut 'sector.check' $ckOut 4
+            if ($ckRc -ne 0) {
+                Write-TaskLog ('WARN: 自合成产物没跟上 clock（rc=' + $ckRc + '），上一条判定行即为原因')
+            }
+        }
+    }
+
+    # 5) 多棱镜（2026-11-12 立）：一份事实 × 多种解释 × 数据判定。
     #    产出 lens/latest.json + multi_lens.html，并把每次判定追加进 grade_log.jsonl
     #    形成证据链。依赖当日日线，与 settle/arena 同因：15:10 那趟未就绪就跳过，
     #    跳过 ≠ 故障，两种必须分开记。
@@ -146,7 +172,7 @@ try {
         }
     }
 
-    # 5) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
+    # 6) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
     #    只检 prev：当天的日线还在交易所侧，检 today 必然报零采集。
     #    这一检正对着「11-10 整天没采数据、旧脚本却判七表全绿」那次漏判 ——
     #    旧判据先取 max(trade_date) 再查那天齐不齐，于是永远自洽。
@@ -158,6 +184,37 @@ try {
         Write-TaskOut 'data' $dhOut 40
         if ($dhOut -match 'Traceback' -or $dhRc -ne 0) {
             Write-TaskLog ('WARN: 数据巡检未达标（rc=' + $dhRc + '），上一条判定行即为原因')
+        }
+    }
+
+    # 7) 逻辑产物新鲜度（2026-11-12 立）：断言「数据前进了一天」，不是「进程退出 0」。
+    #    与 data_health 的分工：health 查物理表落到没落到，registry 查「一个逻辑产物
+    #    由几片拼成、合起来到哪天」——涨停那种 full+delta 分片，只有 registry 看得见。
+    #    只在 16:40 这趟做：15:10 当日行情日线还没落盘，clock 会退回上一交易日，
+    #    判定虽自洽但与盘后口径不同，同一天出两套结论没有意义。
+    #    退出码 0 全在承诺内 / 1 有落后但仍在承诺内（不告警）/ 2 有未处置违约（告警）。
+    if ($ph -contains 'registry') {
+        # 先清零：若 python 起不来，$LASTEXITCODE 会保留上一条命令的值，
+        # 那个残值可能让本次违约被判成「通过」，也可能让通过被判成违约。
+        # 必须写 $global: 前缀 —— 在脚本作用域里写 $LASTEXITCODE = 0 会造出一个
+        # 脚本级影子变量，之后原生命令更新的是全局那个，脚本读到的永远是初始的 0
+        # （2026-11-12 实测：加了不带前缀的清零，rc=2 被判成 0，违约分支永不触发）。
+        $global:LASTEXITCODE = 0
+        $rgOut = (& $py -X utf8 'check_products.py' 2>&1 | Out-String -Width 4096)
+        $rgRc  = $LASTEXITCODE
+        Write-TaskOut 'registry' $rgOut 34
+        if ($rgRc -eq 1) {
+            Write-TaskLog 'NOTE: 有产物落后但在承诺内（rc=1），不告警'
+        } elseif ($rgOut -match 'Traceback' -or $rgRc -ne 0) {
+            # 违约要有人知道，不能只写日志。告警器自身失败不能反噬本任务（它内部已兜住）。
+            Write-TaskLog ('ALERT: 逻辑产物有未处置违约（rc=' + $rgRc + '），发飞书')
+            $alertPy = Join-Path $proj 'quant_backtest\alert_fail.py'
+            if (Test-Path $alertPy) {
+                $alOut = (& $py -X utf8 $alertPy 'houfeng_registry' ([string]$rgRc) $log 2>&1 | Out-String -Width 4096)
+                Write-TaskOut 'alert' $alOut 6
+            } else {
+                Write-TaskLog ('WARN: 告警器不存在（' + $alertPy + '），本条违约只留在日志里')
+            }
         }
     }
 
