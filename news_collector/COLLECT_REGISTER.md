@@ -110,3 +110,42 @@
 **验证**：`py_compile` 通过；`load_queue('all')=647` 不变、`load_queue(sources=[houfeng_candidates164,cohorts])=222` 且 ⊆ 全集。首次扩源实际生效 = 11-12 07:00 基线 run（Layer1 让基线跑通）+ 11-12 21:00 分片 run（Layer2 保底）。
 
 **边界重申**：WAF 风控姿态变更（"1 次抖动不整轮停"）属运营裁定，已按老田阈值落地；本席只采集落盘，不研判、不擅动扩源决策。
+
+## 六、技术观察台账（外部工具/方案情报，2026-11-12 马良·应老田送达）
+
+> 性质：老田贴送的第三方产品宣传材料（ego(lite) by Citro Labs），非内部需求。本席按 OSINT 治理纪律做证据分级 + 交叉核验 + 映射评估，**不擅自改动任何生产设施**。处置裁定：记入技术观察（不采纳、不试点、不替换现有管线）。
+
+### T1 · ego(lite) 浏览器（Citro Labs，AI Agent 网页自动化）
+
+**来源与证据分级**
+| 维度 | 结论 | 证据等级 |
+|---|---|---|
+| 产品真实性 | 真实：`github.com/citrolabs/ego-lite`（MIT，含 skill/CLI/docs），浏览器本体免费单独下载；多源独立印证（腾讯云开发者 / CSDN / ai-bio.cn / trackmcp / agent 目录），~17.5k–22k stars | tier1 官方站 + 多二手源交叉 |
+| "Real-World Bench" 基准 | 仓库真实（`citrolabs/ego-browser-benchmark-framework`）但 **harness/数据集/裁判均 Citro Labs 自有**；93.5% 成功率、快 47–63%、成本 $1.64 均为 **厂商自测、零第三方复现** | tier3 厂商营销，置信度低 |
+| 平台支持 | **关键缺口**：原文称"macOS/Windows/Linux 都支持"，但较新来源（followagents，6 天前）明写 **"Windows is a closed beta"**，Linux 仅 roadmap；另一来源称"Windows 有安装包" → **来源内部冲突，以"Windows 非 GA、需本机实测"为准** | 口径冲突，须本机复核 |
+| MCP 集成 | **无 MCP server**（agent-native 目录明确 "MCP Status: ⚠️ No MCP server"），仅经 ego-browser Skill/CLI 驱动 | 一手仓库事实 |
+| "可复用技能" | 标注 **"(coming soon) 即将上线"** = 计划未建成（宣布≠已落地） | 厂商自述 |
+
+**与原文逐条对照（中文编译偏差修正）**
+- "永久免费、无需配置"：大体属实（skill MIT、本体免费、无 API key），但"免费"是厂商承诺，标注为待观察、不视为事实落地。
+- "比 Playwright 快 47–63% / 成功率 93.5% / 成本 $1.64"：数字在厂商叙事内自洽（egolite.ai 与 lite.ego.app/compare 同引 31 任务 / gpt-5.6-sol / agent pi），但**无独立复核 → 规划时不得当事实用**。
+- "支持任意 Agent（含 Hermes Agent、OpenClaw）"：接入列表属实，与"Hermes + OpenClaw"超级助理方向吻合（前提：跑 macOS 且接受登录态迁移）。
+- "更少触发人机验证"：原理成立（继承真实登录态 → 登录后会话更少被风控），**正对 xq 雪球 WAF 痛点** → 见下方否决理由。
+
+**映射我方架构（核心判断）**
+| 我方现实 | ego(lite) 现实 | 结论 |
+|---|---|---|
+| xq 采集：**Windows 生产机**（C:/项目、Python311、常驻 Chrome profile）、**定时批量 647 只** | macOS 优先、**Windows 仅 closed beta**、**无 MCP**、**Agent 驱动交互式模型**（自然语言→Space→快照→JS 批处理） | **品类 + 平台双错配** |
+| R24 已用"冷却重试 + 21:00 独立分片"结构性化解 WAF 早停 | "少触发验证码"是唯一对症点 | 已自愈，**换引擎收益≈0、回归风险高** |
+| 超级助理（Hermes/OpenClaw）在 Windows 工作 | Skill/CLI 在非 GA 的 Windows 上未验证 | 方向可记，落地尚早 |
+
+**决定性否决项（任一即足够）**
+1. **Windows 非 GA**（closed beta）→ 跑不了老田的生产 Windows 机；
+2. **无 MCP** → 无法直接接入 WorkBuddy 工具链，只能 CLI/Skill 包一层；
+3. **基准未第三方复现** → 不得依 47–63%/93.5% 做采纳依据。
+
+**唯一真正对口场景**：交互式、需登录态的**调研类**任务（读登录后后台 / 社媒监听），**非**我方定时批量抓取；即便如此也需 macOS 宿主 + 接受"把 Chrome 登录/Cookie/密码迁移进闭源浏览器本体"的新本地攻击面与外部依赖。
+
+**复评触发条件（满足任一再议）**：① Windows GA 发布；② 出现批量抓取之外的"登录态交互调研"刚需且具备 macOS 宿主时开小范围试点；③ **不**用它替换 xq 的 Playwright 管线。
+
+**局限性声明（OSINT 自省）**：样本 = 厂商官网 + 4 篇中/英二手 + 1 个 agent 目录，无一手实测；平台状态可能自最近来源（6 天前）起已变化；基准厂商可控，结论偏保守。
