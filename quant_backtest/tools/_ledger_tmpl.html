@@ -1,0 +1,78 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<title>P1 日历账本 · 横排日历 + 证据链详情</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0c1117;color:#e6edf3;font:13px/1.6 "Segoe UI",system-ui,"Microsoft YaHei",sans-serif;padding:20px}
+h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bottom:12px}
+#cal{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}
+.day{min-width:158px;max-width:158px;background:#121924;border:1px solid #1f2835;border-radius:10px;padding:8px;cursor:pointer;flex-shrink:0}
+.day:hover{border-color:#2a3546;background:#182130}
+.dh{display:flex;justify-content:space-between;font-size:11px;color:#9aa7b8;margin-bottom:5px}
+.dh b{color:#e6edf3}
+.mr{font-weight:700;font-size:12px}
+.pick{display:flex;justify-content:space-between;font-size:11.5px;padding:2px 4px;border-radius:4px;cursor:pointer}
+.pick:hover{background:#0e141d}
+.pcode{color:#c9d5e3}.prt{font-weight:600}
+#modal{position:fixed;inset:0;background:rgba(5,8,12,.82);display:none;z-index:9;overflow:auto;padding:40px 20px}
+#modal.on{display:flex;justify-content:center;align-items:flex-start}
+.card{background:#121924;border:1px solid #2a3546;border-radius:14px;max-width:860px;width:100%;padding:20px}
+.card h2{font-size:15px;margin-bottom:2px}.card .sub{color:#6b7787;font-size:11.5px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.sec{background:#0e141d;border:1px solid #1f2835;border-radius:10px;padding:10px}
+.sec h4{font-size:11px;color:#4f8fe6;margin-bottom:6px;letter-spacing:.5px}
+.row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed #182130;gap:12px}
+.row:last-child{border:none}
+.tag{display:inline-block;border:1px solid #2a3546;border-radius:9px;padding:0 7px;font-size:10.5px;margin:2px 3px 0 0;color:#9aa7b8}
+.tag.hit{border-color:#3d5a80;color:#7fb3ff}
+.up{color:#e35d5d}.dn{color:#3aa76d}.flat{color:#8a93a3}
+.close{float:right;cursor:pointer;color:#6b7787;font-size:16px;padding:0 6px}
+.q{color:#e0b95c}
+</style></head><body>
+<h1>P1 日历账本 · 每日选择 → 次日实况（点击看证据链）</h1>
+<div class="m">手法 v3（pos+vol+bei30）· v1.0 · 一格=一交易日（横排滚动）· 点击任意票看完整证据链：板块/因子/五问 · 生成 __GEN__</div>
+<div id="cal"></div>
+<div id="modal" onclick="if(event.target===this)this.classList.remove('on')">
+<div class="card"><span class="close" onclick="document.getElementById('modal').classList.remove('on')">✕</span><div id="cbody"></div></div></div>
+<script>
+const DATA=__DATA__;
+const C={up:'#e35d5d',dn:'#3aa76d',flat:'#8a93a3'};
+const fmt=(v,d=2)=>v==null?'—':(v>0?'+':'')+v.toFixed(d);
+const col=v=>v==null?C.flat:(v>0?C.up:(v<0?C.dn:C.flat));
+const cal=document.getElementById('cal');
+DATA.forEach((dy,i)=>{
+ const el=document.createElement('div');el.className='day';
+ el.innerHTML='<div class="dh"><b>'+dy.day.slice(4,6)+'-'+dy.day.slice(6)+'</b>'
+  +'<span class="mr" style="color:'+col(dy.mean)+'">'+fmt(dy.mean)+'%</span></div>'
+  +dy.picks.map((p,k)=>'<div class="pick" onclick="show(event,'+i+','+k+')">'
+   +'<span class="pcode">'+p.code.slice(0,9)+'</span>'
+   +'<span class="prt" style="color:'+col(p.ret)+'">'+fmt(p.ret)+'</span></div>').join('');
+ cal.appendChild(el);
+});
+function show(e,i,k){e.stopPropagation();
+ const d=DATA[i],p=d.picks[k],f=p.factors;
+ const fac=[f.bei?'bei 同向力度背驰':null,f.bei2?'bei2 回踩力度背驰':null,
+  f.bei24?'bei24 24课盘整背驰':null,f.tbe24?'tbe24 24课趋势背驰':null,
+  f.mbei?'mbei MACD背驰':null].filter(Boolean);
+ const secHtml=(p.sectors||[]).map(s=>'<span class="tag">'+s.name
+  +(s.r5!=null?' <b style="color:'+col(s.r5*100)+'">'+fmt(s.r5*100,1)+'%</b>':'')+'</span>').join('')||'<span class="tag">成分快照未命中</span>';
+ document.getElementById('cbody').innerHTML=
+ '<h2>'+p.code+' · 三买 top'+(k+1)+'（评分 '+p.score+'）</h2>'
+ +'<div class="sub">选择日 '+d.day+' · 结构日 dt '+p.dt+' · 次日 '+d.next+' 实况 · 手法 v1.0</div>'
+ +'<div class="grid">'
+ +'<div class="sec"><h4>次日真实（T+1 开盘买入→收盘）</h4>'
+  +'<div class="row"><span>次日收益</span><b style="color:'+col(p.ret)+'">'+fmt(p.ret)+'%</b></div>'
+  +'<div class="row"><span>选择日涨跌</span><b style="color:'+col(p.day_pct)+'">'+fmt(p.day_pct)+'%</b></div></div>'
+ +'<div class="sec"><h4>因子命中（为什么选它）</h4>'
+  +'<div class="row"><span>位置 price/zg</span><b>'+fmt(f.pos_pct)+'%（zg='+f.zg+' zd='+f.zd+'）</b></div>'
+  +'<div class="row"><span>量比 vr</span><b>'+(f.vr==null?'—':f.vr.toFixed(2))+'</b></div>'
+  +'<div style="margin-top:4px">'+(fac.length?fac.map(x=>'<span class="tag hit">'+x+'</span>').join(''):'<span class="tag">三源背驰全未命中</span>')+'</div></div>'
+ +'<div class="sec" style="grid-column:1/3"><h4>所属板块（成分快照 · 板块 5 日强弱 r5）</h4>'+secHtml+'</div>'
+ +'<div class="sec" style="grid-column:1/3"><h4>证据链五问</h4>'
+  +'<div class="row"><span class="q">① 为什么选它</span><span>三买事件 + 评分 '+p.score+'（pos/vol/bei30 = 40/30/30 档位缩放）</span></div>'
+  +'<div class="row"><span class="q">② 何时能看到</span><span>选择日盘中（day='+d.day+'）；回踩笔终点 dt='+p.dt+'（可早于选择日）</span></div>'
+  +'<div class="row"><span class="q">③ 第二天真实</span><span style="color:'+col(p.ret)+'">'+fmt(p.ret)+'%（开盘买入口径，零成本）</span></div>'
+  +'<div class="row"><span class="q">④ 板块环境</span><span>所属板块 r5 见上卡（板块层 asof=快照日，T+1 口径如实标注）</span></div>'
+  +'<div class="row"><span class="q">⑤ 手法版本</span><span>v3 评分 v1.0（手法登记簿上线后自动分版本着色）</span></div></div>'
+ +'</div>';
+ document.getElementById('modal').classList.add('on');
+}
+</script></body></html>
