@@ -13,11 +13,14 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .year h3{font-size:15px;margin-bottom:4px}
 .ystat{display:flex;gap:14px;font-size:11.5px;color:#9aa7b8}
 .ystat b{font-size:14px}
-.months{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.months{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .month{background:#121924;border:1px solid #1f2835;border-radius:10px;padding:10px;cursor:pointer}
 .month:hover{border-color:#2a3546;background:#182130}
 .month h4{font-size:13px;display:flex;justify-content:space-between;margin-bottom:4px}
-.mstat{font-size:11px;color:#9aa7b8;display:flex;gap:10px}
+.mstat{font-size:11px;color:#9aa7b8;display:flex;gap:8px;flex-wrap:wrap}
+.mrow{display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:#9aa7b8}
+.mtags{margin-top:5px}
+.mgo{margin-top:6px;font-size:10.5px;color:#4f8fe6;text-align:right}
 .bar{height:5px;border-radius:3px;background:#1d2836;overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%}
 .daysgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
@@ -44,7 +47,7 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .q{color:#e0b95c}
 </style></head><body>
 <h1>P1 日历账本 · 年 → 月 → 日 → 票</h1>
-<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 2026-11-11 23:48</div>
+<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 2026-11-12 04:33</div>
 <div class="crumbs" id="crumbs"></div>
 <div id="view"></div>
 <div id="modal" onclick="if(event.target===this)this.classList.remove('on')">
@@ -76,14 +79,41 @@ function renderYears(){
   +'<div class="ystat"><span>日均 <b style="color:'+col(a&&a.m)+'">'+fmt(a&&a.m)+'%</b></span>'
   +'<span>交易日 <b>'+byYear[y].length+'</b></span>'
   +'<span>胜率 <b>'+(a?a.win:0)+'%</b></span></div></div>'}).join('');}
+function monthSummary(k){
+ const ds=byMonth[k]||[];
+ let picks=0,uniq=new Set(),rets=[],best=null,worst=null;
+ const fac={bei:0,bei2:0,bei24:0,tbe24:0,mbei:0};
+ const secCnt={};
+ ds.forEach(d=>d.picks.forEach(p=>{
+  picks++;uniq.add(p.code);
+  if(p.ret!=null){rets.push(p.ret);
+   if(!best||p.ret>best.ret)best=p;
+   if(!worst||p.ret<worst.ret)worst=p;}
+  ['bei','bei2','bei24','tbe24','mbei'].forEach(f=>{if(p.factors[f])fac[f]++});
+  (p.sectors||[]).slice(0,3).forEach(s=>{secCnt[s.name]=(secCnt[s.name]||0)+1});
+ }));
+ const a=agg(ds.map(d=>d.mean));
+ const secTop=Object.entries(secCnt).sort((x,y)=>y[1]-x[1]).slice(0,4);
+ return {days:ds.length,picks,uniq:uniq.size,rets,a,best,worst,fac,secTop};}
 function renderMonths(y){
  const ms=Object.keys(byMonth).filter(k=>k.startsWith(y)).sort();
- view.innerHTML='<div class="months">'+ms.map(k=>{const a=agg(byMonth[k].map(d=>d.mean));
+ view.innerHTML='<div class="months">'+ms.map(k=>{
+  const s=monthSummary(k),a=s.a;
   const w=a?Math.max(3,Math.round(a.win)):3;
+  const facHtml=Object.entries(s.fac).filter(e=>e[1]>0)
+   .map(e=>'<span class="tag hit">'+e[0]+'×'+e[1]+'</span>').join('')
+   ||'<span class="tag">无背驰命中</span>';
+  const secHtml=s.secTop.map(e=>'<span class="tag">'+e[0]+' '+e[1]+'</span>').join('')||'';
   return '<div class="month" onclick="nav(\'d\',\''+k+'01\')"><h4><span>'+k.slice(4,6)+' 月</span>'
   +'<span style="color:'+col(a&&a.m)+'">'+fmt(a&&a.m)+'%</span></h4>'
-  +'<div class="mstat"><span>'+byMonth[k].length+' 交易日</span><span>胜率 '+(a?a.win:0)+'%</span></div>'
-  +'<div class="bar"><i style="width:'+w+'%;background:'+(a&&a.m>0?C.up:C.dn)+'"></i></div></div>'}).join('')+'</div>';}
+  +'<div class="mstat"><span>'+s.days+' 交易日</span><span>'+s.picks+' 笔</span>'
+  +'<span>'+s.uniq+' 只票</span><span>胜率 '+(a?a.win:0)+'%</span></div>'
+  +'<div class="bar"><i style="width:'+w+'%;background:'+(a&&a.m>0?C.up:C.dn)+'"></i></div>'
+  +'<div class="mrow"><span>最佳</span><b class="up">'+(s.best?s.best.code.slice(0,9)+' '+fmt(s.best.ret)+'%':'—')+'</b></div>'
+  +'<div class="mrow"><span>最差</span><b class="dn">'+(s.worst?s.worst.code.slice(0,9)+' '+fmt(s.worst.ret)+'%':'—')+'</b></div>'
+  +'<div class="mtags">'+facHtml+'</div>'
+  +(secHtml?'<div class="mtags">'+secHtml+'</div>':'')
+  +'<div class="mgo">进入逐日 →</div></div>'}).join('')+'</div>';}
 function renderDays(ym){
  const ds=byMonth[ym.slice(0,6)]||[];
  view.innerHTML='<div class="daysgrid">'+ds.map(d=>{
