@@ -33,6 +33,31 @@ def serve():
     return httpd
 
 
+def _pool_sector_days():
+    """结构池 / 板块层各自的数据日（字段口径不同，勿读 mtime）。
+
+    pool_state_*.json 用 data_asof，sector_state_*.json 用 asof。板块指数链
+    04:33 更新 D-1、个股日线 16:47 更新 D，18:30 流水线跑完板块层必然落后
+    一天；此时详情页「所属板块」整块按设计不渲染（跨天配对会造出没有同时
+    发生过的共振），这不是 404/403 缺陷。11-11 验收门据此区分设计内 skip
+    与真缺陷。
+    """
+    import glob
+    import json
+
+    out = []
+    for prefix, key in (("pool_state", "data_asof"), ("sector_state", "asof")):
+        fs = sorted(
+            glob.glob(os.path.join(os.path.dirname(ROOT), "reports", prefix + "_2*.json"))
+        )
+        try:
+            with open(fs[-1], encoding="utf-8") as f:
+                out.append(str(json.load(f).get(key)))
+        except Exception:
+            out.append(None)
+    return out[0], out[1]
+
+
 def main():
     if not os.path.isdir(ROOT):
         print("[fail] 没有发布目录 %s，先跑 h5_pack.py" % ROOT)
@@ -125,8 +150,20 @@ def run_case(base, qs, expect_sc):
         # ③ 点「所属板块」—— 线上曾经在这里 404 / 403
         srow = pg.query_selector("a.srow")
         if not srow:
-            print("[!!] 详情页没有「所属板块」，没法验深链")
-            ok = False
+            pool_day, sec_day = _pool_sector_days()
+            if pool_day and sec_day and pool_day != sec_day:
+                # 设计内跨天：板块层 T+1 晨更恒落后一天，「所属板块」整块不渲染。
+                # 首页板块入口的 sharecode 透传已在 [1b] 验过，此处不重复点。
+                print(
+                    "[skip] 板块层 T+1 落后（pool=%s sector=%s）→ 所属板块按设计不显示；"
+                    "首页板块入口 sharecode 透传已由 [1b] 验证" % (pool_day, sec_day)
+                )
+            else:
+                print(
+                    "[!!] 详情页没有「所属板块」，且非跨天设计内（pool=%s sector=%s）"
+                    % (pool_day, sec_day)
+                )
+                ok = False
         else:
             href = srow.get_attribute("href")
             print("[2] 所属板块 href =", href[:88])

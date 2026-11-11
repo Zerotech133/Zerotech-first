@@ -7,7 +7,8 @@ include）+ WAF 挑战自愈（reload 重武装）+ 405/WAF 停轮 + 只读 GET 
 sortId=2 最新优先）。
 
 产物：data/xq_timeline/{code}.jsonl（append，按 status_id 去重）。
-字段：id/code/name/ts/text/title/user_id/view/like/comment/reply。
+字段：id/code/symbol/ts/text/title/user_id/view/like/reply/link/src
+（link 为雪球 permalink 溯源字段，2026-11-11 L3 补；存量由 xq_backfill_link.py 幂等回填）。
 
 CLI：
   python xq_stock_timeline.py --queue actionable   # 65 只先验
@@ -29,6 +30,7 @@ from xq_kol import PROFILE_DIR, PROFILE_FALLBACK
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(HERE, "data", "xq_timeline")
 QUEUE_F = os.path.join(HERE, "target_queue_chanlun.json")
+REG_F = os.path.join(HERE, "selection_universe.json")
 PAGES = 2
 COUNT = 20
 _BODY_CAP = 800
@@ -56,6 +58,7 @@ async (arg) => {
               like_count: s.like_count || 0,
               reply_count: s.reply_count || 0,
               retweet_count: s.retweet_count || 0,
+              link: ('https://xueqiu.com/' + ((s.user && s.user.id) ? s.user.id : 'status') + '/' + s.id),
             }))};
   } catch (e) {
     return {err: 'WAF_CHALLENGE ' + String(e).slice(0, 80)};
@@ -78,24 +81,57 @@ def _ms_to_cst(ms):
         return ""
 
 
-def load_queue(scope):
-    cfg = json.load(open(QUEUE_F, encoding="utf-8"))
-    items = cfg.get(scope) or cfg.get("all") or []
-    codes = {i["code"].split(".")[0] for i in items}
-    # 侯风桥(HOUFENG)：并集合并侯风选股队列，纯增量，不削减现有缠论队列覆盖
-    hfq = os.path.join(HERE, "target_queue_houfeng.json")
-    if os.path.exists(hfq):
-        try:
+def _codes_from_source(src):
+    """从注册表声明的某个选股源抽取 6 位代码集合。"""
+    f = src.get("file", "")
+    path = f if os.path.isabs(f) else os.path.join(HERE, f)
+    if not os.path.exists(path):
+        # 回退到 aios 仓库根（如 research/... 相对路径）
+        alt = os.path.join(os.path.dirname(HERE), f)
+        if os.path.exists(alt):
+            path = alt
+        else:
+            return set()
+    try:
+        cfg = json.load(open(path, encoding="utf-8"))
+    except Exception:
+        return set()
+    code_field = src.get("code_field")
+    if code_field:  # 如 S12 篮子用 ts_code
+        items = cfg.get(src.get("scope") or "basket") or cfg.get("basket") or []
+        return {str(b.get(code_field, "")).split(".")[0] for b in items if b.get(code_field)}
+    pool = src.get("pool")
+    if pool and pool in cfg:  # 如 houfeng candidate_pool
+        items = cfg[pool]
+    else:
+        scope = src.get("scope")
+        items = cfg.get(scope) or cfg.get("all") or []
+    return {str(i.get("code", "")).split(".")[0] for i in items if i.get("code")}
+
+
+def load_queue(scope="all"):
+    """B 注册表架构：只读 selection_universe.json，并集所有 xq_include=true 的源。
+
+    各源自带 scope/pool/code_field 声明，本函数不再硬编码任何队列特判
+    （原 houfeng/cohorts 特判已移除）。scope 参数保留兼容 CLI，但并集范围
+    由各源注册声明决定（日常 07:00 即全量并集）。
+    """
+    if not os.path.exists(REG_F):
+        # 兜底：旧行为（仅缠论 + 侯风选股），避免注册表缺失时管线断流
+        cfg = json.load(open(QUEUE_F, encoding="utf-8"))
+        items = cfg.get("all") or []
+        codes = {i["code"].split(".")[0] for i in items}
+        hfq = os.path.join(HERE, "target_queue_houfeng.json")
+        if os.path.exists(hfq):
             hc = json.load(open(hfq, encoding="utf-8"))
-            hitems = hc.get(scope) or hc.get("all") or []
-            codes |= {i["code"].split(".")[0] for i in hitems}
-            # 候选池(影子池全量)默认不并入 07:00 有头采集管线；
-            # 开关 xq_include_candidates 由上级裁定后置 true 才生效（489 -> 593）
-            if hc.get("xq_include_candidates") is True:
-                ext = hc.get("candidate_pool") or []
-                codes |= {i["code"].split(".")[0] for i in ext}
-        except Exception:
-            pass
+            codes |= {i["code"].split(".")[0] for i in (hc.get("all") or [])}
+        return sorted(codes)
+    reg = json.load(open(REG_F, encoding="utf-8"))
+    codes = set()
+    for key, src in reg.get("sources", {}).items():
+        if not src.get("xq_include"):
+            continue
+        codes |= _codes_from_source(src)
     return sorted(codes)
 
 
@@ -119,7 +155,7 @@ def main():
     if args.codes:
         codes = [c.strip() for c in args.codes.split(",") if c.strip()]
     else:
-        scope = args.queue or "actionable"
+        scope = args.queue or "all"
         codes = load_queue(scope)
     print("[xq_tl] 标的 %d 只，每只 %d 页 x %d 条" % (
         len(codes), args.pages, COUNT), flush=True)
@@ -186,6 +222,7 @@ def main():
                                "view": it.get("view_count"),
                                "like": it.get("like_count"),
                                "reply": it.get("reply_count"),
+                               "link": it.get("link"),
                                "src": "xq.stock_timeline"}
                         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                         new += 1

@@ -263,6 +263,8 @@ def _ensure_market_loaded(progress=None):
 
 def regime_of(day):
     """返回 (档位, 判定说明)。仓位帽由 BacktestConfig.cap_of(档位) 决定（295 三档可配）。"""
+    if idx_nav is None:  # 11-11 回归：合成夹具/装载失败不硬崩
+        return "mid", "指数净值缺失·中性档（soft 降级）"
     i = idx_nav.index.get_loc(day)
     if i == 0:
         return "mid", "首日默认"
@@ -283,6 +285,8 @@ def regime_tier_of(day):
     但这两年 high 档内部的行情强度差了三倍——牛市跑输的缺口就在这里。五档让
     「强的时候敢满仓、刚转强的时候先半仓」，而不是一刀切。
     """
+    if idx_nav is None:  # 11-11 回归：五档与三档同口径降级
+        return 2, "指数净值缺失·中性档（soft 降级）"
     i = idx_nav.index.get_loc(day)
     if i == 0:
         return 2, "首日默认"

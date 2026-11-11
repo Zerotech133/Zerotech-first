@@ -25,12 +25,12 @@ import start_tuned_ollama as sto  # noqa: E402
 
 
 TUNED_FULL = {
-    # 与 start_tuned_ollama.TUNED_ENV 对齐（2026-10-24 全仓收口：FLASH 布尔归一 1、ctx 16384、并行 2→1）
+    # 与 start_tuned_ollama.TUNED_ENV 对齐（2026-10-24 全仓收口：FLASH 布尔归一 1、ctx 32768、并行 2→1）
     "OLLAMA_FLASH_ATTENTION": "1",
     "OLLAMA_KV_CACHE_TYPE": "q8_0",
     "OLLAMA_IGPU_ENABLE": "1",
     "OLLAMA_VULKAN": "1",  # 2026-10-24 第 7 项：缺它则 iGPU 不生效
-    "OLLAMA_CONTEXT_LENGTH": "16384",
+    "OLLAMA_CONTEXT_LENGTH": "32768",
     "OLLAMA_KEEP_ALIVE": "30m0s",
     "OLLAMA_NUM_PARALLEL": "1",  # qwen35 不支持并行请求，10-24 起定版 1
 }
@@ -117,7 +117,7 @@ def test_server_config_picks_newest_by_timestamp(tmp_path, monkeypatch):
 
     cfg, src, ts = sto.server_config()
     assert src == fresh, "必须选时间戳最新的文件，而不是候选顺序第一个"
-    assert cfg["OLLAMA_CONTEXT_LENGTH"] == "16384"
+    assert cfg["OLLAMA_CONTEXT_LENGTH"] == "32768"
     assert sto.tuned_deviations(cfg) == []
 
 
@@ -137,7 +137,7 @@ def test_server_config_finds_head_of_big_log(tmp_path, monkeypatch):
     monkeypatch.setattr(sto, "CONFIG_LOG_CANDIDATES", [big])
 
     cfg, _, _ = sto.server_config()
-    assert cfg.get("OLLAMA_CONTEXT_LENGTH") == "16384", "config 行在开头也必须找到"
+    assert cfg.get("OLLAMA_CONTEXT_LENGTH") == "32768", "config 行在开头也必须找到"
 
 
 def test_server_config_empty_when_no_log(tmp_path, monkeypatch):

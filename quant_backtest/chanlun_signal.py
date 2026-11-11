@@ -54,6 +54,7 @@ from chanlun_bi import analyze as _az, _bi_h, _bi_l
 from chanlun_macd import macd_series, divergence as _macd_div
 from chanlun_flow import volume_confluence as _vol_cf
 from chanlun_trend import trend_beichi as _trend_beichi
+from chanlun_beichi24 import trend_beichi24 as _trend_beichi24, panzheng_beichi24 as _pz_beichi24
 
 # P5：回踩/反抽笔力度 < 离开笔力度 × 该比例 → 盘整背驰（影子评估阈值，
 # 未经可成交口径复评不启用拦截）
@@ -269,6 +270,20 @@ def analyze(bars):
                 s["mbei"], s["mfv"] = _macd_div(bars, st["bis"], s, ms)
                 # P6-c：教学完整版趋势背驰（双中枢+末段力度衰减）
                 s["tbe"], s["tfv"] = _trend_beichi(st["bis"], st["pivots"], s)
+                # 24 课正宗趋势背驰（MACD 柱面积 + B 段 0 轴校验，2026-11-10
+                # 老田批准落地）：与力度版 tbe 并行影子、不互相推翻
+                try:
+                    s["tbe24"], s["tfv24"] = _trend_beichi24(
+                        bars, st["bis"], st["pivots"], s, ms
+                    )
+                except Exception:
+                    s["tbe24"], s["tfv24"] = None, None
+            if s["type"] in ("3买", "3卖"):
+                # 24 课盘整背驰（MACD 面积版，与力度版 bei/bei2 并行）
+                try:
+                    s["bei24"], s["fv24"] = _pz_beichi24(bars, st["bis"], s, ms)
+                except Exception:
+                    s["bei24"], s["fv24"] = None, None
             # P8-a：全部信号附量能共振（缩量）影子标注
             s["vv"], s["vv_ev"] = _vol_cf(bars, st["bis"], s)
         # P2 K线形态共振影子标注（K172→K175，仅标注不拦截）：

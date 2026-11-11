@@ -41,7 +41,9 @@ import sys
 import time
 
 # ── 常量 ─────────────────────────────────────────────────────
-XQ_ROOT = r"C:\aios\quant_backtest"
+# 路径约定（R3 修复 2026-11-10）：env AIOS_ROOT 优先，默认 C:\aios 兜底，
+# 与 tools/intel_source_health.py 同款约定；原写死 C:\aios\quant_backtest 已拆分。
+XQ_ROOT = os.path.join(os.environ.get("AIOS_ROOT", r"C:\aios"), "quant_backtest")
 PROFILE_DIR = os.path.join(XQ_ROOT, "tmp", "xq_auto_login_profile")
 PROFILE_FALLBACK = os.path.join(XQ_ROOT, "data", "xueqiu", "_headed_profile")
 

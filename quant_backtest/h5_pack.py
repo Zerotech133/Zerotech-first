@@ -136,7 +136,8 @@ def verify(strict=True):
         log("[fail] 缺门面 index.html")
         return False
     htxt = open(home, encoding="utf-8", errors="ignore").read()
-    cards = re.findall(r'<a class="card" href="([^"]+)"', htxt)
+    # hero 大卡也是 class="card ..."（card hero），放宽匹配
+    cards = re.findall(r'<a class="card[^"]*" href="([^"]+)"', htxt)
     miss = [c for c in cards if c.split("?")[0] not in have]
     if miss:
         for c in miss[:6]:

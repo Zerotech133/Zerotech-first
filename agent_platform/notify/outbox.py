@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """通知 outbox + 飞书审批卡片生成（默认只落 outbox，不假装发送）。
 
-边界：
-  · 无 webhook 凭据时 send() 返回 webhook_not_configured，消息状态保持 queued；
+路由纪律（老田 2026-11-10 裁定）：
+  · AI↔AI 消息（非审批类）内部闭环：enqueue 时自动转 bridge_inbox
+    （hq/internal_notify/v1，target 席位从标题 "→XXX" 解析，解析不出归口
+    A0 兜底），status=delivered_internal，不进飞书；
+  · 仅人类审批类（approval_card）走飞书 webhook 队列：无凭据时 send()
+    返回 webhook_not_configured，消息状态保持 queued；
   · webhook 从 env `FEISHU_WEBHOOK_URL` 或私密文件读取（不落仓、不打印）；
   · 审批卡片 = 飞书 interactive card JSON（approve/reject 带 request_id value）；
   · 所有消息留痕：data/outbox/*.json + index.jsonl，可审计。
@@ -12,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.request
 import uuid
@@ -37,9 +42,24 @@ WEBHOOK_CANDIDATES = [
     REPO / "_vault" / "secrets" / "feishu_webhook.txt",
 ]
 
+# 路由纪律：仅这些 kind 需要人类审批 → 飞书；其余 AI↔AI 消息内部闭环
+HUMAN_APPROVAL_KINDS = {"approval_card"}
+_TARGET_SEAT_RE = re.compile(r"→\s*([A-Za-z][A-Za-z0-9_]{1,31})")
+_HR = PLATFORM / "hr"
+
 
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+
+def _resolve_target_seat(title: str) -> tuple[str, bool]:
+    """从标题解析目标席位（→XXX），校验 hr/ 目录存在；解析不出或席不存在
+    归口 A0 兜底（OS 骨架口径：分级判定在归口席）。返回 (seat, fell_back)。"""
+    m = _TARGET_SEAT_RE.search(title or "")
+    seat = m.group(1).upper() if m else ""
+    if seat and (_HR / seat).is_dir():
+        return seat, False
+    return "A0", True
 
 
 def _webhook() -> str:
@@ -73,6 +93,44 @@ def enqueue(
         "sent_at": None,
         "card": card,
     }
+    route_note = ""
+    if kind not in HUMAN_APPROVAL_KINDS:
+        # AI↔AI 消息：内部 bridge_inbox 闭环，不进飞书（老田 2026-11-10 裁定）
+        seat, fell_back = _resolve_target_seat(rec["title"])
+        try:
+            from gateway import inbox_gateway  # noqa: WPS433 惰性导入防环
+
+            sub = inbox_gateway.submit(
+                kind="question",
+                payload={
+                    "schema": "hq/internal_notify/v1",
+                    "target": seat,
+                    "title": rec["title"],
+                    "body": rec["body"],
+                    "actor": "zhaoyun-outbox",
+                    "origin_kind": kind,
+                    "created_at": rec["created_at"],
+                },
+                source="notify.outbox",
+                idempotency_key=mid,
+            )
+            data = sub.get("data") or {}
+            rec.update(
+                {
+                    "channel": "internal_bridge",
+                    "status": "delivered_internal",
+                    "delivered_to": seat,
+                    "delivered_at": rec["created_at"],
+                    "bridge_msg_id": data.get("id"),
+                }
+            )
+            route_note = (
+                "target=%s%s bridge=%s"
+                % (seat, "(A0兜底)" if fell_back else "", data.get("id"))
+            )
+        except Exception as e:  # noqa: BLE001 路由失败退回飞书队列，不丢消息
+            rec["routing_error"] = "%s: %s" % (type(e).__name__, str(e)[:160])
+            route_note = "routing_failed->queued_feishu"
     (OUTBOX / (mid + ".json")).write_text(
         json.dumps(rec, ensure_ascii=False, indent=1), encoding="utf-8"
     )
@@ -83,8 +141,10 @@ def enqueue(
                     "id": mid,
                     "kind": kind,
                     "title": rec["title"],
-                    "status": "queued",
+                    "status": rec["status"],
+                    "channel": rec["channel"],
                     "created_at": rec["created_at"],
+                    "note": route_note,
                 },
                 ensure_ascii=False,
             )
@@ -99,6 +159,14 @@ def send(mid: str, timeout: float = 10.0) -> dict:
         rec = json.loads(p.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return {"ok": False, "error": "message_not_found", "id": mid}
+    if rec.get("channel") == "internal_bridge":
+        return {
+            "ok": False,
+            "error": "not_feishu_bound",
+            "id": mid,
+            "status": rec.get("status"),
+            "note": "AI↔AI 消息已内部闭环（bridge_inbox），不经飞书",
+        }
     hook = _webhook()
     if not hook:
         return {

@@ -1,0 +1,35 @@
+meta:
+  exp_id: P70
+  layer: 事件驱动-龙虎榜资金跟随
+  hypothesis: 龙虎榜净买入前10%的票,次日起5个交易日可获超额
+  created: '2026-11-11'
+  status: draft
+  verdict: null
+cap:
+  method: spread
+  upper_bound_pct: TODO
+  cost_pct: TODO
+  basis: TODO 哪张表 / 哪段窗口 / 多少只票，例如 ts_daily 20240101-20261110 全A
+  inputs:
+    quantiles: 10
+    holding_days: TODO
+    spread_gross_pct: TODO
+    cost_note: 双边佣金+印花+冲击，A股默认 0.30pct
+  note: 完美分层毛收益法：先算不扣成本的最优分位多空差，再减 cost_pct。净上限 <= 0 就该弃，因为再怎么调参也变不成钱。
+abandon:
+  threshold_pct: TODO
+  rationale: TODO 例如 净上限低于 0.5pct/年（无风险利率一半）就弃
+falsify:
+  if_true:
+  - TODO 带数值，例：按信号分 10 档，单调性 |rho| >= 0.8
+  - TODO 带数值，例：IS 与 OOS 符号一致且 OOS t >= 2.0
+  if_false:
+  - TODO 带数值，例：分档倒 U 或 rho 符号与预期相反
+  monotonicity_rho_min: TODO
+  t_min: TODO
+  is_oos_sign_agree: true
+  sample_note: TODO 至少多少笔 / 多少个截面才算有效样本
+selfcheck:
+  reference: TODO 拿哪个已知结果反证（例：P67 的 maxret20 IC=-0.0668）
+  tolerance_pct: TODO 允许偏差百分比，建议 5
+  note: 强烈建议填。P69 首版 IC 差 4.5 倍，是靠 P67 已知因子反证才发现的；没有参照物的新实现，大概率带着口径错误产出'看起来有结论'的结果。

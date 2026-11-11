@@ -295,7 +295,9 @@ def test_contract_doc_exists():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
-    doc = root / "docs" / "plans" / "2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md"
+    # 2026-11-10 大归档（8aa5a827a）把 372 份历史计划迁入 _archive_20261110/（含本契约，冻结只读）；
+    # 测试同步改指归档路径，契约本体与签认标记未动（11-11 修复）。
+    doc = (root / "docs" / "plans" / "_archive_20261110" / "2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md")
     assert doc.is_file(), "契约草案缺失：%s" % doc
     text = doc.read_text(encoding="utf-8")
     assert "v1.0" in text and "签认" in text

@@ -23,7 +23,7 @@ def _main_repo() -> Path:
     try:
         r = subprocess.run(
             ["git", "-C", str(PLATFORM), "rev-parse", "--git-common-dir"],
-            capture_output=True, text=True, timeout=30)
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
         if r.returncode == 0 and r.stdout.strip():
             common = Path(r.stdout.strip())
             if not common.is_absolute():

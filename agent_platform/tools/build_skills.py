@@ -100,7 +100,7 @@ def _main_repo():
     # 在 worktree 里运行时，verify 应针对主仓（部署态），而不是临时 worktree
     try:
         r = subprocess.run(["git", "-C", str(HERE.parent), "rev-parse",
-                            "--git-common-dir"], capture_output=True, text=True,
+                            "--git-common-dir"], capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=30)
         if r.returncode == 0 and r.stdout.strip():
             common = Path(r.stdout.strip())

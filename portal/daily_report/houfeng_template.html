@@ -150,7 +150,7 @@ td{padding:7px 8px;border-bottom:1px solid #21262d;text-align:right;font-variant
     </div></div></div>
     <div class="card"><div class="row" style="padding:0"><div class="n">
       <b>降级线</b>
-      <small>生产池滚动超额只报数值。要不要降级、降到哪，由人工裁定，台账不自动动手。</small>
+      <small>看生产池最近 20 个已结算样本：超额均值低于 −1.0 个百分点、且跑赢占比低于 40%，两条同时满足就标「已触发建议降级」；样本不足 10 个只标「样本不足，暂不判定」。机制只报警，降不降、降到哪由人工裁定。</small>
     </div></div></div>
     <div class="foot"><b>来源：候风验证池台账与结算流水（路径见证据抽屉）</b></div>
     <div class="foot" style="margin-top:6px"><b>模拟盘数据 · 不构成投资建议 · 生成时间见页首</b></div>
@@ -185,7 +185,7 @@ var pp = function(v){
   return (v > 0 ? '+' : '') + (v*100).toFixed(2) + 'pp';
 };
 var md = function(d){ d = String(d||''); return d.length === 8 ? d.slice(4,6) + '-' + d.slice(6,8) : d; };
-var POOL_LABEL = {main:'主选（三条全中）', auto:'生产池'};
+var POOL_LABEL = {main:'主选（多因子共识）', auto:'生产池'};
 
 function need(path){
   var cur = D, parts = path.split('.');
@@ -252,6 +252,11 @@ function renderCohorts(){
       + (done ? '。' + done : '') + '</small></div>'
       + pill + '<span class="go">›</span></div></div>';
   });
+  // 「多因子共识」的门槛要写出来，否则读者不知道共识指的是几个因子
+  if (cs.some(function(c){ return c.pool === 'main'; })) {
+    h += '<div class="note"><b>「主选·多因子共识」的门槛：</b>'
+      + '至少 2 个因子同时看多才入选，不是 3 个同时命中。</div>';
+  }
   $('cohortList').innerHTML = h;
 }
 
@@ -298,8 +303,20 @@ function renderSettle(){
   }
   // 滚动超额
   var rl = D.rolling || {};
-  var ks = Object.keys(rl);
+  // 只取数字键（持有天数）；_degrade 是降级线判定对象，不能当桶遍历
+  var ks = Object.keys(rl).filter(function(k){ return /^[0-9]+$/.test(k); });
+  var dg = rl._degrade || null;
   var rh = '';
+  function dgNote(){
+    if(!dg) return '';
+    var txt = {ok:'未触发', warn:'预警', BREACH:'已触发建议降级', insufficient:'样本不足，暂不判定'};
+    var col = {ok:'var(--ok)', warn:'var(--warn)', BREACH:'var(--bad)', insufficient:'#8b949e'}[dg.status] || '#8b949e';
+    return '<div class="note" style="border-left-color:' + col + '">'
+      + '<b style="color:' + col + '">降级线：' + (txt[dg.status] || dg.status) + '</b>　'
+      + '最近 ' + dg.n + ' 个已结算样本，超额均值 '
+      + (dg.mean_pp > 0 ? '+' : '') + dg.mean_pp.toFixed(2) + 'pp，跑赢占比 '
+      + dg.win.toFixed(0) + '%。<br>' + dg.line + '</div>';
+  }
   if(!ks.length){
     rh = '<div class="note"><b>还没攒够已结算样本。</b>各持有天数积累几批之后，这里给出滚动汇总。</div>';
   } else {
@@ -314,6 +331,7 @@ function renderSettle(){
       + '<div class="note"><b>这一行是生产池（auto）的体检表。</b>'
       + '连续为负说明筛选该降温——但降不降、怎么降由人工裁定，台账只报数不动手。</div>';
   }
+  rh += dgNote();
   $('rollingBox').innerHTML = rh;
 }
 

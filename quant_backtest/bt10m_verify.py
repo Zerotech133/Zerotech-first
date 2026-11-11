@@ -20,6 +20,10 @@ T+1 开盘成交 · 单边成本扣买卖各一次），只改窗口 / 规则 / 
   python bt10m_verify.py D E             # 只跑指定配置（按编号）
   python bt10m_verify.py --in-only
 产出：reports/bt10m_verify_1y.json（增量落盘）
+
+⚠ 命名区分（2026-11-10）：本脚本是「换一年数据」的策略验证工具；
+「执行口径/内核变更后的回归验证入口」是 bt10m_exec_verify.py（selftest +
+固化 selfcheck + 7 腿 NAV 对表），两者用途不同，别拿错。
 """
 import json
 import math

@@ -1,6 +1,6 @@
 {
   "asof": "houfeng_pick",
-  "generated_at": "2026-11-10T15:59:55",
+  "generated_at": "2026-11-11T07:58:33",
   "regime": "houfeng_strategy_picks",
   "total": 30,
   "all": [
@@ -682,6 +682,6 @@
     }
   ],
   "candidate_pool_signal_date": "20261106",
-  "xq_include_candidates": false,
-  "xq_expand_note": "开关置 true 后 load_queue 会并入 candidate_pool；当前 all=489，并入后 593（净增 104 只有头采集），须上级裁定"
+  "xq_include_candidates": true,
+  "xq_expand_note": "R8 已批准：开关置 true，selection_universe.json 中 houfeng_candidates164.xq_include=true，07:00 有头管线 489→并入候选池后并集 647（含两池）"
 }

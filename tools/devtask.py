@@ -1439,6 +1439,9 @@ def cmd_new(tid=None, *desc):
     branch = "task/" + tid
     wt = os.path.join(WT_DIR, tid)
     _git("worktree", "add", wt, "-b", branch)
+    # 2026-11-07 WO-GUANYU-DATASEED-20261106：gitignored 运行数据种子（缺失才复制；
+    # 失败只 warn 不阻断开单）——避免合并质量闸因缺 catalog/注册表/xueqiu 库假失败。
+    _seed_worktree_data(wt)
     rec = {"desc": desc, "branch": branch, "worktree": wt,
            "status": "doing", "created": time.strftime("%F %T"),
            "project": project,
@@ -1624,6 +1627,47 @@ def _resolve_main_repo(repo=None):
                     or os.path.isdir(os.path.join(parent, "portal"))):
                 return parent
     return repo
+
+
+# 2026-11-07 WO-GUANYU-DATASEED-20261106：worktree 数据种子（gitignored 运行数据）。
+# 背景：B4 修复合并第 2/3 次失败=新建 worktree 缺这些只读运行数据 → portal/datawarehouse
+# 测试假失败；第 4 次=dataset_registry.REPO 硬编码漂移。种子只读复制、不覆盖、缺失源仅 warn。
+WT_SEED_FILES = (
+    os.path.join("quant_backtest", "data", "catalog.json"),
+    os.path.join("quant_backtest", "data", "warehouse_registry.json"),
+    os.path.join("quant_backtest", "data", "xueqiu", "xueqiu_info.db"),
+)
+
+
+def _seed_worktree_data(wt, repo=None):
+    """把主仓 gitignored 运行数据复制进新 worktree（缺失才复制；失败只 warn）。
+
+    返回 [(相对路径, 状态)]，状态 ∈ copied / exists / missing-source / error。
+    只读源仓、不覆盖既有文件；任何异常不阻断开单（质量闸自带数据缺失败可见）。
+    """
+    src_repo = _resolve_main_repo(repo or REPO)
+    out = []
+    for rel in WT_SEED_FILES:
+        dst = os.path.join(wt, rel)
+        if os.path.exists(dst):
+            out.append((rel, "exists"))
+            continue
+        src = os.path.join(src_repo, rel)
+        if not os.path.isfile(src):
+            print("[warn] worktree 数据种子源缺失：%s" % src, file=sys.stderr)
+            out.append((rel, "missing-source"))
+            continue
+        try:
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy2(src, dst)
+        except OSError as exc:  # noqa: BLE001 - 种子失败不阻断开单
+            print("[warn] worktree 数据种子复制失败：%s -> %s（%s）"
+                  % (src, dst, exc), file=sys.stderr)
+            out.append((rel, "error"))
+            continue
+        out.append((rel, "copied"))
+        print("[info] worktree 数据种子已复制：%s" % rel)
+    return out
 
 
 def _audit_worktrees(repo=None):

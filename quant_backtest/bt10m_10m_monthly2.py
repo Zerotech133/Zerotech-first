@@ -93,185 +93,20 @@ def sell_cat(how):
 
 
 def sim_m(method, k, days, legq, buy_recs):
-    """单腿模拟（内核同 cand.sim，逐日额外累积月度持仓/手法台账）。"""
-    cash = float(CAPITAL)
-    pos = {}
-    last_ratio = {}
-    eq_curve = []
-    impact_yuan = 0.0
-    fees_total = 0.0
-    min_cash = CAPITAL
-    carry = []
-    buys_by_day = {}
-    for b in buy_recs:
-        buys_by_day.setdefault(b["day"], []).append(b)
-    legs_by_day = {}
-    for (s, bd), legs in legq.items():
-        for lg in legs:
-            legs_by_day.setdefault(lg["sday"], []).append((s, bd, lg))
-
-    def new_m(mk):
-        return {"deploy_sum": 0.0, "days": 0, "max_deploy": 0.0,
-                "n_buy": 0, "sells": {"止损": 0, "止盈": 0, "到期": 0, "规则": 0},
-                "turnover": 0.0, "fees": 0.0, "n_carry": 0, "n_downsize": 0,
-                "holdings_eom": 0, "deploy_eom": 0.0}
-
-    months = {}
-    cur_mk = None
-    m = None
-
-    for d in days:
-        mk = d[:6]
-        if mk != cur_mk:
-            if m is not None:
-                m["holdings_eom"] = len(pos)
-            cur_mk, m = mk, new_m(mk)
-            months[mk] = m
-
-        # ---- 卖出尾巴 ----
-        still = []
-        for (s, sh_left, eraw, eadj) in carry:
-            xa, xr = eng.px(s, d, "open"), eng.px_raw(s, d, "open")
-            if not (xa and xr):
-                still.append((s, sh_left, eraw, eadj))
-                continue
-            da = day_amount(s, d) or sh_left * xr * 100
-            sh_now = sh_left
-            if method == "M1_liqcap1":
-                sh_now = math.floor(min(sh_left * xr, LIQ_CAP * da) / xr / LOT) * LOT
-            if sh_now <= 0:
-                still.append((s, sh_left, eraw, eadj))
-                continue
-            part = sh_now * xr / da
-            imp = impact_bp(k, part) / 10000.0
-            gross = sh_now * eraw * (xa / eadj)
-            cash += gross * (1 - imp) - fee_sell(gross)
-            impact_yuan += gross * imp
-            fees_total += fee_sell(gross)
-            m["turnover"] += gross
-            m["fees"] += fee_sell(gross)
-            if sh_now < sh_left:
-                still.append((s, sh_left - sh_now, eraw, eadj))
-                m["n_carry"] += 1
-        carry = still
-
-        # ---- 卖出腿 ----
-        for (s, bd, lg) in legs_by_day.get(d, []):
-            if s not in pos:
-                continue
-            sh_total = sum(t["sh"] for t in pos[s])
-            if sh_total <= 0:
-                continue
-            eadj = pos[s][0]["entry_adj"]
-            cat = sell_cat(lg["how"])
-            if lg["how"].startswith("take_profit"):
-                ratio = (1 + TP_PCT) * (1 - TP_SLIP)
-                if lg["how"] == "take_profit_rearm":
-                    ratio *= (1 + 0.20) * (1 - TP_SLIP)
-                sh_sell = int(round(lg["frac"] * sh_total / LOT) * LOT)
-                sh_sell = min(sh_sell, sh_total)
-                if sh_sell <= 0:
-                    continue
-                _, raw_avg, _ = _take_shares(pos, s, sh_sell)
-                gross = sh_sell * raw_avg * ratio
-                cash += gross - fee_sell(gross)
-                fees_total += fee_sell(gross)
-                m["turnover"] += gross
-                m["fees"] += fee_sell(gross)
-            else:
-                xa, xr = eng.px(s, d, "open"), eng.px_raw(s, d, "open")
-                if not (xa and xr):
-                    continue
-                da = day_amount(s, d) or 1e12
-                is_final = lg is legq[(s, bd)][-1]
-                if is_final:
-                    sh_sell = sh_total
-                else:
-                    sh_sell = int(round(lg["frac"] * sh_total / LOT) * LOT)
-                    sh_sell = min(sh_sell, sh_total)
-                if sh_sell <= 0:
-                    continue
-                sh_taken, raw_avg, _ = _take_shares(pos, s, sh_sell)
-                if method == "M1_liqcap1":
-                    sh_now = math.floor(min(sh_taken * xr, LIQ_CAP * da) / xr / LOT) * LOT
-                    sh_now = min(sh_now, sh_taken)
-                else:
-                    sh_now = sh_taken
-                if sh_now <= 0:
-                    carry.append((s, sh_taken, raw_avg, eadj))
-                    m["n_carry"] += 1
-                    continue
-                part = sh_now * xr / da
-                imp = impact_bp(k, part) / 10000.0
-                gross = sh_now * raw_avg * (xa / eadj)
-                cash += gross * (1 - imp) - fee_sell(gross)
-                impact_yuan += gross * imp
-                fees_total += fee_sell(gross)
-                m["turnover"] += gross
-                m["fees"] += fee_sell(gross)
-                if sh_now < sh_taken:
-                    carry.append((s, sh_taken - sh_now, raw_avg, eadj))
-                    m["n_carry"] += 1
-            m["sells"][cat] += 1
-
-        # ---- 买入 ----
-        for b in buys_by_day.get(d, []):
-            s = b["stock"]
-            if s in pos:
-                continue
-            da = day_amount(s, d)
-            if not da:
-                continue
-            eq_prev = eq_curve[-1] if eq_curve else CAPITAL
-            amt = b["wgt"] / 100.0 * eq_prev
-            if method == "M1_liqcap1":
-                amt = min(amt, LIQ_CAP * da)
-            xr = b["open_raw"]
-            sh = math.floor(amt / xr / LOT) * LOT
-            if sh <= 0:
-                continue
-            spend = sh * xr
-            part = spend / da
-            imp = impact_bp(k, part) / 10000.0
-            cost = spend * (1 + imp) + fee_buy(spend)
-            if cash < cost:
-                sh = math.floor(cash * 0.999 / xr / LOT) * LOT
-                if sh <= 0:
-                    continue
-                spend = sh * xr
-                part = spend / da
-                imp = impact_bp(k, part) / 10000.0
-                cost = spend * (1 + imp) + fee_buy(spend)
-                m["n_downsize"] += 1
-            cash -= cost
-            impact_yuan += spend * imp
-            fees_total += fee_buy(spend)
-            m["turnover"] += spend
-            m["fees"] += fee_buy(spend)
-            pos[s] = [{"sh": sh, "entry_raw": xr, "entry_adj": b["entry_adj"]}]
-            m["n_buy"] += 1
-
-        # ---- 盯市 ----
-        mv = 0.0
-        for s, ts in pos.items():
-            ca = eng.px(s, d, "close")
-            if ca:
-                for t in ts:
-                    last_ratio[s] = ca / t["entry_adj"]
-            for t in ts:
-                mv += t["sh"] * t["entry_raw"] * last_ratio.get(s, 1.0)
-        eq_now = cash + mv
-        eq_curve.append(eq_now)
-        min_cash = min(min_cash, cash)
-        m["days"] += 1
-        if eq_now > 0:
-            dep = mv / eq_now * 100
-            m["deploy_sum"] += dep
-            m["max_deploy"] = max(m["max_deploy"], dep)
-    if m is not None:
-        m["holdings_eom"] = len(pos)
-    return {"eq": eq_curve, "impact_yuan": impact_yuan, "fees": fees_total,
-            "min_cash": min_cash, "months": months}
+    """单腿模拟——2026-11-10 审计后委托 bt10m_sim_core 单一内核
+    （含月度台账；卖出尾巴成交额回退量纲修复在内核里）。"""
+    import bt10m_sim_core as core
+    st = core.simulate(
+        days, legq, buy_recs,
+        px=eng.px, px_raw=eng.px_raw, day_amount=day_amount,
+        capital=CAPITAL, liq_cap=LIQ_CAP, k_bp=k, lot=LOT,
+        tp_ratio=(1 + TP_PCT) * (1 - TP_SLIP),
+        rearm_mult=(1 + 0.20) * (1 - TP_SLIP),
+        method=method,
+    )
+    return {"eq": st["eq"], "impact_yuan": st["impact_yuan"],
+            "fees": st["fees"], "min_cash": st["min_cash"],
+            "months": st["months"]}
 
 
 def main():

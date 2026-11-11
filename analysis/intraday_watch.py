@@ -2194,6 +2194,31 @@ def build_midday_payload(quotes: List[Dict[str, Any]],
         "footer": "研究提示，不构成投资建议",
     }
 
+def midday_due(store: "StateStore",
+               cfg: Optional[Dict[str, Any]] = None,
+               now: Optional[datetime] = None) -> bool:
+    """11:30–14:00 午间简报窗口是否待发（不要求 market_open）。
+
+    11:30 已是上午收盘，午休时段 market_open=False；若仍以 market_open 作为
+    主循环入口条件，午间简报只能等到 13:00 才补发（2026-11-10 首日实测）。
+    这里只做「是否该跑一轮」的轻量判断，真正的开关/时间窗/KV 仍由
+    maybe_midday_summary 复校。
+    """
+    conf = cfg or load_config()
+    cur = now or now_cst()
+    push = conf.get("push") or {}
+    if (not conf.get("midday_brief_enabled", True)
+            or push.get("routes_active") is not True):
+        return False
+    if not is_trading_day(cur):
+        return False
+    at = _parse_hhmm(str(conf.get("midday_time") or "11:30"), dtime(11, 30))
+    if cur.time() < at or cur.time() >= dtime(14, 0):
+        return False
+    if store.get_kv("midday_done:%s" % cur.strftime("%Y-%m-%d")):
+        return False
+    return True
+
 def maybe_midday_summary(store: "StateStore",
                          quotes: List[Dict[str, Any]],
                          pool: List[str],
@@ -2216,8 +2241,6 @@ def maybe_midday_summary(store: "StateStore",
             or push.get("routes_active") is not True):
         return None
     if not quotes:
-        return None
-    if not market_open(now=cur, cfg=conf):
         return None
     at = _parse_hhmm(str(conf.get("midday_time") or "11:30"), dtime(11, 30))
     if cur.time() < at or cur.time() >= dtime(14, 0):
@@ -2496,7 +2519,19 @@ def main(argv: Optional[List[str]] = None) -> int:
                 lock.close()
                 return 0
             try:
-                if market_open(cfg=cfg):
+                is_open = market_open(cfg=cfg)
+                midday_pending = False
+                if not is_open:
+                    _hm = now_cst().time()
+                    # 11:30 已过上午收盘，market_open=False；午间简报要在午休窗口
+                    # 仍允许跑一轮（行情新鲜度门槛会自然挡住隔夜旧价）。
+                    if dtime(11, 30) <= _hm < dtime(14, 0):
+                        _st = StateStore()
+                        try:
+                            midday_pending = midday_due(_st, cfg=cfg)
+                        finally:
+                            _st.close()
+                if is_open or midday_pending:
                     run_once(dry_run=args.dry_run, cfg=cfg, fetch=not args.no_fetch)
                 else:
                     if not args.dry_run:

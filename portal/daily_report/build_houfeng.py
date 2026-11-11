@@ -57,26 +57,33 @@ def build_data() -> dict:
         cs.sort(key=lambda c: (0 if c["pool"] == "main" else 1,
                                -(int(c["asof"] or 0))))
         data["cohorts"] = cs
+        # 滚动超额与降级线：status_latest 里已有就直接用（cohort_track.snap 落盘，
+        # 含 _degrade 判定）。2026-11-11 起口径唯一来源是 cohort_track.rolling_alpha()，
+        # 本文件不再重算，避免两套实现各自漂移。
+        if st.get("rolling"):
+            data["rolling"] = st["rolling"]
 
     se_fp = os.path.join(COHORT_DIR, "settlements.jsonl")
     if os.path.exists(se_fp):
         rows = [json.loads(l) for l in io.open(se_fp, encoding="utf-8")
                 if l.strip()]
         data["settlements"] = rows
-        # 滚动超额（auto 池，按 N 桶）——与 cohort_track.rolling_alpha 同口径
-        agg = {}
-        for r in rows:
-            if r.get("pool") != "auto" or r.get("excess") is None:
-                continue
-            a = agg.setdefault(str(r["n"]), {"list": []})
-            a["list"].append(r["excess"])
-        for n, a in agg.items():
-            ex = a["list"]
-            data["rolling"][n] = {
-                "n": len(ex),
-                "mean_pp": round(sum(ex) / len(ex) * 100, 2),
-                "win": round(sum(1 for x in ex if x > 0) / len(ex) * 100, 0),
-            }
+        # 回退路径：仅当 status_latest.json 还没有 rolling 字段时（旧版快照）才本地自算。
+        # 正常路径走上面 st["rolling"]，不执行这一段。
+        if not data["rolling"]:
+            agg = {}
+            for r in rows:
+                if r.get("pool") != "auto" or r.get("excess") is None:
+                    continue
+                a = agg.setdefault(str(r["n"]), {"list": []})
+                a["list"].append(r["excess"])
+            for n, a in agg.items():
+                ex = a["list"]
+                data["rolling"][n] = {
+                    "n": len(ex),
+                    "mean_pp": round(sum(ex) / len(ex) * 100, 2),
+                    "win": round(sum(1 for x in ex if x > 0) / len(ex) * 100, 0),
+                }
     return data
 
 
