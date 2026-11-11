@@ -22,11 +22,13 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 # ---- 环境 ----
-WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.environ.get("ANALYSIS_MAIN_ROOT") or os.path.dirname(_THIS_DIR)
+WORK = os.environ.get("ANALYSIS_WORK") or os.path.join(os.path.dirname(ROOT), "analysis_work")
 DB = os.environ.get("DIALOG_DB") or os.path.join(WORK, "dialog", "dialog.db")
 GATEWAY = (os.environ.get("ANALYSIS_GATEWAY_URL") or "http://127.0.0.1:8091").rstrip("/")
 TOKEN_FILE = (os.environ.get("ANALYSIS_INTERNAL_TOKEN_FILE")
-              or r"C:\项目\commercial\analysis_internal.token")
+              or os.path.join(ROOT, "commercial", "analysis_internal.token"))
 
 CODE_RE = re.compile(r"^[0-9]{6}\.(SH|SZ|BJ)$")
 RAW_CODE_RE = re.compile(r"(?<!\d)((?:60|68|00|30|92)\d{4})(?!\d)")
