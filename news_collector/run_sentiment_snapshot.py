@@ -20,6 +20,21 @@ _PY311 = r"C:\Program Files\Python311\python.exe"
 PYTHON = _PY311 if os.path.exists(_PY311) else sys.executable
 
 
+def _clean_env():
+    """剔除代理环境变量（判例 #26 直连；T-187 2026-11-11）。
+
+    qianping_collector 等子进程走 requests，挂代理的会话会让其被本地
+    服务代理拦截。生产计划任务无代理变量时此清理幂等。
+    """
+    env = dict(os.environ)
+    for k in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY",
+              "all_proxy", "ALL_PROXY"):
+        env.pop(k, None)
+    env["NO_PROXY"] = "*"
+    env["no_proxy"] = "*"
+    return env
+
+
 def main():
     os.makedirs(os.path.dirname(LOG_F), exist_ok=True)
     lines = ["== run %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
@@ -29,7 +44,8 @@ def main():
             r = subprocess.run(
                 [PYTHON, "-X", "utf8", os.path.join(HERE, script)],
                 cwd=HERE, capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=1800)
+                encoding="utf-8", errors="replace", timeout=1800,
+                env=_clean_env())
             rc = r.returncode
             out = (r.stdout or "").strip()[-500:]
             err = (r.stderr or "").strip()[-800:]

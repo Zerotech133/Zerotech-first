@@ -111,6 +111,17 @@ def load_candidate_pool():
             "n": len(codes)}, None
 
 
+def _clean_env():
+    """剔除代理环境变量（判例 #26 直连；T-187 2026-11-11，对齐 kstock runner）。"""
+    env = dict(os.environ)
+    for k in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY",
+              "all_proxy", "ALL_PROXY"):
+        env.pop(k, None)
+    env["NO_PROXY"] = "*"
+    env["no_proxy"] = "*"
+    return env
+
+
 def run_collector(script, codes, extra=None):
     if not codes:
         return 0
@@ -119,7 +130,8 @@ def run_collector(script, codes, extra=None):
         cmd += extra
     log("→ %s  %d 只: %s" % (script, len(codes), ",".join(codes[:6]) + ("…" if len(codes) > 6 else "")))
     try:
-        r = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True, timeout=1200)
+        r = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True,
+                           timeout=1200, env=_clean_env())
         tail = (r.stdout or "").strip().splitlines()[-3:]
         for ln in tail:
             log("   | %s" % ln)

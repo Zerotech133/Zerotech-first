@@ -25,6 +25,24 @@ LOG = os.path.join(HERE, "logs", "a_supply_check.log")
 DAY = 86400.0
 
 
+def effective_line(base_line):
+    """假日感知断供线（2026-11-11 T-185）。
+
+    周末采集器照跑但无新帖、文件 mtime 不动 → 周日/周一早晨按 1.5d 必误红。
+    规则：当前时刻往前数，最近的一个**工作日**距今 N 个自然日，断供线 =
+    base_line + N（周六查=+1，周日查=+2，周一早=+3 到上午采集后回落）。
+    简化实现：统计过去 3 天内的周末天数（周六/周日各计 1），加到 base_line 上。
+    节假日未接入日历：容忍偶发误红（连续≥2 次再人工校准），不引外部依赖。
+    """
+    extra = 0
+    t = time.localtime()
+    for back in range(1, 4):
+        wd = time.localtime(time.time() - back * DAY).tm_wday  # 5=Sat 6=Sun
+        if wd >= 5:
+            extra += 1
+    return base_line + extra
+
+
 def _days(ts):
     return (time.time() - ts) / DAY
 
@@ -44,8 +62,9 @@ def check_news_db():
     finally:
         con.close()
     d = _days(mt)
+    line = effective_line(1.5)            # 假日感知（T-185）
     return {"source": "news.db", "last_write": mt, "age_days": round(d, 3),
-            "ok": d <= 1.5, "line": "1.5d", "note": "六源新闻聚合库"}
+            "ok": d <= line, "line": "%.1fd" % line, "note": "六源新闻聚合库"}
 
 
 def check_dir(src, path, line=1.5, note=""):
@@ -66,7 +85,7 @@ def check_ann():
         return {"source": "ann_history", "ok": False, "reason": "missing", "line": "7d"}
     mt = os.path.getmtime(p)
     d = _days(mt)
-    # ann 表最新公告日期也读一下（内容水位 vs 文件水位分开记）
+    line = effective_line(7.0)            # 假日感知（T-185）
     try:
         con = sqlite3.connect(p)
         row = con.execute("SELECT MAX(notice_date) FROM ann").fetchone()
@@ -75,27 +94,32 @@ def check_ann():
     except Exception:
         latest_notice = None
     return {"source": "ann_history", "last_write": mt, "age_days": round(d, 3),
-            "ok": d <= 7.0, "line": "7d",
+            "ok": d <= line, "line": "%.1fd" % line,
             "latest_notice_date": latest_notice, "note": "批回填节奏"}
 
 
 def main():
+    line_daily = effective_line(1.5)      # 假日感知（T-185）：周末自动放宽
+    line_ann = effective_line(7.0)
     rows = [
         check_news_db(),
         check_dir("xq_timeline", r"C:/aios/news_collector/data/xq_timeline",
-                  1.5, "雪球个股时间线 07:00 日更"),
+                  line_daily, "雪球个股时间线 07:00 日更"),
         check_dir("guba", r"C:/aios/quant_backtest/data/guba",
-                  1.5, "东财股吧 09:30 TargetQueueIntel"),
+                  line_daily, "东财股吧 09:30 TargetQueueIntel"),
         check_dir("taoguba", r"C:/aios/data/taoguba",
-                  1.5, "淘股吧 三桥+TargetQueueIntel"),
-        check_dir("irm", r"C:/aios/data/irm", 1.5, "互动易 三桥+TargetQueueIntel"),
-        check_dir("sse", r"C:/aios/data/sse", 1.5, "e互动 三桥+TargetQueueIntel"),
+                  line_daily, "淘股吧 三桥+TargetQueueIntel"),
+        check_dir("irm", r"C:/aios/data/irm", line_daily,
+                  "互动易 三桥+TargetQueueIntel"),
+        check_dir("sse", r"C:/aios/data/sse", line_daily,
+                  "e互动 三桥+TargetQueueIntel"),
         check_ann(),
     ]
     n_red = sum(1 for r in rows if not r["ok"])
     out = {
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "checker": "news_collector/a_supply_check.py",
+        "line_daily": line_daily, "line_ann": line_ann,
         "n_sources": len(rows), "n_red": n_red,
         "sources": rows,
     }
