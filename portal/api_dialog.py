@@ -14,10 +14,12 @@ POST（写，需 X-Portal-Token；页面 JS 由 portal_api 自动注入）：
   /api/analysis/dialog/profile  {"followup_enabled":false}
 """
 import json
+import os
 import sys
 from urllib.parse import parse_qs
 
-ROOT = r"C:\项目\老田的AI助手"
+# 项目根由本文件位置推导（本仓对外可见，不写死本机绝对路径；2026-11-11 脱敏）
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAX_BODY = 32 * 1024
 CUSTOMER = "laotian"
 PROFILE_FIELDS = ("followup_enabled",)
