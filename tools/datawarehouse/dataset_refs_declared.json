@@ -1,8 +1,8 @@
 {
   "schema": "dataset_refs_declared/v1",
-  "updated_at": "2026-11-04",
-  "wo": "WO-ACAD1-DATAREFS-20261104",
-  "note": "IFS-POOL F2：D1 6 个 data ref 的显式 dataset registry 登记。能注册的带真实载体（active）；暂未落盘的写 planned 并强制 owner/due（不伪造空账/空文件）。由 tools/datawarehouse/dataset_registry.py 只读加载，dataset_registry_cli resolve-ref 解析。2026-11-04 ACAD1-DATAREFS：ACAD1 research reviews/decisions 的 canonical PG 表（v2_acad1_review / v2_lusu_decision）已入 dataset_registry wave1；本文件对应 file ref 保留 fallback，canonical_ref 只指向真实官方载体。",
+  "updated_at": "2026-11-05",
+  "wo": "WO-ACAD1-DATAREFS-20261104; W1-PILOT-TOOLFIX-20261104",
+  "note": "IFS-POOL F2：D1 6 个 data ref 的显式 dataset registry 登记。能注册的带真实载体（active）；暂未落盘的写 planned 并强制 owner/due（不伪造空账/空文件）。由 tools/datawarehouse/dataset_registry.py 只读加载，dataset_registry_cli resolve-ref 解析。2026-11-04 ACAD1-DATAREFS：ACAD1 research reviews/decisions 的 canonical PG 表（v2_acad1_review / v2_lusu_decision）已入 dataset_registry wave1；本文件对应 file ref 保留 fallback，canonical_ref 只指向真实官方载体。2026-11-05 W1-PILOT-TOOLFIX：新增 dataset/pg 声明两条——v2_bar_daily（物理表，只读 resolve-ref 证据登记）与 v2_zhice_tables（非物理聚合口径，由 9 张 wave1 表支撑、ADR-019 P5 过渡期声明；data-warehouse manifest 契约未改）。",
   "refs": [
     {
       "ref": "dataset/file/recommendation_pool",
@@ -102,6 +102,38 @@
       "due_source": "ROADMAP_v4 W1 组合纳管 11-03~11-16（D1 首笔正式裁决落盘后转 active）",
       "reason": "载体尚未落盘：agent_platform/data/d1_decisions.jsonl 不存在（截至 2026-11-03；v2_lusu_decision 仅 1 行实验数据），不伪造空账。",
       "note": "D1 正式裁决 JSONL（agent_platform/d1_decision.py DEFAULT_LEDGER）；落地后本条目转 active 并补 sha256/行数证据。PG 读模型 dataset/pg/v2_lusu_decision 已入 wave1（owner=D1，仅 1 行实验数据，不冒充正式账；正式账仍以本 file ref 为准）。"
+    },
+    {
+      "ref": "dataset/pg/v2_bar_daily",
+      "dataset_id": "pg_public_v2_bar_daily",
+      "label": "智策 PG 日线（public.v2_bar_daily）",
+      "kind": "pg_table",
+      "path": "pg@127.0.0.1:5446/zhice_os_v2/public.v2_bar_daily",
+      "owner": "DATA1",
+      "status": "active",
+      "authority": "official_pg_table",
+      "canonical_ref": "dataset/pg/v2_bar_daily",
+      "schema_ref": null,
+      "producer_job": "job/zhice-daily-research-ops",
+      "access": "read_only",
+      "declared_at": "2026-11-05",
+      "note": "W1-PILOT-TOOLFIX-20261104：承接 WO-DATA-REG-20261104 的 K5 证据补登记（quant-domain 的 dataset/pg/v2_bar_daily）。只读证据：dataset_registry_cli.py resolve-ref rc=0（physical schema=public table=v2_bar_daily，relkind=r，row_estimate=3,904,132，status=active，available=true，connector_source=jev_common）；catalog.json source=pg/store=pg://zhice-db:5446/zhice_os_v2/v2_bar_daily，verification_status=verified_external、status=registered。owner=DATA1（CLI/登记口径）；如需改 D1 由 DATA1 复核。"
+    },
+    {
+      "ref": "dataset/pg/v2_zhice_tables",
+      "dataset_id": "pg_aggregate_v2_zhice_tables",
+      "label": "智策 PG 表聚合口径（wave1 9 表 + wave2 动态发现）",
+      "kind": "pg_aggregate",
+      "path": "",
+      "owner": "DATA1",
+      "status": "active",
+      "authority": "aggregate_view",
+      "canonical_ref": "dataset/pg/v2_zhice_tables",
+      "schema_ref": null,
+      "producer_job": null,
+      "access": "read_only",
+      "declared_at": "2026-11-05",
+      "note": "W1-PILOT-TOOLFIX-20261104：非物理聚合口径（非物理表，dataset_registry_cli resolve-ref 无物理载体 → declared_missing fail-visible），由 9 张 wave1 已登记物理表（v2_acad1_pool / v2_selection_pool / v2_stock_research / v2_selection_report / v2_strategy_ownership / v2_acad1_review / v2_base_signal / v2_score_component / v2_lusu_decision）支撑；wave2 动态发现需 ZHICE_V2_DSN（dataset_registry_cli resolve-ref）；ADR-019 P5 过渡期声明，严格化时机由 ADR-019 统一裁定。data-warehouse manifest 的 requires 保持原引用不变（数据契约未改，待 DATA1/A0 确认）。"
     }
   ]
 }
