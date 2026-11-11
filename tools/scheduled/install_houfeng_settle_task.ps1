@@ -13,10 +13,14 @@ param([switch]$Apply)
 
 $ErrorActionPreference = 'Stop'
 $name = 'houfeng_settle_daily'
-$ps1  = 'C:\项目\老田的AI助手\tools\scheduled\houfeng_snap_task.ps1'
-$dir  = 'C:\项目\老田的AI助手'
-$exe  = 'C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe'
-$log  = 'C:\Temp\houfeng_settle_task.log'
+# 路径从脚本自身位置推导，不写死本机绝对路径（本仓对外可见，2026-11-11 脱敏）
+if (-not $PSScriptRoot) {
+    throw '需以 -File 方式执行本脚本（$PSScriptRoot 为空时无法推导路径）'
+}
+$ps1  = Join-Path $PSScriptRoot 'houfeng_snap_task.ps1'
+$dir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$exe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$log  = 'C:\Temp\houfeng_settle_task.log'   # 不含用户名的通用临时目录；与已注册任务保持一致
 $arg  = '-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "' + $ps1 +
         '" -Phases "settle,snap" -Log "' + $log + '" -Tag houfeng_settle'
 

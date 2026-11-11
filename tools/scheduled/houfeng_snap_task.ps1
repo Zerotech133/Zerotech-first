@@ -27,7 +27,9 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Continue'
 
 $py  = 'C:\Program Files\Python311\python.exe'
-$wd  = 'C:\项目\老田的AI助手\portal\daily_report'
+# 工作目录从脚本自身位置推导（本仓对外可见，不写死本机绝对路径；2026-11-11 脱敏）
+if (-not $PSScriptRoot) { throw '需以 -File 方式执行本脚本（$PSScriptRoot 为空时无法推导工作目录）' }
+$wd  = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'portal\daily_report'
 $log = $Log
 $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
