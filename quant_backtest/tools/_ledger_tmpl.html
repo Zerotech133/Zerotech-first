@@ -142,7 +142,7 @@ function overviewHTML(){
  +'<div class="och"><h4>月度日均收益</h4><svg viewBox="0 0 '+(mKeys.length*26+8)+' 104">'+bars+'</svg></div>'
  +'<div class="och"><h4>累计净值（日频·零成本）</h4><svg viewBox="0 0 560 72"><polyline points="'+pts+'" fill="none" stroke="#4f8fe6" stroke-width="1.6"/><line x1="0" y1="'+(70-(1-nvMin)/(nvMax-nvMin||1)*64).toFixed(1)+'" x2="560" y2="'+(70-(1-nvMin)/(nvMax-nvMin||1)*64).toFixed(1)+'" stroke="#3a4658" stroke-dasharray="3 3"/></svg></div>'
  +'</div>'
- +'<div class="ovtags"><h4>因子命中全景</h4>'+facHtml+'</div>'
+ +'<div class="ovtags"><h4>形态命中全景</h4>'+facHtml+'</div>'
  +'<div class="ovtags"><h4>板块 Top8（选择集中度）</h4>'+secTop.map(e=>'<span class="tag">'+e[0]+' '+e[1]+'</span>').join('')+'</div>'
  +'</div>';}
 function monthSummary(k){
@@ -180,14 +180,36 @@ function renderMonths(y){
   +'<div class="mtags">'+facHtml+'</div>'
   +(secHtml?'<div class="mtags">'+secHtml+'</div>':'')
   +'<div class="mgo">进入逐日 →</div></div>'}).join('')+'</div>';}
+function formDesc(f){
+ // 形态语言（缠论口径）：位置形态 + 量能形态 + 背驰形态，不是"因子"
+ const parts=[];
+ // 位置形态：回踩笔低点 price vs zg
+ if(f.zg&&f.price){
+  const t=(f.price/f.zg-1)*100;
+  if(t<=1)parts.push('回踩贴沿不破ZG（'+fmt(t,1)+'%）');
+  else if(t<=3)parts.push('沿上小幅悬空 '+fmt(t,1)+'%');
+  else if(t<=8)parts.push('离沿 '+fmt(t,1)+'%（追高风险）');
+  else parts.push('高位悬空 '+fmt(t,1)+'%（非贴沿买点）');}
+ // 量能形态
+ if(f.vr!=null){
+  if(f.vr>=1.5)parts.push('放量过枢');
+  else if(f.vr>=1.0)parts.push('常量');
+  else parts.push('缩量回试');}
+ // 背驰形态（24课/力度）
+ if(f.bei24)parts.push('盘整背驰（MACD柱面积）');
+ if(f.tbe24)parts.push('趋势背驰（24课）');
+ if(f.mbei)parts.push('MACD背离');
+ else if(f.bei&&!f.bei24)parts.push('同向力度衰竭');
+ if(f.bei2&&!f.bei24)parts.push('回踩力度弱于离开');
+ return parts.join(' · ')||'标准三买形态';
+}
 function dayCardHTML(d){
  // 单日全景卡：每日都有（不只末景日）
  const rets=d.picks.map(p=>p.ret).filter(v=>v!=null);
  const mean=rets.length?rets.reduce((a,b)=>a+b,0)/rets.length:null;
  const rowsHtml=d.picks.map((p,k)=>{
   const f=p.factors;
-  const basis=[f.bei?'bei':null,f.bei2?'bei2':null,f.bei24?'bei24':null,
-   f.tbe24?'tbe24':null,f.mbei?'mbei':null].filter(Boolean).join('+')||'pos+vol';
+  const basis=formDesc(f);
   const contrib=p.ret==null?0:p.ret/d.picks.length;
   const secN=(p.sectors&&p.sectors[0])?p.sectors[0].name:'—';
   return '<tr><td><a onclick="show(event,\''+d.day+'\','+k+')">'+p.code.slice(0,9)+'</a></td>'
@@ -208,21 +230,37 @@ function dayCardHTML(d){
   +(mean!=null&&mean<0?'负日：评分排序未提供保护，明日收紧贴 zg 条件。':'正日：量价兑现尚可。');
  const plan=(mean!=null&&mean>0?'持有正贡献且 vr≥1；':'仅留贴 zg≤3%；')
   +'破 zg 减半、破 zd 清仓；绿票 vr<0.8 优先减。';
- return '<div class="dayfull">'
+ return '<div class="dayfull" id="dayanchor">'
  +'<div class="dh2"><b>'+d.day.slice(4,6)+'-'+d.day.slice(6)+'</b>'
  +'<span style="color:'+col(mean)+'">组合 '+fmt(mean)+'%</span>'
  +'<span class="flat">'+d.picks.length+' 笔</span></div>'
  +'<table><tr><th>票</th><th>评分</th><th>次日</th><th>vr</th><th>依据</th><th>板块</th><th colspan="2">贡献度</th></tr>'+rowsHtml+'</table>'
  +'<div class="dsum"><span class="q">复盘</span> '+review+' <span class="q">明日</span> '+plan+'</div>'
  +'</div>';}
+let openDay=null;
 function dayOverviewHTML(ym){
  const ds=byMonth[ym.slice(0,6)]||[];
  if(!ds.length)return '';
  return '<div class="ovw">'
- +'<div class="ovtags" style="margin:0 0 8px"><h4>'+ym.slice(0,4)+'-'+ym.slice(4,6)+' 月 · 每日全景（'+ds.length+' 日，逐日逐票）</h4>'
- +'<span class="tag">滚动到任意一天，每天都有一张全景卡</span></div>'
- +ds.map(d=>dayCardHTML(d)).join('')
+ +'<div class="ovtags" style="margin:0 0 8px"><h4>'+ym.slice(0,4)+'-'+ym.slice(4,6)+' 月 · 日历（点击某天展开当天全景）</h4></div>'
+ +'<div class="daysgrid">'+ds.map(d=>{
+  const rets=d.picks.map(p=>p.ret).filter(v=>v!=null);
+  const mean=rets.length?rets.reduce((a,b)=>a+b,0)/rets.length:null;
+  return '<div class="day'+(openDay===d.day?' open':'')+'" onclick="toggleDay(\''+d.day+'\')">'
+  +'<div class="dh"><b>'+d.day.slice(4,6)+'-'+d.day.slice(6)+'</b>'
+  +'<span class="mr" style="color:'+col(mean)+'">'+fmt(mean)+'%</span></div>'
+  +'<div style="font-size:10.5px;color:#6b7787;margin-bottom:3px">'+d.picks.length+' 笔</div>'
+  +d.picks.map((p,k)=>'<div class="pick" onclick="show(event,\''+d.day+'\','+k+')">'
+   +'<span class="pcode">'+p.code.slice(0,9)+'</span>'
+   +'<span class="prt" style="color:'+col(p.ret)+'">'+fmt(p.ret)+'</span></div>').join('')
+  +(openDay===d.day?'<div style="font-size:10.5px;color:#4f8fe6;margin-top:3px">▼ 已展开下方全景</div>':'')
+  +'</div>'}).join('')+'</div>'
+ +(openDay&&IDX[openDay]?dayCardHTML(IDX[openDay]):'')
  +'</div>';}
+function toggleDay(day){openDay=openDay===day?null:day;
+ renderDays(lastYmKey);
+ if(openDay){const el=document.getElementById('dayanchor');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}}
+let lastYmKey='';
 function monthReviewHTML(y){
  const mKeys=Object.keys(byMonth).filter(k=>k.startsWith(y)).sort();
  const sums=mKeys.map(k=>({k,s:monthSummary(k)}));
@@ -245,6 +283,7 @@ function monthReviewHTML(y){
  +'<div class="sec"><h4>下阶段月计划（规则生成 v0）</h4><div style="font-size:12.5px;line-height:1.7">'+plan+'</div></div>'
  +'</div>';}
 function renderDays(ym){
+ lastYmKey=ym;
  const ds=byMonth[ym.slice(0,6)]||[];
  view.innerHTML=dayOverviewHTML(ym)+'<div class="daysgrid">'+ds.map(d=>{
   return '<div class="day"><div class="dh"><b>'+d.day.slice(4,6)+'-'+d.day.slice(6)+'</b>'
@@ -255,9 +294,15 @@ function renderDays(ym){
 const IDX={};DATA.forEach(d=>IDX[d.day]=d);
 function show(e,day,k){e.stopPropagation();
  const d=IDX[day],p=d.picks[k],f=p.factors;
- const fac=[f.bei?'bei 同向力度背驰':null,f.bei2?'bei2 回踩力度背驰':null,
-  f.bei24?'bei24 24课盘整背驰':null,f.tbe24?'tbe24 24课趋势背驰':null,
-  f.mbei?'mbei MACD背驰':null].filter(Boolean);
+ const fac=[];
+ if(f.zg&&f.price){const t=(f.price/f.zg-1)*100;
+  fac.push(t<=3?'回试低点不破ZG（三买成立，20课）':'离沿'+fmt(t,1)+'%（悬空，非贴沿）');}
+ if(f.vr!=null)fac.push(f.vr>=1.5?'放量过枢':(f.vr<0.7?'缩量回试':'常量'));
+ if(f.bei24)fac.push('盘整背驰·MACD柱面积（24课）');
+ if(f.tbe24)fac.push('趋势背驰（24课）');
+ if(f.mbei)fac.push('MACD背离');
+ if(f.bei)fac.push('同向力度衰竭');
+ if(f.bei2)fac.push('回踩力度弱于离开段');
  const secHtml=(p.sectors||[]).map(s=>'<span class="tag">'+s.name
   +(s.r5!=null?' <b style="color:'+col(s.r5*100)+'">'+fmt(s.r5*100,1)+'%</b>':'')+'</span>').join('')||'<span class="tag">成分快照未命中</span>';
  document.getElementById('cbody').innerHTML=
@@ -267,10 +312,10 @@ function show(e,day,k){e.stopPropagation();
  +'<div class="sec"><h4>次日真实（T+1 开盘买入→收盘）</h4>'
   +'<div class="row"><span>次日收益</span><b style="color:'+col(p.ret)+'">'+fmt(p.ret)+'%</b></div>'
   +'<div class="row"><span>选择日涨跌</span><b style="color:'+col(p.day_pct)+'">'+fmt(p.day_pct)+'%</b></div></div>'
- +'<div class="sec"><h4>因子命中（为什么选它）</h4>'
+ +'<div class="sec"><h4>形态识别（缠论口径 · 为什么选它）</h4>'
   +'<div class="row"><span>位置 price/zg</span><b>'+fmt(f.pos_pct)+'%（zg='+f.zg+' zd='+f.zd+'）</b></div>'
   +'<div class="row"><span>量比 vr</span><b>'+(f.vr==null?'—':f.vr.toFixed(2))+'</b></div>'
-  +'<div style="margin-top:4px">'+(fac.length?fac.map(x=>'<span class="tag hit">'+x+'</span>').join(''):'<span class="tag">三源背驰全未命中</span>')+'</div></div>'
+  +'<div style="margin-top:4px">'+(fac.length?fac.map(x=>'<span class="tag hit">'+x+'</span>').join(''):'<span class="tag">标准三买形态（无背驰共振）</span>')+'</div></div>'
  +'<div class="sec" style="grid-column:1/3"><h4>所属板块（成分快照 · 板块 5 日强弱 r5）</h4>'+secHtml+'</div>'
  +'<div class="sec" style="grid-column:1/3"><h4>证据链五问</h4>'
   +'<div class="row"><span class="q">① 为什么选它</span><span>三买事件 + 评分 '+p.score+'（pos/vol/bei30 = 40/30/30 档位缩放）</span></div>'
