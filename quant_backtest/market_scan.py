@@ -281,6 +281,11 @@ def scan_stock(args):
                 "bei": sg.get("bei"),
                 "bei2": sg.get("bei2"),
                 "bei24": sg.get("bei24"),
+                # 2026-11-11 补齐（任务#100 发现）：chanlun_signal 给 1买/1卖 生成的
+                # tbe24（24课趋势背驰）/mbei（MACD背驰）此前未落事件缓存 → 一买档
+                # 趋势背驰前瞻验证不可行。纯字段增补，不改评分与信号。
+                "tbe24": sg.get("tbe24"),
+                "mbei": sg.get("mbei"),
                 "score": sc,
             }
         return out
@@ -320,7 +325,9 @@ def scan_market(d0, d1, workers=None, progress=None):
     win = [d for d in cal_all if d0 <= d <= d1]
 
     tasks = [(s, d0, d1, init_day, win) for s in stocks]
-    n = workers or min(24, os.cpu_count() or 8)
+    # 硬限 16：32 核机器上不能把 CPU 打满，留一半给其他任务
+    n = workers or min(16, os.cpu_count() or 8)
+    n = max(1, min(n, 16))
     events = []
     t0 = time.time()
     ctx = get_context("spawn")
