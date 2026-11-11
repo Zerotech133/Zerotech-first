@@ -7,7 +7,18 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .crumbs a{color:#4f8fe6;cursor:pointer;text-decoration:none}
 .crumbs span.sep{color:#6b7787}
 .crumbs b{color:#e0b95c}
-.years{display:flex;gap:10px;flex-wrap:wrap}
+.years{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.ovw{background:#121924;border:1px solid #1f2835;border-radius:12px;padding:14px;margin-bottom:12px}
+.ovgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.kpi{background:#0e141d;border:1px solid #1f2835;border-radius:8px;padding:8px;text-align:center}
+.kpi span{display:block;font-size:10.5px;color:#6b7787;margin-bottom:2px}
+.kpi b{font-size:17px}
+.ovcharts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.och{background:#0e141d;border:1px solid #1f2835;border-radius:8px;padding:8px}
+.och h4{font-size:11px;color:#4f8fe6;margin-bottom:4px}
+.och svg{width:100%;height:auto;display:block}
+.ovtags{margin-top:8px}
+.ovtags h4{font-size:11px;color:#4f8fe6;margin-bottom:4px}
 .year{background:#121924;border:1px solid #1f2835;border-radius:12px;padding:12px;cursor:pointer;min-width:190px}
 .year:hover{border-color:#2a3546;background:#182130}
 .year h3{font-size:15px;margin-bottom:4px}
@@ -47,7 +58,7 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .q{color:#e0b95c}
 </style></head><body>
 <h1>P1 日历账本 · 年 → 月 → 日 → 票</h1>
-<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 2026-11-12 04:33</div>
+<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 2026-11-12 04:36</div>
 <div class="crumbs" id="crumbs"></div>
 <div id="view"></div>
 <div id="modal" onclick="if(event.target===this)this.classList.remove('on')">
@@ -74,11 +85,55 @@ function nav(level,key){crumbs.innerHTML='';view.innerHTML='';
   cur(key.slice(4,6)+' 月');renderDays(key)}}
 function renderYears(){
  const ys=Object.keys(byYear).sort();
- view.innerHTML=ys.map(y=>{const a=agg(byYear[y].map(d=>d.mean));
+ view.innerHTML=overviewHTML()+ys.map(y=>{const a=agg(byYear[y].map(d=>d.mean));
   return '<div class="year" onclick="nav(\'m\',\''+y+'\')"><h3>'+y+' 年</h3>'
   +'<div class="ystat"><span>日均 <b style="color:'+col(a&&a.m)+'">'+fmt(a&&a.m)+'%</b></span>'
   +'<span>交易日 <b>'+byYear[y].length+'</b></span>'
   +'<span>胜率 <b>'+(a?a.win:0)+'%</b></span></div></div>'}).join('');}
+function overviewHTML(){
+ // 全窗聚合
+ let picks=0,uniq=new Set();const dayRets=[],fac={bei:0,bei2:0,bei24:0,tbe24:0,mbei:0},secCnt={};
+ DATA.forEach(d=>{if(d.mean!=null)dayRets.push({d:d.day,r:d.mean});
+  d.picks.forEach(p=>{picks++;uniq.add(p.code);
+   ['bei','bei2','bei24','tbe24','mbei'].forEach(f=>{if(p.factors[f])fac[f]++});
+   (p.sectors||[]).slice(0,3).forEach(s=>{secCnt[s.name]=(secCnt[s.name]||0)+1});});});
+ const a=agg(dayRets.map(x=>x.r));
+ // 复利净值与最大回撤（每日等权，T+1 口径）
+ let nav=1,peak=1,mdd=0;const navs=[];
+ dayRets.forEach(x=>{nav*=(1+x.r/100);navs.push(nav);peak=Math.max(peak,nav);
+  mdd=Math.min(mdd,nav/peak-1);});
+ // 月度柱状（SVG）
+ const mKeys=Object.keys(byMonth).sort();
+ const mA=mKeys.map(k=>agg(byMonth[k].map(d=>d.mean)));
+ const mx=Math.max(...mA.map(v=>Math.abs(v&&v.m||0)),0.5);
+ const bars=mKeys.map((k,i)=>{const v=mA[i]&&mA[i].m||0;
+  const h=Math.max(1,Math.abs(v)/mx*46);
+  const y=v>=0?52-h:52;
+  return '<rect x="'+(i*26+4)+'" y="'+y+'" width="18" height="'+h+'" rx="2" fill="'+(v>=0?C.up:C.dn)+'"><title>'+k+' '+fmt(v)+'%</title></rect>';}).join('');
+ // 净值曲线（SVG polyline）
+ const nvMin=Math.min(...navs,1),nvMax=Math.max(...navs,1);
+ const pts=navs.map((v,i)=>(i/(Math.max(1,navs.length-1))*560).toFixed(1)+','+(70-(v-nvMin)/(nvMax-nvMin||1)*64).toFixed(1)).join(' ');
+ const secTop=Object.entries(secCnt).sort((x,y)=>y[1]-x[1]).slice(0,8);
+ const facHtml=Object.entries(fac).filter(e=>e[1]>0).map(e=>'<span class="tag hit">'+e[0]+'×'+e[1]+'</span>').join('');
+ const winM=mA.filter(v=>v&&v.m>0).length;
+ return '<div class="ovw">'
+ +'<div class="ovgrid">'
+ +'<div class="kpi"><span>交易日</span><b>'+DATA.length+'</b></div>'
+ +'<div class="kpi"><span>选择笔数</span><b>'+picks+'</b></div>'
+ +'<div class="kpi"><span>去重票数</span><b>'+uniq.size+'</b></div>'
+ +'<div class="kpi"><span>日均</span><b style="color:'+col(a&&a.m)+'">'+fmt(a&&a.m)+'%</b></div>'
+ +'<div class="kpi"><span>胜率(日)</span><b>'+(a?a.win:0)+'%</b></div>'
+ +'<div class="kpi"><span>累计净值</span><b style="color:'+(nav>=1?C.up:C.dn)+'">'+nav.toFixed(3)+'</b></div>'
+ +'<div class="kpi"><span>最大回撤</span><b class="dn">'+(mdd*100).toFixed(1)+'%</b></div>'
+ +'<div class="kpi"><span>月度胜率</span><b>'+winM+'/'+mKeys.length+'</b></div>'
+ +'</div>'
+ +'<div class="ovcharts">'
+ +'<div class="och"><h4>月度日均收益</h4><svg viewBox="0 0 '+(mKeys.length*26+8)+' 104">'+bars+'</svg></div>'
+ +'<div class="och"><h4>累计净值（日频·零成本）</h4><svg viewBox="0 0 560 72"><polyline points="'+pts+'" fill="none" stroke="#4f8fe6" stroke-width="1.6"/><line x1="0" y1="'+(70-(1-nvMin)/(nvMax-nvMin||1)*64).toFixed(1)+'" x2="560" y2="'+(70-(1-nvMin)/(nvMax-nvMin||1)*64).toFixed(1)+'" stroke="#3a4658" stroke-dasharray="3 3"/></svg></div>'
+ +'</div>'
+ +'<div class="ovtags"><h4>因子命中全景</h4>'+facHtml+'</div>'
+ +'<div class="ovtags"><h4>板块 Top8（选择集中度）</h4>'+secTop.map(e=>'<span class="tag">'+e[0]+' '+e[1]+'</span>').join('')+'</div>'
+ +'</div>';}
 function monthSummary(k){
  const ds=byMonth[k]||[];
  let picks=0,uniq=new Set(),rets=[],best=null,worst=null;
