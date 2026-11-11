@@ -574,7 +574,10 @@ class Handler:
         "</style>")
     _AUDIT_ZHIPU_MODEL = "glm-4.5-flash"
     _AUDIT_ZHIPU_BASE = "https://open.bigmodel.cn/api/paas/v4"
-    _AUDIT_CFG_PATH = os.path.join(ROOT, "audit_ai_config.json")
+    _AUDIT_CFG_PATH = os.environ.get("AUDIT_AI_CONFIG_PATH") or os.path.join(
+        r"C:\项目\_vault\secrets", "portal_audit_ai_config.json")
+    if not os.path.exists(_AUDIT_CFG_PATH):
+        _AUDIT_CFG_PATH = os.path.join(ROOT, "audit_ai_config.json")
     # ── K-STOCK-114e 独立安全审计 AI ─────────────────────────────
     _AUDIT_SYS = (
         "你是零界平台的独立安全审计官，与开发团队完全独立、只对安全负责。"
