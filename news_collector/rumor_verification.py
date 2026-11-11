@@ -136,6 +136,31 @@ def scan():
     return acc
 
 
+def _load_prev_verification(out_dir):
+    """读上一轮 reconciliation 最新文件，建 code->verification 映射（保留人工核验结论）。
+
+    R15-1（老田批准）：重跑时不丢弃上一轮分析岗已填的 verification，仅做数据层合并——
+    本席只读上一轮、按需沿用，绝不修改或新增任何研判内容。
+    返回 {code6: verification_dict}；无历史文件时返回空 dict。
+    """
+    if not out_dir.is_dir():
+        return {}
+    files = sorted(out_dir.glob("reconciliation_*.json"))
+    if not files:
+        return {}
+    latest = files[-1]
+    try:
+        data = json.loads(latest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    m = {}
+    for c in data.get("codes", []):
+        v = c.get("verification")
+        if isinstance(v, dict):
+            m[c.get("code")] = v
+    return m
+
+
 def main():
     ap = argparse.ArgumentParser(description="传闻-澄清对账底表（只读、零研判）")
     ap.add_argument("--latest", type=int, default=3, help="每 code 每端引用条数")
@@ -144,12 +169,22 @@ def main():
 
     acc = scan()
     now = _dt.datetime.now()
+    prev_ver = _load_prev_verification(OUT_DIR)
+    carried = 0
     codes = []
     for code in sorted(acc):
         if args.code and code != args.code:
             continue
         off = sorted(acc[code]["official"], key=lambda x: x[0], reverse=True)
         rum = sorted(acc[code]["rumor"], key=lambda x: x[0], reverse=True)
+        # R15-1：优先沿用上一轮人工已填的 verification，仅做数据层合并
+        pv = prev_ver.get(code)
+        if pv and (pv.get("by") or pv.get("note") or pv.get("admiralty_code")
+                   or pv.get("status") not in (None, "pending")):
+            verification = pv
+            carried += 1
+        else:
+            verification = {"status": "pending", "by": None, "note": None, "admiralty_code": None}
         codes.append({
             "code": code,
             "official_count": len(off),
@@ -160,9 +195,9 @@ def main():
             "official_by_source": _count_by_source(off),
             "rumor_by_source": _count_by_source(rum),
             "post_volume": len(rum),
-            # 核验结论栏：留空待人工/分析岗填写（本席不裁事实）
+            # 核验结论栏：优先沿用上一轮人工结论，否则留空待人工/分析岗填写（本席不裁事实）
             # admiralty_code 按 NATO Admiralty 格式占位（如 "B2"），本席保持 null
-            "verification": {"status": "pending", "by": None, "note": None, "admiralty_code": None},
+            "verification": verification,
         })
 
     both = sum(1 for c in codes if c["official_count"] and c["rumor_count"])
@@ -177,6 +212,7 @@ def main():
             "codes_with_both": both,
             "codes_official_only": off_only,
             "codes_rumor_only": rum_only,
+            "verification_carried_from_prev": carried,
             "official_rows_total": sum(c["official_count"] for c in codes),
             "rumor_rows_total": sum(c["rumor_count"] for c in codes),
         },
