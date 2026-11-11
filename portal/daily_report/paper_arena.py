@@ -532,6 +532,27 @@ def build(verbose=True):
                          ("%+.2f%%" % (a["mean"] * 100)) if a["mean"] is not None else "  --  ",
                          a["n"], s["excess_verdict"]))
 
+    # ── 两个池子的分辨力：决定「哪把尺子量哪件事」──────────────
+    # 大样本池（auto，每批 40~80 只）把个股噪声平均掉，超额波动小，
+    # 少量观测就能判断 0.3% 的成本线；主选池（main，1~7 只）波动大得多，
+    # 同精度要几年。所以「日频选股」只能靠 auto 池验证，「3% 级别的择时/择势」
+    # 才轮得到 main 池。混着看就会得出互相矛盾的结论。
+    pool_obs = {}
+    for trs in result["tracks"].values():
+        for t in trs:
+            if t.get("excess") is not None and t.get("done"):
+                pool_obs.setdefault(t["pool"], []).append(t["excess"])
+    result["pool_stats"] = {}
+    for p, v in pool_obs.items():
+        if len(v) < 2:
+            continue
+        sd = pstdev(v)
+        result["pool_stats"][p] = {
+            "n": len(v), "sd": round(sd, 6),
+            "need_small": int(math.ceil((1.96 * sd / COST_ROUND) ** 2)),
+            "need_big": int(math.ceil((1.96 * sd / 0.03) ** 2)),
+        }
+
     with io.open(os.path.join(ARENA_DIR, "latest.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
     return result

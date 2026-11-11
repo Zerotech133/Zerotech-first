@@ -44,6 +44,7 @@ def build_data() -> dict:
         "strategies": r.get("strategies") or [],
         "matrix": matrix,
         "gate": r.get("gate") or {},
+        "pool_stats": r.get("pool_stats") or {},
     }
 
 

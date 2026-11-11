@@ -210,7 +210,19 @@ function render() {
     '同一天选出的 80 只票共享同一个市场日，算成 80 个样本会把误差缩小十几倍，' +
     '看起来显著其实全是假的——这正是「短期测试无效」的算术原因。'));
 
-  // ── 还要多久才够：用实测离散度倒推，不给「再等等」这种空话 ──────
+  // ── 两把尺子：池子大小决定能验证什么 ────────────────
+  const ps = D.pool_stats || {};
+  if (ps.auto && ps.main) {
+    al.appendChild(el("div", "alert info",
+      '<b>两个池子要两把尺子。</b>大样本池每批 40~80 只，个股噪声被平均掉，' +
+      '超额波动只有 ' + (ps.auto.sd * 100).toFixed(1) + ' 个百分点，约 <b>' +
+      ps.auto.need_small + ' 个交易日</b>就能判断 ' + COST.toFixed(1) + '% 的成本线。' +
+      '主选池只有 1~7 只票，超额波动 ' + (ps.main.sd * 100).toFixed(1) +
+      ' 个百分点，同样精度要 <b>' + ps.main.need_small + ' 个交易日</b>（约 ' +
+      (ps.main.need_small / 244).toFixed(1) + ' 年）——它只能验证 ' +
+      '<b>' + ps.main.need_big + ' 个交易日</b>级别的 3% 大效应（择时、择势），' +
+      '永远验证不了日频选股。混着看必然得出互相矛盾的结论。'));
+  }
   const cand = tradable.filter(function (s) {
     return s.excess && s.excess.auto && s.excess.auto.n >= 2 && s.excess.auto.need;
   }).sort(function (x, y) { return y.excess.auto.n - x.excess.auto.n; })[0];
