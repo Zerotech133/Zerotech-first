@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>研发方案 v2 · 前端规划线框 · 2026-11-11</title>
+<style>
+:root{--bg:#0d1117;--fg:#c9d5e3;--mut:#7b8698;--line:#1a2331;--card:#131a24;--acc:#e8b93f;--up:#f04a5a;--dn:#2fbf71;--blu:#4a9eff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:13px/1.65 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding:28px;max-width:1280px;margin:0 auto}
+h1{font-size:20px;margin-bottom:4px}h2{font-size:15px;color:var(--acc);margin:26px 0 10px}
+.mut{color:var(--mut);font-size:12px}
+.badge{display:inline-block;background:#1d2836;border:1px solid #2a3a52;border-radius:10px;padding:1px 9px;font-size:11px;color:var(--blu);margin-right:6px}
+.badge.wait{color:var(--acc)} .badge.done{color:var(--dn)} .badge.new{color:var(--up)}
+.grid{display:grid;gap:12px}
+.frame{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.frame h3{font-size:13.5px;margin-bottom:2px}
+.ft{font-size:11px;color:var(--up);margin-bottom:8px}
+.wire{border:1px dashed #2a3a52;border-radius:8px;padding:10px;background:#0f151e;font-size:11.5px;color:#9db0c5}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.cell{border:1px solid #233042;border-radius:6px;padding:6px 8px;flex:1;min-width:90px}
+.big{font-size:22px;font-weight:700;color:#fff}
+table{border-collapse:collapse;width:100%;margin-top:6px}
+th{color:var(--mut);font-weight:600;text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);font-size:11.5px}
+td{padding:4px 8px;border-bottom:1px solid var(--line);font-size:12px}
+.bar{height:8px;border-radius:4px;background:#1d2836;overflow:hidden}.bar i{display:block;height:100%;background:var(--blu)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.leg{font-size:11px;color:var(--mut);margin-top:6px}
+</style>
+</head>
+<body>
+
+<h1>研发方案 v2 · 前端规划线框（六页）</h1>
+<div class="mut">凌霄渡 · 2026-11-11 深夜 · 配套文档：docs/研发方案_v2_20261111.md · 数据源全部为现有/计划中的 json 产物</div>
+
+<h2>主线一页览（评审议程）</h2>
+<div class="frame"><table>
+<tr><th>主线</th><th>交付</th><th>状态</th><th>数据源</th></tr>
+<tr><td>① 三年窗×瘦身重扫</td><td>实验设计书（B0-B3，新增 B4 均线止损/B5 中枢计数版买卖点）</td><td><span class="badge wait">待批 11-26</span></td><td>sig_events / bt2</td></tr>
+<tr><td>② P1 自动驾驶账本</td><td>订单流水+手法登记簿+尝试对照（起爆点手法库 v0）</td><td><span class="badge wait">待批 11-26</span></td><td>p1/orders_*.jsonl（新）</td></tr>
+<tr><td>③ 缠论 Agent 两阶段</td><td>阶段一复盘 Agent（3个月）→ 阶段二决策蒸馏（挂条件）</td><td><span class="badge new">阶段一可自启</span></td><td>108课+标注+池状态</td></tr>
+</table></div>
+
+<h2>第一批页面（评审前可见）</h2>
+
+<div class="grid" style="grid-template-columns:1fr 1fr">
+
+<div class="frame">
+<h3>F1 · 自动驾驶账本页 <span class="badge new">旗舰</span></h3>
+<div class="ft">autopilot.html · 主线二的界面载体 · 评审演示主角</div>
+<div class="wire">
+<b>┌ 状态条 ────────────────────────────┐</b><br>
+│ 今日订单 <span class="big" style="font-size:15px">6</span> ｜ 在途 <span style="color:var(--acc)">2</span> ｜ 净值 <span style="color:var(--up)">+0.83%</span> ▂▃▅▄▆▇ ｜ 手法版本 <span class="badge">v1.2</span> │<br>
+<b>├ 三栏 ─────────────────────────────┤</b><br>
+│ <span class="cell">左·今日订单卡<br><span class="mut">300xxx 南大环境<br>▲买 @29.80 触发:三买贴zg<br>状态:<span style="color:var(--acc)">待开盘→已成交</span></span></span>
+   <span class="cell">中·持仓表<br><span class="mut">票/信号/评分分量/regime<br>持仓天数/出场距离/浮盈</span></span>
+   <span class="cell">右·手法登记簿<br><span class="mut">● 11-26 stop −12→−10<br>&nbsp;&nbsp;└ A/B 分叉图 ▲▼<br>● 11-20 竞价树 v2 上线</span></span> │<br>
+<b>├ 底部·逐笔流水（可展开全上下文）────┤</b><br>
+│ 日期 票 方向 价位 滑点 信号 评分 pos/vol regime 出场原因 手法版 │
+</div>
+<div class="leg">数据源：data/p1/orders_*.jsonl + fills（主线二落地即接）</div>
+</div>
+
+<div class="frame">
+<h3>F2 · 寻优看板页</h3>
+<div class="ft">optimizer.html · 数据现成（trial_ledger + dsr_rank）· 一天可出</div>
+<div class="wire">
+<b>┌ 大数字 ────────────────────────────┐</b><br>
+│ N=<span class="big">1501</span> ｜ 存活线 t≥<span class="big">3.99</span> ｜ 过线 <span class="big" style="color:var(--dn)">0</span> ｜ 最稳候选 cont_v3 t=2.17 │<br>
+<b>├ 候选散点 ──────────┬ Top 候选表 ────┤</b><br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▲t_net&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ cont_v3&nbsp;&nbsp; [COST✓][OOS~] │<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;●●&nbsp;●✕&nbsp;●&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ wf_202501&nbsp;[n=9⚠] │<br>
+│&nbsp;●●●●✕●●●●●●→净收益&nbsp;│ stopgrid&nbsp;&nbsp;[牛市窗⚠] │<br>
+│&nbsp;(点=t_net×净收益,大小=样本量,&nbsp;│ ＋功效计算器 n/edge │<br>
+│&nbsp;✕=OOS选择组,&nbsp;绿=122bp)&nbsp;&nbsp;&nbsp;&nbsp;│ →检出率 86% │
+</div>
+<div class="leg">让「没有过线」本身成为可展示的诚实结论</div>
+</div>
+
+<div class="frame">
+<h3>F3 · 决策卡并入</h3>
+<div class="ft">portfolio_card.html → autopilot 顶部 Tab</div>
+<div class="wire">外部组合 T+2 决策卡从孤立页收编为账本页第一个 Tab；每晚流水线自动重生成；25 只复点名票 + 5 待补占位（v2 口径）。</div>
+</div>
+
+<div class="frame">
+<h3>F6 · 语料地图页 <span class="badge">提前批</span></h3>
+<div class="ft">corpus.html · 防语料断联（本排查的直接产出）</div>
+<div class="wire">
+<b>┌ 语料源地图 ─────────────────────────┐</b><br>
+│ <span class="dot" style="background:var(--dn)"></span>108课原文 79.4万字·已精读&nbsp;&nbsp;│<br>
+│ <span class="dot" style="background:var(--acc)"></span>视频卡片 252张·<b>未回读→重读中</b> │<br>
+│ <span class="dot" style="background:var(--blu)"></span>知识库整理稿 95行·已RAG 5切片 │<br>
+│ <span class="dot" style="background:var(--mut)"></span>deliverables 9份 ｜ 跨工位登记(新) │<br>
+│ 每源：覆盖量 / 新鲜度 / 入RAG状态 / 负责工位 │
+</div>
+</div>
+</div>
+
+<h2>第二批页面（评审后随主线三）</h2>
+<div class="grid" style="grid-template-columns:1fr 1fr">
+<div class="frame">
+<h3>F4 · 复盘 Agent 页</h3>
+<div class="ft">agent_review.html · 阶段一 Agent 的输出界面</div>
+<div class="wire">每晚复盘报告流：每笔交易一张定理对照卡（108课原文引用 ↔ 结构状态 ↔ 纪律执行判定）；底部「认同/不认同」批注——批注回流为 SFT 训练信号。</div>
+</div>
+<div class="frame">
+<h3>F5 · 分歧实验室页</h3>
+<div class="ft">divergence.html · 语料重读的变现出口</div>
+<div class="wire">《视频派 vs 原文派分歧清单》交互版：每条分歧（如 P12 中枢计数版买卖点 vs 108课回试判据）配「回测裁决」按钮 → 一键生成变体登记进台账排队 → 结果回贴分歧条目。</div>
+</div>
+</div>
+
+<h2>执行排序（决议请求）</h2>
+<div class="frame"><table>
+<tr><th>#</th><th>事项</th><th>时点</th><th>性质</th></tr>
+<tr><td>1</td><td>F2 寻优看板（数据现成）+ F1 骨架占位 + F6 语料地图</td><td>本周</td><td>自启动</td></tr>
+<tr><td>2</td><td>视频卡片 252 张重读 → 分歧清单</td><td>本周启动</td><td>自启动</td></tr>
+<tr><td>3</td><td>评审：实验设计书(+B4/B5) × P1 账本 × Agent 路线 × F1/F2 实物演示</td><td>11-26</td><td><span class="badge wait">待批</span></td></tr>
+<tr><td>4</td><td>三年窗合并扫描 + P1 首跑</td><td>评审当晚</td><td>待批后</td></tr>
+<tr><td>5</td><td>G-A 门 20 日检查点</td><td>12-02</td><td>自动</td></tr>
+<tr><td>6</td><td>F4-F6 随阶段一推进</td><td>12 月</td><td>排期</td></tr>
+</table></div>
+
+</body>
+</html>
