@@ -29,11 +29,15 @@ def build_data() -> dict:
     """汇总台账数据。任何一段缺失记 None，页面自行显示「没接上」。"""
     data = {"gen_at": None, "run_at": None, "as_of_from": None,
             "today": None, "bench": None, "cohorts": [], "settlements": [],
-            "rolling": {}}
+            "rolling": {}, "price": {"ok": True, "warnings": []}}
 
     st_fp = os.path.join(COHORT_DIR, "status_latest.json")
     if os.path.exists(st_fp):
         st = json.load(io.open(st_fp, encoding="utf-8"))
+        # 价格守卫结论（cohort_track.snap 落盘）。旧版 status 没有这两个键，
+        # 按「无告警」处理 —— 不能让缺字段变成页面上的假警报。
+        ws = st.get("warnings") or []
+        data["price"] = {"ok": st.get("price_ok", not ws), "warnings": ws}
         data["run_at"] = st.get("run_at")
         data["as_of_from"] = st.get("as_of_from")
         data["today"] = "-".join([st["today"][:4], st["today"][4:6], st["today"][6:]])

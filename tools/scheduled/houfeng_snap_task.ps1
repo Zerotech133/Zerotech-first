@@ -53,6 +53,18 @@ try {
         exit 1
     }
 
+    # 3) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
+    #    只检 prev：15:10 当天的日线还在交易所侧，检 today 必然报零采集。
+    #    这一检正对着「11-10 整天没采数据、旧脚本却判七表全绿」那次漏判 ——
+    #    旧判据先取 max(trade_date) 再查那天齐不齐，于是永远自洽。
+    #    不阻断：巡检不过说明数据侧有洞，快照与结算本身仍然有效。
+    $dhOut = (& $py -X utf8 'data_health.py' --target prev 2>&1 | Out-String)
+    $dhRc = $LASTEXITCODE
+    ($dhOut.Trim() -split "`r?`n") | Where-Object { $_ } | ForEach-Object { Write-TaskLog ('  data| ' + $_) }
+    if ($dhRc -ne 0) {
+        Write-TaskLog ('WARN: 数据巡检未达标（rc=' + $dhRc + '），上一条判定行即为原因')
+    }
+
     Write-TaskLog '===== houfeng_snap done ====='
     exit 0
 } catch {

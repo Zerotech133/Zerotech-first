@@ -102,6 +102,7 @@ td{padding:7px 8px;border-bottom:1px solid #21262d;text-align:right;font-variant
 
 <div class="hero"><h2 id="heroTitle">…</h2></div>
 <p class="lede" id="heroLede"></p>
+<p class="lede" id="priceWarn" style="display:none;border-left:3px solid #e05252;background:rgba(224,82,82,.10);padding:8px 10px"></p>
 <p class="lede" style="font-size:12.5px;opacity:.75;margin-top:-6px">
   <b>这是哪条链的数字</b>：本台账全部批次属于 <b>因子链信号</b>（多因子共振池）。
   「盘后选股」页的选股数（闸门关闭时为 0 只）属于另一条独立的 <b>M2.1 引擎信号链</b>，
@@ -226,6 +227,32 @@ function fillHero(){
   }).join('');
   $('footSnap').innerHTML = '<b>快照区间 ' + esc(D.as_of_from || '—') + ' – '
     + esc(D.run_at || '—') + '（抓取约需几分钟，页内数字是区间而非单点）</b>';
+}
+
+/* ══════ 价格存疑提示（仅在守卫报了高危告警时才出现） ══════ */
+/* 判例：11-06 那批 15:56 与 15:59 两次快照差了 1.79 个百分点，
+   收盘后价格已定格，这个差只能来自坏价。若报告正好在两次之间生成，
+   就会把错的数字当成当天成绩。页面自己说一句，比日志里躺着强。 */
+function fillPriceWarn(){
+  var p = D.price || {};
+  var ws = (p.warnings || []).filter(function(w){ return w.severity === 'high'; });
+  if(p.ok !== false && !ws.length){ return; }
+  var el = $('priceWarn');
+  var w = ws[0];
+  var txt;
+  if(w){
+    var d = Number(w.delta_pp || 0);
+    var mag = Math.abs(d).toFixed(2);
+    txt = '快照取到的价格有问题：本轮与上一轮（' + esc(w.prev_at || '—')
+        + ' 到 ' + esc(w.now_at || '—') + '）的累计收益相差 <b>' + mag + ' 个百分点</b>，'
+        + '本轮比上一轮' + (d >= 0 ? '高' : '低')
+        + '。收盘后价格已经定格，两次之间不该有这个差，差异只能来自坏价。'
+        + '<br>本页数字先别引用，等用收盘价复核后再看。';
+  } else {
+    txt = '快照的价格校验没通过，本页数字先别引用，等复核。';
+  }
+  el.innerHTML = '<b>价格存疑</b>　' + txt;
+  el.style.display = 'block';
 }
 
 /* ══════ 台账卡 ══════ */
@@ -413,6 +440,7 @@ $('tabs').addEventListener('click', function(e){
 });
 
 fillHero();
+fillPriceWarn();
 renderCohorts();
 renderSettle();
 })();

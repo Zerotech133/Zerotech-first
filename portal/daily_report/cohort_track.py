@@ -286,6 +286,94 @@ def settle():
     return results
 
 
+# ── 快照价格守卫（2026-11-11 立） ───────────────────────────────
+# 判例：11-06/main 当天 15:56:27 与 15:59:07 两次快照，累计收益相差 1.79pp
+# （12.558% → 14.349%），16:15 重跑又回到 12.558%，18:01 复核仍是 12.558%。
+# 15:00 之后价格已经定格，两次快照本应完全一致 —— 差异只能来自坏价
+# （某只票取到了错的 close）。报告若正好在 15:59~16:15 之间生成，就会把
+# 14.35% 当成当日成绩写进去，比真实值多 1.79pp。
+#
+# 三道判定（都只告警、不改数、不改退出码）：
+#   R1 定盘不一致（high）：两次快照都在 15:00 之后，cum 差 > 1pp → 几乎必是坏价
+#   R2 盘中跳变（medium）  ：间隔 ≤ 30 分钟，cum 差 > 1pp → 可能是真行情，也可能是坏价
+#   R3 单票离谱（medium）  ：|close/pre_close-1| > 35% → 超任何板块涨跌停上限，
+#                            能直接指到是哪只票。新股首日/复牌不受涨跌停限制，
+#                            看到告警先排除这两种情形再看。
+SNAP_DIFF_ALERT = 0.01      # 1pp
+SNAP_DIFF_WINDOW_MIN = 30   # 盘中跳变观察窗（分钟）
+BAD_TICK_ABS = 0.35         # 单票涨跌幅上界（北交所 30% 之上留缓冲）
+SETTLE_AT = "15:00:00"
+
+
+def _at_minutes(s):
+    """'15:59:07' -> 959；解析不出来返回 None。"""
+    try:
+        h, m = str(s).split(":")[:2]
+        return int(h) * 60 + int(m)
+    except (ValueError, AttributeError):
+        return None
+
+
+def _prev_run(today):
+    """上一轮快照的 status（只有同为 today 才可比，否则返回空）。"""
+    if not os.path.exists(STATUS_LATEST):
+        return {}
+    try:
+        st = json.load(open(STATUS_LATEST, encoding="utf-8"))
+    except (ValueError, OSError):
+        return {}
+    return st if st.get("today") == today else {}
+
+
+def snap_guard(ck, now_cum, now_at, day_index, prev_rec, prev_at):
+    """同日两轮快照的价格一致性判定。纯函数，便于单测。
+
+    参数
+      ck         cohort 标识，形如 "20261106/main"，只用于告警文本
+      now_cum    本轮累计收益（小数）
+      now_at     本轮时刻 "HH:MM:SS"
+      day_index  本轮持有第几日（与上一轮不等则不可比）
+      prev_rec   同日上一轮同 cohort 的记录（含 cum_today_mean / day_index）
+      prev_at    上一轮时刻 "HH:MM:SS"
+
+    返回 warning dict 或 None。判定分三级：
+      两次都在 15:00 之后 → high（定盘不一致，必是坏价）
+      间隔 ≤ 30 分钟       → medium（可能是真行情，也可能是坏价）
+      其余                 → 不告警（间隔太久，真行情也能造成同样差异）
+    """
+    if not prev_rec or now_cum is None:
+        return None
+    if prev_rec.get("day_index") != day_index:
+        return None                      # 不是同一天，隔夜跳空是真行情
+    pc = prev_rec.get("cum_today_mean")
+    if pc is None:
+        return None
+    delta = now_cum - pc
+    if abs(delta) <= SNAP_DIFF_ALERT:
+        return None
+
+    pm, cm = _at_minutes(prev_at), _at_minutes(now_at)
+    gap = (cm - pm) if (pm is not None and cm is not None) else None
+    settled_at = _at_minutes(SETTLE_AT)
+    both_settled = (pm is not None and cm is not None
+                    and pm >= settled_at and cm >= settled_at)
+
+    base = {"cohort": ck, "prev": round(pc, 6), "now": round(now_cum, 6),
+            "delta_pp": round(delta * 100, 3), "prev_at": prev_at, "now_at": now_at}
+    if both_settled:
+        base.update(code="price_anomaly", severity="high",
+                    msg="收盘后两次快照相差 %+.2fpp（%s → %s），价格已定格，"
+                        "差异只能来自坏价；本次数值很可能偏 %+.2fpp，"
+                        "引用前先用收盘价复核" % (delta * 100, prev_at, now_at, delta * 100))
+        return base
+    if gap is not None and 0 <= gap <= SNAP_DIFF_WINDOW_MIN:
+        base.update(code="price_jump", severity="medium",
+                    msg="%d 分钟内累计跳了 %+.2fpp（%s → %s），"
+                        "可能是真行情，也可能是坏价" % (gap, delta * 100, prev_at, now_at))
+        return base
+    return None
+
+
 # ── 全景快照（所有 live cohort） ────────────────────────────────
 def snap():
     from hold_track import pull_snapshot
@@ -306,6 +394,14 @@ def snap():
         extra, _ = pull_snapshot(miss_all, batch=10, retry=5)
         got.update(extra)
     print("快照完成 %d/%d 只，时刻 %s（%s 起）" % (len(got), len(mkt), at, t0))
+
+    # 同日上一轮快照：价格守卫的参照系。只认 today 相同的 status_latest，
+    # 跨天比没有意义（隔夜跳空是真行情）。
+    prev_status = _prev_run(today)
+    prev_at = prev_status.get("run_at")
+    prev_by_key = {(x.get("asof"), x.get("pool")): x
+                   for x in (prev_status.get("cohorts") or [])}
+    warns = []
 
     def fv(x):
         try:
@@ -366,7 +462,7 @@ def snap():
                           "cum": sum(vals) / len(vals)}
             if bvals:
                 bench_cum_y = sum(bvals) / len(bvals)
-        rows, miss = [], []
+        rows, miss, bad_ticks = [], [], []
         for code in c["codes"]:
             r = got.get(code)
             if not r:
@@ -378,6 +474,9 @@ def snap():
                 continue
             tm = n / pc - 1          # 昨收→现（跨日段用）
             om = n / o - 1           # 今开→现（入场日段用）
+            if abs(tm) > BAD_TICK_ABS:
+                bad_ticks.append({"code": code, "name": r.get("name") or "",
+                                  "chg": round(tm, 4), "close": n, "pre_close": pc})
             if entry == today:
                 cum_s = om           # 入场日：与台账入场价同基准，必须是开仓口径
             else:
@@ -405,9 +504,35 @@ def snap():
         }
         if rec["cum_today_mean"] is not None and rec["bench_cum"] is not None:
             rec["excess"] = round(rec["cum_today_mean"] - rec["bench_cum"], 6)
+
+        # ── 价格守卫 ────────────────────────────────────────────────
+        # 与同日上一轮快照比。收盘后价格定格，差异只能是坏价；盘中差异要
+        # 看间隔，30 分钟内跳 1pp 才可疑（再长就可能是真行情了）。
+        ck = "%s/%s" % (c["asof"], c["pool"])
+        w = snap_guard(ck, rec["cum_today_mean"], at, rec["day_index"],
+                       prev_by_key.get((c["asof"], c["pool"])), prev_at)
+        if w:
+            warns.append(w)
+            print("  [%s] %s" % ("警告" if w["severity"] == "high" else "提示", w["msg"]))
+        if bad_ticks:
+            for b in bad_ticks:
+                warns.append({
+                    "code": "bad_tick", "severity": "medium", "cohort": ck,
+                    "msg": "%s %s 当日涨跌 %.1f%%（收 %s / 昨收 %s），超出任何板块涨跌停"
+                           "上限；若为新股首日或复牌可忽略"
+                           % (b["code"], b["name"], b["chg"] * 100,
+                              b["close"], b["pre_close"]),
+                    "detail": b,
+                })
+            print("  [提示] %s 有 %d 只单票涨跌幅超出涨跌停上限：%s"
+                  % (ck, len(bad_ticks),
+                     "、".join("%s %.1f%%" % (b["code"], b["chg"] * 100)
+                               for b in bad_ticks)))
+
         cohorts_out.append(rec)
         # 写回 cohort 文件（快照留最近 5 条）
         c.setdefault("snapshots", []).append({
+            "date": today,
             "at": at, "cum": rec["cum_today_mean"],
             "bench": rec.get("bench_cum"), "excess": rec.get("excess")})
         c["snapshots"] = c["snapshots"][-5:]
@@ -428,6 +553,9 @@ def snap():
         "bench_open_today": round(bench_open, 6) if bench_open is not None else None,
         "bench_tm_today": round(bench_tm, 6) if bench_tm is not None else None,
         "bench_pool_n": len(bo),
+        # 价格守卫结果：high 表示本次数值大概率是坏价，下游报告要先复核再引用
+        "price_ok": not any(w["severity"] == "high" for w in warns),
+        "warnings": warns,
         "cohorts": cohorts_out,
         "rolling": rolling_alpha(),
     }
