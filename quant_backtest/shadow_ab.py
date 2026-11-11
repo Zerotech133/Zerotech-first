@@ -31,7 +31,6 @@
 """
 import argparse
 import json
-import math
 import os
 import statistics
 import subprocess
@@ -41,7 +40,6 @@ import time
 sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import bt10m_sweep as SW  # noqa: E402
 import bt10m_verify as V  # noqa: E402
 import backtest_engine_v2 as eng  # noqa: E402
 
@@ -167,7 +165,7 @@ def diag():
                if t.get("how") == "take_profit" and t.get("want")]
         row = {"desc": desc, "n_tp": len(tps), "secs": round(time.time() - t0, 1)}
 
-        dev_close, dev_slip3, gap_ok, fell_back, no_gap_fell = [], 0, 0, 0, 0
+        dev_close, gap_ok, fell_back, no_gap_fell = [], 0, 0, 0
         for t in tps:
             want = float(t["want"])
             op = t.get("d_open")

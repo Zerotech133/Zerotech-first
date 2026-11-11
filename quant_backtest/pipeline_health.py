@@ -18,7 +18,6 @@
 import glob
 import json
 import os
-import re
 import sys
 from datetime import date, datetime, timedelta
 
@@ -170,9 +169,8 @@ def main():
     # 6. 流水线日志
     if os.path.exists(LOG):
         txt = open(LOG, encoding="utf-8", errors="replace").read()
-        today_lines = [l for l in txt.splitlines()
-                       if l.startswith("[%s" % now.strftime("%H")) or True]
-        # 简化：看今天日期相关的 fail/abort（日志只有时分秒，按当次进程）
+        # 只看最后 200 行（日志只有时分秒，按当次进程判定）；
+        # 原 today_lines 恒真全量构造后从未使用，已删除（11-11 审计）。
         fails = [l for l in txt.splitlines()[-200:]
                  if "[fail]" in l and "可失败" not in l]
         aborts = [l for l in txt.splitlines()[-200:] if "[abort]" in l]
