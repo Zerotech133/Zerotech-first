@@ -27,8 +27,19 @@ ROOT = os.environ.get("ANALYSIS_MAIN_ROOT") or os.path.dirname(_THIS_DIR)
 WORK = os.environ.get("ANALYSIS_WORK") or os.path.join(os.path.dirname(ROOT), "analysis_work")
 DB = os.environ.get("DIALOG_DB") or os.path.join(WORK, "dialog", "dialog.db")
 GATEWAY = (os.environ.get("ANALYSIS_GATEWAY_URL") or "http://127.0.0.1:8091").rstrip("/")
+def _default_token_file():
+    """定位内部网关 token：主仓/工作树均从当前仓库根逐级向上找 commercial/analysis_internal.token。"""
+    cur = ROOT
+    for _ in range(4):
+        cand = os.path.join(cur, "commercial", "analysis_internal.token")
+        if os.path.exists(cand):
+            return cand
+        cur = os.path.dirname(cur)
+    return os.path.join(os.path.dirname(ROOT), "commercial", "analysis_internal.token")
+
+
 TOKEN_FILE = (os.environ.get("ANALYSIS_INTERNAL_TOKEN_FILE")
-              or os.path.join(ROOT, "commercial", "analysis_internal.token"))
+              or _default_token_file())
 
 CODE_RE = re.compile(r"^[0-9]{6}\.(SH|SZ|BJ)$")
 RAW_CODE_RE = re.compile(r"(?<!\d)((?:60|68|00|30|92)\d{4})(?!\d)")
