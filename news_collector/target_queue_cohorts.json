@@ -1,6 +1,6 @@
 {
   "asof": "cohorts_two_pools",
-  "generated_at": "2026-11-10T17:33:59",
+  "generated_at": "2026-11-11T07:58:06",
   "regime": "two_pools_shadow_entries",
   "total": 59,
   "all": [
@@ -183,6 +183,6 @@
     }
   ],
   "actionable": [],
-  "xq_include_cohorts": false,
-  "xq_expand_note": "开关置 true 后需在 xq_stock_timeline.load_queue 增加本文件并集；两池每日滚动换仓，并入 07:00 有头管线前须评估负载，属运营裁定，归上级"
+  "xq_include_cohorts": true,
+  "xq_expand_note": "R10 已批准：selection_universe.json 中 cohorts.xq_include=true，load_queue 经 B 注册表重构已并集合并；07:00 有头管线 +59；逐日滚动换仓，负载归运营裁定（已批）"
 }

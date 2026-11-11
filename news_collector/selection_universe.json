@@ -1,0 +1,52 @@
+{
+  "asof": "2026-11-11",
+  "generated_by": "OSINT1 马良 / 老田裁定 B 注册表架构",
+  "note": "声明式选股源注册表。xq_stock_timeline.load_queue 只读本表，并集所有 xq_include=true 的源并入 07:00 有头雪球管线。各源 xq_include 开关归上级裁定，本席只维护声明与口径，不擅动扩源决策。源文件路径相对 news_collector/；research/ 等用 ../ 回退到 aios 仓库根。",
+  "sources": {
+    "chanlun": {
+      "file": "target_queue_chanlun.json",
+      "scope": "all",
+      "label": "缠论队列(基线465)",
+      "xq_include": true,
+      "note": "基线队列，恒并入 07:00"
+    },
+    "houfeng_picks": {
+      "file": "target_queue_houfeng.json",
+      "scope": "all",
+      "label": "侯风选股30（关闸期影子池）",
+      "xq_include": true,
+      "note": "侯风最新选股，恒并入"
+    },
+    "houfeng_candidates164": {
+      "file": "target_queue_houfeng.json",
+      "pool": "candidate_pool",
+      "scope": "all",
+      "label": "侯风164候选池",
+      "xq_include": true,
+      "signal_date": "20261106",
+      "note": "R8 批准扩容：489→593(+104 有头采集)；为 20261106 冻结快照，非每日重算"
+    },
+    "cohorts": {
+      "file": "target_queue_cohorts.json",
+      "scope": "all",
+      "label": "两池影子池59（主选+auto）",
+      "xq_include": true,
+      "note": "R10 批准并入：+59，逐日滚动换仓，有头管线负载归运营裁定"
+    },
+    "s12": {
+      "file": "../research/shadow/s12/basket_20261106.json",
+      "scope": "basket",
+      "code_field": "ts_code",
+      "label": "蒋琬S12多因子共识20(.SH)",
+      "xq_include": false,
+      "note": "开关已建，待上级裁定扩源；与 k_stock 两套选股源"
+    },
+    "unified40": {
+      "file": "unified40_watchlist.json",
+      "scope": "all",
+      "label": "四组统一总榜40(部分种子)",
+      "xq_include": false,
+      "note": "当前仅含 R20 确认 16 只盲区(13 已补+3 合法空/源边界)，全 40 只 v3 总榜待老田补登后 xq_include 再评估"
+    }
+  }
+}

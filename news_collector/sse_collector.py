@@ -16,6 +16,7 @@
   python sse_collector.py --uidmap                 # 仅重建 uid 映射
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -90,6 +91,20 @@ def build_uid_map(s, pages=80):
     return uid_map
 
 
+def _stable_sse_id(code, ts, content):
+    """A1② sse id 归一化：用 sha256 内容指纹生成确定性 id。
+
+    旧实现用 Python 内置 hash()（按进程加盐、跨进程不稳定），导致同一帖子
+    每次重抓得到不同 id，按 id 去重失效——每日重跑把全部历史帖重复追加
+    （实测 600018.jsonl 共 32 行仅 8 行唯一）。改用 sha256 内容指纹：
+      - 确定性：同 (code,ts,content) 永远得到同一 id，去重跨进程稳定；
+      - 十六进制：绝不可能是连续 11 位数字（手机号形态），PHONE_CN 误报根治。
+    """
+    raw = "%s|%s|%s" % (code, ts or "", content or "")
+    h = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    return "sse:%s:%s" % (code, h)
+
+
 def _load_uid_map(s):
     if os.path.exists(UID_MAP_PATH):
         with open(UID_MAP_PATH, encoding="utf-8") as f:
@@ -137,12 +152,12 @@ def fetch_company(s, code, uid):
         if got == 0:
             break
         time.sleep(_GAP)
-    # 组装行（id 用 ts+content 哈希：翻页窗口变动时行序号会漂移，哈希才稳）
+    # 组装行（A1②：id 用内容指纹确定性生成，跨进程稳定、去重不漂移）
     out = []
     for row in rows:
-        h = abs(hash((row.get("ts", ""), row.get("content", "")))) % 10 ** 12
+        rid = _stable_sse_id(code, row.get("ts", ""), row.get("content", ""))
         out.append({
-            "id": "sse:%s:%d" % (code, h),
+            "id": rid,
             "code": code,
             "name": "",
             "ts": row.get("ts", ""),
@@ -190,11 +205,14 @@ def main():
         path = os.path.join(OUT_DIR, "%s.jsonl" % code)
         # 行级护栏：断言 code；去重按 id
         existing = set()
+        existing_keys = set()
         if os.path.exists(path):
             with open(path, encoding="utf-8") as f:
                 for ln in f:
                     try:
-                        existing.add(json.loads(ln)["id"])
+                        r = json.loads(ln)
+                        existing.add(r["id"])
+                        existing_keys.add((r.get("ts", ""), r.get("content", "")))
                     except Exception:
                         pass
         new_rows, dropped = [], 0
@@ -204,6 +222,9 @@ def main():
                 dropped += 1
                 continue
             if row["id"] in existing:
+                continue
+            # A1②：内容键兜底，旧随机 id 文件重抓也不会重复追加
+            if (row.get("ts", ""), row.get("content", "")) in existing_keys:
                 continue
             new_rows.append(row)
         if new_rows:
