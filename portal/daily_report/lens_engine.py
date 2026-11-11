@@ -388,14 +388,39 @@ def session_breadth(asof):
     return out
 
 
-def _fresh_or_missing(name, fname, asof):
-    """数据源没配置时，如实说「缺失」，不让维度凭空消失。"""
+def _lag_rank(d):
+    """越小越新鲜。缺失/异常一律排最后，避免「没有数据」被判成「最新」。"""
+    if d.get("status") in ("missing", "error", "unknown"):
+        return 9999
+    lg = d.get("lag_days")
+    return 9998 if lg is None else lg
+
+
+def _fresh_or_missing(name, fname, asof, extra_note=None):
+    """数据源没配置时，如实说「缺失」，不让维度凭空消失。
+
+    fname 可以是单个文件名，也可以是列表（历史底 + 增量分片）。
+    列表时取其中最新的一份：涨停就是这样——历史底 limit_list_d_full 停在
+    早期不再更新，每日增量写进 limit_list_d_delta，只看前者会把「T+1 正常」
+    误判成「停更 20 个交易日」。
+    """
+    names = [fname] if isinstance(fname, str) else list(fname)
+    key = names[0].split("_")[0]
     if not KG:
-        return {"key": fname.split("_")[0], "name": name, "status": "missing",
+        return {"key": key, "name": name, "status": "missing",
                 "latest": None, "note": "本机未配置该数据源（ZQ_LENS_DATA 或 lens_paths.json）"}
-    d = dim_freshness(name, os.path.join(KG, fname), asof)
-    d["key"] = fname.split("_")[0]
-    return d
+    best = None
+    best_fn = None
+    for fn in names:
+        d = dim_freshness(name, os.path.join(KG, fn), asof)
+        if best is None or _lag_rank(d) < _lag_rank(best):
+            best, best_fn = d, fn
+    best["key"] = key
+    if len(names) > 1:
+        best["note"] = "%s（取自 %s）" % (best.get("note") or "", best_fn)
+    if extra_note:
+        best["note"] = "%s；%s" % (best.get("note") or "", extra_note)
+    return best
 
 
 def market_dimensions(asof):
@@ -525,11 +550,16 @@ def market_dimensions(asof):
         dims.append({"key": "moneyflow", "name": "大单资金", "status": "error",
                      "value": None, "note": str(e)[:80]})
 
-    # 6) 涨停情绪（数据可能落后，如实标）
-    dims.append(_fresh_or_missing("涨停情绪", "limit_list_d_full.parquet", asof))
+    # 6) 涨停情绪（历史底 + 增量分片，取最新的一份；上游 T+1 早间补数属正常）
+    dims.append(_fresh_or_missing(
+        "涨停情绪", ["limit_list_d_full.parquet", "limit_list_d_delta.parquet"], asof,
+        extra_note="T+1 早间补前一交易日，落后 1 日属正常节奏"))
 
-    # 7) 板块轮动（数据可能落后）
-    dims.append(_fresh_or_missing("板块轮动", "sector_daily.parquet", asof))
+    # 7) 板块轮动（全量快照维护，非日更；落后＝上游断供，不是本轮采集失败）
+    dims.append(_fresh_or_missing(
+        "板块轮动", "sector_daily.parquet", asof,
+        extra_note="此维度由一次性全量快照维护，不作日更；落后说明上游数据源未再供数，"
+                   "不等于「当日无异常」，也不等于「本轮采集漏跑」"))
 
     for i, d in enumerate(dims):
         d.setdefault("key", "dim%d" % i)
