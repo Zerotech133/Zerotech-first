@@ -42,7 +42,7 @@ HIST_MARGIN = r"C:\Temp\hf_probe\hist\margin.parquet"  # delta 文件只覆盖�
 
 API = "https://api.tushare.pro"
 MATURITIES = (1, 3, 5, 10, 20)
-POOLS = [("main", "selection_%s.json", "主选·三条全中"),
+POOLS = [("main", "selection_%s.json", "主选·多因子共识"),
          ("auto", "selection_%s_auto.json", "auto池·生产")]
 SETTLE_JSONL = os.path.join(COHORT_DIR, "settlements.jsonl")
 STATUS_LATEST = os.path.join(COHORT_DIR, "status_latest.json")
@@ -420,12 +420,16 @@ def snap():
                  ("%+.2fpp" % (rec["excess"] * 100)) if rec.get("excess") is not None else "-",
                  n_used, c["n"]))
 
+    # 滚动超额 + 降级线一并落盘（2026-11-11）：此前 rolling_alpha() 只在 main() 里
+    # print，status_latest.json 没有该字段，页面与 API 都拿不到降级线判定。
+    # 口径唯一来源仍是 rolling_alpha()，build_houfeng 不再自行重算。
     status = {
         "run_at": at, "as_of_from": t0, "asof_view": asof_view, "today": today,
         "bench_open_today": round(bench_open, 6) if bench_open is not None else None,
         "bench_tm_today": round(bench_tm, 6) if bench_tm is not None else None,
         "bench_pool_n": len(bo),
         "cohorts": cohorts_out,
+        "rolling": rolling_alpha(),
     }
     json.dump(status, open(STATUS_LATEST, "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
@@ -457,7 +461,7 @@ def _write_hold_pack(status):
                 for r in c["rows"] if r.get("cum") is not None] if bench is not None else []
         batches.append({
             "key": c["pool"],
-            "label": "三条全中（本页主选）" if c["pool"] == "main" else "auto 池（生产池）",
+            "label": "多因子共识（本页主选）" if c["pool"] == "main" else "auto 池（生产池）",
             "n": c["n"], "n_priced": c["n_used"], "missing": c.get("miss", []),
             "ret": c["cum_today_mean"], "excess": c.get("excess"),
             "win": sum(1 for r in rows if r["excess"] > 0),
@@ -525,7 +529,7 @@ def rolling_alpha():
         else:
             status = "ok"
         out["_degrade"] = {
-            "line": "最近%d个已结算样本 超额均值<%.1fpp 且 胜率<%.0f%% 建议降级（只报警，降级由老田执行）"
+            "line": "口径：最近 %d 个已结算样本，超额均值低于 %.1f 个百分点、且跑赢占比低于 %.0f%% 时建议降级（只报警，降级动作由人工执行）"
                     % (DEGRADE_LINE["n_full"], DEGRADE_LINE["mean_pp"], DEGRADE_LINE["win"]),
             "n": n_s, "mean_pp": round(mean_pp, 2), "win": round(win, 0),
             "status": status,

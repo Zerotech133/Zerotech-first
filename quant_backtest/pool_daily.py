@@ -179,6 +179,12 @@ def main():
     steps.append(("发布目录打包（h5_pack）", ["h5_pack.py"], False))
     if not a.no_push:
         steps.append(("收盘复盘推送", ["pool_close_review.py"], True))
+    # 选股工作台 v2（老田 2026-11-10：档卡片→档列表→个股全部关系详情）
+    steps.append(("选股工作台 v2", ["pool_workbench2.py"], True))
+    # 106 课板块强弱影子（老田 2026-11-10 批准 v0）：9 类均线攻克度均值，
+    # 与 sector_state 的 r5/RPS 并行影子、不互相推翻。soft——影子失败
+    # 不该挡结构流水线；产物 sector106_shadow_<asof>.json 供面板择优。
+    steps.append(("106课板块强弱（影子）", ["sector_beichi106.py", "--save"], True))
     # 影子台账（固化 v1 六腿）：F1 转正验收的 G-A 门靠每个交易日的动作差累积。
     # 标 soft —— 台账失败不该挡住整条结构流水线；15:10 自动化已写过的当日
     # 文件会被这里正常覆盖重算（幂等，同输入同输出）。

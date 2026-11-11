@@ -152,31 +152,45 @@ def is_st_pit_blocked(code, day, intervals=None):
 # （PRE 不变：候选少于槽位排序不触发）。回退 40/30/30，参数保留可复测。
 SCORE_W = {"pos": 40.0, "vol": 30.0, "bei": 30.0}
 # 各维内部档位的相对比例（沿用旧结构，只按权重缩放，避免「权重一改档位也跟着变」）
+# 2026-11-10 老田批准（三买口径修正+背驰落地）：位置分基准从「信号日收盘
+# close/zg−1」改「回踩笔低点 low/zg−1」（20 课定理原文：三买的判据是回试
+# 笔低点不破 ZG，贴近度就该量回踩低点，不是信号日收盘——收盘可能已经反弹
+# 离开低点，中位 +14.1% 的旧口径其实量的是「反弹幅度」不是「回踩质量」）。
 _POS_RATIO = (1.00, 0.80, 0.60, 0.35, 0.20)  # ≤2% / ≤5% / ≤10% / ≤20% / >20%
 _VOL_RATIO = (1.00, 0.80, 0.53, 0.27)  # ≥1.5 / ≥1.0 / ≥0.7 / <0.7
-_BEI_SPLIT = (0.60, 0.40)  # bei（回踩笔盘整背驰）: bei2（回踩vs离开力度背驰）
+# 背驰分三源拆分（2026-11-10 背驰落地）：bei=回踩笔力度盘整背驰（P5）、
+# bei2=回踩vs前序同向腿力度衰竭（P6-b）、bei24=24课 MACD 柱面积背驰（新）。
+# 任一为 True 即得对应份额；三个字段 None（不判）不计分不扣分。
+_BEI_SPLIT = (0.40, 0.30, 0.30)  # bei / bei2 / bei24
 
 
 def score_weights_tag():
     """一行摘要，写进事件缓存 meta 供事后核对口径（换了权重没重扫=静默错配）。"""
-    return "pos%d/vol%d/bei%d" % (
+    return "pos%d/vol%d/bei%d(%d%d%d)/low-base" % (
         SCORE_W["pos"],
         SCORE_W["vol"],
         SCORE_W["bei"],
+        int(_BEI_SPLIT[0] * 10),
+        int(_BEI_SPLIT[1] * 10),
+        int(_BEI_SPLIT[2] * 10),
     )
 
 
-def score_3buy(close, zg, vr, bei, bei2):
+def score_3buy(low, zg, vr, bei, bei2, bei24=None):
     """三买评分（0-100，老田"评分取前十"规律）：位置 + 量能 + 背驰。
 
-    - 位置：收盘距中枢上沿 zg 的回踩贴近度（贴近=洗盘充分·远离=追高风险）
+    - 位置：回踩笔低点距中枢上沿 zg 的贴近度（20 课口径：三买=回试笔
+      低点不破 ZG，贴近=洗盘充分·远离=追高风险）。low 传回踩笔低点
+      （=信号 price），不再用信号日收盘。
     - 量能：信号日成交额 / 20 日均额（量比·放量过中枢优）
-    - 背驰：bei=回踩笔盘整背驰 · bei2=回踩vs离开力度背驰
-    权重见 SCORE_W（默认 55/25/20）；内部档位按 _*_RATIO 比例缩放，总和恒 100。
+    - 背驰三源：bei=回踩笔盘整背驰 · bei2=回踩vs离开力度背驰 ·
+      bei24=24课 MACD 柱面积背驰（None 不判不计分）
+    权重见 SCORE_W（40/30/30）；背驰内部分 _BEI_SPLIT；内部档位按
+    _*_RATIO 比例缩放，总和恒 100。
     """
-    if not zg or zg <= 0:
+    if not zg or zg <= 0 or low is None:
         return None
-    t = close / zg - 1.0
+    t = low / zg - 1.0
     if t <= 0.02:
         r = _POS_RATIO[0]
     elif t <= 0.05:
@@ -199,7 +213,9 @@ def score_3buy(close, zg, vr, bei, bei2):
     else:
         sv = SCORE_W["vol"] * _VOL_RATIO[3]
     sb = SCORE_W["bei"] * (
-        (_BEI_SPLIT[0] if bei else 0.0) + (_BEI_SPLIT[1] if bei2 else 0.0)
+        (_BEI_SPLIT[0] if bei else 0.0)
+        + (_BEI_SPLIT[1] if bei2 else 0.0)
+        + (_BEI_SPLIT[2] if bei24 else 0.0)
     )
     return round(sp + sv + sb)
 
@@ -244,19 +260,27 @@ def scan_stock(args):
             w = amt[i - 19 : i + 1]
             m = sum(w) / 20.0
             vr = amt[i] / m if m > 0 else None
-        close = bars_all[i]["c"]
         out = {}
         for sg in (chan_analyze(seg) or {}).get("signals") or []:
             sc = None
             if sg["type"] == "3买":
-                sc = score_3buy(close, sg.get("zg"), vr, sg.get("bei"), sg.get("bei2"))
+                # 位置分基准=回踩笔低点（sg["price"] 即回踩笔终点价，20 课
+                # 口径）；背驰分三源：力度 bei/bei2 + 24课 MACD bei24
+                sc = score_3buy(
+                    sg.get("price"), sg.get("zg"), vr,
+                    sg.get("bei"), sg.get("bei2"), sg.get("bei24"),
+                )
             out[(code, sg["type"])] = {
                 "dt": int(sg["dt"]),
+                # 3买 的 price=回踩笔低点（评分位置分基准，20 课口径）；
+                # 其他类型 price=信号笔终点价。落盘供事后审计评分。
+                "price": sg.get("price"),
                 "zg": sg.get("zg"),
                 "zd": sg.get("zd"),
                 "vr": vr,
                 "bei": sg.get("bei"),
                 "bei2": sg.get("bei2"),
+                "bei24": sg.get("bei24"),
                 "score": sc,
             }
         return out

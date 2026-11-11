@@ -34,7 +34,7 @@ def _main_repo() -> Path:
         r = subprocess.run(
             ["git", "-C", str(REPO), "rev-parse", "--git-common-dir"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=30,
         )
         if r.returncode == 0 and r.stdout.strip():

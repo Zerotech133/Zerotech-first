@@ -483,7 +483,7 @@ def test_coverage_judge_dims(reg):
 def test_sqlite_since_iso_text_matches_direct_sql():
     """sqlite since 对 ISO 文本列不假绿：与直连 SQL 计数一致。"""
     import sqlite3
-    from dataset_registry import DatasetRegistry
+    from dataset_registry import DatasetRegistry, REPO as REGISTRY_REPO
 
     r = DatasetRegistry()
     q = r.query("xq_xq_status", since="2026-10-01", limit=1, count=True)
@@ -491,7 +491,9 @@ def test_sqlite_since_iso_text_matches_direct_sql():
     row = [d for d in r.datasets if d.get("dataset_id") == "xq_xq_status"][0]
     p = Path(row["path"])
     if not p.is_absolute():
-        p = Path(__file__).resolve().parents[3] / p
+        # 与 registry._resolve() 同锚：相对 path 挂 REPO（主仓 live 数据根），
+        # 不再按 worktree 本地副本解析（2026-11-07 WO-GUANYU-DATASEED-20261106）。
+        p = REGISTRY_REPO / p
     con = sqlite3.connect("file:%s?mode=ro" % p.as_posix(), uri=True)
     try:
         expect = con.execute(

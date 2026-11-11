@@ -18,7 +18,6 @@
 import glob
 import json
 import os
-import re
 import sys
 from datetime import date, datetime, timedelta
 
@@ -170,9 +169,8 @@ def main():
     # 6. 流水线日志
     if os.path.exists(LOG):
         txt = open(LOG, encoding="utf-8", errors="replace").read()
-        today_lines = [l for l in txt.splitlines()
-                       if l.startswith("[%s" % now.strftime("%H")) or True]
-        # 简化：看今天日期相关的 fail/abort（日志只有时分秒，按当次进程）
+        # 只看最后 200 行（日志只有时分秒，按当次进程判定）；
+        # 原 today_lines 恒真全量构造后从未使用，已删除（11-11 审计）。
         fails = [l for l in txt.splitlines()[-200:]
                  if "[fail]" in l and "可失败" not in l]
         aborts = [l for l in txt.splitlines()[-200:] if "[abort]" in l]
@@ -182,6 +180,88 @@ def main():
             log("WARN", "流水线日志有 [fail]（soft 步骤失败，不阻断）：%d 条" % len(fails))
         else:
             log("OK", "流水线日志无 fail/abort")
+
+    # 7. 缓存自愈过程可见性（11-10 影子台账日期滚动自愈的首考验收）
+    #    有今天的 rescan 日志 → 核对重扫结果；没有 → 今天缓存本来就在（15:10
+    #    先跑已建好），INFO 即可。自愈失败最终会体现在第 5 项六腿 error 上。
+    res_logs = sorted(glob.glob(os.path.join(REPORTS, "market_scan_rescan_*.log")),
+                      key=os.path.getmtime)
+    today_logs = []
+    for p in res_logs:
+        mt = datetime.fromtimestamp(os.path.getmtime(p)).date()
+        if mt == today:
+            today_logs.append(p)
+    if today_logs:
+        for p in today_logs[-2:]:
+            txt = open(p, encoding="utf-8", errors="replace").read().strip()
+            last = txt.splitlines()[-1] if txt else ""
+            if ("缓存已生成" in last and "rc=0" in last) or last.startswith("DONE {"):
+                # DONE 行是 market_scan 自身产出（ensure_sig_cache 11-11 起才追加结论行）
+                log("OK", "缓存自愈重扫成功（%s）" % os.path.basename(p))
+            elif "缓存仍缺失" in last or "自愈失败" in last:
+                log("WARN", "缓存自愈重扫未产出缓存（%s 末行：%s）"
+                            "——六腿将报缓存错误，人工跑 market_scan 重扫"
+                            % (os.path.basename(p), last[:80]))
+            else:
+                log("WARN", "重扫日志 %s 无结论行（进程被截断？）" % os.path.basename(p))
+    else:
+        print("[INFO] 今天未触发缓存重扫（滚动日缓存已在位或检查先于流水线）")
+
+    # 8. 106 课板块强弱影子（2026-11-10 v0 落地，pool_daily 第 8 步）
+    #    产物 sector106_shadow_<asof>.json；影子失败是 soft 不阻断，但连续
+    #    缺失说明第 8 步在静默挂——查最后一次成功的日期。
+    s106 = sorted(glob.glob(os.path.join(REPORTS, "sector106_shadow_*.json")),
+                  key=os.path.getmtime)
+    if not s106:
+        log("WARN", "106 课影子无产物（sector106_shadow_*.json）——"
+                    "第 8 步从未成功，人工跑 sector_beichi106.py --save 排查")
+    else:
+        last_fp = s106[-1]
+        mt = datetime.fromtimestamp(os.path.getmtime(last_fp)).date()
+        try:
+            d106 = json.load(open(last_fp, encoding="utf-8"))
+            n_sec = d106.get("n_sectors")
+            # 本文件 prev_trading_day 吃/吐 date 对象（非 pool_daily 的字符串版）
+            lim1, lim2 = prev_trading_day(today), prev_trading_day(prev_trading_day(today))
+            if mt >= lim1:
+                log("OK", "106 课影子最新 %s（%d 板块）"
+                          % (os.path.basename(last_fp), n_sec or 0))
+            elif mt >= lim2:
+                log("INFO", "106 课影子停在 %s（隔日，影子允许滞后）"
+                            % os.path.basename(last_fp))
+            else:
+                log("WARN", "106 课影子落后两天以上（%s）——第 8 步可能在静默挂"
+                            % os.path.basename(last_fp))
+        except Exception as e:
+            log("WARN", "106 课影子产物解析失败：%s" % e)
+
+    # 9. W2 影子腿（T3 · DIF 三态仓位，2026-11-11 落地）
+    #    产物 data/shadow/w2_<date>.json；与六腿台账同目录但独立文件。
+    w2_files = sorted(glob.glob(os.path.join(HERE, "data", "shadow", "w2_*.json")),
+                      key=os.path.getmtime)
+    if not w2_files:
+        log("WARN", "W2 影子腿无产物（data/shadow/w2_*.json）——"
+                    "影子期从 11-11 起每天应有，人工跑 shadow_w2.py 排查")
+    else:
+        w2_fp = w2_files[-1]
+        mt2 = datetime.fromtimestamp(os.path.getmtime(w2_fp)).date()
+        try:
+            d2 = json.load(open(w2_fp, encoding="utf-8"))
+            fid = (d2.get("fidelity") or {})
+            lim1 = prev_trading_day(today)
+            lim2 = prev_trading_day(lim1)
+            if mt2 >= lim1:
+                log("OK", "W2 影子最新 %s（corr=%s max日差=%s%%）"
+                          % (os.path.basename(w2_fp),
+                             fid.get("corr"), fid.get("max_daily_diff_pct")))
+            elif mt2 >= lim2:
+                log("INFO", "W2 影子停在 %s（隔日，影子允许滞后）"
+                            % os.path.basename(w2_fp))
+            else:
+                log("WARN", "W2 影子落后两天以上（%s）——soft 调用在静默挂"
+                            % os.path.basename(w2_fp))
+        except Exception as e:
+            log("WARN", "W2 影子产物解析失败：%s" % e)
 
     print("== 汇总：ALERT %d / WARN %d ==" % (len(ALERTS), len(WARNS)))
     return 2 if ALERTS else (1 if WARNS else 0)

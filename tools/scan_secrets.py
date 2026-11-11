@@ -20,6 +20,7 @@ import argparse
 import math
 import os
 import re
+import fnmatch
 import subprocess
 import sys
 
@@ -477,24 +478,52 @@ def load_baseline(path):
 
     格式：每行 `path:line:rule<TAB>category<TAB>note`；# 开头与空行跳过。
     只取第一列精确 key；`./` 前缀归一化，便于 `--all`（./x）与显式路径（x）两种模式共用。
+    支持目录级/通配豁免：path 部分含 `*` 时视为 glob 模式（如 `data/sse/*.jsonl`），
+    line 用 `*` 表示任意行，rule 用 `*` 表示任意规则——用于批量豁免同源误报（如交易所
+    公开抓取数据里的平台脱敏用户标识被 PHONE_CN 误报）。
+    返回 (exact_keys:set, glob_patterns:list[(pattern_path, pattern_rule)])。
     文件不可读时打印 stderr 告警并按空基线处理（fail-open，不隐藏真实命中）。
     """
-    keys = set()
+    exact = set()
+    globs = []
     try:
         with open(path, encoding="utf-8") as f:
             for ln in f:
-                k = ln.split("\t")[0].strip()
-                if k and not k.startswith("#"):
-                    keys.add(k[2:] if k.startswith("./") else k)
+                first = ln.split("\t")[0].strip()
+                if not first or first.startswith("#"):
+                    continue
+                # first 形如 path:line:rule（path 用 / 不含 :）
+                parts = first.split(":")
+                if len(parts) < 3:
+                    continue
+                p = parts[0]
+                line_no = parts[1]
+                rule = ":".join(parts[2:])
+                p = p[2:] if p.startswith("./") else p
+                if "*" in p:
+                    globs.append((p, rule))
+                else:
+                    exact.add("%s:%s:%s" % (p, line_no, rule))
     except OSError as e:
         print(f"[scan_secrets] baseline 读取失败（按空基线继续）：{e}", file=sys.stderr)
-    return keys
+    return exact, globs
 
 
 def _baseline_key(path, lineno, rule):
     """命中 → 与 allowlist 对齐的 key（去掉 ./ 前缀）。"""
     p = path[2:] if path.startswith("./") else path
     return "%s:%s:%s" % (p, lineno, rule)
+
+
+def _baseline_match(path, lineno, rule, exact_keys, glob_patterns):
+    """是否命中基线豁免：精确 key 或目录级 glob 模式（EXEC-R22 扩展）。"""
+    if _baseline_key(path, lineno, rule) in exact_keys:
+        return True
+    p = path[2:] if path.startswith("./") else path
+    for gp_path, gp_rule in glob_patterns:
+        if fnmatch.fnmatch(p, gp_path) and (gp_rule == "*" or gp_rule == rule):
+            return True
+    return False
 
 
 def main():
@@ -536,10 +565,10 @@ def main():
     # 基线豁免（EXEC-R22）：allowlist 内的 path:line:rule 只备案，不算未豁免
     baseline_hits = []
     if args.baseline:
-        _base_keys = load_baseline(args.baseline)
+        _base_keys, _glob_patterns = load_baseline(args.baseline)
         kept = []
         for h in real_hits:
-            if _baseline_key(h[0], h[1], h[2]) in _base_keys:
+            if _baseline_match(h[0], h[1], h[2], _base_keys, _glob_patterns):
                 baseline_hits.append(h)
             else:
                 kept.append(h)

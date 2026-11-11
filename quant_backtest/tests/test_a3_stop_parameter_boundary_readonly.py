@@ -43,21 +43,36 @@ def _sells(result):
     return [(t["day"], t["how"], t["pnl"]) for t in result["trades"] if t["side"] == "SELL"]
 
 
+# 2026-11-10 契约变更：缠论分支接入硬止损（stop_pct<0 触发、收盘确认、
+# 次日开盘成交；引擎注释「参数看着传了没生效」第 4 例修复）。原
+# 「两符号都忽略止损」期望过期，2026-11-11 按新契约重写：
+#   负值 → 跌穿阈值 stop_loss 离场；非负（含 0=默认关）→ 不触发。
 @pytest.mark.parametrize("stop_pct", [-0.125, 0.125])
-def test_chanlun_both_signs_ignore_stop_without_other_exit(engine, monkeypatch, stop_pct):
+def test_chanlun_stop_sign_gates_trigger(engine, monkeypatch, stop_pct):
     closes = (100.0, 100.0, 87.5, 87.0, 85.0)
-    baseline = _run(engine, monkeypatch, "chanlun", 0.0, closes)
     observed = _run(engine, monkeypatch, "chanlun", stop_pct, closes)
 
     assert observed["meta"]["config"]["stop_pct"] == stop_pct
-    assert observed["trades"] == baseline["trades"] == [
-        {"day": DAYS[1], "stock": STOCK, "side": "BUY", "how": "chanlun", "note": "", "pnl": None}
-    ]
-    assert observed["days"] == baseline["days"]
-    assert observed["holdings"] == baseline["holdings"]
-    assert [observed["holdings"][day][0]["pnl_pct"] for day in DAYS[2:]] == [-12.5, -13.0, -15.0]
-    assert all(observed["days"][day]["n_pos"] == 1 for day in DAYS[1:])
-    assert _sells(observed) == []
+    if stop_pct < 0:
+        # T+2 收盘 87.5 跌穿 -12.5% → 触发，T+3（DAYS[3]）开盘卖
+        assert [(t["day"], t["side"], t["how"]) for t in observed["trades"]] == [
+            (DAYS[1], "BUY", "chanlun"),
+            (DAYS[3], "SELL", "stop_loss"),
+        ]
+    else:
+        assert [(t["day"], t["side"], t["how"]) for t in observed["trades"]] == [
+            (DAYS[1], "BUY", "chanlun"),
+        ]
+    if stop_pct < 0:
+        # 触发后 DAYS[3] 开盘卖出（open 恒为 100 → pnl 0.0），此后不再持仓
+        assert [observed["holdings"][day][0]["pnl_pct"] for day in DAYS[2:3]] == [-12.5]
+        assert all(observed["days"][day]["n_pos"] == 1 for day in DAYS[1:3])
+        assert observed["days"][DAYS[3]]["n_pos"] == 0
+        assert _sells(observed) == [(DAYS[3], "stop_loss", 0.0)]
+    else:
+        assert [observed["holdings"][day][0]["pnl_pct"] for day in DAYS[2:]] == [-12.5, -13.0, -15.0]
+        assert all(observed["days"][day]["n_pos"] == 1 for day in DAYS[1:])
+        assert _sells(observed) == []
 
 
 @pytest.mark.parametrize("stop_pct", [-0.125, 0.125])

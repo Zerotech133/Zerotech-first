@@ -1,0 +1,2729 @@
+{
+ "ok": true,
+ "tool": "huangzhong_review.py",
+ "version": "v1.1 (2026-10-30)",
+ "generated_at": "2026-11-10T22:30:23+08:00",
+ "window_days": 7,
+ "repo_root": "C:\\项目\\老田的AI助手",
+ "work_dir": "C:\\项目\\老田的AI助手\\work\\huangzhong",
+ "read_only": true,
+ "legacy_v0_policy": "exempt",
+ "targets": {
+  "pass_samples": 10,
+  "drills": 1,
+  "natural_reject_min": 20,
+  "misreject_rate_max": 0.05,
+  "evidence_max_age_hours": 48.0,
+  "maturity_days": 7,
+  "legacy_v0_policy": "exempt"
+ },
+ "items": [
+  {
+   "id": "①",
+   "title": "PASS 验收样本量",
+   "status": "✓",
+   "target": "≥10 单 PASS",
+   "measured": "341/10 单",
+   "value": {
+    "count": 341,
+    "target": 10
+   },
+   "detail": {
+    "pass_sheets_raw": 341,
+    "excluded_drills": [],
+    "deduped_out": 0,
+    "samples": [
+     {
+      "file": "acceptance_7a1bfaf8.json",
+      "sha8": "7a1bfaf8",
+      "generated_at": "2026-11-10T19:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_4ed29c8b.json",
+      "sha8": "4ed29c8b",
+      "generated_at": "2026-11-10T19:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_b06e8e17.json",
+      "sha8": "b06e8e17",
+      "generated_at": "2026-11-10T18:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_0396559a.json",
+      "sha8": "0396559a",
+      "generated_at": "2026-11-10T18:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_a13e4704.json",
+      "sha8": "a13e4704",
+      "generated_at": "2026-11-10T17:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_17fbf9df.json",
+      "sha8": "17fbf9df",
+      "generated_at": "2026-11-10T17:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_b8d1abe7.json",
+      "sha8": "b8d1abe7",
+      "generated_at": "2026-11-10T16:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_f6650f8d.json",
+      "sha8": "f6650f8d",
+      "generated_at": "2026-11-10T16:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_243fff29.json",
+      "sha8": "243fff29",
+      "generated_at": "2026-11-10T15:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_0353b0bb.json",
+      "sha8": "0353b0bb",
+      "generated_at": "2026-11-10T15:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_def9bce1.json",
+      "sha8": "def9bce1",
+      "generated_at": "2026-11-10T14:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_5a28d6fa.json",
+      "sha8": "5a28d6fa",
+      "generated_at": "2026-11-10T14:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_916eee7f.json",
+      "sha8": "916eee7f",
+      "generated_at": "2026-11-10T13:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2a3aeb8c.json",
+      "sha8": "2a3aeb8c",
+      "generated_at": "2026-11-10T12:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_8dca81c9.json",
+      "sha8": "8dca81c9",
+      "generated_at": "2026-11-10T12:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_8142bcb0.json",
+      "sha8": "8142bcb0",
+      "generated_at": "2026-11-10T11:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_ab21e5ce.json",
+      "sha8": "ab21e5ce",
+      "generated_at": "2026-11-10T11:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_e861ec3d.json",
+      "sha8": "e861ec3d",
+      "generated_at": "2026-11-10T10:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_25a5d5a4.json",
+      "sha8": "25a5d5a4",
+      "generated_at": "2026-11-10T10:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_8acf02e8.json",
+      "sha8": "8acf02e8",
+      "generated_at": "2026-11-10T09:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_3345e2dc.json",
+      "sha8": "3345e2dc",
+      "generated_at": "2026-11-10T08:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_3d484fbc.json",
+      "sha8": "3d484fbc",
+      "generated_at": "2026-11-10T08:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2b20dd6b.json",
+      "sha8": "2b20dd6b",
+      "generated_at": "2026-11-10T07:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2fb6094d.json",
+      "sha8": "2fb6094d",
+      "generated_at": "2026-11-10T06:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2cc5b987.json",
+      "sha8": "2cc5b987",
+      "generated_at": "2026-11-10T05:15:02+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_82fcabe9.json",
+      "sha8": "82fcabe9",
+      "generated_at": "2026-11-10T00:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_92b08570.json",
+      "sha8": "92b08570",
+      "generated_at": "2026-11-09T22:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_41ce764a.json",
+      "sha8": "41ce764a",
+      "generated_at": "2026-11-09T21:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_b2a4d06b.json",
+      "sha8": "b2a4d06b",
+      "generated_at": "2026-11-09T21:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_c87e5761.json",
+      "sha8": "c87e5761",
+      "generated_at": "2026-11-09T20:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_d158caef.json",
+      "sha8": "d158caef",
+      "generated_at": "2026-11-09T19:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_7dc5fba7.json",
+      "sha8": "7dc5fba7",
+      "generated_at": "2026-11-09T18:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_47b9aac9.json",
+      "sha8": "47b9aac9",
+      "generated_at": "2026-11-09T17:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_518e495f.json",
+      "sha8": "518e495f",
+      "generated_at": "2026-11-09T17:15:02+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_05c7cfca.json",
+      "sha8": "05c7cfca",
+      "generated_at": "2026-11-09T16:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_12c32c60.json",
+      "sha8": "12c32c60",
+      "generated_at": "2026-11-09T16:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_00135966.json",
+      "sha8": "00135966",
+      "generated_at": "2026-11-09T15:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_6eb47a98.json",
+      "sha8": "6eb47a98",
+      "generated_at": "2026-11-09T15:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_91853b6e.json",
+      "sha8": "91853b6e",
+      "generated_at": "2026-11-09T14:45:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_efa67dea.json",
+      "sha8": "efa67dea",
+      "generated_at": "2026-11-09T14:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_6706b48f.json",
+      "sha8": "6706b48f",
+      "generated_at": "2026-11-09T13:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_14732868.json",
+      "sha8": "14732868",
+      "generated_at": "2026-11-09T13:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_c44324fa.json",
+      "sha8": "c44324fa",
+      "generated_at": "2026-11-09T12:45:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_bf6cb490.json",
+      "sha8": "bf6cb490",
+      "generated_at": "2026-11-09T12:15:00+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_eac4a5d0.json",
+      "sha8": "eac4a5d0",
+      "generated_at": "2026-11-09T11:15:01+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_d98f6df1.json",
+      "sha8": "d98f6df1",
+      "generated_at": "2026-11-09T10:45:02+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_d3f134eb.json",
+      "sha8": "d3f134eb",
+      "generated_at": "2026-11-09T10:15:02+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_ed42380f.json",
+      "sha8": "ed42380f",
+      "generated_at": "2026-11-09T09:45:02+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_9d6b340e.json",
+      "sha8": "9d6b340e",
+      "generated_at": "2026-11-09T09:15:03+08:00",
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_4a8fb35d.json",
+      "sha8": "4a8fb35d",
+      "generated_at": "2026-11-09T08:45:03+08:00",
+      "evidence_scope": "default_latest"
+     }
+    ],
+    "count": 341,
+    "target": 10,
+    "dedup_rule": "按 commit sha 去重，同一 commit 取 generated_at 最新一单；排除演练单（drill 台账/ drill 标记）"
+   }
+  },
+  {
+   "id": "②",
+   "title": "受控拒收演练",
+   "status": "✓",
+   "target": "≥1 次（verdict∈{REJECT,OBSERVE}）",
+   "measured": "2 次（REJECT=1 OBSERVE=1）",
+   "value": {
+    "hits": 2,
+    "target": 1,
+    "by_verdict": {
+     "REJECT": 1,
+     "OBSERVE": 1
+    }
+   },
+   "detail": {
+    "ledger_files": [
+     "C:\\项目\\老田的AI助手\\work\\huangzhong\\drills\\drill_ledger_20261030.json"
+    ],
+    "ledger_entries": 2,
+    "hits": [
+     {
+      "file": "acceptance_76081eea.json",
+      "sha8": "76081eea",
+      "verdict": "REJECT",
+      "method": "历史失败证据·显式绑定（v2 §5.2 手段1）",
+      "witness": "待老田/赵云签字",
+      "generated_at": "2026-10-30T02:03:07+08:00",
+      "source": "drill_ledger_20261030.json"
+     },
+     {
+      "file": "acceptance_02317909.json",
+      "sha8": "02317909",
+      "verdict": "OBSERVE",
+      "method": "证据超龄·显式绑定（v2 §5.2 手段2）",
+      "witness": "待老田/赵云签字",
+      "generated_at": "2026-10-30T02:03:07+08:00",
+      "source": "drill_ledger_20261030.json"
+     }
+    ],
+    "by_verdict": {
+     "REJECT": 1,
+     "OBSERVE": 1
+    },
+    "unknown_verdict_entries": [],
+    "bad_entries": [],
+    "note": "演练单不计入 ① PASS 样本（按台账文件名/commit 排除）"
+   }
+  },
+  {
+   "id": "③",
+   "title": "误拒绝率 <5%",
+   "detail": {
+    "natural_reject_sheets": 76,
+    "natural_reject_samples": [
+     {
+      "file": "acceptance_005605f5.json",
+      "sha8": "005605f5",
+      "generated_at": "2026-11-03T11:15:01+08:00"
+     },
+     {
+      "file": "acceptance_00631d12.json",
+      "sha8": "00631d12",
+      "generated_at": "2026-11-05T02:15:03+08:00"
+     },
+     {
+      "file": "acceptance_01d66a4b.json",
+      "sha8": "01d66a4b",
+      "generated_at": "2026-11-05T01:15:03+08:00"
+     },
+     {
+      "file": "acceptance_05cf8578.json",
+      "sha8": "05cf8578",
+      "generated_at": "2026-11-03T15:45:01+08:00"
+     },
+     {
+      "file": "acceptance_06985f05.json",
+      "sha8": "06985f05",
+      "generated_at": "2026-11-03T14:15:00+08:00"
+     },
+     {
+      "file": "acceptance_0b40a54f.json",
+      "sha8": "0b40a54f",
+      "generated_at": "2026-11-05T16:15:01+08:00"
+     },
+     {
+      "file": "acceptance_114b66f1.json",
+      "sha8": "114b66f1",
+      "generated_at": "2026-11-03T10:45:01+08:00"
+     },
+     {
+      "file": "acceptance_138bed77.json",
+      "sha8": "138bed77",
+      "generated_at": "2026-11-03T10:15:01+08:00"
+     },
+     {
+      "file": "acceptance_170fc8d1.json",
+      "sha8": "170fc8d1",
+      "generated_at": "2026-11-05T16:45:01+08:00"
+     },
+     {
+      "file": "acceptance_18e3d0d0.json",
+      "sha8": "18e3d0d0",
+      "generated_at": "2026-11-04T23:15:01+08:00"
+     },
+     {
+      "file": "acceptance_1e98caa6.json",
+      "sha8": "1e98caa6",
+      "generated_at": "2026-11-05T01:45:03+08:00"
+     },
+     {
+      "file": "acceptance_1eae2e51.json",
+      "sha8": "1eae2e51",
+      "generated_at": "2026-11-05T12:45:00+08:00"
+     },
+     {
+      "file": "acceptance_20267605.json",
+      "sha8": "20267605",
+      "generated_at": "2026-11-03T12:45:01+08:00"
+     },
+     {
+      "file": "acceptance_23220b7b.json",
+      "sha8": "23220b7b",
+      "generated_at": "2026-11-05T03:45:05+08:00"
+     },
+     {
+      "file": "acceptance_24ca101b.json",
+      "sha8": "24ca101b",
+      "generated_at": "2026-11-03T11:45:01+08:00"
+     },
+     {
+      "file": "acceptance_259c9c23.json",
+      "sha8": "259c9c23",
+      "generated_at": "2026-11-05T10:45:01+08:00"
+     },
+     {
+      "file": "acceptance_25f65874.json",
+      "sha8": "25f65874",
+      "generated_at": "2026-11-03T05:15:01+08:00"
+     },
+     {
+      "file": "acceptance_29f72184.json",
+      "sha8": "29f72184",
+      "generated_at": "2026-11-10T21:15:01+08:00"
+     },
+     {
+      "file": "acceptance_2ac37b7a.json",
+      "sha8": "2ac37b7a",
+      "generated_at": "2026-11-05T14:15:01+08:00"
+     },
+     {
+      "file": "acceptance_3eb01f69.json",
+      "sha8": "3eb01f69",
+      "generated_at": "2026-11-05T13:45:00+08:00"
+     },
+     {
+      "file": "acceptance_404f9934.json",
+      "sha8": "404f9934",
+      "generated_at": "2026-11-04T21:15:01+08:00"
+     },
+     {
+      "file": "acceptance_45230bcc.json",
+      "sha8": "45230bcc",
+      "generated_at": "2026-11-05T06:15:03+08:00"
+     },
+     {
+      "file": "acceptance_4568ad86.json",
+      "sha8": "4568ad86",
+      "generated_at": "2026-11-05T07:15:05+08:00"
+     },
+     {
+      "file": "acceptance_474dd94e.json",
+      "sha8": "474dd94e",
+      "generated_at": "2026-11-05T05:15:03+08:00"
+     },
+     {
+      "file": "acceptance_4a494b91.json",
+      "sha8": "4a494b91",
+      "generated_at": "2026-11-04T21:45:01+08:00"
+     },
+     {
+      "file": "acceptance_4b449af7.json",
+      "sha8": "4b449af7",
+      "generated_at": "2026-11-03T07:15:01+08:00"
+     },
+     {
+      "file": "acceptance_5188d746.json",
+      "sha8": "5188d746",
+      "generated_at": "2026-11-05T09:45:01+08:00"
+     },
+     {
+      "file": "acceptance_5c142d02.json",
+      "sha8": "5c142d02",
+      "generated_at": "2026-11-03T09:45:00+08:00"
+     },
+     {
+      "file": "acceptance_788c197c.json",
+      "sha8": "788c197c",
+      "generated_at": "2026-11-05T11:15:01+08:00"
+     },
+     {
+      "file": "acceptance_7ab9e552.json",
+      "sha8": "7ab9e552",
+      "generated_at": "2026-11-10T20:15:01+08:00"
+     },
+     {
+      "file": "acceptance_7e854ef3.json",
+      "sha8": "7e854ef3",
+      "generated_at": "2026-11-05T03:15:05+08:00"
+     },
+     {
+      "file": "acceptance_7ed59f04.json",
+      "sha8": "7ed59f04",
+      "generated_at": "2026-11-10T22:15:01+08:00"
+     },
+     {
+      "file": "acceptance_7ee9c082.json",
+      "sha8": "7ee9c082",
+      "generated_at": "2026-11-05T17:15:01+08:00"
+     },
+     {
+      "file": "acceptance_803b4a16.json",
+      "sha8": "803b4a16",
+      "generated_at": "2026-11-04T23:45:01+08:00"
+     },
+     {
+      "file": "acceptance_831e57e6.json",
+      "sha8": "831e57e6",
+      "generated_at": "2026-11-03T06:15:00+08:00"
+     },
+     {
+      "file": "acceptance_8e94a749.json",
+      "sha8": "8e94a749",
+      "generated_at": "2026-11-03T04:45:02+08:00"
+     },
+     {
+      "file": "acceptance_8f0ecbec.json",
+      "sha8": "8f0ecbec",
+      "generated_at": "2026-11-03T12:15:00+08:00"
+     },
+     {
+      "file": "acceptance_969102cf.json",
+      "sha8": "969102cf",
+      "generated_at": "2026-11-03T08:45:00+08:00"
+     },
+     {
+      "file": "acceptance_9997d7dd.json",
+      "sha8": "9997d7dd",
+      "generated_at": "2026-11-05T19:45:01+08:00"
+     },
+     {
+      "file": "acceptance_9bfe529b.json",
+      "sha8": "9bfe529b",
+      "generated_at": "2026-11-05T17:45:01+08:00"
+     },
+     {
+      "file": "acceptance_9fc763d0.json",
+      "sha8": "9fc763d0",
+      "generated_at": "2026-11-04T22:45:02+08:00"
+     },
+     {
+      "file": "acceptance_9fe00a94.json",
+      "sha8": "9fe00a94",
+      "generated_at": "2026-11-05T10:15:01+08:00"
+     },
+     {
+      "file": "acceptance_a185919c.json",
+      "sha8": "a185919c",
+      "generated_at": "2026-11-05T02:45:03+08:00"
+     },
+     {
+      "file": "acceptance_a43867aa.json",
+      "sha8": "a43867aa",
+      "generated_at": "2026-11-05T15:45:01+08:00"
+     },
+     {
+      "file": "acceptance_a4608070.json",
+      "sha8": "a4608070",
+      "generated_at": "2026-11-04T22:15:01+08:00"
+     },
+     {
+      "file": "acceptance_ab27b88a.json",
+      "sha8": "ab27b88a",
+      "generated_at": "2026-11-05T07:45:03+08:00"
+     },
+     {
+      "file": "acceptance_ab5feacb.json",
+      "sha8": "ab5feacb",
+      "generated_at": "2026-11-03T07:45:01+08:00"
+     },
+     {
+      "file": "acceptance_aeda8add.json",
+      "sha8": "aeda8add",
+      "generated_at": "2026-11-05T04:45:02+08:00"
+     },
+     {
+      "file": "acceptance_af8d2454.json",
+      "sha8": "af8d2454",
+      "generated_at": "2026-11-05T00:45:02+08:00"
+     },
+     {
+      "file": "acceptance_b4480ce2.json",
+      "sha8": "b4480ce2",
+      "generated_at": "2026-11-03T14:45:00+08:00"
+     }
+    ],
+    "drill_reject_entries": 1,
+    "total_reject": 77,
+    "natural_min_for_rate": 20,
+    "rate_max": 0.05,
+    "manual_review_glob": "work/huangzhong/reject_review*.json",
+    "manual_review_files": [
+     "C:\\项目\\老田的AI助手\\work\\huangzhong\\reject_review_20261030.json",
+     "C:\\项目\\老田的AI助手\\work\\huangzhong\\reject_review_20261103.json"
+    ],
+    "manual_review_rows": 29,
+    "bad": [],
+    "review_mode": "rate",
+    "reviewed": 28,
+    "unreviewed": [
+     {
+      "key": "sha:00631d12",
+      "label": "acceptance_00631d12.json",
+      "sha8": "00631d12"
+     },
+     {
+      "key": "sha:01d66a4b",
+      "label": "acceptance_01d66a4b.json",
+      "sha8": "01d66a4b"
+     },
+     {
+      "key": "sha:0b40a54f",
+      "label": "acceptance_0b40a54f.json",
+      "sha8": "0b40a54f"
+     },
+     {
+      "key": "sha:170fc8d1",
+      "label": "acceptance_170fc8d1.json",
+      "sha8": "170fc8d1"
+     },
+     {
+      "key": "sha:18e3d0d0",
+      "label": "acceptance_18e3d0d0.json",
+      "sha8": "18e3d0d0"
+     },
+     {
+      "key": "sha:1e98caa6",
+      "label": "acceptance_1e98caa6.json",
+      "sha8": "1e98caa6"
+     },
+     {
+      "key": "sha:1eae2e51",
+      "label": "acceptance_1eae2e51.json",
+      "sha8": "1eae2e51"
+     },
+     {
+      "key": "sha:23220b7b",
+      "label": "acceptance_23220b7b.json",
+      "sha8": "23220b7b"
+     },
+     {
+      "key": "sha:259c9c23",
+      "label": "acceptance_259c9c23.json",
+      "sha8": "259c9c23"
+     },
+     {
+      "key": "sha:29f72184",
+      "label": "acceptance_29f72184.json",
+      "sha8": "29f72184"
+     },
+     {
+      "key": "sha:2ac37b7a",
+      "label": "acceptance_2ac37b7a.json",
+      "sha8": "2ac37b7a"
+     },
+     {
+      "key": "sha:3eb01f69",
+      "label": "acceptance_3eb01f69.json",
+      "sha8": "3eb01f69"
+     },
+     {
+      "key": "sha:404f9934",
+      "label": "acceptance_404f9934.json",
+      "sha8": "404f9934"
+     },
+     {
+      "key": "sha:45230bcc",
+      "label": "acceptance_45230bcc.json",
+      "sha8": "45230bcc"
+     },
+     {
+      "key": "sha:4568ad86",
+      "label": "acceptance_4568ad86.json",
+      "sha8": "4568ad86"
+     },
+     {
+      "key": "sha:474dd94e",
+      "label": "acceptance_474dd94e.json",
+      "sha8": "474dd94e"
+     },
+     {
+      "key": "sha:4a494b91",
+      "label": "acceptance_4a494b91.json",
+      "sha8": "4a494b91"
+     },
+     {
+      "key": "sha:5188d746",
+      "label": "acceptance_5188d746.json",
+      "sha8": "5188d746"
+     },
+     {
+      "key": "sha:788c197c",
+      "label": "acceptance_788c197c.json",
+      "sha8": "788c197c"
+     },
+     {
+      "key": "sha:7ab9e552",
+      "label": "acceptance_7ab9e552.json",
+      "sha8": "7ab9e552"
+     },
+     {
+      "key": "sha:7e854ef3",
+      "label": "acceptance_7e854ef3.json",
+      "sha8": "7e854ef3"
+     },
+     {
+      "key": "sha:7ed59f04",
+      "label": "acceptance_7ed59f04.json",
+      "sha8": "7ed59f04"
+     },
+     {
+      "key": "sha:7ee9c082",
+      "label": "acceptance_7ee9c082.json",
+      "sha8": "7ee9c082"
+     },
+     {
+      "key": "sha:803b4a16",
+      "label": "acceptance_803b4a16.json",
+      "sha8": "803b4a16"
+     },
+     {
+      "key": "sha:9997d7dd",
+      "label": "acceptance_9997d7dd.json",
+      "sha8": "9997d7dd"
+     },
+     {
+      "key": "sha:9bfe529b",
+      "label": "acceptance_9bfe529b.json",
+      "sha8": "9bfe529b"
+     },
+     {
+      "key": "sha:9fc763d0",
+      "label": "acceptance_9fc763d0.json",
+      "sha8": "9fc763d0"
+     },
+     {
+      "key": "sha:9fe00a94",
+      "label": "acceptance_9fe00a94.json",
+      "sha8": "9fe00a94"
+     },
+     {
+      "key": "sha:a185919c",
+      "label": "acceptance_a185919c.json",
+      "sha8": "a185919c"
+     },
+     {
+      "key": "sha:a43867aa",
+      "label": "acceptance_a43867aa.json",
+      "sha8": "a43867aa"
+     },
+     {
+      "key": "sha:a4608070",
+      "label": "acceptance_a4608070.json",
+      "sha8": "a4608070"
+     },
+     {
+      "key": "sha:ab27b88a",
+      "label": "acceptance_ab27b88a.json",
+      "sha8": "ab27b88a"
+     },
+     {
+      "key": "sha:aeda8add",
+      "label": "acceptance_aeda8add.json",
+      "sha8": "aeda8add"
+     },
+     {
+      "key": "sha:af8d2454",
+      "label": "acceptance_af8d2454.json",
+      "sha8": "af8d2454"
+     },
+     {
+      "key": "sha:ba61490a",
+      "label": "acceptance_ba61490a.json",
+      "sha8": "ba61490a"
+     },
+     {
+      "key": "sha:bafed70e",
+      "label": "acceptance_bafed70e.json",
+      "sha8": "bafed70e"
+     },
+     {
+      "key": "sha:bdf916cb",
+      "label": "acceptance_bdf916cb.json",
+      "sha8": "bdf916cb"
+     },
+     {
+      "key": "sha:be035b4e",
+      "label": "acceptance_be035b4e.json",
+      "sha8": "be035b4e"
+     },
+     {
+      "key": "sha:c27bd294",
+      "label": "acceptance_c27bd294.json",
+      "sha8": "c27bd294"
+     },
+     {
+      "key": "sha:cce1af10",
+      "label": "acceptance_cce1af10.json",
+      "sha8": "cce1af10"
+     },
+     {
+      "key": "sha:d3676f8d",
+      "label": "acceptance_d3676f8d.json",
+      "sha8": "d3676f8d"
+     },
+     {
+      "key": "sha:d5e622f9",
+      "label": "acceptance_d5e622f9.json",
+      "sha8": "d5e622f9"
+     },
+     {
+      "key": "sha:df0bfa1d",
+      "label": "acceptance_df0bfa1d.json",
+      "sha8": "df0bfa1d"
+     },
+     {
+      "key": "sha:e1160ef9",
+      "label": "acceptance_e1160ef9.json",
+      "sha8": "e1160ef9"
+     },
+     {
+      "key": "sha:e5205fce",
+      "label": "acceptance_e5205fce.json",
+      "sha8": "e5205fce"
+     },
+     {
+      "key": "sha:e6169ca1",
+      "label": "acceptance_e6169ca1.json",
+      "sha8": "e6169ca1"
+     },
+     {
+      "key": "sha:edd2bd3c",
+      "label": "acceptance_edd2bd3c.json",
+      "sha8": "edd2bd3c"
+     },
+     {
+      "key": "sha:eee75a2d",
+      "label": "acceptance_eee75a2d.json",
+      "sha8": "eee75a2d"
+     },
+     {
+      "key": "sha:f8a7ba93",
+      "label": "acceptance_f8a7ba93.json",
+      "sha8": "f8a7ba93"
+     }
+    ],
+    "overturned": 0,
+    "note": "复核清单不完整（49/77 未见结论）→ pending；补齐 reject_review*.json 后重跑"
+   },
+   "status": "pending",
+   "target": "<5 推翻率（自然 REJECT≥20）",
+   "measured": "复核 28/77 单，清单不完整",
+   "value": {
+    "natural_reject": 76,
+    "rate": null
+   }
+  },
+  {
+   "id": "④",
+   "title": "漏放 = 0",
+   "status": "✓",
+   "target": "满 7 天窗口 PASS 单事故数 = 0",
+   "measured": "满窗 153 单，漏放 0",
+   "value": {
+    "mature": 153,
+    "leaks": 0,
+    "tracking": 188
+   },
+   "detail": {
+    "window_days": 7,
+    "mature_count": 153,
+    "tracking_count": 188,
+    "unknown_maturity": [],
+    "mature_samples": [
+     {
+      "file": "acceptance_4beda7a6.json",
+      "sha8": "4beda7a6",
+      "generated_at": "2026-11-03T22:15:01+08:00",
+      "window_end": "2026-11-10T22:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_9dcf3a8f.json",
+      "sha8": "9dcf3a8f",
+      "generated_at": "2026-11-03T21:45:01+08:00",
+      "window_end": "2026-11-10T21:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_d1918088.json",
+      "sha8": "d1918088",
+      "generated_at": "2026-11-03T21:15:00+08:00",
+      "window_end": "2026-11-10T21:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_9cc93eda.json",
+      "sha8": "9cc93eda",
+      "generated_at": "2026-11-03T20:30:39+08:00",
+      "window_end": "2026-11-10T20:30:39+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_f381a408.json",
+      "sha8": "f381a408",
+      "generated_at": "2026-11-03T19:15:01+08:00",
+      "window_end": "2026-11-10T19:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_9d3efd72.json",
+      "sha8": "9d3efd72",
+      "generated_at": "2026-11-03T18:15:00+08:00",
+      "window_end": "2026-11-10T18:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_a7748782.json",
+      "sha8": "a7748782",
+      "generated_at": "2026-11-03T17:45:01+08:00",
+      "window_end": "2026-11-10T17:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_1c6e4a3e.json",
+      "sha8": "1c6e4a3e",
+      "generated_at": "2026-11-03T17:34:25+08:00",
+      "window_end": "2026-11-10T17:34:25+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_216bd4d2.json",
+      "sha8": "216bd4d2",
+      "generated_at": "2026-11-03T17:15:01+08:00",
+      "window_end": "2026-11-10T17:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_39df8806.json",
+      "sha8": "39df8806",
+      "generated_at": "2026-11-03T16:45:01+08:00",
+      "window_end": "2026-11-10T16:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_59a8c0df.json",
+      "sha8": "59a8c0df",
+      "generated_at": "2026-11-03T16:15:01+08:00",
+      "window_end": "2026-11-10T16:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_ed766dd1.json",
+      "sha8": "ed766dd1",
+      "generated_at": "2026-11-03T16:06:32+08:00",
+      "window_end": "2026-11-10T16:06:32+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_6497fb41.json",
+      "sha8": "6497fb41",
+      "generated_at": "2026-11-02T18:15:00+08:00",
+      "window_end": "2026-11-09T18:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_9f3287a6.json",
+      "sha8": "9f3287a6",
+      "generated_at": "2026-11-02T17:45:01+08:00",
+      "window_end": "2026-11-09T17:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_1e85953d.json",
+      "sha8": "1e85953d",
+      "generated_at": "2026-11-02T17:15:01+08:00",
+      "window_end": "2026-11-09T17:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_fcf63fc6.json",
+      "sha8": "fcf63fc6",
+      "generated_at": "2026-11-02T16:45:01+08:00",
+      "window_end": "2026-11-09T16:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_1bccbf22.json",
+      "sha8": "1bccbf22",
+      "generated_at": "2026-11-02T16:15:00+08:00",
+      "window_end": "2026-11-09T16:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_22c8bae9.json",
+      "sha8": "22c8bae9",
+      "generated_at": "2026-11-02T15:45:00+08:00",
+      "window_end": "2026-11-09T15:45:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_5d657e12.json",
+      "sha8": "5d657e12",
+      "generated_at": "2026-11-02T15:15:00+08:00",
+      "window_end": "2026-11-09T15:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_2363247d.json",
+      "sha8": "2363247d",
+      "generated_at": "2026-11-02T14:45:00+08:00",
+      "window_end": "2026-11-09T14:45:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_5dc01c47.json",
+      "sha8": "5dc01c47",
+      "generated_at": "2026-11-02T14:15:00+08:00",
+      "window_end": "2026-11-09T14:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_baa80cc0.json",
+      "sha8": "baa80cc0",
+      "generated_at": "2026-11-02T13:45:00+08:00",
+      "window_end": "2026-11-09T13:45:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_1e90f129.json",
+      "sha8": "1e90f129",
+      "generated_at": "2026-11-02T13:15:00+08:00",
+      "window_end": "2026-11-09T13:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_64638d12.json",
+      "sha8": "64638d12",
+      "generated_at": "2026-11-02T12:45:00+08:00",
+      "window_end": "2026-11-09T12:45:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_c97a9005.json",
+      "sha8": "c97a9005",
+      "generated_at": "2026-11-02T12:15:00+08:00",
+      "window_end": "2026-11-09T12:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_d4a3258e.json",
+      "sha8": "d4a3258e",
+      "generated_at": "2026-11-02T11:45:00+08:00",
+      "window_end": "2026-11-09T11:45:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_3ef7c42d.json",
+      "sha8": "3ef7c42d",
+      "generated_at": "2026-11-02T11:15:01+08:00",
+      "window_end": "2026-11-09T11:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_668c5eee.json",
+      "sha8": "668c5eee",
+      "generated_at": "2026-11-02T10:45:01+08:00",
+      "window_end": "2026-11-09T10:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_4d8a19a2.json",
+      "sha8": "4d8a19a2",
+      "generated_at": "2026-11-02T10:15:00+08:00",
+      "window_end": "2026-11-09T10:15:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_52d0c4b9.json",
+      "sha8": "52d0c4b9",
+      "generated_at": "2026-11-02T09:45:01+08:00",
+      "window_end": "2026-11-09T09:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_aa116dad.json",
+      "sha8": "aa116dad",
+      "generated_at": "2026-11-02T09:15:01+08:00",
+      "window_end": "2026-11-09T09:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_662370b0.json",
+      "sha8": "662370b0",
+      "generated_at": "2026-11-02T08:45:04+08:00",
+      "window_end": "2026-11-09T08:45:04+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_6a7c09bb.json",
+      "sha8": "6a7c09bb",
+      "generated_at": "2026-11-02T08:15:05+08:00",
+      "window_end": "2026-11-09T08:15:05+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_f5087947.json",
+      "sha8": "f5087947",
+      "generated_at": "2026-11-02T07:15:04+08:00",
+      "window_end": "2026-11-09T07:15:04+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_bf72e77e.json",
+      "sha8": "bf72e77e",
+      "generated_at": "2026-11-02T06:45:03+08:00",
+      "window_end": "2026-11-09T06:45:03+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_3f7733c4.json",
+      "sha8": "3f7733c4",
+      "generated_at": "2026-11-02T06:15:02+08:00",
+      "window_end": "2026-11-09T06:15:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_5669daa8.json",
+      "sha8": "5669daa8",
+      "generated_at": "2026-11-02T04:45:02+08:00",
+      "window_end": "2026-11-09T04:45:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_bb73281c.json",
+      "sha8": "bb73281c",
+      "generated_at": "2026-11-02T04:15:02+08:00",
+      "window_end": "2026-11-09T04:15:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_3c04aa9c.json",
+      "sha8": "3c04aa9c",
+      "generated_at": "2026-11-02T03:45:02+08:00",
+      "window_end": "2026-11-09T03:45:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_074f111f.json",
+      "sha8": "074f111f",
+      "generated_at": "2026-11-02T03:15:02+08:00",
+      "window_end": "2026-11-09T03:15:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_db6b74f9.json",
+      "sha8": "db6b74f9",
+      "generated_at": "2026-11-02T02:48:11+08:00",
+      "window_end": "2026-11-09T02:48:11+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_766bb9a7.json",
+      "sha8": "766bb9a7",
+      "generated_at": "2026-11-02T02:45:02+08:00",
+      "window_end": "2026-11-09T02:45:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_8bdea742.json",
+      "sha8": "8bdea742",
+      "generated_at": "2026-11-02T02:15:02+08:00",
+      "window_end": "2026-11-09T02:15:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_503853e2.json",
+      "sha8": "503853e2",
+      "generated_at": "2026-11-02T01:15:02+08:00",
+      "window_end": "2026-11-09T01:15:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_dc93ad67.json",
+      "sha8": "dc93ad67",
+      "generated_at": "2026-11-02T00:45:02+08:00",
+      "window_end": "2026-11-09T00:45:02+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_cf2a959f.json",
+      "sha8": "cf2a959f",
+      "generated_at": "2026-11-02T00:15:01+08:00",
+      "window_end": "2026-11-09T00:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_ce2f1a28.json",
+      "sha8": "ce2f1a28",
+      "generated_at": "2026-11-01T23:45:00+08:00",
+      "window_end": "2026-11-08T23:45:00+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_7e8399ad.json",
+      "sha8": "7e8399ad",
+      "generated_at": "2026-11-01T23:15:01+08:00",
+      "window_end": "2026-11-08T23:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_31c89439.json",
+      "sha8": "31c89439",
+      "generated_at": "2026-11-01T22:45:01+08:00",
+      "window_end": "2026-11-08T22:45:01+08:00",
+      "leaks": [],
+      "leak": false
+     },
+     {
+      "file": "acceptance_f8e8ef1b.json",
+      "sha8": "f8e8ef1b",
+      "generated_at": "2026-11-01T22:15:01+08:00",
+      "window_end": "2026-11-08T22:15:01+08:00",
+      "leaks": [],
+      "leak": false
+     }
+    ],
+    "tracking_samples": [
+     {
+      "file": "acceptance_7a1bfaf8.json",
+      "sha8": "7a1bfaf8",
+      "generated_at": "2026-11-10T19:45:01+08:00",
+      "window_end": "2026-11-17T19:45:01+08:00"
+     },
+     {
+      "file": "acceptance_4ed29c8b.json",
+      "sha8": "4ed29c8b",
+      "generated_at": "2026-11-10T19:15:00+08:00",
+      "window_end": "2026-11-17T19:15:00+08:00"
+     },
+     {
+      "file": "acceptance_b06e8e17.json",
+      "sha8": "b06e8e17",
+      "generated_at": "2026-11-10T18:45:00+08:00",
+      "window_end": "2026-11-17T18:45:00+08:00"
+     },
+     {
+      "file": "acceptance_0396559a.json",
+      "sha8": "0396559a",
+      "generated_at": "2026-11-10T18:15:00+08:00",
+      "window_end": "2026-11-17T18:15:00+08:00"
+     },
+     {
+      "file": "acceptance_a13e4704.json",
+      "sha8": "a13e4704",
+      "generated_at": "2026-11-10T17:45:00+08:00",
+      "window_end": "2026-11-17T17:45:00+08:00"
+     },
+     {
+      "file": "acceptance_17fbf9df.json",
+      "sha8": "17fbf9df",
+      "generated_at": "2026-11-10T17:15:01+08:00",
+      "window_end": "2026-11-17T17:15:01+08:00"
+     },
+     {
+      "file": "acceptance_b8d1abe7.json",
+      "sha8": "b8d1abe7",
+      "generated_at": "2026-11-10T16:45:00+08:00",
+      "window_end": "2026-11-17T16:45:00+08:00"
+     },
+     {
+      "file": "acceptance_f6650f8d.json",
+      "sha8": "f6650f8d",
+      "generated_at": "2026-11-10T16:15:00+08:00",
+      "window_end": "2026-11-17T16:15:00+08:00"
+     },
+     {
+      "file": "acceptance_243fff29.json",
+      "sha8": "243fff29",
+      "generated_at": "2026-11-10T15:45:00+08:00",
+      "window_end": "2026-11-17T15:45:00+08:00"
+     },
+     {
+      "file": "acceptance_0353b0bb.json",
+      "sha8": "0353b0bb",
+      "generated_at": "2026-11-10T15:15:00+08:00",
+      "window_end": "2026-11-17T15:15:00+08:00"
+     },
+     {
+      "file": "acceptance_def9bce1.json",
+      "sha8": "def9bce1",
+      "generated_at": "2026-11-10T14:45:00+08:00",
+      "window_end": "2026-11-17T14:45:00+08:00"
+     },
+     {
+      "file": "acceptance_5a28d6fa.json",
+      "sha8": "5a28d6fa",
+      "generated_at": "2026-11-10T14:15:00+08:00",
+      "window_end": "2026-11-17T14:15:00+08:00"
+     },
+     {
+      "file": "acceptance_916eee7f.json",
+      "sha8": "916eee7f",
+      "generated_at": "2026-11-10T13:45:00+08:00",
+      "window_end": "2026-11-17T13:45:00+08:00"
+     },
+     {
+      "file": "acceptance_2a3aeb8c.json",
+      "sha8": "2a3aeb8c",
+      "generated_at": "2026-11-10T12:45:01+08:00",
+      "window_end": "2026-11-17T12:45:01+08:00"
+     },
+     {
+      "file": "acceptance_8dca81c9.json",
+      "sha8": "8dca81c9",
+      "generated_at": "2026-11-10T12:15:01+08:00",
+      "window_end": "2026-11-17T12:15:01+08:00"
+     },
+     {
+      "file": "acceptance_8142bcb0.json",
+      "sha8": "8142bcb0",
+      "generated_at": "2026-11-10T11:45:01+08:00",
+      "window_end": "2026-11-17T11:45:01+08:00"
+     },
+     {
+      "file": "acceptance_ab21e5ce.json",
+      "sha8": "ab21e5ce",
+      "generated_at": "2026-11-10T11:15:01+08:00",
+      "window_end": "2026-11-17T11:15:01+08:00"
+     },
+     {
+      "file": "acceptance_e861ec3d.json",
+      "sha8": "e861ec3d",
+      "generated_at": "2026-11-10T10:45:01+08:00",
+      "window_end": "2026-11-17T10:45:01+08:00"
+     },
+     {
+      "file": "acceptance_25a5d5a4.json",
+      "sha8": "25a5d5a4",
+      "generated_at": "2026-11-10T10:15:00+08:00",
+      "window_end": "2026-11-17T10:15:00+08:00"
+     },
+     {
+      "file": "acceptance_8acf02e8.json",
+      "sha8": "8acf02e8",
+      "generated_at": "2026-11-10T09:45:00+08:00",
+      "window_end": "2026-11-17T09:45:00+08:00"
+     },
+     {
+      "file": "acceptance_3345e2dc.json",
+      "sha8": "3345e2dc",
+      "generated_at": "2026-11-10T08:45:01+08:00",
+      "window_end": "2026-11-17T08:45:01+08:00"
+     },
+     {
+      "file": "acceptance_3d484fbc.json",
+      "sha8": "3d484fbc",
+      "generated_at": "2026-11-10T08:15:01+08:00",
+      "window_end": "2026-11-17T08:15:01+08:00"
+     },
+     {
+      "file": "acceptance_2b20dd6b.json",
+      "sha8": "2b20dd6b",
+      "generated_at": "2026-11-10T07:45:01+08:00",
+      "window_end": "2026-11-17T07:45:01+08:00"
+     },
+     {
+      "file": "acceptance_2fb6094d.json",
+      "sha8": "2fb6094d",
+      "generated_at": "2026-11-10T06:15:01+08:00",
+      "window_end": "2026-11-17T06:15:01+08:00"
+     },
+     {
+      "file": "acceptance_2cc5b987.json",
+      "sha8": "2cc5b987",
+      "generated_at": "2026-11-10T05:15:02+08:00",
+      "window_end": "2026-11-17T05:15:02+08:00"
+     },
+     {
+      "file": "acceptance_82fcabe9.json",
+      "sha8": "82fcabe9",
+      "generated_at": "2026-11-10T00:15:00+08:00",
+      "window_end": "2026-11-17T00:15:00+08:00"
+     },
+     {
+      "file": "acceptance_92b08570.json",
+      "sha8": "92b08570",
+      "generated_at": "2026-11-09T22:45:01+08:00",
+      "window_end": "2026-11-16T22:45:01+08:00"
+     },
+     {
+      "file": "acceptance_41ce764a.json",
+      "sha8": "41ce764a",
+      "generated_at": "2026-11-09T21:45:01+08:00",
+      "window_end": "2026-11-16T21:45:01+08:00"
+     },
+     {
+      "file": "acceptance_b2a4d06b.json",
+      "sha8": "b2a4d06b",
+      "generated_at": "2026-11-09T21:15:01+08:00",
+      "window_end": "2026-11-16T21:15:01+08:00"
+     },
+     {
+      "file": "acceptance_c87e5761.json",
+      "sha8": "c87e5761",
+      "generated_at": "2026-11-09T20:45:01+08:00",
+      "window_end": "2026-11-16T20:45:01+08:00"
+     },
+     {
+      "file": "acceptance_d158caef.json",
+      "sha8": "d158caef",
+      "generated_at": "2026-11-09T19:15:01+08:00",
+      "window_end": "2026-11-16T19:15:01+08:00"
+     },
+     {
+      "file": "acceptance_7dc5fba7.json",
+      "sha8": "7dc5fba7",
+      "generated_at": "2026-11-09T18:45:01+08:00",
+      "window_end": "2026-11-16T18:45:01+08:00"
+     },
+     {
+      "file": "acceptance_47b9aac9.json",
+      "sha8": "47b9aac9",
+      "generated_at": "2026-11-09T17:45:01+08:00",
+      "window_end": "2026-11-16T17:45:01+08:00"
+     },
+     {
+      "file": "acceptance_518e495f.json",
+      "sha8": "518e495f",
+      "generated_at": "2026-11-09T17:15:02+08:00",
+      "window_end": "2026-11-16T17:15:02+08:00"
+     },
+     {
+      "file": "acceptance_05c7cfca.json",
+      "sha8": "05c7cfca",
+      "generated_at": "2026-11-09T16:45:01+08:00",
+      "window_end": "2026-11-16T16:45:01+08:00"
+     },
+     {
+      "file": "acceptance_12c32c60.json",
+      "sha8": "12c32c60",
+      "generated_at": "2026-11-09T16:15:01+08:00",
+      "window_end": "2026-11-16T16:15:01+08:00"
+     },
+     {
+      "file": "acceptance_00135966.json",
+      "sha8": "00135966",
+      "generated_at": "2026-11-09T15:45:01+08:00",
+      "window_end": "2026-11-16T15:45:01+08:00"
+     },
+     {
+      "file": "acceptance_6eb47a98.json",
+      "sha8": "6eb47a98",
+      "generated_at": "2026-11-09T15:15:01+08:00",
+      "window_end": "2026-11-16T15:15:01+08:00"
+     },
+     {
+      "file": "acceptance_91853b6e.json",
+      "sha8": "91853b6e",
+      "generated_at": "2026-11-09T14:45:01+08:00",
+      "window_end": "2026-11-16T14:45:01+08:00"
+     },
+     {
+      "file": "acceptance_efa67dea.json",
+      "sha8": "efa67dea",
+      "generated_at": "2026-11-09T14:15:01+08:00",
+      "window_end": "2026-11-16T14:15:01+08:00"
+     },
+     {
+      "file": "acceptance_6706b48f.json",
+      "sha8": "6706b48f",
+      "generated_at": "2026-11-09T13:45:00+08:00",
+      "window_end": "2026-11-16T13:45:00+08:00"
+     },
+     {
+      "file": "acceptance_14732868.json",
+      "sha8": "14732868",
+      "generated_at": "2026-11-09T13:15:01+08:00",
+      "window_end": "2026-11-16T13:15:01+08:00"
+     },
+     {
+      "file": "acceptance_c44324fa.json",
+      "sha8": "c44324fa",
+      "generated_at": "2026-11-09T12:45:00+08:00",
+      "window_end": "2026-11-16T12:45:00+08:00"
+     },
+     {
+      "file": "acceptance_bf6cb490.json",
+      "sha8": "bf6cb490",
+      "generated_at": "2026-11-09T12:15:00+08:00",
+      "window_end": "2026-11-16T12:15:00+08:00"
+     },
+     {
+      "file": "acceptance_eac4a5d0.json",
+      "sha8": "eac4a5d0",
+      "generated_at": "2026-11-09T11:15:01+08:00",
+      "window_end": "2026-11-16T11:15:01+08:00"
+     },
+     {
+      "file": "acceptance_d98f6df1.json",
+      "sha8": "d98f6df1",
+      "generated_at": "2026-11-09T10:45:02+08:00",
+      "window_end": "2026-11-16T10:45:02+08:00"
+     },
+     {
+      "file": "acceptance_d3f134eb.json",
+      "sha8": "d3f134eb",
+      "generated_at": "2026-11-09T10:15:02+08:00",
+      "window_end": "2026-11-16T10:15:02+08:00"
+     },
+     {
+      "file": "acceptance_ed42380f.json",
+      "sha8": "ed42380f",
+      "generated_at": "2026-11-09T09:45:02+08:00",
+      "window_end": "2026-11-16T09:45:02+08:00"
+     },
+     {
+      "file": "acceptance_9d6b340e.json",
+      "sha8": "9d6b340e",
+      "generated_at": "2026-11-09T09:15:03+08:00",
+      "window_end": "2026-11-16T09:15:03+08:00"
+     },
+     {
+      "file": "acceptance_4a8fb35d.json",
+      "sha8": "4a8fb35d",
+      "generated_at": "2026-11-09T08:45:03+08:00",
+      "window_end": "2026-11-16T08:45:03+08:00"
+     }
+    ],
+    "incidents_file": "C:\\项目\\老田的AI助手\\work\\huangzhong\\incidents.jsonl",
+    "incidents_exists": true,
+    "incidents_rows": 0,
+    "incidents_bad_lines": 0,
+    "leak_count": 0,
+    "unattributed_incidents": [],
+    "note": "漏放 = 满 7 天窗口 PASS 单中、与 commit 相关事故数；未满窗单列认证后跟踪；incidents.jsonl 为可选台账（缺失按无已知事故计，需人工确认）"
+   }
+  },
+  {
+   "id": "⑤",
+   "title": "证据链完整率 100% + 年龄 ≤48h",
+   "status": "✓",
+   "target": "11 项必需字段完整率 100%；证据年龄 ≤48h",
+   "measured": "完整率 100.0%（335/335），新鲜 335/335，年龄门 ≤48h；legacy v0 豁免 6 单",
+   "value": {
+    "complete": 335,
+    "total": 335,
+    "fresh": 335,
+    "completeness_rate": 1.0,
+    "legacy_excluded": 6,
+    "legacy_policy": "exempt"
+   },
+   "detail": {
+    "complete_count": 335,
+    "total": 335,
+    "completeness_rate": 1.0,
+    "fresh_count": 335,
+    "max_age_hours": 48.0,
+    "legacy_policy": "exempt",
+    "legacy_detected_count": 6,
+    "legacy_excluded": {
+     "count": 6,
+     "files": [
+      "acceptance_ebd24931.json",
+      "acceptance_ff3a828c.json",
+      "acceptance_9922d6dc.json",
+      "acceptance_009f5b65.json",
+      "acceptance_88091a92.json",
+      "acceptance_725b8801.json"
+     ],
+     "samples": [
+      {
+       "file": "acceptance_ebd24931.json",
+       "sha8": "ebd24931",
+       "missing_age_fields": [
+        "evidence.baseline.age_hours",
+        "evidence.baseline.stale",
+        "max_evidence_age_hours"
+       ]
+      },
+      {
+       "file": "acceptance_ff3a828c.json",
+       "sha8": "ff3a828c",
+       "missing_age_fields": [
+        "evidence.baseline.age_hours",
+        "evidence.baseline.stale",
+        "max_evidence_age_hours"
+       ]
+      },
+      {
+       "file": "acceptance_9922d6dc.json",
+       "sha8": "9922d6dc",
+       "missing_age_fields": [
+        "evidence.baseline.age_hours",
+        "evidence.baseline.stale",
+        "max_evidence_age_hours"
+       ]
+      },
+      {
+       "file": "acceptance_009f5b65.json",
+       "sha8": "009f5b65",
+       "missing_age_fields": [
+        "evidence.baseline.age_hours",
+        "evidence.baseline.stale",
+        "max_evidence_age_hours"
+       ]
+      },
+      {
+       "file": "acceptance_88091a92.json",
+       "sha8": "88091a92",
+       "missing_age_fields": [
+        "evidence.baseline.age_hours",
+        "evidence.baseline.stale",
+        "max_evidence_age_hours"
+       ]
+      },
+      {
+       "file": "acceptance_725b8801.json",
+       "sha8": "725b8801",
+       "missing_age_fields": [
+        "evidence.baseline.age_hours",
+        "evidence.baseline.stale",
+        "max_evidence_age_hours"
+       ]
+      }
+     ]
+    },
+    "samples": [
+     {
+      "file": "acceptance_7a1bfaf8.json",
+      "sha8": "7a1bfaf8",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 23.75,
+      "baseline_age_hours": 23.75,
+      "redteam_age_hours": 23.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 23.75,
+       "redteam": 23.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_4ed29c8b.json",
+      "sha8": "4ed29c8b",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 23.25,
+      "baseline_age_hours": 23.25,
+      "redteam_age_hours": 23.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 23.25,
+       "redteam": 23.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_b06e8e17.json",
+      "sha8": "b06e8e17",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 22.75,
+      "baseline_age_hours": 22.75,
+      "redteam_age_hours": 22.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 22.75,
+       "redteam": 22.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_0396559a.json",
+      "sha8": "0396559a",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 22.25,
+      "baseline_age_hours": 22.25,
+      "redteam_age_hours": 22.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 22.25,
+       "redteam": 22.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_a13e4704.json",
+      "sha8": "a13e4704",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 21.75,
+      "baseline_age_hours": 21.75,
+      "redteam_age_hours": 21.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 21.75,
+       "redteam": 21.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_17fbf9df.json",
+      "sha8": "17fbf9df",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 21.25,
+      "baseline_age_hours": 21.25,
+      "redteam_age_hours": 21.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 21.25,
+       "redteam": 21.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_b8d1abe7.json",
+      "sha8": "b8d1abe7",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 20.75,
+      "baseline_age_hours": 20.75,
+      "redteam_age_hours": 20.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 20.75,
+       "redteam": 20.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_f6650f8d.json",
+      "sha8": "f6650f8d",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 20.25,
+      "baseline_age_hours": 20.25,
+      "redteam_age_hours": 20.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 20.25,
+       "redteam": 20.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_243fff29.json",
+      "sha8": "243fff29",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 19.75,
+      "baseline_age_hours": 19.75,
+      "redteam_age_hours": 19.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 19.75,
+       "redteam": 19.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_0353b0bb.json",
+      "sha8": "0353b0bb",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 19.25,
+      "baseline_age_hours": 19.25,
+      "redteam_age_hours": 19.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 19.25,
+       "redteam": 19.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_def9bce1.json",
+      "sha8": "def9bce1",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 18.75,
+      "baseline_age_hours": 18.75,
+      "redteam_age_hours": 18.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 18.75,
+       "redteam": 18.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_5a28d6fa.json",
+      "sha8": "5a28d6fa",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 18.25,
+      "baseline_age_hours": 18.25,
+      "redteam_age_hours": 18.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 18.25,
+       "redteam": 18.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_916eee7f.json",
+      "sha8": "916eee7f",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 17.75,
+      "baseline_age_hours": 17.75,
+      "redteam_age_hours": 17.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 17.75,
+       "redteam": 17.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2a3aeb8c.json",
+      "sha8": "2a3aeb8c",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 16.75,
+      "baseline_age_hours": 16.75,
+      "redteam_age_hours": 16.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 16.75,
+       "redteam": 16.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_8dca81c9.json",
+      "sha8": "8dca81c9",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 16.25,
+      "baseline_age_hours": 16.25,
+      "redteam_age_hours": 16.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 16.25,
+       "redteam": 16.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_8142bcb0.json",
+      "sha8": "8142bcb0",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 15.75,
+      "baseline_age_hours": 15.75,
+      "redteam_age_hours": 15.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 15.75,
+       "redteam": 15.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_ab21e5ce.json",
+      "sha8": "ab21e5ce",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 15.25,
+      "baseline_age_hours": 15.25,
+      "redteam_age_hours": 15.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 15.25,
+       "redteam": 15.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_e861ec3d.json",
+      "sha8": "e861ec3d",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 14.75,
+      "baseline_age_hours": 14.75,
+      "redteam_age_hours": 14.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 14.75,
+       "redteam": 14.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_25a5d5a4.json",
+      "sha8": "25a5d5a4",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 14.25,
+      "baseline_age_hours": 14.25,
+      "redteam_age_hours": 14.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 14.25,
+       "redteam": 14.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_8acf02e8.json",
+      "sha8": "8acf02e8",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 13.75,
+      "baseline_age_hours": 13.75,
+      "redteam_age_hours": 13.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 13.75,
+       "redteam": 13.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_3345e2dc.json",
+      "sha8": "3345e2dc",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 12.75,
+      "baseline_age_hours": 12.75,
+      "redteam_age_hours": 12.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 12.75,
+       "redteam": 12.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_3d484fbc.json",
+      "sha8": "3d484fbc",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 12.25,
+      "baseline_age_hours": 12.25,
+      "redteam_age_hours": 12.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 12.25,
+       "redteam": 12.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2b20dd6b.json",
+      "sha8": "2b20dd6b",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 11.75,
+      "baseline_age_hours": 11.75,
+      "redteam_age_hours": 11.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 11.75,
+       "redteam": 11.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2fb6094d.json",
+      "sha8": "2fb6094d",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 10.25,
+      "baseline_age_hours": 10.25,
+      "redteam_age_hours": 10.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 10.25,
+       "redteam": 10.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_2cc5b987.json",
+      "sha8": "2cc5b987",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 9.25,
+      "baseline_age_hours": 9.25,
+      "redteam_age_hours": 9.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 9.25,
+       "redteam": 9.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_82fcabe9.json",
+      "sha8": "82fcabe9",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 4.25,
+      "baseline_age_hours": 4.25,
+      "redteam_age_hours": 4.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 4.25,
+       "redteam": 4.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_92b08570.json",
+      "sha8": "92b08570",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 2.75,
+      "baseline_age_hours": 2.75,
+      "redteam_age_hours": 2.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 2.75,
+       "redteam": 2.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_41ce764a.json",
+      "sha8": "41ce764a",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 1.75,
+      "baseline_age_hours": 1.75,
+      "redteam_age_hours": 1.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 1.75,
+       "redteam": 1.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_b2a4d06b.json",
+      "sha8": "b2a4d06b",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 1.25,
+      "baseline_age_hours": 1.25,
+      "redteam_age_hours": 1.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 1.25,
+       "redteam": 1.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_c87e5761.json",
+      "sha8": "c87e5761",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 0.75,
+      "baseline_age_hours": 0.75,
+      "redteam_age_hours": 0.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 0.75,
+       "redteam": 0.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_d158caef.json",
+      "sha8": "d158caef",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 23.25,
+      "baseline_age_hours": 23.25,
+      "redteam_age_hours": 23.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 23.25,
+       "redteam": 23.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_7dc5fba7.json",
+      "sha8": "7dc5fba7",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 22.75,
+      "baseline_age_hours": 22.75,
+      "redteam_age_hours": 22.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 22.75,
+       "redteam": 22.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_47b9aac9.json",
+      "sha8": "47b9aac9",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 21.75,
+      "baseline_age_hours": 21.75,
+      "redteam_age_hours": 21.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 21.75,
+       "redteam": 21.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_518e495f.json",
+      "sha8": "518e495f",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 21.25,
+      "baseline_age_hours": 21.25,
+      "redteam_age_hours": 21.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 21.25,
+       "redteam": 21.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_05c7cfca.json",
+      "sha8": "05c7cfca",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 20.75,
+      "baseline_age_hours": 20.75,
+      "redteam_age_hours": 20.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 20.75,
+       "redteam": 20.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_12c32c60.json",
+      "sha8": "12c32c60",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 20.25,
+      "baseline_age_hours": 20.25,
+      "redteam_age_hours": 20.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 20.25,
+       "redteam": 20.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_00135966.json",
+      "sha8": "00135966",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 19.75,
+      "baseline_age_hours": 19.75,
+      "redteam_age_hours": 19.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 19.75,
+       "redteam": 19.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_6eb47a98.json",
+      "sha8": "6eb47a98",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 19.25,
+      "baseline_age_hours": 19.25,
+      "redteam_age_hours": 19.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 19.25,
+       "redteam": 19.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_91853b6e.json",
+      "sha8": "91853b6e",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 18.75,
+      "baseline_age_hours": 18.75,
+      "redteam_age_hours": 18.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 18.75,
+       "redteam": 18.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_efa67dea.json",
+      "sha8": "efa67dea",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 18.25,
+      "baseline_age_hours": 18.25,
+      "redteam_age_hours": 18.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 18.25,
+       "redteam": 18.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_6706b48f.json",
+      "sha8": "6706b48f",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 17.75,
+      "baseline_age_hours": 17.75,
+      "redteam_age_hours": 17.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 17.75,
+       "redteam": 17.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_14732868.json",
+      "sha8": "14732868",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 17.25,
+      "baseline_age_hours": 17.25,
+      "redteam_age_hours": 17.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 17.25,
+       "redteam": 17.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_c44324fa.json",
+      "sha8": "c44324fa",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 16.75,
+      "baseline_age_hours": 16.75,
+      "redteam_age_hours": 16.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 16.75,
+       "redteam": 16.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_bf6cb490.json",
+      "sha8": "bf6cb490",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 16.25,
+      "baseline_age_hours": 16.25,
+      "redteam_age_hours": 16.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 16.25,
+       "redteam": 16.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_eac4a5d0.json",
+      "sha8": "eac4a5d0",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 15.25,
+      "baseline_age_hours": 15.25,
+      "redteam_age_hours": 15.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 15.25,
+       "redteam": 15.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_d98f6df1.json",
+      "sha8": "d98f6df1",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 14.75,
+      "baseline_age_hours": 14.75,
+      "redteam_age_hours": 14.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 14.75,
+       "redteam": 14.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_d3f134eb.json",
+      "sha8": "d3f134eb",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 14.25,
+      "baseline_age_hours": 14.25,
+      "redteam_age_hours": 14.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 14.25,
+       "redteam": 14.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_ed42380f.json",
+      "sha8": "ed42380f",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 13.75,
+      "baseline_age_hours": 13.75,
+      "redteam_age_hours": 13.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 13.75,
+       "redteam": 13.59
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_9d6b340e.json",
+      "sha8": "9d6b340e",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 13.25,
+      "baseline_age_hours": 13.25,
+      "redteam_age_hours": 13.09,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 13.25,
+       "redteam": 13.09
+      },
+      "evidence_scope": "default_latest"
+     },
+     {
+      "file": "acceptance_4a8fb35d.json",
+      "sha8": "4a8fb35d",
+      "complete": true,
+      "missing": [],
+      "fresh": true,
+      "max_age_hours": 12.75,
+      "baseline_age_hours": 12.75,
+      "redteam_age_hours": 12.59,
+      "baseline_stale": false,
+      "redteam_stale": false,
+      "reconstructed_age_hours": {
+       "baseline": 12.75,
+       "redteam": 12.59
+      },
+      "evidence_scope": "default_latest"
+     }
+    ],
+    "required": {
+     "count": 11,
+     "fields": [
+      "commit.sha",
+      "verdict",
+      "mode=observe",
+      "blocking=false",
+      "rollback_point",
+      "evidence.baseline.generated_at",
+      "evidence.baseline.age_hours",
+      "evidence.baseline.stale",
+      "evidence.redteam.generated_at",
+      "evidence.redteam.age_hours",
+      "evidence.redteam.stale"
+     ],
+     "note": "mode/blocking 同时校验取值（observe / false）；age/stale 取验收单工具落库值，48h 为认证口径证据年龄门（recorded age）"
+    },
+    "note": "legacy v0 豁免：6 单缺证据年龄字段，不计入⑤分母（老田 2026-10-30 拍板；--legacy-v0-policy count 回旧行为）"
+   }
+  },
+  {
+   "id": "⑥",
+   "title": "赵云抽查 3/3 一致",
+   "status": "✓",
+   "target": "3 单抽查一致（3/3）",
+   "measured": "3/3 一致",
+   "value": {
+    "consistent": 3,
+    "total": 3
+   },
+   "detail": {
+    "path": "C:\\项目\\老田的AI助手\\work\\huangzhong\\audit_sample_3.json",
+    "expected": "赵云抽查 3 单一致记录（抽签种子+核对表）",
+    "seed": "20261030-hz-audit",
+    "samples": [
+     {
+      "file": "acceptance_44a2bfed.json",
+      "sha8": "44a2bfed",
+      "consistent": true
+     },
+     {
+      "file": "acceptance_84c62783.json",
+      "sha8": "84c62783",
+      "consistent": true
+     },
+     {
+      "file": "acceptance_7e10f9fc.json",
+      "sha8": "7e10f9fc",
+      "consistent": true
+     }
+    ],
+    "consistent": 3,
+    "inconsistent": 0,
+    "total": 3,
+    "note": "3/3 一致达标；任一项不一致 → 该单作废重验（本工具判 ✗）"
+   }
+  }
+ ],
+ "summary": {
+  "overall_pass": false,
+  "passed": 5,
+  "total": 6,
+  "items": [
+   {
+    "id": "①",
+    "title": "PASS 验收样本量",
+    "status": "✓",
+    "measured": "341/10 单"
+   },
+   {
+    "id": "②",
+    "title": "受控拒收演练",
+    "status": "✓",
+    "measured": "2 次（REJECT=1 OBSERVE=1）"
+   },
+   {
+    "id": "③",
+    "title": "误拒绝率 <5%",
+    "status": "pending",
+    "measured": "复核 28/77 单，清单不完整"
+   },
+   {
+    "id": "④",
+    "title": "漏放 = 0",
+    "status": "✓",
+    "measured": "满窗 153 单，漏放 0"
+   },
+   {
+    "id": "⑤",
+    "title": "证据链完整率 100% + 年龄 ≤48h",
+    "status": "✓",
+    "measured": "完整率 100.0%（335/335），新鲜 335/335，年龄门 ≤48h；legacy v0 豁免 6 单"
+   },
+   {
+    "id": "⑥",
+    "title": "赵云抽查 3/3 一致",
+    "status": "✓",
+    "measured": "3/3 一致"
+   }
+  ],
+  "blocking_items": [
+   {
+    "id": "③",
+    "title": "误拒绝率 <5%",
+    "status": "pending",
+    "measured": "复核 28/77 单，清单不完整"
+   }
+  ]
+ },
+ "kpi": {
+  "window_days": 7,
+  "cutoff": "2026-11-03T22:30:23+08:00",
+  "runs": 458,
+  "counts": {
+   "PASS": 389,
+   "REJECT": 69,
+   "OBSERVE": 0
+  },
+  "pass_rate": 0.8493,
+  "merge_done": 149,
+  "merge_done_available": true,
+  "coverage_rate": 3.0738,
+  "daily_file": "C:\\项目\\老田的AI助手\\work\\huangzhong\\daily.jsonl",
+  "daily_bad_lines": 0,
+  "dev_events_file": "C:\\项目\\老田的AI助手\\portal\\data\\dev_events.jsonl",
+  "dev_events_bad_lines": 0,
+  "latest_run": "2026-11-10T22:15:01+08:00",
+  "kpi_note": "覆盖率 = 窗口内 runs / merge_done（抽检回填单不计，沿用决策包第六节口径）；误拒绝/漏放见 ③④"
+ },
+ "inputs": {
+  "acceptance_files": 419,
+  "acceptance_invalid": [],
+  "drill_ledger_files": [
+   "C:\\项目\\老田的AI助手\\work\\huangzhong\\drills\\drill_ledger_20261030.json"
+  ],
+  "incidents_file": "C:\\项目\\老田的AI助手\\work\\huangzhong\\incidents.jsonl",
+  "audit_file": "C:\\项目\\老田的AI助手\\work\\huangzhong\\audit_sample_3.json",
+  "daily_file": "C:\\项目\\老田的AI助手\\work\\huangzhong\\daily.jsonl",
+  "dev_events_file": "C:\\项目\\老田的AI助手\\portal\\data\\dev_events.jsonl"
+ },
+ "warnings": []
+}

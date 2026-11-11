@@ -73,7 +73,40 @@ def _repo_root() -> Path:
     return here.parents[1]
 
 
-REPO = _repo_root()
+REPO_ENV = "DATASET_REGISTRY_REPO"
+AIOS_ROOT_ENV = "AIOS_ROOT"
+
+
+def _resolve_repo() -> Path:
+    """Resolve repo root: explicit env override > common.REPO > module-derived root.
+
+    Env is read at import time; set it before importing this module.
+    No hard-coded absolute fallback (path-portability fix K-CI-20261108-PATH).
+    """
+    for name in (REPO_ENV, AIOS_ROOT_ENV):
+        raw = (os.environ.get(name) or "").strip()
+        if not raw:
+            continue
+        try:
+            cand = Path(raw).expanduser()
+        except (OSError, RuntimeError):
+            continue
+        if cand.is_dir():
+            return cand.resolve()
+        print("[warn] dataset_registry: %s=%s is not a directory; fallback" % (name, raw),
+              file=sys.stderr)
+    try:  # package import: tools.datawarehouse.dataset_registry
+        from .common import REPO as _common_repo  # type: ignore
+        return Path(_common_repo)
+    except Exception:  # noqa: BLE001 - top-level import (sys.path=tools/datawarehouse)
+        try:
+            import common as _common  # type: ignore
+            return Path(_common.REPO)
+        except Exception:  # noqa: BLE001 - module-derived fallback, never hard-coded
+            return _repo_root()
+
+
+REPO = _resolve_repo()
 ALLOWED_ROOTS = [
     REPO / "quant_backtest",
     REPO / "research",

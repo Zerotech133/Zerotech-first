@@ -369,6 +369,7 @@ def combine_score(
     eligible=None,
     jev_mode="missing",
     jev_mat=None,
+    w4=None,
 ):
     """共振打分 + 信号（复刻 resonance_watchlist 缺维降权）。
 
@@ -379,6 +380,11 @@ def combine_score(
       replay    消费 jev_mat（逐日截面 replay 分）；能匹配的票该分作 jev 维，
                 匹配不到的票保持缺维降权（replay 归档仅覆盖其日期范围）
 
+    w4 可选（P64）：覆盖 {tech,jev,rps,env} 四维权重，None=用 W4（现行，
+    行为与加参前逐元素一致）。权重变化后 wsum 按可用维重新归一，
+    故只调 rps 会同时降低 tech/env 的相对占比——这正是「提权」的物理含义。
+    jev_mode='w015' 走 W4_W015 自有权重，不受 w4 影响。
+
     返回 (score DataFrame, buy bool, obs bool)。gate_on 且 env safe=False →
     买入/观察全部否决（与产线 action='回避（环境闸门）' 一致）。
     """
@@ -386,6 +392,7 @@ def combine_score(
         raise ValueError("unknown jev_mode: %s" % jev_mode)
     if jev_mode == "replay" and jev_mat is None:
         raise ValueError("jev_mode=replay requires jev_mat")
+    w = dict(W4) if w4 is None else dict(w4)
     t = tech.to_numpy(dtype=float)
     rp = rps_mix.to_numpy(dtype=float)
     el = (
@@ -396,19 +403,19 @@ def combine_score(
     hr = el & ~np.isnan(rp)
     env_score = env_df["score"].to_numpy(dtype=float)  # (D,)
     if jev_mode == "missing":
-        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr
+        wsum = (w["tech"] + w["env"]) * el + w["rps"] * hr
         num = (
-            t * W4["tech"]
-            + env_score[:, None] * W4["env"]
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+            t * w["tech"]
+            + env_score[:, None] * w["env"]
+            + np.where(np.isnan(rp), 0.0, rp * w["rps"])
         )
     elif jev_mode == "neutral50":
-        wsum = (W4["tech"] + W4["env"] + W4["jev"]) * el + W4["rps"] * hr
+        wsum = (w["tech"] + w["env"] + w["jev"]) * el + w["rps"] * hr
         num = (
-            t * W4["tech"]
-            + env_score[:, None] * W4["env"]
-            + 50.0 * W4["jev"] * el
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+            t * w["tech"]
+            + env_score[:, None] * w["env"]
+            + 50.0 * w["jev"] * el
+            + np.where(np.isnan(rp), 0.0, rp * w["rps"])
         )
     elif jev_mode == "w015":
         wt = W4_W015["tech"]
@@ -427,12 +434,12 @@ def combine_score(
             dtype=float
         )
         jv = el & ~np.isnan(jm)
-        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr + W4["jev"] * jv
+        wsum = (w["tech"] + w["env"]) * el + w["rps"] * hr + w["jev"] * jv
         num = (
-            t * W4["tech"]
-            + env_score[:, None] * W4["env"]
-            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
-            + np.where(np.isnan(jm), 0.0, jm * W4["jev"])
+            t * w["tech"]
+            + env_score[:, None] * w["env"]
+            + np.where(np.isnan(rp), 0.0, rp * w["rps"])
+            + np.where(np.isnan(jm), 0.0, jm * w["jev"])
         )
     sc = np.divide(num, wsum, out=np.full(num.shape, np.nan), where=wsum > 0)
     gate = (
@@ -964,6 +971,633 @@ def run_backtest(args):
                 "median": round(float(ret.median()), 6) if len(ret) else None,
                 "win_rate": round(float((ret > 0).mean()), 4) if len(ret) else None,
             }
+    # ---- P60 RPS 分层（2026-11-10 老田批第 2 项）----
+    # 目的：回答「RPS 该做硬门槛，还是继续当 0.25 分量」。
+    #   holds_buy  —— 现行体系（w_cur + 闸门开 + TH_CUR）已买入样本内按 RPS 分档，
+    #                 看低分档是否拖累整体；若后验随 RPS 单调，剔低档（门控）即可提升
+    #   holds_all  —— 全可交易样本按 RPS 分档，纯截面预测力，不含打分与阈值影响
+    # 窗口与 variants 一致（in_win），绝对口径，组间可直接比。
+    RPS_EDGES = ((0.0, 50.0, "rps<50"), (50.0, 70.0, "rps50_70"),
+                 (70.0, 90.0, "rps70_90"), (90.0, 101.0, "rps>=90"))
+    mix_in = mix_cur.loc[in_win]
+    buy_in = buy_cur.loc[in_win]
+    elig_in = eligible.loc[in_win]
+    open_in = wide["open"].loc[in_win]
+    close_in = wide["close"].loc[in_win]
+    unfill_in = wide["unfill"].loc[in_win] if wide.get("unfill") is not None else None
+    rps_split = {
+        "note": "RPS 分层后验（50/120/250 加权混合分，0-100）；"
+        "holds_buy=已买入样本内，holds_all=全可交易样本；绝对口径",
+        "buckets": {},
+    }
+    for _lo, _hi, _lb in RPS_EDGES:
+        _band = (mix_in >= _lo) & (mix_in < _hi)
+        _row = {
+            "n_buy": int((_band & buy_in).sum().sum()),
+            "n_all": int((_band & elig_in).sum().sum()),
+            "holds_buy": {},
+            "holds_all": {},
+        }
+        for _n in holds:
+            for _key, _mask in (("holds_buy", _band & buy_in), ("holds_all", _band & elig_in)):
+                _ret, _drop = trade_returns(
+                    _mask, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _row[_key][str(_n)] = {
+                    "n_trades": int(len(_ret)),
+                    "mean": round(float(_ret.mean()), 6) if len(_ret) else None,
+                    "median": round(float(_ret.median()), 6) if len(_ret) else None,
+                    "win_rate": round(float((_ret > 0).mean()), 4) if len(_ret) else None,
+                }
+        rps_split["buckets"][_lb] = _row
+    rps_split["n_nan_rps"] = int(mix_in.isna().sum().sum())
+
+    # ---- P61 加法 vs 门控 A/B（2026-11-10 老田批第 3 项）----
+    # 加法（现行）：score = 各维加权平均 >= 75 → 强项可补偿弱项
+    # 门控（共振）  ：tech>=T1 且 rps>=T2 且 env_safe 且 RPS 有值 → 买入，score 不参与判定
+    # 依据：原型「共振定乾坤」= 各维必须同时成立，不是加权求和。
+    #       P60 分层已证：RPS 全样本单调递减（反转），买入样本单调递增——单看 RPS 会错，
+    #       必须与 tech 联合，故网格取 tech×rps 双阈值。
+    GATE_AB_GRID = [(t1, t2) for t1 in (50, 60, 70, 80) for t2 in (0, 50, 70, 90)]
+    tech_in = tech_w.loc[in_win]
+    _safe_row = env_df.loc[in_win, "safe"].to_numpy(dtype=bool)
+    safe_mat = pd.DataFrame(
+        np.broadcast_to(_safe_row[:, None], tech_in.shape),
+        index=tech_in.index,
+        columns=tech_in.columns,
+    )
+    gate_ab = {
+        "note": "门控变体：tech>=T1 且 rps>=T2 且 env_safe 且 RPS 有值；"
+        "对照组 = variants 里的 w_cur_th7550_gate_on（加权平均口径）；"
+        "绝对口径，窗口与 variants 一致",
+        "variants": [],
+    }
+    for _t1, _t2 in GATE_AB_GRID:
+        _cond = (tech_in >= _t1) & (mix_in >= _t2) & elig_in & safe_mat
+        _gv = {
+            "label": "gate_t%d_r%d" % (_t1, _t2),
+            "tech_th": _t1,
+            "rps_th": _t2,
+            "n_buy": int(_cond.sum().sum()),
+            "holds": {},
+        }
+        for _n in holds:
+            _r, _d = trade_returns(
+                _cond, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            _gv["holds"][str(_n)] = {
+                "n_trades": int(len(_r)),
+                "mean": round(float(_r.mean()), 6) if len(_r) else None,
+                "median": round(float(_r.median()), 6) if len(_r) else None,
+                "win_rate": round(float((_r > 0).mean()), 4) if len(_r) else None,
+            }
+        gate_ab["variants"].append(_gv)
+
+    # ---- P63 「硬地板 + 加权排序」：在现行买入上叠加 RPS 地板（2026-11-11）----
+    # 与上面的门控变体不是同一件事：门控变体放弃 score 阈值（纯双阈值判定），
+    # 本组保留 score>=buy_th 的排序，只额外要求 RPS 不低于地板值。
+    # 这才是「RPS 由权重分量改为硬地板」的真实形态 —— P61 网格从未覆盖它。
+    # floor=0 必须与 base 完全一致（自带验证）。
+    FLOOR_GRID = (0, 50, 70, 90)
+    floor_ab = {
+        "note": "地板变体：buy = buy_in & (RPS >= floor)；"
+        "buy_in 已含 score>=buy_th 与 env_safe，故 floor=0 应与 base 完全一致；"
+        "对照组 = variants 里的 w_cur_th7550_gate_on",
+        "variants": [],
+    }
+    for _f in FLOOR_GRID:
+        _fm = buy_in if _f <= 0 else (buy_in & (mix_in >= _f))
+        _fv = {
+            "label": "floor_r%d" % _f,
+            "rps_floor": _f,
+            "n_buy": int(_fm.sum().sum()),
+            "holds": {},
+        }
+        for _n in holds:
+            _fr, _ = trade_returns(
+                _fm, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            _fv["holds"][str(_n)] = {
+                "n_trades": int(len(_fr)),
+                "mean": round(float(_fr.mean()), 6) if len(_fr) else None,
+                "median": round(float(_fr.median()), 6) if len(_fr) else None,
+                "win_rate": round(float((_fr > 0).mean()), 4) if len(_fr) else None,
+            }
+        floor_ab["variants"].append(_fv)
+
+    # ---- P61 时间稳定性：逐月 T+5/T+10（防单期行情主导结论）----
+    # 关键：buy 掩码用全窗口 open/close 计算出场，月掩码只作用于「信号日」，
+    # 避免月末 5 日内的信号因切片而丢失出场价（否则每月末被系统性剔除）。
+    _dates = tech_in.index
+    # 索引可能是 int(YYYYMMDD) 也可能是 Timestamp，两种都要能取年月
+    def _ym(_d):
+        if hasattr(_d, "year"):
+            return int(_d.year), int(_d.month)
+        _i = int(_d)
+        return _i // 10000, (_i // 100) % 100
+
+    _YM = [_ym(_d) for _d in _dates]
+    _MONTHS = sorted(set(_YM))
+    _CFG = [
+        ("base_w_cur_gate_on", buy_in),
+        ("gate_t70_r70", (tech_in >= 70) & (mix_in >= 70) & elig_in & safe_mat),
+        ("gate_t70_r90", (tech_in >= 70) & (mix_in >= 90) & elig_in & safe_mat),
+        ("gate_t50_r90", (tech_in >= 50) & (mix_in >= 90) & elig_in & safe_mat),
+        # P63：硬地板形态（保留 score 排序，只加 RPS 下限）
+        ("floor_r50", buy_in & (mix_in >= 50)),
+        ("floor_r70", buy_in & (mix_in >= 70)),
+        ("floor_r90", buy_in & (mix_in >= 90)),
+    ]
+    gate_ab["monthly"] = {
+        "note": "逐月按信号日分组；出场用全窗口价格，月末信号不丢出场价；"
+        "同一成本口径（args.cost）",
+        "holds": [int(h) for h in holds if int(h) <= 10],
+        "rows": [],
+    }
+    # 逐月基准（全市场等权同口径），用于把「策略亏损」拆成 alpha 与 beta
+    _bench_month = {}
+    for _n in gate_ab["monthly"]["holds"]:
+        _bret = bench_returns(
+            elig_in, open_in, close_in, _n, args.cost, unfill=unfill_in
+        )
+        if len(_bret):
+            _bm_idx = [
+                "%04d%02d" % _ym(d) for d in _bret.index.get_level_values("date")
+            ]
+            _bench_month[_n] = pd.Series(
+                _bret.to_numpy(dtype=float), index=_bm_idx
+            ).groupby(level=0).mean()
+    for _lab, _mask in _CFG:
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _mask & pd.DataFrame(
+                np.broadcast_to(_mm, _mask.shape), index=_mask.index, columns=_mask.columns
+            )
+            _row = {
+                "cfg": _lab,
+                "month": "%04d%02d" % (_y, _m),
+                "n_buy": int(_sel.sum().sum()),
+            }
+            for _n in gate_ab["monthly"]["holds"]:
+                _r, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _row["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+                _bm = _bench_month.get(_n)
+                _row["bench_t%d" % _n] = (
+                    round(float(_bm.get(_row["month"])), 6)
+                    if _bm is not None and _row["month"] in _bm.index
+                    else None
+                )
+            gate_ab["monthly"]["rows"].append(_row)
+
+    # ---- P64 连续加权：RPS 权重 0.25 → 0.30/0.35/0.40（2026-11-11 老田裁定方案 A）----
+    # 前提：P63 已证「RPS 硬地板」不是 alpha 而是动量暴露（202609 单月超额随地板
+    #       提高而加深亏损），故本组不设任何阈值，只调 combine_score 的 rps 权重，
+    #       让 score 排序自然向强动量倾斜——不加闸门，不砍样本。
+    # 两形态各 3 档，差别在「多出来的 rps 权重从哪来」：
+    #   提权 rpsXX  其余维不动 → wsum 变大，归一后 tech/env 相对占比被动稀释
+    #   让渡 rebXX  tech 等量让出（权重和守恒）→ tech:env 比例不变
+    # 对照组 = w_cur_th7550_gate_on；w4_rps25 与之必须逐笔一致（自检锚）。
+    P64_W = [
+        ("w4_rps25", {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15}),
+        ("w4_rps30", {"tech": 0.35, "jev": 0.25, "rps": 0.30, "env": 0.15}),
+        ("w4_rps35", {"tech": 0.35, "jev": 0.25, "rps": 0.35, "env": 0.15}),
+        ("w4_rps40", {"tech": 0.35, "jev": 0.25, "rps": 0.40, "env": 0.15}),
+        ("w4_reb35", {"tech": 0.25, "jev": 0.25, "rps": 0.35, "env": 0.15}),
+        ("w4_reb40", {"tech": 0.20, "jev": 0.25, "rps": 0.40, "env": 0.15}),
+    ]
+    weight_ab = {
+        "note": "连续加权变体：只改 combine_score 的 rps 权重，不设任何 RPS 阈值；"
+        "rpsXX=其余维不动（归一后 tech/env 被动稀释），"
+        "rebXX=tech 等量让出（权重和守恒）；"
+        "对照组 = variants 里的 w_cur_th7550_gate_on（w4_rps25 须与之逐笔一致）",
+        "variants": [],
+        "monthly": {
+            "note": "逐月按信号日分组，出场用全窗口价格；holds 只取 5/10",
+            "holds": [int(h) for h in holds if int(h) <= 10],
+            "rows": [],
+        },
+    }
+    for _wl, _w in P64_W:
+        _sc, _b64, _o64 = combine_score(
+            tech_w,
+            mix_cur,
+            env_df,
+            buy_th=TH_CUR[0],
+            obs_th=TH_CUR[1],
+            gate_on=True,
+            eligible=eligible,
+            jev_mode=args.jev_mode,
+            jev_mat=jev_mat,
+            w4=_w,
+        )
+        _bw = _b64.loc[in_win]
+        _v = {
+            "label": _wl,
+            "w4": dict(_w),
+            "n_buy_in_window": int(_bw.sum().sum()),
+            "holds": {},
+        }
+        for _n in holds:
+            _r, _ = trade_returns(
+                _bw, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            _v["holds"][str(_n)] = {
+                "n_trades": int(len(_r)),
+                "mean": round(float(_r.mean()), 6) if len(_r) else None,
+                "median": round(float(_r.median()), 6) if len(_r) else None,
+                "win_rate": round(float((_r > 0).mean()), 4) if len(_r) else None,
+            }
+        weight_ab["variants"].append(_v)
+        print(
+            "%-10s buy=%6d hold%d mean=%s"
+            % (
+                _wl,
+                _v["n_buy_in_window"],
+                holds[0],
+                _v["holds"][str(holds[0])]["mean"],
+            ),
+            flush=True,
+        )
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _bw & pd.DataFrame(
+                np.broadcast_to(_mm, _bw.shape), index=_bw.index, columns=_bw.columns
+            )
+            _row = {
+                "cfg": _wl,
+                "month": "%04d%02d" % (_y, _m),
+                "n_buy": int(_sel.sum().sum()),
+            }
+            for _n in weight_ab["monthly"]["holds"]:
+                _r, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _row["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            weight_ab["monthly"]["rows"].append(_row)
+
+    # P64 阈值-笔数对齐：提权会让 wsum 变大 → score 分布整体下移，阈值 75 的
+    # 实际含义跟着漂移（笔数被动减少）。若不做这一步，就无法区分「排序变好」
+    # 与「变相加严」——P63 的口径错配正是栽在这里。
+    # 做法：同一 w4 下扫 buy_th，给出 (笔数, 后验) 曲线，再找与 base 笔数最接近的档。
+    weight_ab["th_curve"] = {
+        "note": "同一权重下扫 buy_th，用于把各变体对齐到 base 的笔数后再比后验；"
+        "逐笔绝对收益，成本口径同 args.cost",
+        "base_n_buy": None,
+        "rows": [],
+    }
+    for _wl, _w in P64_W:
+        _sc64, _, _ = combine_score(
+            tech_w,
+            mix_cur,
+            env_df,
+            buy_th=0.0,
+            obs_th=0.0,
+            gate_on=True,
+            eligible=eligible,
+            jev_mode=args.jev_mode,
+            jev_mat=jev_mat,
+            w4=_w,
+        )
+        _sc_in = _sc64.loc[in_win]
+        for _th in (70.0, 72.0, 74.0, 76.0, 78.0, 80.0):
+            _cond = elig_in & (~mix_in.isna()) & safe_mat & (_sc_in >= _th)
+            _crow = {
+                "cfg": _wl,
+                "buy_th": _th,
+                "n_buy": int(_cond.sum().sum()),
+            }
+            for _n in holds:
+                _r, _ = trade_returns(
+                    _cond, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _crow["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            weight_ab["th_curve"]["rows"].append(_crow)
+
+    # P64 副产物：纯阈值变动的逐月（权重保持现行 W4，只动 buy_th）。
+    # th_curve 显示 70→80 后验单调改善，但「提高阈值」同时也是「降低暴露」，
+    # 在普跌月天然少亏。必须看 OOS 有效月（202605/202608/202609）是否同步改善，
+    # 才能区分「score 排序力」与「仓位暴露差异」。
+    weight_ab["th_monthly"] = {
+        "note": "纯阈值变动（w4=W4 现行），逐月 T+5/T+10；用于区分排序力与暴露",
+        "rows": [],
+    }
+    _sc_cur34, _, _ = combine_score(
+        tech_w,
+        mix_cur,
+        env_df,
+        buy_th=0.0,
+        obs_th=0.0,
+        gate_on=True,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
+    _sc_cur_in = _sc_cur34.loc[in_win]
+    for _th in (75.0, 78.0, 80.0):
+        _cm = elig_in & (~mix_in.isna()) & safe_mat & (_sc_cur_in >= _th)
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _cm & pd.DataFrame(
+                np.broadcast_to(_mm, _cm.shape), index=_cm.index, columns=_cm.columns
+            )
+            _trow = {
+                "buy_th": _th,
+                "month": "%04d%02d" % (_y, _m),
+                "n_buy": int(_sel.sum().sum()),
+            }
+            for _n in (5, 10):
+                _r, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _trow["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+            weight_ab["th_monthly"]["rows"].append(_trow)
+
+    # ---- P65 env 分层：回答「该全停还是该降仓」（2026-11-11 老田裁定 D1 前置取证）----
+    # 现行闸门是二值：breadth<0.40 或 med20<-3% → 当日信号全部作废。
+    # D1 想把「全停」换成「降仓」，前提是**被停掉的那些日子里仍有正期望信号**。
+    # 若被砍掉的档位后验本就是负的，降仓只是少亏，改不动结论；
+    # 若某些档位后验为正、只是波动大，那才是「该降不该停」。
+    # 做法：用 gate_off 的买入掩码（不看闸门），按 breadth / med20 分档看后验。
+    # 注意：这里比的是「闸门如果不存在」的反事实，不是现行体系的后验。
+    _, buy_nogate, _ = combine_score(
+        tech_w,
+        mix_cur,
+        env_df,
+        buy_th=TH_CUR[0],
+        obs_th=TH_CUR[1],
+        gate_on=False,
+        eligible=eligible,
+        jev_mode=args.jev_mode,
+        jev_mat=jev_mat,
+    )
+    _bn = buy_nogate.loc[in_win]
+    _br_vec = env_df.loc[in_win, "breadth"].to_numpy(dtype=float)
+    _md_vec = env_df.loc[in_win, "med20"].to_numpy(dtype=float)
+    _sf_vec = env_df.loc[in_win, "safe"].to_numpy(dtype=bool)
+    _br_mat = np.broadcast_to(_br_vec[:, None], _bn.shape)
+    _md_mat = np.broadcast_to(_md_vec[:, None], _bn.shape)
+    _sf_mat = np.broadcast_to(_sf_vec[:, None], _bn.shape)
+
+    def _band_row(mask):
+        row = {"n_buy": int(mask.sum().sum()),
+               "n_safe": int((mask & _sf_mat).sum().sum()),
+               "holds": {}}
+        for _n in holds:
+            _r, _ = trade_returns(
+                mask, open_in, close_in, _n, args.cost, unfill=unfill_in
+            )
+            row["holds"][str(_n)] = {
+                "n_trades": int(len(_r)),
+                "mean": round(float(_r.mean()), 6) if len(_r) else None,
+                "median": round(float(_r.median()), 6) if len(_r) else None,
+                "win_rate": round(float((_r > 0).mean()), 4) if len(_r) else None,
+            }
+        return row
+
+    BR_EDGES = ((0.0, 0.30, "br<30"), (0.30, 0.40, "br30_40"),
+                (0.40, 0.50, "br40_50"), (0.50, 0.60, "br50_60"),
+                (0.60, 0.70, "br60_70"), (0.70, 1.01, "br>=70"))
+    MED_EDGES = ((-9.0, -0.05, "med<-5"), (-0.05, -0.03, "med-5_-3"),
+                 (-0.03, 0.0, "med-3_0"), (0.0, 9.0, "med>=0"))
+    env_split = {
+        "note": "反事实分层：买入掩码含 score>=buy_th 但**不含** env 闸门；"
+        "按当日 breadth / med20 分档看后验；n_safe=该档中被现行闸门放行的笔数；"
+        "用于判断「全停」与「降仓」哪个更接近最优",
+        "breadth": {},
+        "med20": {},
+    }
+    for _lo, _hi, _lb in BR_EDGES:
+        _m = _bn & (_br_mat >= _lo) & (_br_mat < _hi)
+        env_split["breadth"][_lb] = _band_row(_m)
+        # 逐月：band 内按月拆，检验「甜点区」是否只在样本内成立
+        _bk = {"n_buy": int(_m.sum().sum()), "rows": []}
+        for _y, _mth in _MONTHS:
+            _mmk = np.array([_y == _a and _mth == _b for _a, _b in _YM])[:, None]
+            _selk = _m & pd.DataFrame(
+                np.broadcast_to(_mmk, _m.shape), index=_m.index, columns=_m.columns
+            )
+            _kr = {"month": "%04d%02d" % (_y, _mth), "n_buy": int(_selk.sum().sum())}
+            for _n in (5, 10):
+                _rr, _ = trade_returns(
+                    _selk, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _kr["t%d" % _n] = round(float(_rr.mean()), 6) if len(_rr) else None
+            _bk["rows"].append(_kr)
+        env_split["breadth_monthly"] = env_split.get("breadth_monthly", {})
+        env_split["breadth_monthly"][_lb] = _bk
+    for _lo, _hi, _lb in MED_EDGES:
+        _m = _bn & (_md_mat >= _lo) & (_md_mat < _hi)
+        env_split["med20"][_lb] = _band_row(_m)
+
+    # 现行闸门的两组对照：被放行的 vs 被砍掉的（同为 gate_off 信号集）
+    env_split["gate_effect"] = {
+        "note": "同一信号集（gate_off）按现行闸门是否放行拆分，直接量化「砍掉了什么」",
+        "passed": _band_row(_bn & _sf_mat),
+        "blocked": _band_row(_bn & ~_sf_mat),
+    }
+
+    # ---- P66 组合层 A/B：连续仓位的唯一有效检验口径 ----
+    # 逐笔平均收益会把仓位系数归一化掉（分子分母同时乘 w），看不见任何差别。
+    # 必须在「总资金」口径下模拟：每日按 w_t 投入现金的 1/n，持有 n 日到期回收，
+    # 稳态 w=1 时满仓。三方案同一引擎、同一信号集（gate_off），只换 w。
+    def _portfolio_curve(batch_ret, w_ser, n, all_dates):
+        rec = batch_ret.reindex(all_dates)
+        ww = w_ser.reindex(all_dates).fillna(0.0)
+        cash = 1.0
+        due = {}
+        navs = []
+        for i, _d in enumerate(all_dates):
+            if i in due:
+                cash += due.pop(i)
+            total = cash + sum(due.values())
+            _r = rec.loc[_d]
+            if pd.notna(_r) and float(ww.loc[_d]) > 0:
+                amt = total * float(ww.loc[_d]) / n
+                if amt > 0:
+                    cash -= amt
+                    _k = i + n
+                    due[_k] = due.get(_k, 0.0) + amt * (1.0 + float(_r))
+            navs.append(cash + sum(due.values()))
+        return pd.Series(navs, index=all_dates)
+
+    def _curve_stats(nav):
+        if len(nav) < 2:
+            return {}
+        dd = float((nav / nav.cummax() - 1.0).min())
+        tot = float(nav.iloc[-1] / nav.iloc[0] - 1.0)
+        days = max(1, len(nav))
+        ann = (1.0 + tot) ** (243.0 / days) - 1.0 if tot > -1 else -1.0
+        return {
+            "total_ret": round(tot, 5),
+            "annual": round(ann, 5),
+            "max_dd": round(dd, 5),
+            "calmar": round(ann / abs(dd), 3) if dd < 0 else None,
+        }
+
+    _br_s = env_df.loc[in_win, "breadth"].astype(float)
+    _md_s = env_df.loc[in_win, "med20"].astype(float)
+    _sf_s = env_df.loc[in_win, "safe"].astype(float)
+    W_LIN = ((_br_s - 0.30) / 0.30).clip(0.0, 1.0)
+    W_LIN_MED = (W_LIN * ((_md_s + 0.05) / 0.05).clip(0.0, 1.0)).astype(float)
+    _dates_all = tech_in.index
+
+    portfolio_ab = {
+        "note": "总资金口径：每日投入 现金×w/n，持有 n 日到期回收；"
+        "信号集统一用 gate_off（闸门交还给 w），三方案只换仓位系数；"
+        "w_lin=(breadth-0.30)/0.30 clip，w_lin_med 再乘 med20 线性惩罚",
+        "holds": [],
+        "variants": [],
+    }
+    W_VARIANTS = [
+        ("w_gate_binary", _sf_s, "现行二值闸门：safe?1:0"),
+        ("w_full", pd.Series(1.0, index=_br_s.index), "满仓不做闸门"),
+        ("w_lin", W_LIN, "breadth 线性 (0.30→0, 0.60→1)"),
+        ("w_lin_med", W_LIN_MED, "breath 线性 × med20 线性（-5%→0, 0→1）"),
+    ]
+    for _n in (5, 10):
+        _batch = _bn
+        _rets, _ = trade_returns(
+            _batch, open_in, close_in, _n, args.cost, unfill=unfill_in
+        )
+        _bydate = _rets.groupby(level="date").mean() if len(_rets) else pd.Series(dtype=float)
+        _n_nav = _n
+        _wrap = {"hold": _n, "results": []}
+        for _wl2, _ws, _wdesc in W_VARIANTS:
+            try:
+                _nav = _portfolio_curve(_bydate, _ws, _n_nav, _dates_all)
+                _st = _curve_stats(_nav)
+            except Exception as _e:  # pragma: no cover
+                _st = {"error": str(_e)}
+            _st.update({"label": _wl2, "desc": _wdesc,
+                        "avg_w": round(float(_ws.reindex(_dates_all).fillna(0).mean()), 4)})
+            _wrap["results"].append(_st)
+            # P68 E2：留日频净值，供 β 工具做滚动估计（JSON 体积可控，~243 点）
+            if _wl2 == "w_gate_binary" and len(_nav) > 2:
+                _wrap["nav"] = {
+                    "dates": [int(d) for d in _nav.index],
+                    "values": [round(float(v), 6) for v in _nav.to_numpy()],
+                }
+        portfolio_ab["holds"].append(_wrap)
+
+    # ---- P68 E1：maxret20 作排除项实测（老田 2026-11-11 裁定）----
+    # 因子 IC 筛查里 maxret20（过去 20 日单日最大涨幅，彩票效应）是最强负 IC：
+    # -0.067、t=-5.42、IS/OOS 同号。但它的多空 spread 只有 0.26%，低于 0.30% 往返成本，
+    # 单独做多空不划算。唯一低成本用法是「排除项」——不新增交易，只把该批信号剔掉。
+    # 陷阱（P64 教训）：排除必然减笔数，减笔数本身就可能带来增益。
+    # 所以每档都要配一个「同笔数的纯 score 阈值」对照，才能剥离变相加严。
+    # ⚠ 必须用全历史 close 算，不能用 close_in。close_in 是 in_win 切片，
+    # 切片首月起点的前 20 日不存在 → maxret20 整月 NaN → 被当成「次新」误剔，
+    # 上一版就是这么把 202511 整月（8,422 笔、−2.93%）当成次新股给切掉的。
+    # min_periods=20 严格要求 20 个完整 bar，NaN 才真的是次新。
+    _mr20 = (
+        wide["close"].pct_change().rolling(20, min_periods=20).max().loc[in_win]
+    )
+    _mr_q = _mr20.rank(axis=1, pct=True)  # 每日截面分位，1=最极端
+
+    def _mr_row(mask, desc=""):
+        out = {"n_buy": int(mask.sum().sum()), "desc": desc}
+        for _n in holds:
+            _r, _ = trade_returns(mask, open_in, close_in, _n, args.cost, unfill=unfill_in)
+            out["t%d" % _n] = round(float(_r.mean()), 6) if len(_r) else None
+        return out
+
+    maxret_ab = {
+        "note": "maxret20=过去20个交易日单日最大涨幅（后复权 close 环比）；"
+        "截面分位按日算（1=最极端）；排除项不新增交易只减笔数，"
+        "故每档配「同笔数纯 score 阈值」对照，剥离变相加严",
+        "bands": {},
+        "monthly": {},
+        "th_scan": [],
+    }
+    # ⚠ NaN 必须「不排除」：写成 (q <= 0.80) 时 NaN 比较为 False，会把
+    # maxret20 缺失（上市不足 20 日的新股）整批顺带剔除，增益归因全部失真。
+    # 上一版就是这么错的：base 108,535 与 q1~q5 合计 99,935 差 8,600 笔全是新股。
+    _MR_VARIANTS = [
+        ("base", buy_in, "现行买入，不排除"),
+        ("ex_new", buy_in & _mr20.notna(), "只剔除次新（maxret20 缺失）"),
+        ("ex_p80", buy_in & ~(_mr_q > 0.80), "剔除截面最高 20%"),
+        ("ex_p70", buy_in & ~(_mr_q > 0.70), "剔除截面最高 30%"),
+        ("ex_abs10", buy_in & ~(_mr20 >= 0.095), "剔除 20 日内涨幅≥9.5%（含涨停）"),
+        ("ex_abs07", buy_in & ~(_mr20 >= 0.07), "剔除 20 日内涨幅≥7%"),
+        ("ex_abs05", buy_in & ~(_mr20 >= 0.05), "剔除 20 日内涨幅≥5%"),
+    ]
+    for _lb, _mk, _desc in _MR_VARIANTS:
+        maxret_ab["bands"][_lb] = _mr_row(_mk, _desc)
+    # 买入样本内的分位分档：验证「越极端越差」是否单调（单调才有排除价值）
+    for _i, (_lo, _hi) in enumerate(
+        ((0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.01))
+    ):
+        _mk = buy_in & _mr_q.notna() & (_mr_q > _lo) & (_mr_q <= _hi)
+        maxret_ab["bands"]["q%d" % (_i + 1)] = _mr_row(
+            _mk, "买入样本内分位 %.0f-%.0f%%" % (_lo * 100, _hi * 100)
+        )
+    maxret_ab["bands"]["q_nan"] = _mr_row(
+        buy_in & _mr20.isna(), "买入样本内 maxret20 缺失（次新）"
+    )
+    # 逐月：只有逐月才能看出增益是不是某一个月贡献的
+    for _lb in ("base", "ex_new", "ex_p80", "ex_p70", "ex_abs10"):
+        _mk = dict((a, b) for a, b, _c in _MR_VARIANTS)[_lb]
+        _rows = []
+        for _y, _m in _MONTHS:
+            _mm = np.array([_y == _a and _m == _b for _a, _b in _YM])[:, None]
+            _sel = _mk & pd.DataFrame(
+                np.broadcast_to(_mm, _mk.shape), index=_mk.index, columns=_mk.columns
+            )
+            _r = {"month": "%04d%02d" % (_y, _m), "n_buy": int(_sel.sum().sum())}
+            for _n in (5, 10):
+                _rr, _ = trade_returns(
+                    _sel, open_in, close_in, _n, args.cost, unfill=unfill_in
+                )
+                _r["t%d" % _n] = round(float(_rr.mean()), 6) if len(_rr) else None
+            _rows.append(_r)
+        maxret_ab["monthly"][_lb] = _rows
+    # 纯 score 阈值扫描：只为给上面的排除档找「同笔数」参照物
+    for _th in np.arange(TH_CUR[0], TH_CUR[0] + 12.01, 0.5):
+        _m = elig_in & (~mix_in.isna()) & safe_mat & (_sc_cur_in >= _th)
+        _r = {"buy_th": round(float(_th), 1), "n_buy": int(_m.sum().sum())}
+        for _n in (5, 10, 20):
+            _rr, _ = trade_returns(_m, open_in, close_in, _n, args.cost, unfill=unfill_in)
+            _r["t%d" % _n] = round(float(_rr.mean()), 6) if len(_rr) else None
+        maxret_ab["th_scan"].append(_r)
+
+    # ---- P68 E2：β 估计所需的三个序列 ----
+    # ⚠ 口径必须同频。上一版拿 nav 的「日」收益去对基准的「5 日批次」收益回归，
+    # 量纲错配，β 被压到 0.08（真值 1.3 量级），完全不可用。
+    # 这里分开给：
+    #   market[j]      全市场 eligible 的 close 日环比等权 → 标准市场日收益
+    #   bench[n]       全市场 n 日批次收益 → 与 strategy[n] 同窗口
+    #   strategy[n]    现行买入信号集的 n 日批次收益（按信号日聚合）→ 选股端暴露
+    _mkt = close_in.pct_change().where(elig_in).mean(axis=1)
+    bench_daily = {
+        "note": "market=全市场 eligible 日等权收益；bench[n]/strategy[n]=n 日批次收益"
+        "按信号日聚合（同窗口，可直接相互回归）",
+        "by_hold": {},
+        "market": {
+            "dates": [int(d) for d in _mkt.dropna().index],
+            "values": [round(float(v), 6) for v in _mkt.dropna().to_numpy()],
+        },
+        "strategy": {},
+    }
+    for _n in holds:
+        _br = bench_returns(elig_in, open_in, close_in, _n, args.cost, unfill=unfill_in)
+        if len(_br):
+            _g = _br.groupby(level="date").mean()
+            bench_daily["by_hold"][str(_n)] = {
+                "dates": [int(d) for d in _g.index],
+                "values": [round(float(v), 6) for v in _g.to_numpy()],
+            }
+        _sr, _ = trade_returns(buy_in, open_in, close_in, _n, args.cost, unfill=unfill_in)
+        if len(_sr):
+            _gs = _sr.groupby(level="date").mean()
+            bench_daily["strategy"][str(_n)] = {
+                "dates": [int(d) for d in _gs.index],
+                "values": [round(float(v), 6) for v in _gs.to_numpy()],
+            }
+
+
+
     all_ret_hold = {}
     for n in holds:
         ret, _drop = trade_returns(
@@ -1037,6 +1671,14 @@ def run_backtest(args):
             "holds_by_period": subnew_holds,
             "all": all_ret_hold,
         },
+        "rps_split": rps_split,
+        "gate_ab": gate_ab,
+        "floor_ab": floor_ab,
+        "weight_ab": weight_ab,
+        "env_split": env_split,
+        "portfolio_ab": portfolio_ab,
+        "maxret_ab": maxret_ab,
+        "bench_daily": bench_daily,
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
