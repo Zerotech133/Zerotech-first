@@ -31,10 +31,28 @@ $py  = 'C:\Program Files\Python311\python.exe'
 if (-not $PSScriptRoot) { throw '需以 -File 方式执行本脚本（$PSScriptRoot 为空时无法推导工作目录）' }
 $wd  = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'portal\daily_report'
 $log = $Log
-$stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
+# 每行独立取时刻（2026-11-11 修）。此前 $stamp 在脚本开头只算一次，整份日志
+# 所有行都是启动时刻：15:10 那趟 settle 行与 snap 完成行同为 15:10:02，而 snap
+# 实际跑到 15:14:59。用「产物时间戳 vs 调度启动时刻」反查时，两值相同就没了参照。
 function Write-TaskLog([string]$m) {
-    (($stamp + ' ' + $m)) | Out-File $log -Append -Encoding utf8
+    # -Width 4096：Out-File 默认按控制台宽度折行，长路径与 JSON 会被切断
+    # （2026-11-11 22:46 那次实测：「落盘 → ...coho」/「orts\status_latest.json」
+    # 断成两行），折过行的日志没法再被程序解析，也没法 grep 完整路径。
+    ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ' + $m) |
+        Out-File $log -Append -Encoding utf8 -Width 4096
+}
+
+# 统一处理子进程输出：保留末 $keep 行，被截断时显式记一行（静默截断等于隐藏信息）。
+function Write-TaskOut([string]$prefix, [string]$text, [int]$keep = 20) {
+    $lines = @($text -split "`r?`n" | Where-Object { $_.Trim() -ne '' })
+    if ($lines.Count -eq 0) { Write-TaskLog ('  ' + $prefix + '| （无输出）'); return }
+    if ($lines.Count -gt $keep) {
+        $skip = $lines.Count - $keep
+        Write-TaskLog ('  ' + $prefix + '| …（前 ' + $skip + ' 行略，仅记末 ' + $keep + ' 行）')
+        $lines = $lines[$skip..($lines.Count - 1)]
+    }
+    $lines | ForEach-Object { Write-TaskLog ('  ' + $prefix + '| ' + $_) }
 }
 
 try {
@@ -58,10 +76,13 @@ try {
     #    由 16:40 那趟补齐（见文件头判例）。
     if ($ph -contains 'settle') {
         $setOut = (& $py -X utf8 'cohort_track.py' --settle 2>&1 | Out-String)
-        ($setOut.Trim() -split "`r?`n" | Select-Object -Last 12) | ForEach-Object { Write-TaskLog ('  settle| ' + $_) }
-        if ($setOut -match 'Traceback') {
+        $setRc  = $LASTEXITCODE
+        Write-TaskOut 'settle' $setOut
+        # 退出码与 Traceback 都要看（2026-11-11 修）：只看 Traceback 会漏掉
+        # 用 sys.exit(非0) 退出的情况——那种退出不打印异常栈，却什么都没做。
+        if ($setOut -match 'Traceback' -or $setRc -ne 0) {
             # 结算失败不阻断快照：快照本身仍有价值
-            Write-TaskLog 'WARN: settle 抛异常，继续跑 snap'
+            Write-TaskLog ('WARN: settle 失败（rc=' + $setRc + '），继续跑 snap；上几行即为原因')
         }
         # 待结算不是故障，但要在日志里显式留一行，免得和「真的没有待结项」混淆
         if ($setOut -match '待结算') {
@@ -72,9 +93,10 @@ try {
     # 2) 快照：全市场实时 -> status_latest.json（含 rolling 降级线）
     if ($ph -contains 'snap') {
         $snapOut = (& $py -X utf8 'cohort_track.py' --snap 2>&1 | Out-String)
-        ($snapOut.Trim() -split "`r?`n" | Select-Object -Last 12) | ForEach-Object { Write-TaskLog ('  snap| ' + $_) }
-        if ($snapOut -match 'Traceback') {
-            Write-TaskLog 'ABORT: snap 抛异常'
+        $snapRc  = $LASTEXITCODE
+        Write-TaskOut 'snap' $snapOut
+        if ($snapOut -match 'Traceback' -or $snapRc -ne 0) {
+            Write-TaskLog ('ABORT: snap 失败（rc=' + $snapRc + '），status_latest.json 未更新')
             exit 1
         }
     }
@@ -88,8 +110,8 @@ try {
     if ($ph -contains 'health') {
         $dhOut = (& $py -X utf8 'data_health.py' --target prev 2>&1 | Out-String)
         $dhRc = $LASTEXITCODE
-        ($dhOut.Trim() -split "`r?`n") | Where-Object { $_ } | ForEach-Object { Write-TaskLog ('  data| ' + $_) }
-        if ($dhRc -ne 0) {
+        Write-TaskOut 'data' $dhOut 40
+        if ($dhOut -match 'Traceback' -or $dhRc -ne 0) {
             Write-TaskLog ('WARN: 数据巡检未达标（rc=' + $dhRc + '），上一条判定行即为原因')
         }
     }
