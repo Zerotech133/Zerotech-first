@@ -149,3 +149,28 @@
 **复评触发条件（满足任一再议）**：① Windows GA 发布；② 出现批量抓取之外的"登录态交互调研"刚需且具备 macOS 宿主时开小范围试点；③ **不**用它替换 xq 的 Playwright 管线。
 
 **局限性声明（OSINT 自省）**：样本 = 厂商官网 + 4 篇中/英二手 + 1 个 agent 目录，无一手实测；平台状态可能自最近来源（6 天前）起已变化；基准厂商可控，结论偏保守。
+
+---
+
+## 七、R26 xq Profile 升温/轮换核查（2026-11-12）
+
+**指令**：核 `xq_auto_login_profile` 是否真·warm，并起草 Layer 1 轮换/升温方案。
+
+**核查结论（只读核实，未改生产文件）**
+- PRIMARY `tmp/xq_auto_login_profile` **缺失**（目录空，从未创建）；代码 `_launch_ctx` 中 `os.path.isdir` 判否→`continue`，**正确降级**到 FALLBACK，不会拿 cold 空 profile 顶上。
+- FALLBACK `data/xueqiu/_headed_profile` **真·WARM**：含 `xq_a_token`+`xq_r_token`+`u` 登录三件套 + `device_id`/`acw_tc`/`cookiesu`/`smidV2`，主要 token 到期 2027-10~12；13 个 xueqiu cookie（5 持久未过期/7 会话/1 过期）。
+- 所有 xueqiu cookie `last_access` 停在 11-11 23:21（今日 07:00 run 撞 WAF 早停未 flush 的**假象**，非真冷）。
+- **WAF 根因修正**：鉴权层不冷 → WAF 是行为/频控型，非鉴权缺失型 → 印证 R24 冷却重试方向正确，Layer 1 轮换降频为补充杠杆。
+
+**暴露的脆弱点**
+1. 单点依赖：全部 xq 采集（xq_kol + xq_stock_timeline + R24 21:00 分片）100% 依赖唯一 `_headed_profile`，无冗余。
+2. PRIMARY 名存实亡；并发 run 同 profile 持锁 → 一方降级到不存在 PRIMARY → `RuntimeError 无可用登录 profile`。
+
+**Layer 1 方案（详见 `news_collector/PROFILE_WARMTH_L1_PLAN.md`）**
+- L1.1 轮换池 `xq_profiles.json`（round_robin，降频+冗余，需先有 ≥2 个 warm profile）
+- L1.2 只读巡检 `check_xq_warmth.py` + 06:55 预检自动化（告警不自动修）
+- L1.3 run 前冷停闸（全冷→rc=3 `PROFILE_COLD`，省无效请求）
+- L1.4 新 warm profile（**人工**：A 独立登录 或 B 克隆+验证，克隆有同指纹风险→优先 A）
+- L1.5 30 天刷新 SOP
+
+**待裁定**：①是否实现 L1.1–L1.3 自动化脚手架+注册预检；②新 profile 走 A 还是 B；③池规模 2 还是 3。
