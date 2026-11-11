@@ -1,11 +1,27 @@
 <!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
-<title>P1 日历账本 · 横排日历 + 证据链详情</title><style>
+<title>P1 日历账本 v2 · 年→月→日→票 四级下钻</title><style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0c1117;color:#e6edf3;font:13px/1.6 "Segoe UI",system-ui,"Microsoft YaHei",sans-serif;padding:20px}
-h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bottom:12px}
-#cal{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}
-.day{min-width:158px;max-width:158px;background:#121924;border:1px solid #1f2835;border-radius:10px;padding:8px;cursor:pointer;flex-shrink:0}
-.day:hover{border-color:#2a3546;background:#182130}
+h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bottom:10px}
+.crumbs{display:flex;gap:6px;align-items:center;margin-bottom:12px;font-size:13px;flex-wrap:wrap}
+.crumbs a{color:#4f8fe6;cursor:pointer;text-decoration:none}
+.crumbs span.sep{color:#6b7787}
+.crumbs b{color:#e0b95c}
+.years{display:flex;gap:10px;flex-wrap:wrap}
+.year{background:#121924;border:1px solid #1f2835;border-radius:12px;padding:12px;cursor:pointer;min-width:190px}
+.year:hover{border-color:#2a3546;background:#182130}
+.year h3{font-size:15px;margin-bottom:4px}
+.ystat{display:flex;gap:14px;font-size:11.5px;color:#9aa7b8}
+.ystat b{font-size:14px}
+.months{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.month{background:#121924;border:1px solid #1f2835;border-radius:10px;padding:10px;cursor:pointer}
+.month:hover{border-color:#2a3546;background:#182130}
+.month h4{font-size:13px;display:flex;justify-content:space-between;margin-bottom:4px}
+.mstat{font-size:11px;color:#9aa7b8;display:flex;gap:10px}
+.bar{height:5px;border-radius:3px;background:#1d2836;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%}
+.daysgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
+.day{background:#121924;border:1px solid #1f2835;border-radius:10px;padding:8px}
 .dh{display:flex;justify-content:space-between;font-size:11px;color:#9aa7b8;margin-bottom:5px}
 .dh b{color:#e6edf3}
 .mr{font-weight:700;font-size:12px}
@@ -27,9 +43,10 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .close{float:right;cursor:pointer;color:#6b7787;font-size:16px;padding:0 6px}
 .q{color:#e0b95c}
 </style></head><body>
-<h1>P1 日历账本 · 每日选择 → 次日实况（点击看证据链）</h1>
-<div class="m">手法 v3（pos+vol+bei30）· v1.0 · 一格=一交易日（横排滚动）· 点击任意票看完整证据链：板块/因子/五问 · 生成 __GEN__</div>
-<div id="cal"></div>
+<h1>P1 日历账本 · 年 → 月 → 日 → 票</h1>
+<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 __GEN__</div>
+<div class="crumbs" id="crumbs"></div>
+<div id="view"></div>
 <div id="modal" onclick="if(event.target===this)this.classList.remove('on')">
 <div class="card"><span class="close" onclick="document.getElementById('modal').classList.remove('on')">✕</span><div id="cbody"></div></div></div>
 <script>
@@ -37,18 +54,47 @@ const DATA=__DATA__;
 const C={up:'#e35d5d',dn:'#3aa76d',flat:'#8a93a3'};
 const fmt=(v,d=2)=>v==null?'—':(v>0?'+':'')+v.toFixed(d);
 const col=v=>v==null?C.flat:(v>0?C.up:(v<0?C.dn:C.flat));
-const cal=document.getElementById('cal');
-DATA.forEach((dy,i)=>{
- const el=document.createElement('div');el.className='day';
- el.innerHTML='<div class="dh"><b>'+dy.day.slice(4,6)+'-'+dy.day.slice(6)+'</b>'
-  +'<span class="mr" style="color:'+col(dy.mean)+'">'+fmt(dy.mean)+'%</span></div>'
-  +dy.picks.map((p,k)=>'<div class="pick" onclick="show(event,'+i+','+k+')">'
+const agg=arr=>{const v=arr.filter(x=>x!=null);return v.length?{m:v.reduce((a,b)=>a+b,0)/v.length,n:v.length,win:Math.round(100*v.filter(x=>x>0).length/v.length)}:null};
+const byYear={},byMonth={};
+DATA.forEach(d=>{const y=d.day.slice(0,4),ym=d.day.slice(0,6);(byYear[y]=byYear[y]||[]).push(d);(byMonth[ym]=byMonth[ym]||[]).push(d)});
+let view=document.getElementById('view'),crumbs=document.getElementById('crumbs');
+function nav(level,key){crumbs.innerHTML='';view.innerHTML='';
+ const mk=t=>{const a=document.createElement('a');a.textContent=t;
+  a.onclick=()=>nav('y');crumbs.appendChild(a);return a};
+ const sep=()=>{const s=document.createElement('span');s.className='sep';s.textContent=' › ';crumbs.appendChild(s)};
+ const cur=t=>{const b=document.createElement('b');b.textContent=t;crumbs.appendChild(b)};
+ const root=mk('全部年');
+ if(level==='y'){cur('（选择年份 → 月 → 日 → 票）');renderYears()}
+ else if(level==='m'){sep();cur(key+' 年');renderMonths(key)}
+ else{sep();const a2=document.createElement('a');a2.textContent=key.slice(0,4)+' 年';
+  a2.onclick=()=>nav('m',key.slice(0,4));crumbs.appendChild(a2);sep();
+  cur(key.slice(4,6)+' 月');renderDays(key)}}
+function renderYears(){
+ const ys=Object.keys(byYear).sort();
+ view.innerHTML=ys.map(y=>{const a=agg(byYear[y].map(d=>d.mean));
+  return '<div class="year" onclick="nav(\'m\',\''+y+'\')"><h3>'+y+' 年</h3>'
+  +'<div class="ystat"><span>日均 <b style="color:'+col(a&&a.m)+'">'+fmt(a&&a.m)+'%</b></span>'
+  +'<span>交易日 <b>'+byYear[y].length+'</b></span>'
+  +'<span>胜率 <b>'+(a?a.win:0)+'%</b></span></div></div>'}).join('');}
+function renderMonths(y){
+ const ms=Object.keys(byMonth).filter(k=>k.startsWith(y)).sort();
+ view.innerHTML='<div class="months">'+ms.map(k=>{const a=agg(byMonth[k].map(d=>d.mean));
+  const w=a?Math.max(3,Math.round(a.win)):3;
+  return '<div class="month" onclick="nav(\'d\',\''+k+'01\')"><h4><span>'+k.slice(4,6)+' 月</span>'
+  +'<span style="color:'+col(a&&a.m)+'">'+fmt(a&&a.m)+'%</span></h4>'
+  +'<div class="mstat"><span>'+byMonth[k].length+' 交易日</span><span>胜率 '+(a?a.win:0)+'%</span></div>'
+  +'<div class="bar"><i style="width:'+w+'%;background:'+(a&&a.m>0?C.up:C.dn)+'"></i></div></div>'}).join('')+'</div>';}
+function renderDays(ym){
+ const ds=byMonth[ym.slice(0,6)]||[];
+ view.innerHTML='<div class="daysgrid">'+ds.map(d=>{
+  return '<div class="day"><div class="dh"><b>'+d.day.slice(4,6)+'-'+d.day.slice(6)+'</b>'
+  +'<span class="mr" style="color:'+col(d.mean)+'">'+fmt(d.mean)+'%</span></div>'
+  +d.picks.map((p,k)=>'<div class="pick" onclick="show(event,\''+d.day+'\','+k+')">'
    +'<span class="pcode">'+p.code.slice(0,9)+'</span>'
-   +'<span class="prt" style="color:'+col(p.ret)+'">'+fmt(p.ret)+'</span></div>').join('');
- cal.appendChild(el);
-});
-function show(e,i,k){e.stopPropagation();
- const d=DATA[i],p=d.picks[k],f=p.factors;
+   +'<span class="prt" style="color:'+col(p.ret)+'">'+fmt(p.ret)+'</span></div>').join('')+'</div>'}).join('')+'</div>';}
+const IDX={};DATA.forEach(d=>IDX[d.day]=d);
+function show(e,day,k){e.stopPropagation();
+ const d=IDX[day],p=d.picks[k],f=p.factors;
  const fac=[f.bei?'bei 同向力度背驰':null,f.bei2?'bei2 回踩力度背驰':null,
   f.bei24?'bei24 24课盘整背驰':null,f.tbe24?'tbe24 24课趋势背驰':null,
   f.mbei?'mbei MACD背驰':null].filter(Boolean);
@@ -73,6 +119,6 @@ function show(e,i,k){e.stopPropagation();
   +'<div class="row"><span class="q">④ 板块环境</span><span>所属板块 r5 见上卡（板块层 asof=快照日，T+1 口径如实标注）</span></div>'
   +'<div class="row"><span class="q">⑤ 手法版本</span><span>v3 评分 v1.0（手法登记簿上线后自动分版本着色）</span></div></div>'
  +'</div>';
- document.getElementById('modal').classList.add('on');
-}
+ document.getElementById('modal').classList.add('on');}
+nav('y');
 </script></body></html>

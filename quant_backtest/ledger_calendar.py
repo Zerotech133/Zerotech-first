@@ -32,7 +32,7 @@ SNAP = sorted(glob.glob(os.path.join(HERE, "data", "sector_member_snap",
 SEC = sorted(glob.glob(os.path.join(HERE, "reports", "sector_state_2*.json")))
 OUT = os.path.join(HERE, "h5_daily", "ledger_calendar.html")
 TOPN = 5
-NDAYS = 60
+NDAYS = 0  # 0=全窗（v2 四级下钻需要全部数据）
 
 
 def build_ctx():
