@@ -93,6 +93,22 @@ def build_watchlist():
     return held, signal_all, prev, allset, ash, hk, us
 
 
+def _clean_env():
+    """剔除代理环境变量（判例 #26：trust_env 直连）。
+
+    沙箱/自动化会话可能挂 http_proxy=127.0.0.1:<port>，requests 子进程
+    走代理会被本地服务代理拦截（2026-11-11 08:48 taoguba 批次
+    rc=3221226091 秒挂即此因）。生产计划任务本无代理变量，此清理幂等。
+    """
+    env = dict(os.environ)
+    for k in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY",
+              "all_proxy", "ALL_PROXY"):
+        env.pop(k, None)
+    env["NO_PROXY"] = "*"
+    env["no_proxy"] = "*"
+    return env
+
+
 def run_collector(script, codes, extra=None):
     if not codes:
         return 0
@@ -101,7 +117,8 @@ def run_collector(script, codes, extra=None):
         cmd += extra
     log("→ %s  %s" % (script, ",".join(codes)))
     try:
-        r = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True, timeout=900)
+        r = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True,
+                           timeout=900, env=_clean_env())
         tail = (r.stdout or "").strip().splitlines()[-4:]
         for ln in tail:
             log("   | %s" % ln)
