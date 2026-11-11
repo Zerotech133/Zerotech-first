@@ -109,7 +109,13 @@ def prev_trading_day(d):
 
 # ── 整市场日线 / 复权因子（带缓存） ───────────────────────────────
 def load_daily(date):
-    """返回 dict: code -> {open, close, pre_close}（不复权原始价）。"""
+    """返回 dict: code -> {open, close, pre_close}（不复权原始价）。
+
+    **必须断言行内 trade_date == 请求日**（2026-11-11 立）。接口在目标日还没有
+    数据时可能返回空，也可能回落到相邻交易日；不核对就直接用，等于拿某一天的
+    收盘价冒充另一天 —— 与健康巡检「拿 max(trade_date) 当 asof」是同一类错。
+    日期不符一律按「无数据」处理，由调用方判为未就绪，不落结算记录。
+    """
     fp = os.path.join(CACHE, "daily_%s.parquet" % date)
     if os.path.exists(fp):
         df = pd.read_parquet(fp)
@@ -120,6 +126,12 @@ def load_daily(date):
         df = pd.DataFrame(rows)
         os.makedirs(CACHE, exist_ok=True)
         df.to_parquet(fp)
+    if "trade_date" in df.columns:
+        got = set(df["trade_date"].astype(str).str[:8].unique())
+        if got and got != {str(date)}:
+            print("  [注意] 请求 %s 的日线，实际装的是 %s → 按无数据处理"
+                  % (date, "/".join(sorted(got)[:3])))
+            return {}
     return {r.ts_code: {"open": float(r.open), "close": float(r.close),
                         "pre_close": float(r.pre_close)}
             for r in df.itertuples()}
@@ -214,10 +226,30 @@ def _today():
     return datetime.date.today().strftime("%Y%m%d")
 
 
+def settle_verdict(m, today, n_used):
+    """这一笔该不该落账：'ok' / 'pending' / 'error'。纯函数，便于测。
+
+    判例（2026-11-11 15:10，调度环境首次跑 --settle）：11-06/main 第 3 日的
+    到期日就是当天，15:10 跑时当日日线还没发布（交易所侧 15:50 才有），代码
+    走进「无有效价格」分支 —— **静默写一条 error 记录、一个字都不打印**，最后
+    汇总行照样报「没有到期待结项」。看上去一切正常，实际那一笔整晚没结，
+    直到 15:50 人工重跑才补上（settlements.jsonl 里 ts=15:50:22 是铁证）。
+
+    所以必须拆成两种：
+      - 到期日就是今天、一只价都没取到 → 数据未发布，**不落记录**，下次运行重试；
+      - 到期日已经过去、仍一只价都没取到 → 是真缺口，落 error 并明确报出来。
+    """
+    if n_used > 0:
+        return "ok"
+    if str(m) >= str(today):
+        return "pending"          # 到期日 = 今天，数据还没发布
+    return "error"                # 历史日期仍无价，是真缺口
+
+
 def settle():
     """结算所有到期日 <= 当前可结算日的未结项。当日到期只在收盘后结算。"""
     today = _today()
-    results = []
+    results, pend, bad = [], [], []
     for fp in sorted(glob.glob(os.path.join(COHORT_DIR, "cohort_*.json"))):
         c = json.load(open(fp, encoding="utf-8"))
         entry = c["entry_date"]
@@ -245,8 +277,19 @@ def settle():
                     miss.append(code)
                     continue
                 rets.append(px / po - 1)
-            if not rets:
+            vt = settle_verdict(m, today, len(rets))
+            if vt == "pending":
+                pend.append({"asof": asof, "pool": pool, "n": N, "m": m,
+                             "n_miss": len(miss)})
+                print("  待结算 %s/%s 第%s日：到期日 %s 的日线还没发布（%d 只全没取到价）"
+                      " → 保持未结，下次运行自动重试" % (asof, pool, N, m, len(miss)))
+                continue
+            if vt == "error":
                 c["settled"][key] = {"m": m, "error": "无有效价格", "miss": miss}
+                bad.append({"asof": asof, "pool": pool, "n": N, "m": m,
+                            "n_miss": len(miss)})
+                print("  [失败] %s/%s 第%s日：到期日 %s 已过仍一只价都没取到（缺 %d 只）"
+                      " → 记 error，日线补齐后自动重试" % (asof, pool, N, m, len(miss)))
                 continue
             # 基准：两融标的池同窗口等权
             pool_codes = margin_pool(asof)
@@ -281,6 +324,11 @@ def settle():
         with open(SETTLE_JSONL, "a", encoding="utf-8") as f:
             for r in results:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        print("本轮结算落账 %d 项" % len(results))
+    elif pend:
+        print("本轮没有落账项：%d 项在等到期日的日线发布（见上），下次运行重试" % len(pend))
+    elif bad:
+        print("本轮没有落账项：%d 项因历史日期缺价失败（见上），需查数据" % len(bad))
     else:
         print("没有到期待结项")
     return results
