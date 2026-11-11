@@ -64,7 +64,10 @@ MODEL_PROFILES = {
         "num_predict": 400,
         "timeout": 300,
         "temperature": 0.4,
-        "num_ctx": 16384,
+        # 2026-11-11 16384->32768: server default raised same day (4-place
+        # sync; watch agent_platform/engine/llm.py was the missed 5th place,
+        # each request reloaded runner back to 16384). Keep equal to server.
+        "num_ctx": 32768,
     },
     "qwen3.5:4b": {
         "num_predict": 400,
