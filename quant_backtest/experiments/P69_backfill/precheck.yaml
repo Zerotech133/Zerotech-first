@@ -1,0 +1,66 @@
+# P69 质量因子实验 —— 事后回填的预判单
+#
+# 用途：验证「信息上限预判」这条规矩的有效性。
+# P69 已于 2026-11-11 跑完并否决（6 个质量因子 IC 全 < 0.0123、分层反向）。
+# 本文件用 P69 的真实测量值回填，证明：如果当初先做这份预判，
+# 这个实验在开跑之前就会被判「劝退」——两周工作可以省下。
+#
+# 注意：这是回填样例，不代表 P69 从事实测值可以事先全部预知。
+# 其中 spread_gross_pct 是上限法的核心输入，可用「分位毛多空收益」在
+# 不扣成本的前提下先算出来（这正是预判要做的事），不需要等完整回测。
+
+meta:
+  exp_id: P69_backfill
+  layer: 公开季度财务 - 质量因子（ROE / 净利率 / 毛利率 / 资产周转）
+  hypothesis: A股存在可交易的质量溢价，高 ROE / 高净利率的票次期跑赢低分位
+  created: '2026-11-11'
+  status: backfilled
+  verdict: abandon
+
+cap:
+  method: spread
+  upper_bound_pct: -0.041
+  cost_pct: 0.3
+  basis: >-
+    stock_yjbb_em 16 期（2022Q4~2026Q3）x 5,138 只 x 128 个截面快照，
+    按公告日对齐（零前视），5 日持有，分 5 档（MIN_GROUP=30）
+  inputs:
+    quantiles: 5
+    holding_days: 5
+    spread_gross_pct: 0.259
+    cost_note: 双边佣金+印花+冲击 0.30pct（A股日频选股口径）
+  note: >-
+    最优多空 spread（10 因子全试过的最好一个）毛值 0.259pct/5日，
+    减 0.30pct 双边成本后净 -0.041pct。净上限为负 = 这层信息再怎么
+    优化也变不成钱，应该直接弃。
+
+abandon:
+  threshold_pct: 0.0
+  rationale: >-
+    净上限 <= 0 就弃（连成本都覆盖不了，没有任何参数空间能救）。
+    更保守的线可以是 0.5pct/年（无风险利率一半），本例用 0 已是底线。
+
+falsify:
+  if_true:
+    - 按 net_margin 分 5 档，Q1→Q5 收益单调，|rho| >= 0.8
+    - Q1 与 Q5 的 5 日收益差 >= 0.30pct（覆盖双边成本）
+    - OOS 的 t 值 >= 2.0 且与 IS 同号
+  if_false:
+    - 分档倒 U（中间档最好）或 rho 符号与预期相反
+    - 峰值档收益差 < 0.30pct，扣成本后为负
+  monotonicity_rho_min: 0.8
+  t_min: 2.0
+  is_oos_sign_agree: true
+  sample_note: 每期至少 30 只成组、至少 12 个截面（3 年季度）
+  observed: >-
+    实测 rho = -1.00（严格递减但方向相反），Q1 0.467% vs Q5 0.266%
+    差 0.201pct < 成本 0.30pct；6 因子 IC 全部 |IC| < 0.0123、|t| < 1.26。
+    结论：判否，符合 if_false 第一条。
+
+selfcheck:
+  reference: P67 已测因子 maxret20，IC = -0.0668（t = -5.42）
+  tolerance_pct: 5
+  note: >-
+    P69 首版 IC 只有参考值 1/4，靠对 P67 已知因子反证才发现
+    「只对 x 取秩、y 用原始收益」算成了混合 Pearson。修正后小数点后
+    四位复现。没有这个参照物，会带着 4.5 倍偏差写出「某因子有效」。

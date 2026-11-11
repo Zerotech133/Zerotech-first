@@ -314,7 +314,11 @@ logs/
 tmp/
 portal_backups/
 k_stock/paper/combo_registrations/
-quant_backtest/experiments/
+# P-1 预判门禁（2026-11-11）：预判单必须进仓，git 历史是唯一的"先于实验"审计线索。
+# 只放行 precheck.yaml，其余实验产物（脚本/缓存/输出）仍忽略。
+quant_backtest/experiments/*
+!quant_backtest/experiments/*/
+!quant_backtest/experiments/*/precheck.yaml
 quant_backtest/portal/
 agent_platform/backup_20261018_team_quality.json
 agent_platform/intel_inbox/intel_inbox_ledger.jsonl
