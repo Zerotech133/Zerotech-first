@@ -29,6 +29,20 @@ falsify:
   t_min: TODO
   is_oos_sign_agree: true
   sample_note: TODO 至少多少笔 / 多少个截面才算有效样本
+attempts:
+  family: 事件驱动 - 龙虎榜资金跟随
+  total_trials: 1
+  same_sample: true
+  correction:
+    applied: false
+    method: none
+    note: 新族第 1 组，无需校正。若后续在同一段样本上继续调龙虎榜信号，从 2 起累加。
+cost_sensitivity:
+  mode: derived
+  grid_pct: [0.20, 0.30, 0.50]
+  net_upper_pct: {}
+  reason: ''
+  note: 填完 cap.inputs.spread_gross_pct 后自动出三档净上限；若 0.50 档就击穿放弃线，标为脆弱。
 selfcheck:
   reference: TODO 拿哪个已知结果反证（例：P67 的 maxret20 IC=-0.0668）
   tolerance_pct: TODO 允许偏差百分比，建议 5

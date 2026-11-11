@@ -9,6 +9,9 @@
   T5 bool 冒充数字必须被拦（True 不能被当成 1 混过去）
   T6 selfcheck 缺失只 warn 不阻断；--strict 下才拦
   T7 require_pass 对未通过单抛异常
+  T10~T13 多重检验记账：6 组未校正 warn、5 组不 warn、标校正却不给方法报错
+  T14~T16 成本敏感性：derived 自动算三档、自报翻转矛盾报错、不适用须写理由
+  T17~T18 reality-check 格式复核记录：字段齐、判定映射对
 """
 import os
 import sys
@@ -142,3 +145,115 @@ def test_t9_real_backfill_verdicts():
         doc = yaml.safe_load(open(p, encoding="utf-8"))
         got, msg = pc.verdict_of(doc)
         assert got == want, "%s 期望 %s，实得 %s（%s）" % (exp, want, got, msg)
+
+
+# ── P1：多重检验记账（attempts）──
+GROSS = 0.259          # P69 实测毛 spread，用变量传递，避免字面量被通道串味
+
+
+def _with(doc, **blocks):
+    d = dict(doc)
+    d.update(blocks)
+    return d
+
+
+def test_t10_six_trials_without_correction_warns(tmp_path, monkeypatch):
+    d = _with(_doc(), attempts={"family": "参数层", "total_trials": 3 * 2,
+                                "correction": {"applied": False, "method": "none"}})
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    errors, warns = pc.check(doc)
+    assert errors == [], "未校正只应 warn 不阻断：%s" % errors
+    assert any("多重检验" in w for w in warns), "6 组未校正必须警告：%s" % warns
+    assert pc.verdict_of(doc)[0] == "pass", "警告不改退出码"
+
+
+def test_t11_five_trials_is_below_threshold(tmp_path, monkeypatch):
+    d = _with(_doc(), attempts={"family": "参数层", "total_trials": 2 + 3,
+                                "correction": {"applied": False, "method": "none"}})
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    _, warns = pc.check(doc)
+    assert not any("多重检验" in w for w in warns), "5 组以内不该警告：%s" % warns
+
+
+def test_t12_applied_without_method_is_error(tmp_path, monkeypatch):
+    d = _with(_doc(), attempts={"family": "参数层", "total_trials": 3 * 2,
+                                "correction": {"applied": True, "method": "none"}})
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    errors, warns = pc.check(doc)
+    assert any("绕过门禁" in e for e in errors), "标校正却不给方法必须报错：%s" % errors
+    assert not any("多重检验" in w for w in warns), "已 applied 就不该再警告未校正"
+
+
+def test_t13_applied_with_real_method_clears_warning(tmp_path, monkeypatch):
+    d = _with(_doc(), attempts={"family": "参数层", "total_trials": 3 * 2,
+                                "correction": {"applied": True, "method": "bh_fdr"}})
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    errors, warns = pc.check(doc)
+    assert errors == [] and not any("多重检验" in w for w in warns)
+
+
+# ── P1：成本敏感性（cost_sensitivity）──
+def test_t14_derived_cost_grid_computed_from_spread(tmp_path, monkeypatch):
+    d = _with(_doc(spread=GROSS), cost_sensitivity={"mode": "derived"})
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    cs = pc.cost_sensitivity_of(doc)
+    assert [round(c, 2) for c, _ in cs["rows"]] == [0.20, 0.30, 0.50], cs["rows"]
+    assert abs(cs["rows"][1][1] - (GROSS - 0.30)) < 1e-9, "净上限必须 = 毛 spread - 成本"
+    assert cs["flips"] is True, "0.20 档为正、0.30 档为负，必须判翻转"
+    assert abs(cs["flip_at"] - 0.30) < 1e-9, cs["flip_at"]
+    _, warns = pc.check(doc)
+    assert any("成本敏感性" in w and "脆弱" in w for w in warns)
+
+
+def test_t15_measured_flips_contradiction_is_error(tmp_path, monkeypatch):
+    d = _with(_doc(spread=GROSS), cost_sensitivity={
+        "mode": "measured",
+        "grid_pct": [0.20, 0.30, 0.50],
+        "net_upper_pct": {0.20: 0.06, 0.30: -0.04, 0.50: -0.24},
+        "flips": False,
+    })
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    errors, _ = pc.check(doc)
+    assert any("矛盾" in e for e in errors), "自报 flips 与三档数字冲突必须报错：%s" % errors
+
+
+def test_t16_not_applicable_needs_reason(tmp_path, monkeypatch):
+    p = _write(tmp_path, _with(_doc(), cost_sensitivity={"mode": "not_applicable"}),
+               monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    _, warns = pc.check(doc)
+    assert any("reason" in w for w in warns), "标不适用却不写理由等于跳过：%s" % warns
+
+
+# ── P2：reality-check 格式的复核记录 ──
+def test_t17_gate_report_shape_and_verdict(tmp_path, monkeypatch):
+    d = _with(_doc(upper=-0.04, threshold=0.0, spread=GROSS),
+              attempts={"family": "参数层", "total_trials": 3 * 2,
+                        "correction": {"applied": False, "method": "none"}})
+    p = _write(tmp_path, d, monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    errors, warns = pc.check(doc)
+    verdict, _ = pc.verdict_of(doc)
+    g = pc.gate_report(doc, verdict, errors, warns)
+    for k in ("item", "verdict", "evidence", "note", "scope", "triggers", "final"):
+        assert k in g and g[k], "复核记录缺字段 %s" % k
+    assert g["verdict"] == "不成立", g["verdict"]
+    assert g["final"] == "不放行", g["final"]
+    assert "净上限" in g["evidence"] and "同族" in g["evidence"]
+
+
+def test_t18_gate_pass_with_warns_is_conditional(tmp_path, monkeypatch):
+    p = _write(tmp_path, _with(_doc(), cost_sensitivity={"mode": "derived"}), monkeypatch)
+    doc = yaml.safe_load(open(p, encoding="utf-8"))
+    errors, warns = pc.check(doc)
+    verdict, _ = pc.verdict_of(doc)
+    g = pc.gate_report(doc, verdict, errors, warns)
+    assert verdict == "pass"
+    assert g["final"] == ("有条件交付" if warns else "可交付"), g["final"]
+

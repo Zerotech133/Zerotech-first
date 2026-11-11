@@ -57,6 +57,29 @@ falsify:
     差 0.201pct < 成本 0.30pct；6 因子 IC 全部 |IC| < 0.0123、|t| < 1.26。
     结论：判否，符合 if_false 第一条。
 
+attempts:
+  family: 参数层 - 选股规则与阈值（同一段样本上反复调同一批旋钮）
+  total_trials: 6
+  same_sample: true
+  correction:
+    applied: false
+    method: none
+    note: >-
+      P63 地板 / P64 提权 / P64 阈值 / P66 仓位 / P68 排除项 / P69 质量因子，
+      共 6 组，全部用同一段 202509-202609 样本、同一个 beta。当时是逐张单子
+      独立判否的，没有按 6 组做多重检验折扣——按单次 5% 显著计，族错误率上界
+      约 26%（1-0.95^6）。这行字留着不改：它本身就是"六张单子撑不起一条知识线"
+      的证据。后续同族再开实验，total_trials 从 7 起记。
+
+cost_sensitivity:
+  mode: derived
+  grid_pct: [0.20, 0.30, 0.50]
+  note: >-
+    由 cap.inputs.spread_gross_pct = 0.259 自动减三档成本得出：
+    0.20 档 +0.059 / 0.30 档 -0.041 / 0.50 档 -0.241。
+    即该质量的毛 spread 只够覆盖 0.20pct 成本，0.30pct 基准档下就已经为负。
+    结论对成本假设敏感——但这不改变判否：连基准成本都不覆盖，谈不上稳健性。
+
 selfcheck:
   reference: P67 已测因子 maxret20，IC = -0.0668（t = -5.42）
   tolerance_pct: 5
