@@ -438,6 +438,14 @@ portal/daily_report/arena/
 portal/daily_report/paper_arena.html
 portal/daily_report/_shot_arena*.png
 
+# 2026-11-12 多棱镜：latest.json 与 grade_log.jsonl 都是运行态，页面由 build_lens.py 再生。
+# grade_log.jsonl 是判定证据链，但属运行态数据，与 cohorts/、arena/ 保持同一口径（本机留存）。
+portal/daily_report/lens/
+portal/daily_report/multi_lens.html
+portal/daily_report/_shot_lens*.png
+# 本机数据源路径（含另一个仓的本地目录），只留本机，绝不入库
+portal/daily_report/lens_paths.json
+
 # 2026-11-10 瞬态运行日志（不入库）
 quant_backtest/logs_*.txt
 portal/_social_fetch_run_log.md

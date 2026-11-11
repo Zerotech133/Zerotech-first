@@ -62,6 +62,7 @@ try {
         if ($ph -contains 'settle') { Write-Output ('将执行: ' + $py + ' -X utf8 cohort_track.py --settle') }
         if ($ph -contains 'snap')   { Write-Output ('将执行: ' + $py + ' -X utf8 cohort_track.py --snap') }
         if ($ph -contains 'arena')  { Write-Output ('将执行: ' + $py + ' -X utf8 paper_arena.py → build_arena.py') }
+        if ($ph -contains 'lens')   { Write-Output ('将执行: ' + $py + ' -X utf8 lens_engine.py → build_lens.py') }
         if ($ph -contains 'health') { Write-Output ('将执行: ' + $py + ' -X utf8 data_health.py --target prev') }
         Write-Output ('阶段: ' + ($ph -join ','))
         Write-Output ('工作目录: ' + $wd)
@@ -76,7 +77,7 @@ try {
     #    注意 15:10 这趟拿不到当日日线，当日到期项会打印「待结算」而不落账，
     #    由 16:40 那趟补齐（见文件头判例）。
     if ($ph -contains 'settle') {
-        $setOut = (& $py -X utf8 'cohort_track.py' --settle 2>&1 | Out-String)
+        $setOut = (& $py -X utf8 'cohort_track.py' --settle 2>&1 | Out-String -Width 4096)
         $setRc  = $LASTEXITCODE
         Write-TaskOut 'settle' $setOut
         # 退出码与 Traceback 都要看（2026-11-11 修）：只看 Traceback 会漏掉
@@ -93,7 +94,7 @@ try {
 
     # 2) 快照：全市场实时 -> status_latest.json（含 rolling 降级线）
     if ($ph -contains 'snap') {
-        $snapOut = (& $py -X utf8 'cohort_track.py' --snap 2>&1 | Out-String)
+        $snapOut = (& $py -X utf8 'cohort_track.py' --snap 2>&1 | Out-String -Width 4096)
         $snapRc  = $LASTEXITCODE
         Write-TaskOut 'snap' $snapOut
         if ($snapOut -match 'Traceback' -or $snapRc -ne 0) {
@@ -108,7 +109,7 @@ try {
     #    只能是「未就绪、跳过」，不是故障 —— 这两种情况必须分开记，否则
     #    「跳过」会被 WARN 的措辞吞掉（11-11 结算静默失败那个判例）。
     if ($ph -contains 'arena') {
-        $arOut = (& $py -X utf8 'paper_arena.py' 2>&1 | Out-String)
+        $arOut = (& $py -X utf8 'paper_arena.py' 2>&1 | Out-String -Width 4096)
         $arRc  = $LASTEXITCODE
         Write-TaskOut 'arena' $arOut 24
         if ($arOut -match '行情未就绪') {
@@ -116,7 +117,7 @@ try {
         } elseif ($arOut -match 'Traceback' -or $arRc -ne 0) {
             Write-TaskLog ('WARN: arena 失败（rc=' + $arRc + '），模拟盘页面不会更新；上几行即为原因')
         } else {
-            $bdOut = (& $py -X utf8 'build_arena.py' 2>&1 | Out-String)
+            $bdOut = (& $py -X utf8 'build_arena.py' 2>&1 | Out-String -Width 4096)
             $bdRc  = $LASTEXITCODE
             Write-TaskOut 'page' $bdOut 6
             if ($bdOut -match 'Traceback' -or $bdRc -ne 0) {
@@ -125,14 +126,34 @@ try {
         }
     }
 
-    # 4) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
+    # 4) 多棱镜（2026-11-12 立）：一份事实 × 多种解释 × 数据判定。
+    #    产出 lens/latest.json + multi_lens.html，并把每次判定追加进 grade_log.jsonl
+    #    形成证据链。依赖当日日线，与 settle/arena 同因：15:10 那趟未就绪就跳过，
+    #    跳过 ≠ 故障，两种必须分开记。
+    if ($ph -contains 'lens') {
+        $lnOut = (& $py -X utf8 'lens_engine.py' 2>&1 | Out-String -Width 4096)
+        $lnRc  = $LASTEXITCODE
+        Write-TaskOut 'lens' $lnOut 24
+        if ($lnOut -match 'Traceback' -or $lnRc -ne 0) {
+            Write-TaskLog ('WARN: 多棱镜判定失败（rc=' + $lnRc + '），页面不会更新；上几行即为原因')
+        } else {
+            $lbOut = (& $py -X utf8 'build_lens.py' 2>&1 | Out-String -Width 4096)
+            $lbRc  = $LASTEXITCODE
+            Write-TaskOut 'lenspage' $lbOut 4
+            if ($lbOut -match 'Traceback' -or $lbRc -ne 0) {
+                Write-TaskLog ('WARN: 多棱镜页面构建失败（rc=' + $lbRc + '），latest.json 已更新但 html 未刷新')
+            }
+        }
+    }
+
+    # 5) 数据巡检：断言上一交易日的数据确实落到了表里（2026-11-11 立）
     #    只检 prev：当天的日线还在交易所侧，检 today 必然报零采集。
     #    这一检正对着「11-10 整天没采数据、旧脚本却判七表全绿」那次漏判 ——
     #    旧判据先取 max(trade_date) 再查那天齐不齐，于是永远自洽。
     #    不阻断：巡检不过说明数据侧有洞，快照与结算本身仍然有效。
     #    只在 15:10 第一趟做，16:40 那趟跳过（同一天同一批数据，重复检没有信息）。
     if ($ph -contains 'health') {
-        $dhOut = (& $py -X utf8 'data_health.py' --target prev 2>&1 | Out-String)
+        $dhOut = (& $py -X utf8 'data_health.py' --target prev 2>&1 | Out-String -Width 4096)
         $dhRc = $LASTEXITCODE
         Write-TaskOut 'data' $dhOut 40
         if ($dhOut -match 'Traceback' -or $dhRc -ne 0) {

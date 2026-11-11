@@ -6,10 +6,15 @@
 #   16:40 这次运行让当日结清落到当天，同时产生第二个收盘后快照，
 #   使价格守卫 R1「两轮收盘后快照互比」有对比对象（一天一跑时那一级永不触发）。
 #
-# 与 15:10 任务的差别：只跑 settle + snap，不跑数据巡检（同日同批数据，重复检无信息）。
+# 与 15:10 任务的差别：跑 settle + snap + arena + lens，不跑数据巡检
+# （同日同批数据，重复检无信息）。
 #
-# 默认只打印将要执行的动作，加 -Apply 才真正注册。同名任务已存在则报错退出，不覆盖。
-param([switch]$Apply)
+# 2026-11-12 补：原注册参数是 "settle,snap"，导致后来加的 arena / lens 阶段
+# 从未在调度里真正跑过（脚本支持 ≠ 任务参数已更新）。用 -Update 改参数，
+# 不动触发器与身份，可回滚。
+#
+# 默认只打印将要执行的动作，加 -Apply 才真正注册。/ -Update 更新已有任务的参数。
+param([switch]$Apply, [switch]$Update)
 
 $ErrorActionPreference = 'Stop'
 $name = 'houfeng_settle_daily'
@@ -22,7 +27,7 @@ $dir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $exe  = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $log  = 'C:\Temp\houfeng_settle_task.log'   # 不含用户名的通用临时目录；与已注册任务保持一致
 $arg  = '-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "' + $ps1 +
-        '" -Phases "settle,snap,arena" -Log "' + $log + '" -Tag houfeng_settle'
+        '" -Phases "settle,snap,arena,lens" -Log "' + $log + '" -Tag houfeng_settle'
 
 if (-not (Test-Path $ps1)) { throw ('脚本不存在: ' + $ps1) }
 
@@ -46,8 +51,44 @@ Write-Output ('设置:   StartWhenAvailable=开, MultipleInstances=IgnoreNew, �
 Write-Output ('身份:   ' + $env:USERNAME + ' / Interactive / Limited')
 
 if (-not $Apply) {
+    if ($Update) {
+        $cur = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
+        if ($cur) {
+            $oldArg = ($cur.Actions | ForEach-Object { $_.Arguments }) -join ' | '
+            Write-Output ''
+            Write-Output ('原参数: ' + $oldArg)
+            Write-Output ('新参数: ' + $arg)
+            if ($oldArg -eq $arg) { Write-Output '[无需改动] 参数已一致。' }
+        } else {
+            Write-Output ('[注意] 任务 ' + $name + ' 不存在，-Update 无从更新。')
+        }
+    }
     Write-Output ''
-    Write-Output '[预览模式] 未做任何改动。确认无误后加 -Apply 执行注册。'
+    Write-Output '[预览模式] 未做任何改动。注册用 -Apply；已存在想改参数用 -Update -Apply。'
+    exit 0
+}
+
+# -Update：只替换动作（参数），触发器/身份/设置原样保留
+if ($Update) {
+    $exist = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
+    if (-not $exist) {
+        Write-Output '[中止] 任务不存在，请先用 -Apply 注册。'
+        exit 2
+    }
+    $oldArg = ($exist.Actions | ForEach-Object { $_.Arguments }) -join ' | '
+    Write-Output ''
+    Write-Output ('原参数: ' + $oldArg)
+    Write-Output ('新参数: ' + $arg)
+    if ($oldArg -eq $arg) {
+        Write-Output '[无需改动] 参数已一致。'
+        exit 0
+    }
+    Set-ScheduledTask -TaskName $name -Action $act | Out-Null
+    $chk = Get-ScheduledTask -TaskName $name
+    $nowArg = ($chk.Actions | ForEach-Object { $_.Arguments }) -join ' | '
+    $ok = ($nowArg -eq $arg)
+    Write-Output ('[已更新] 参数一致=' + $ok + '  State=' + $chk.State)
+    if (-not $ok) { exit 1 }
     exit 0
 }
 

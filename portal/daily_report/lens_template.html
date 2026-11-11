@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>多棱镜 · 一份事实 × 六种可能</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#111621; --bg3:#161b22;
+  --line:#30363d; --line2:#3d444d;
+  --fg:#e6edf3; --dim:#8b949e; --faint:#656d76;
+  --acc:#58a6ff; --teal:#39c5cf; --purple:#bc8cff;
+  --up:#f85149; --dn:#3fb950;
+  --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  padding-bottom:44px;max-width:820px;margin:0 auto}
+b{font-weight:600}
+header{padding:16px 18px 10px;border-bottom:1px solid var(--line)}
+header .kicker{font-size:11px;color:var(--faint);letter-spacing:1.4px}
+header h1{font-size:20px;margin-top:3px;letter-spacing:.2px}
+header .hd-date{float:right;font-size:11px;color:var(--faint);margin-top:3px;text-align:right;line-height:1.5}
+
+.hero{padding:15px 18px 6px}
+.hero .lead{font-size:16.5px;line-height:1.62}
+.hero .sub{margin-top:7px;font-size:12.5px;color:var(--dim);line-height:1.75}
+
+.nums{display:flex;gap:8px;padding:13px 18px 4px}
+.num{flex:1;background:var(--bg3);border:1px solid var(--line);border-radius:10px;
+  padding:10px 7px 8px;text-align:center;min-width:0}
+.num b{font-size:19px;display:block;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.num span{font-size:10.5px;color:var(--dim);display:block;margin-top:4px;line-height:1.45}
+.num b.a{color:var(--acc)}.num b.g{color:var(--ok)}.num b.w{color:var(--warn)}.num b.r{color:var(--bad)}
+
+.sec-h{display:flex;align-items:baseline;gap:8px;padding:20px 18px 8px}
+.sec-h h2{font-size:15px;letter-spacing:.2px}
+.sec-h span{font-size:11px;color:var(--faint)}
+
+.fact{margin:6px 16px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--acc);
+  border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8;color:var(--dim)}
+.fact b{color:var(--fg)}
+.fact .row{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px}
+.fact .row i{font-style:normal;color:var(--faint)}
+
+/* 假设卡 */
+.hy{margin:9px 16px;background:var(--bg3);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.hy .top{display:flex;align-items:center;gap:9px;padding:11px 13px 9px;border-bottom:1px solid var(--line)}
+.hy .id{font-size:11.5px;font-weight:700;color:var(--faint);letter-spacing:.6px;flex:0 0 auto}
+.hy .claim{flex:1;font-size:14px;line-height:1.6;color:var(--fg)}
+.badge{flex:0 0 auto;font-size:10.5px;padding:3px 8px;border-radius:20px;white-space:nowrap;
+  border:1px solid transparent;font-weight:600}
+.badge.refuted{background:#8b949e22;border-color:#8b949e55;color:#a8b1bb}
+.badge.confirmed{background:#1f6feb22;border-color:#58a6ff88;color:#9fceff}
+.badge.blocked{background:#d299221a;border-color:#d2992266;color:#e3b341}
+.badge.open{background:#d299221a;border-color:#d2992266;color:#e3b341}
+.hy .body{padding:10px 13px 12px}
+.kv{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.kv div{background:#0d1117;border:1px solid var(--line);border-radius:7px;padding:5px 9px;
+  font-size:11.5px;color:var(--dim);white-space:nowrap}
+.kv div em{font-style:normal;color:var(--fg);font-variant-numeric:tabular-nums;margin-left:5px;font-weight:600}
+.rule{font-size:12px;line-height:1.8;color:var(--dim)}
+.rule s{text-decoration:none;color:var(--faint);display:inline-block;min-width:56px}
+.verdict{margin-top:8px;font-size:12.5px;line-height:1.72;padding:8px 10px;border-radius:7px;
+  background:#0d1117;border:1px solid var(--line)}
+.verdict.refuted{color:#a8b1bb}
+.verdict.confirmed{color:#9fceff;border-color:#58a6ff44}
+.verdict.blocked,.verdict.open{color:#e3b341;border-color:#d2992244}
+.dec{margin-top:8px;font-size:12px;line-height:1.75;color:var(--dim);padding-left:10px;
+  border-left:2px solid var(--line2)}
+.dec b{color:var(--fg)}
+.tag-ph{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;
+  background:#bc8cff1f;border:1px solid #bc8cff55;color:#d3b1ff;margin-left:6px;vertical-align:1px}
+
+/* 证据矩阵 */
+table.mx{width:calc(100% - 32px);margin:6px 16px;border-collapse:collapse;font-size:11.5px;
+  table-layout:fixed}
+table.mx th,table.mx td{border:1px solid var(--line);padding:7px 5px;text-align:center;
+  vertical-align:middle;line-height:1.45}
+table.mx th{background:var(--bg3);color:var(--dim);font-weight:600;font-size:11px}
+table.mx td.h{background:var(--bg3);font-weight:700;color:var(--fg);width:46px}
+.supp{color:var(--teal);background:#39c5cf14}
+.agst{color:var(--purple);background:#bc8cff14}
+.neut{color:var(--dim)}
+.na{color:var(--faint)}
+.stale{color:var(--faint);text-decoration:line-through;opacity:.75}
+
+table.win{width:calc(100% - 32px);margin:6px 16px;border-collapse:collapse;font-size:12px}
+table.win th,table.win td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:right;
+  font-variant-numeric:tabular-nums}
+table.win th{color:var(--dim);font-size:11px;font-weight:600;text-align:right}
+table.win th:first-child,table.win td:first-child{text-align:left}
+.up{color:var(--up)}.dn{color:var(--dn)}.flat{color:var(--dim)}
+
+.dims{margin:4px 16px}
+.dims .d{display:flex;gap:9px;align-items:baseline;padding:7px 0;border-bottom:1px solid #21262d;font-size:12.5px}
+.dims .d:last-child{border-bottom:none}
+.dims .d .nm{flex:0 0 74px;color:var(--fg)}
+.dims .d .st{flex:0 0 44px;font-size:10.5px;text-align:center;padding:1px 0;border-radius:4px}
+.dims .d .st.fresh{background:#3fb95022;color:#56d364}
+.dims .d .st.lag{background:#d2992218;color:#e3b341}
+.dims .d .st.stale{background:#f8514918;color:#ff9c96;text-decoration:none}
+.dims .d .st.missing,.dims .d .st.error{background:#8b949e18;color:#a8b1bb}
+.dims .d .tx{flex:1;color:var(--dim);line-height:1.55}
+
+.tl{margin:4px 16px}
+.tl .t{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #21262d;font-size:12px;line-height:1.6}
+.tl .t:last-child{border-bottom:none}
+.tl .t .when{flex:0 0 84px;color:var(--faint);font-variant-numeric:tabular-nums}
+.tl .t .what{flex:1;color:var(--dim)}
+.tl .t .what b{color:var(--fg)}
+
+footer{margin:22px 16px 0;padding-top:13px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--faint);line-height:1.9}
+footer b{color:var(--dim)}
+.empty{padding:18px;text-align:center;color:var(--faint);font-size:12px}
+
+/* 矩阵下方：把每格的理由摊开，手机上也能读 */
+.evid{margin:8px 16px 0}
+.evid .e{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid #21262d;font-size:12px;line-height:1.65}
+.evid .e:last-child{border-bottom:none}
+.evid .e .who{flex:0 0 132px;color:var(--dim)}
+.evid .e .who b{color:var(--fg)}
+.evid .e .why{flex:1;color:var(--dim)}
+@media (max-width:520px){
+  table.mx{font-size:10.5px}
+  table.mx th,table.mx td{padding:6px 2px}
+  table.mx td.h{width:38px}
+  .num b{font-size:16px}
+  .evid .e .who{flex:0 0 108px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">多棱镜 · 情报式研判</div>
+  <div class="hd-date" id="hdDate"></div>
+  <h1>一份事实 × 六种可能</h1>
+</header>
+
+<div class="hero">
+  <div class="lead" id="lead"></div>
+  <div class="sub" id="subLead"></div>
+</div>
+
+<div class="nums" id="nums"></div>
+
+<div class="sec-h"><h2>这份事实是什么</h2><span>先把被测对象钉死，再谈解释</span></div>
+<div class="fact" id="fact"></div>
+
+<div class="sec-h"><h2>六种可能，各自先声明「该看到什么」</h2><span>判据先写，数据后到</span></div>
+<div id="hyps"></div>
+
+<div class="sec-h"><h2>证据矩阵</h2><span>哪条维度支持、哪条反对、哪条根本用不了</span></div>
+<table class="mx" id="mx"></table>
+<div class="evid" id="evid"></div>
+
+<div class="sec-h"><h2>换持有窗口：同一批票，形状会不会变</h2><span>第二重印证</span></div>
+<table class="win" id="win"></table>
+
+<div class="sec-h"><h2>各维度数据状态</h2><span>过期的维度不许当证据</span></div>
+<div class="dims" id="dims"></div>
+
+<div class="sec-h"><h2>判定过程留痕</h2><span>每次运行追加一行，这就是证据链</span></div>
+<div class="tl" id="tl"></div>
+
+<div class="sec-h"><h2>所以现在该做什么</h2><span>只列还活着的解释</span></div>
+<div id="decisions"></div>
+
+<footer id="foot"></footer>
+
+<script>
+const D = __DATA__;
+
+function el(t, c, h) {
+  const d = document.createElement(t);
+  if (c) d.className = c;
+  if (h !== undefined) d.innerHTML = h;
+  return d;
+}
+function pct(x, d) {
+  if (x === null || x === undefined || isNaN(x)) return "—";
+  const v = x * 100;
+  return (v > 0 ? "+" : "") + v.toFixed(d === undefined ? 3 : d) + "%";
+}
+function cls(x) { return x > 0 ? "up" : (x < 0 ? "dn" : "flat"); }
+const SLABEL = {refuted: "已否", confirmed: "成立", blocked: "等样本", open: "未定"};
+const MARK = {support: ["支持", "supp"], against: ["反对", "agst"],
+              neutral: ["中性", "neut"], na: ["无关", "na"], stale: ["不可用", "stale"]};
+
+document.getElementById("hdDate").innerHTML =
+  "数据日 " + (D.asof || "—") + "<br>判定 " + (D.generated_at || "—").slice(5, 16);
+
+const auto = D.auto || {};
+const bs = auto.b_size || {};
+const nObs = D.n_obs || 0;
+const nDead = (D.combo && D.combo.dead || []).length;
+const nAlive = (D.combo && D.combo.alive || []).length;
+
+document.getElementById("lead").innerHTML = (D.combo && D.combo.headline) || "—";
+document.getElementById("subLead").innerHTML =
+  "下面这些不是「我认为」，是<b>六条互斥解释</b>和它们各自的<b>可证伪判据</b>。" +
+  "谁被数据判死、谁还活着、谁在等样本，一次看清。判据写在前面，事后不改门槛。";
+
+const nums = document.getElementById("nums");
+nums.appendChild(el("div", "num",
+  "<b class='" + cls(bs.mean) + "'>" + pct(bs.mean) + "</b><span>同市值毛超额<br>均值</span>"));
+nums.appendChild(el("div", "num",
+  "<b class='" + cls((bs.mean || 0) - D.cost_round) + "'>" +
+  pct((bs.mean === null || bs.mean === undefined) ? null : bs.mean - D.cost_round) +
+  "</b><span>扣 0.3% 成本<br>之后</span>"));
+nums.appendChild(el("div", "num",
+  "<b class='" + (nObs >= D.min_obs ? "g" : "w") + "'>" + nObs + "/" + D.min_obs +
+  "</b><span>已到期观测<br>/ 下结论门槛</span>"));
+nums.appendChild(el("div", "num",
+  "<b class='" + (nAlive > 0 ? "w" : "g") + "'>" + nAlive + "</b><span>仍存活的<br>解释条数</span>"));
+
+// ── 事实 ───────────────────────────────────────────
+const f = document.getElementById("fact");
+f.innerHTML =
+  "<b>被测对象</b>：系统自动选出的「自动池」，每批中位 <b>" + (D.med_n || "—") +
+  " 只</b>票。买入价 = 信号<b>次日开盘价</b>，持有 <b>" + D.headline_hold +
+  " 个交易日</b>后按规则卖出，不依赖任何人盯盘判断。" +
+  "<b>比什么</b>：同一时间窗口、同样等权、同样扣 0.3% 双边成本，" +
+  "和「同市值档」的股票池对比——这样比才排除了「买小盘股本来就涨得多」这层干扰。" +
+  "<div class='row'><span><i>观测单位</i> 一次选股 = 1 个观测</span>" +
+  "<span><i>基准</i> 同市值五分位等权</span>" +
+  "<span><i>成本</i> 双边 0.3%</span>" +
+  "<span><i>正号</i> " + (bs.pos || 0) + " / " + (bs.n || 0) + " 个观测跑赢</span></div>";
+
+// ── 假设卡 ─────────────────────────────────────────
+const hbox = document.getElementById("hyps");
+(D.hypotheses || []).forEach(function (h) {
+  const c = el("div", "hy");
+  const ph = h.post_hoc ? "<span class='tag-ph'>事后提出</span>" : "";
+  c.appendChild(el("div", "top",
+    "<span class='id'>" + h.id + "</span>" +
+    "<span class='claim'>" + h.claim + ph + "</span>" +
+    "<span class='badge " + h.status + "'>" + (SLABEL[h.status] || h.status) + "</span>"));
+
+  let kv = "<div class='kv'>";
+  (h.numbers || []).forEach(function (kvp) {
+    kv += "<div>" + kvp[0] + "<em>" + kvp[1] + "</em></div>";
+  });
+  kv += "</div>";
+
+  const body = el("div", "body",
+    kv +
+    "<div class='rule'><s>若成立</s>" + h.expect_true + "</div>" +
+    "<div class='rule'><s>若不成立</s>" + h.expect_false + "</div>" +
+    "<div class='verdict " + h.status + "'><b>判定：</b>" + h.verdict + "</div>" +
+    "<div class='dec'><b>对决策的含义：</b>" + h.decision + "</div>");
+  c.appendChild(body);
+  hbox.appendChild(c);
+});
+
+// ── 证据矩阵 ───────────────────────────────────────
+const dims = D.dimensions || [];
+const mx = document.getElementById("mx");
+let thead = "<tr><th style='width:46px'>假设</th>";
+dims.forEach(function (d) { thead += "<th>" + d.name + "</th>"; });
+thead += "</tr>";
+mx.innerHTML = thead;
+(D.matrix || []).forEach(function (row) {
+  let tr = "<tr><td class='h'>" + row.id + "</td>";
+  dims.forEach(function (d) {
+    const cell = (row.cells || {})[d.key] || {mark: "na", text: "—"};
+    const m = MARK[cell.mark] || MARK.na;
+    const tip = cell.text && cell.text !== "—" ? " title='" + cell.text + "'" : "";
+    tr += "<td class='" + m[1] + "'" + tip + ">" + m[0] + "</td>";
+  });
+  tr += "</tr>";
+  mx.insertAdjacentHTML("beforeend", tr);
+});
+if (!(D.matrix || []).length) {
+  mx.innerHTML = "<tr><td class='empty'>还没有证据</td></tr>";
+}
+
+// 矩阵下面把「为什么是支持/反对」摊开，不依赖 title 提示
+const dname = {};
+dims.forEach(function (d) { dname[d.key] = d.name; });
+const ev = document.getElementById("evid");
+let shown = 0;
+(D.matrix || []).forEach(function (row) {
+  dims.forEach(function (d) {
+    const c = (row.cells || {})[d.key];
+    if (!c || (c.mark !== "support" && c.mark !== "against")) return;
+    const m = MARK[c.mark];
+    ev.appendChild(el("div", "e",
+      "<span class='who'><b>" + row.id + "</b> × " + d.name + "</span>" +
+      "<span class='why'><span class='" + m[1] + "'>" + m[0] + "</span> " +
+      c.text + "</span>"));
+    shown++;
+  });
+});
+if (!shown) ev.innerHTML = "<div class='empty'>当前没有可用维度构成支持或反对</div>";
+
+// ── 持有窗口 ───────────────────────────────────────
+const wt = document.getElementById("win");
+wt.innerHTML = "<tr><th>持有</th><th>观测</th><th>对同市值</th><th>对全市场</th><th>离散度</th></tr>";
+(D.windows || []).forEach(function (w) {
+  wt.insertAdjacentHTML("beforeend",
+    "<tr><td>持有 " + w.hold + " 日</td><td class='flat'>" + (w.n || 0) + "</td>" +
+    "<td class='" + cls(w.size) + "'>" + pct(w.size) + "</td>" +
+    "<td class='" + cls(w.all) + "'>" + pct(w.all) + "</td>" +
+    "<td class='flat'>" + (w.sd ? (w.sd * 100).toFixed(2) + "pp" : "—") + "</td></tr>");
+});
+
+// ── 维度状态 ───────────────────────────────────────
+const dl = document.getElementById("dims");
+const STX = {fresh: "可用", lag: "T-1", stale: "过期", missing: "缺失", error: "异常"};
+dims.forEach(function (d) {
+  dl.appendChild(el("div", "d",
+    "<span class='nm'>" + d.name + "</span>" +
+    "<span class='st " + d.status + "'>" + (STX[d.status] || d.status) + "</span>" +
+    "<span class='tx'>" + (d.note || "—") + "</span>"));
+});
+if (!dims.length) dl.innerHTML = "<div class='empty'>无</div>";
+
+// ── 时间轴 ─────────────────────────────────────────
+const tl = document.getElementById("tl");
+const hist = D.timeline || [];
+if (!hist.length) {
+  tl.innerHTML = "<div class='empty'>第一次运行，还没有历史</div>";
+} else {
+  hist.slice().reverse().forEach(function (r) {
+    let s = "<span><b>" + r.n_obs + "</b> 个观测，同市值毛超额 <b>" +
+      pct(r.mean_excess_size) + "</b>；" +
+      Object.keys(r.verdicts || {}).map(function (k) {
+        return k + " " + (SLABEL[r.verdicts[k]] || r.verdicts[k]);
+      }).join("、") + "</span>";
+    tl.appendChild(el("div", "t",
+      "<span class='when'>" + (r.graded_at || "").slice(5, 16) + "</span>" +
+      "<span class='what'>" + s + "</span>"));
+  });
+}
+
+// ── 决策 ───────────────────────────────────────────
+const dec = document.getElementById("decisions");
+const combo = D.combo || {};
+dec.appendChild(el("div", "fact",
+  "<b>当前活着的组合：</b>" + ((combo.alive || []).join(" + ") || "无") +
+  "<br><b>联合含义</b>：" + (combo.joint || "—") +
+  "<br><b>所以现在只做</b>：" + (combo.action || "—")));
+const alive = (D.hypotheses || []).filter(function (h) {
+  return h.status !== "refuted";
+});
+if (!alive.length) {
+  dec.innerHTML = "<div class='fact'>全部解释已被判死，需要提出新假设。</div>";
+} else {
+  alive.forEach(function (h) {
+    dec.appendChild(el("div", "hy", 
+      "<div class='top'><span class='id'>" + h.id + "</span>" +
+      "<span class='claim'>" + (SLABEL[h.status] || h.status) + " → " +
+      h.claim.replace(/：.*$/, "") + "</span></div>" +
+      "<div class='body'><div class='dec'>" + h.decision + "</div></div>"));
+  });
+}
+const deadList = (D.hypotheses || []).filter(function (h) { return h.status === "refuted"; });
+if (deadList.length) {
+  dec.appendChild(el("div", "fact",
+    "<b>已经被数据否掉的（不必再讨论）：</b>" +
+    deadList.map(function (h) { return h.id + " " + h.claim.replace(/：.*$/, ""); }).join("；") +
+    "。<br>否掉它们不是为了好看——是把注意力从这些方向撤回来。")); 
+}
+
+// ── 页脚 ───────────────────────────────────────────
+document.getElementById("foot").innerHTML =
+  "<b>为什么必须用「多条解释 + 数据判定」</b><br>" +
+  "一件事发生了，能编出的解释永远比数据多。所以每条解释必须先写清" +
+  "「若成立该看到什么、若不成立该看到什么」，再让数据来判。判不掉的，就写「等样本」，" +
+  "不写「倾向」——倾向就是编。<br><br>" +
+  "<b>口径</b>：观测单位是「一次选股」而不是「一只票」，同批 80 只共享同一个市场日，" +
+  "当 80 个样本会把误差缩小十几倍；持有 " + D.headline_hold + " 个交易日的窗口为主口径，" +
+  "另用 1/3 日做稳健性；扣 0.3% 双边成本；过期维度（落后超过 1 个交易日）不参与判定。<br>" +
+  "<b>事后假设</b>（标「事后提出」的）是从数据里看出来的，门槛加倍，避免自己给自己编故事。<br>" +
+  "<b>生成</b> " + (D.generated_at || "—") + " ｜ 数据日 " + (D.asof || "—");
+</script>
+</body>
+</html>

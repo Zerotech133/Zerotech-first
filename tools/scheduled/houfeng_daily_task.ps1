@@ -90,7 +90,7 @@ try {
         Write-TaskLog ('SKIP select: ' + $asof + ' 的两个 selection 文件已存在')
     } else {
         # 1) 拉增量（只补目标日，靠去重覆盖，不删不改历史）
-        $pullOut = (& $py -X utf8 'pull_daily_delta.py' --asof $asof --start $asof 2>&1 | Out-String)
+        $pullOut = (& $py -X utf8 'pull_daily_delta.py' --asof $asof --start $asof 2>&1 | Out-String -Width 4096)
         $pullRc  = $LASTEXITCODE
         Write-TaskOut 'pull' $pullOut 6
         # 退出码与 Traceback 都要看：只用 sys.exit(非0) 退出时不打异常栈，
@@ -104,7 +104,7 @@ try {
         $env:ZKG_POOL = 'auto'
         $env:ZKG_ASOF = 'auto'
         $env:ZKG_PANEL_CACHE = (Join-Path $fp '.panel_cache')
-        $autoOut = (& $py -X utf8 'select_asof.py' 2>&1 | Out-String)
+        $autoOut = (& $py -X utf8 'select_asof.py' 2>&1 | Out-String -Width 4096)
         $autoRc  = $LASTEXITCODE
         Write-TaskOut 'auto' $autoOut 8
 
@@ -121,7 +121,7 @@ try {
 
         # 3) 选股：main 池（A1 闸门池）
         Remove-Item Env:ZKG_POOL -ErrorAction SilentlyContinue
-        $mainOut = (& $py -X utf8 'select_asof.py' 2>&1 | Out-String)
+        $mainOut = (& $py -X utf8 'select_asof.py' 2>&1 | Out-String -Width 4096)
         $mainRc  = $LASTEXITCODE
         Write-TaskOut 'main' $mainOut 8
         if ($mainOut -match '\[FATAL\]') {
@@ -135,7 +135,7 @@ try {
     }
 
     # 4) 登记新批次（幂等：已登记的不会重复写）
-    $regOut = (& $py -X utf8 (Join-Path $portal 'cohort_track.py') --register 2>&1 | Out-String)
+    $regOut = (& $py -X utf8 (Join-Path $portal 'cohort_track.py') --register 2>&1 | Out-String -Width 4096)
     $regRc  = $LASTEXITCODE
     Write-TaskOut 'reg' $regOut 10
     if ($regOut -match 'Traceback' -or $regRc -ne 0) {
