@@ -89,3 +89,24 @@
 - **unified40 全 40 只 v3 总榜**待老田粘贴原文补全 → 方可评估 `xq_include` 扩源（现 false 关闭）。
 - **remote `main` 独立分叉**（main=8ef3f346 ≠ 我祖先），本次仅推 master；是否补推 main 待老田裁定（非快进，会改写 main 历史）。
 - **R5 Windows 任务 `KStockIntelDaily`** 注册脚本已备(`register_kstock_intel_task.ps1`)但非管理员会话被拒；WorkBuddy 自动化 `KStockIntel`(a4c50019, 07:30 ACTIVE) 已兜底，公开缺口非紧急。
+
+## 五、R24 WAF 优雅降级 + 扩源独立分片（2026-11-11 22:57 老田裁定执行）
+
+**背景（R23 遗忘事件自检发现的真问题）**：原 `xq_stock_timeline.py` 主循环对单次 WAF_CHALLENGE 采取**全局停轮**（`halted` 标志 → 整轮 break，rc=2）。扩源（R8/R10 把 houfeng_candidates164+cohorts 223 只排在队列尾部）后，单轮时间变长、更可能中途撞 WAF，导致**队尾扩源代码永远跑不到**——扩源形同虚设。今日 07:07 run 实测 `003021 防御触发——停轮`、rc=2、仅 ~130/489。
+
+**裁定参数（老田 22:57 批准）**：`WAF_COOLDOWN=300s` / `WAF_RETRY=3` / `SUSTAINED_ABORT_PCT=0.20`；扩源分片调度 **21:00 错峰**（避开晨链 07:00-09:30）。
+
+**落地改动（commit 见 git log，已推 selfgit master）**：
+1. **`xq_stock_timeline.py` 常量区**：新增 `WAF_COOLDOWN/WAF_RETRY/SUSTAINED_ABORT_PCT/MAX_DEFERRED_ATTEMPTS/DEFERRED_F` 五项。
+2. **`load_queue` 加 `sources=` 参数**：分片模式只并集指定源 key（绕过 xq_include），日常 `--queue all` 行为不变。
+3. **`main()` 重写为优雅降级 + 跨日自愈**：
+   - 撞 WAF → 冷却 `WAF_COOLDOWN` 后重试同码同页 `WAF_RETRY` 次；重试成功续跑，耗尽则本码 `defer`（记 `_deferred.json`）**续跑下一码，不整轮停**。
+   - 仅当 `waf_hits/已处理 > SUSTAINED_ABORT_PCT(20%)` 才置 `halted=SUSTAINED_WAF_BLOCK` 整轮停（真·持续封锁才防拉黑）。
+   - 每轮结束写 `_deferred.json`；次轮启动把 deferred 码**前置重试**（单码最多 `MAX_DEFERRED_ATTEMPTS=5` 次后放弃，防冷却死循环）。
+   - 日志新增 `deferred=N` 计数；统一经 `_append_items` 去重落盘。
+4. **新增 `run_xq_daily_expanded.py`**：与 `run_xq_daily.py` 同构，调 `--sources houfeng_candidates164,cohorts --pages 1`，日志 `logs/xq_timeline_expanded.log`。
+5. **注册 WorkBuddy 自动化 `XqExpandedShard 扩源分片每日补齐`**（id `7ec654ea…`，DAILY 21:00 ACTIVE）：独立跑扩源 222 只（164+59 去重 −1 交集），与 07:00 基线 run 解耦，保证扩源在 WAF 早停时仍生效。
+
+**验证**：`py_compile` 通过；`load_queue('all')=647` 不变、`load_queue(sources=[houfeng_candidates164,cohorts])=222` 且 ⊆ 全集。首次扩源实际生效 = 11-12 07:00 基线 run（Layer1 让基线跑通）+ 11-12 21:00 分片 run（Layer2 保底）。
+
+**边界重申**：WAF 风控姿态变更（"1 次抖动不整轮停"）属运营裁定，已按老田阈值落地；本席只采集落盘，不研判、不擅动扩源决策。
