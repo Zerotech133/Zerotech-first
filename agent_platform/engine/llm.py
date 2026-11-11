@@ -369,12 +369,15 @@ class GLMCloudLLM:
         try:
             from pathlib import Path
 
+            import os as _os
             # engine/llm.py 的 parents[2] = 项目根（与 a0_agent 的 parent.parent 同点）
-            p = Path(__file__).resolve().parents[2] / "portal" / "audit_ai_config.json"
-            if p.exists():
-                zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
-                if zk:
-                    return zk
+            for p in (Path(_os.environ.get("AUDIT_AI_CONFIG_PATH")
+                           or r"C:\项目\_vault\secrets\portal_audit_ai_config.json"),
+                      Path(__file__).resolve().parents[2] / "portal" / "audit_ai_config.json"):
+                if p.exists():
+                    zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
+                    if zk:
+                        return zk
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/llm.py", exc)
         import os

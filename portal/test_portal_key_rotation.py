@@ -26,26 +26,34 @@ import feishu_card_v2 as FC  # noqa: E402
 tmp_dir = tempfile.mkdtemp(prefix="_k408_")
 _orig_env = os.environ.pop("PORTAL_KEY", None)
 _orig_here = FC.HERE
+_orig_vault = FC.VAULT_DIR
 try:
     # env 覆盖优先
     os.environ["PORTAL_KEY"] = "env-code"
     check("env 覆盖生效", FC._load_portal_key() == "env-code")
     del os.environ["PORTAL_KEY"]
 
-    # 配置文件（FC.HERE 重定向到临时目录，读值路径完全走生产逻辑）
+    # vault 文件（FC.VAULT_DIR 重定向到临时目录，读值路径走生产逻辑）
     FC.HERE = tmp_dir
-    os.makedirs(os.path.join(tmp_dir, "work"), exist_ok=True)
-    with open(
-        os.path.join(tmp_dir, "work", "portal_key.json"), "w", encoding="utf-8"
-    ) as f:
+    FC.VAULT_DIR = os.path.join(tmp_dir, "vault")
+    os.makedirs(FC.VAULT_DIR, exist_ok=True)
+    with open(os.path.join(FC.VAULT_DIR, "portal_key.json"), "w", encoding="utf-8") as f:
         json.dump({"key": "  file-code  \n"}, f)  # 带空白验证 strip
-    check("配置文件读取+strip", FC._load_portal_key() == "file-code")
+    check("vault 文件读取+strip", FC._load_portal_key() == "file-code")
+
+    # 旧路径回退（vault 缺失时读 HERE/work）
+    os.remove(os.path.join(FC.VAULT_DIR, "portal_key.json"))
+    os.makedirs(os.path.join(tmp_dir, "work"), exist_ok=True)
+    with open(os.path.join(tmp_dir, "work", "portal_key.json"), "w", encoding="utf-8") as f:
+        json.dump({"key": "legacy-code"}, f)
+    check("旧路径回退", FC._load_portal_key() == "legacy-code")
 
     # 缺失 → 空串 fail-safe
     os.remove(os.path.join(tmp_dir, "work", "portal_key.json"))
     check("配置缺失=空串 fail-safe", FC._load_portal_key() == "")
 finally:
     FC.HERE = _orig_here
+    FC.VAULT_DIR = _orig_vault
     if _orig_env is not None:
         os.environ["PORTAL_KEY"] = _orig_env
     elif "PORTAL_KEY" in os.environ:
