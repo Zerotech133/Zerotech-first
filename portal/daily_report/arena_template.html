@@ -78,6 +78,17 @@ main{padding:4px 0 0}
 .strat .r{flex:none;text-align:right;font-size:14px;font-variant-numeric:tabular-nums;
   padding-top:1px}
 .strat .r small{display:block;font-size:10px;color:var(--faint);margin-top:2px}
+.xrow{display:flex;gap:8px;padding:9px 13px;border-bottom:1px solid var(--line);
+  align-items:baseline;font-size:12.5px}
+.xrow:last-child{border-bottom:0}
+.xrow.hd{padding:8px 13px;color:var(--faint);font-size:10.5px;background:var(--bg2)}
+.xrow .id{flex:none;width:38px;font-size:11px;color:var(--acc);font-family:ui-monospace,monospace}
+.xrow .nm{flex:1;min-width:0}
+.xrow .nm small{display:block;color:var(--faint);font-size:10px;margin-top:1px;line-height:1.5}
+.xrow .v{flex:none;width:72px;text-align:right;font-variant-numeric:tabular-nums}
+.xrow .vd{flex:none;width:56px;text-align:right;font-size:10.5px}
+.vd.pass{color:var(--ok)}.vd.fail{color:var(--bad)}
+.vd.sample,.vd.unclear{color:var(--warn)}.vd.none{color:var(--faint)}
 footer{padding:18px 18px 0;color:var(--faint);font-size:11px;line-height:1.9;border-top:1px solid var(--line);
   margin-top:8px}
 footer b{color:var(--dim)}
@@ -94,6 +105,9 @@ footer b{color:var(--dim)}
 <div class="lede" id="lede"></div>
 <div class="nums" id="nums"></div>
 <div id="alerts"></div>
+
+<div class="sec-h"><h2>扣掉市场之后还剩什么</h2><span id="xtabTip"></span></div>
+<div class="card" id="xtab"></div>
 
 <div class="sec-h"><h2>逐日账：每个信号日 × 每种打法</h2><span id="rangeTip"></span></div>
 <div id="days"></div>
@@ -128,39 +142,62 @@ function render() {
   document.getElementById("genAt").textContent = D.generated_at || "";
   const nDays = D.n_days || 0;
   const tradable = D.strategies.filter(s => !s.reconcile_only);
-  const passed = tradable.filter(s => s.enough_sample).length;
   const gated = D.strategies.filter(s => s.status === "all_gated").length;
+  const MINOBS = D.min_obs || 10;
+  const COST = (D.cost_round || 0.003) * 100;
+  const autoObs = Math.max.apply(null, D.strategies.map(function (s) {
+    return (s.excess && s.excess.auto && s.excess.auto.n) || 0;
+  }));
+  const passed = tradable.filter(s => s.enough_sample).length;
+  const vd = {};
+  tradable.forEach(function (s) { vd[s.excess_verdict] = (vd[s.excess_verdict] || 0) + 1; });
 
-  // ── 结论层：一句人话 + 关键数字 ──────────────────
+  // ── 结论层：先回答「这个数能不能信」，再给数字 ──────────
   const v = document.getElementById("verdict");
-  if (nDays < 20) {
-    v.innerHTML = '已经跑了 <b>' + nDays + ' 个交易日</b>，' + D.n_signals +
-      ' 条信号、' + tradable.length + ' 种打法。<b>样本还太短，任何排名都可能是运气</b>——' +
-      '下面的数字只做留痕，不是结论。';
+  if (vd.pass) {
+    v.innerHTML = '有 <b>' + vd.pass + ' 种打法</b>扣掉大盘、再扣 ' + COST.toFixed(1) +
+      '% 成本之后仍然站得住。其余打法要么被否，要么样本不够。';
+  } else if (vd.fail) {
+    v.innerHTML = '跑到现在，<b>' + vd.fail + ' 种打法的超额收益连 ' + COST.toFixed(1) +
+      '% 成本线都够不到</b>——不是赚得少，是扣完成本为负。' +
+      '外加 ' + (vd.sample || 0) + ' 种还没到期，判不了。';
   } else {
-    v.innerHTML = '已积累 <b>' + nDays + ' 个交易日</b>、' + D.n_signals +
-      ' 条信号，' + tradable.length + ' 种打法在跑。';
+    v.innerHTML = '系统已经能自己买卖、自己平仓，' + nDays + ' 个交易日沉下 ' +
+      D.n_signals + ' 条信号。但<b>能拿来下结论的观测只有 ' + autoObs + ' 个</b>' +
+      '（门槛 ' + MINOBS + ' 个）——<b>现在判不了</b>。下面所有数字只是留痕，不是成绩。';
   }
 
   document.getElementById("lede").innerHTML =
-    '这张表的用处只有一个：<b>把「某天选了什么、用几种打法、后来怎样」一天天钉下来</b>，' +
-    '等样本够长再回头看。回测可以随便调参调到好看，前向记账不能。' +
-    '<br>买入价用信号<b>次日开盘价</b>，卖出按规则自动执行，双边扣 <b>0.3%</b> 成本。' +
-    '每个打法同一批信号、同样成本、等权，只有规则不同，所以能横着比。';
+    '这张表要钉住的是三件事：<b>哪一天选了什么股、用几种打法、后来各自怎样</b>。' +
+    '买入用信号<b>次日开盘价</b>，卖出按规则自动执行，无人干预，双边扣 <b>' +
+    COST.toFixed(1) + '%</b> 成本。' +
+    '<br>看结果必须看<b>超额</b>（扣掉大盘同窗口涨跌之后），不能看绝对收益——' +
+    '这 4 天大盘天天在涨，绝对收益里的绝大部分是市场给的，不是选出来的。';
 
   const nums = document.getElementById("nums");
   nums.appendChild(el("div", "num",
     "<b class='a'>" + nDays + "</b><span>已沉淀交易日</span>"));
   nums.appendChild(el("div", "num",
-    "<b class='a'>" + tradable.length + "</b><span>可交易打法</span>"));
-  nums.appendChild(el("div", "num",
     "<b>" + D.n_signals + "</b><span>已登记信号</span>"));
   nums.appendChild(el("div", "num",
+    "<b class='" + (autoObs >= MINOBS ? "g" : "w") + "'>" + autoObs + "/" + MINOBS +
+    "</b><span>能下结论的观测</span>"));
+  nums.appendChild(el("div", "num",
     "<b class='" + (passed ? "g" : "w") + "'>" + passed + "/" + tradable.length +
-    "</b><span>够样本门槛</span>"));
+    "</b><span>过样本门槛的打法</span>"));
 
-  // ── 警示层：闸门 / 样本 ──────────────────────────
+  // ── 警示层 ───────────────────────────────────────
   const al = document.getElementById("alerts");
+  const s1 = D.strategies.filter(function (s) { return s.id === "S1"; })[0];
+  if (s1 && s1.excess && s1.excess.auto && s1.excess.auto.gross !== null) {
+    const a = s1.excess.auto;
+    al.appendChild(el("div", "alert info",
+      '<b>为什么绝对收益会骗人。</b>以最基础的「持有 1 天」为例：大样本池（每批 40~80 只）' +
+      '绝对赚了 ' + pct(a.gross) + '，但同期大盘同窗口涨了 ' + pct(a.bench) +
+      '，扣掉之后只剩 <b>' + pct(a.mean) + '</b>，再扣 ' + COST.toFixed(1) +
+      '% 双边成本就是 <b>' + pct(a.mean - COST / 100) + '</b>。' +
+      '选股真正贡献的部分，是后面这个数。'));
+  }
   if (gated) {
     const g = D.strategies.find(s => s.status === "all_gated");
     al.appendChild(el("div", "alert bad",
@@ -168,11 +205,59 @@ function render() {
       '这不是「策略表现 0%」，是根本没上车。闸门规则是「中位数 20 日收益 &lt; -3% 就不交易」，' +
       '这几个月一直在触发——如果它长期这样，等于这个策略永远空仓。'));
   }
-  if (nDays < 20) {
-    al.appendChild(el("div", "alert warn",
-      '<b>样本门槛：20 个交易日且至少 30 笔平仓。</b>当前 ' + nDays +
-      ' 个交易日，全部打法都没过线。看到 +4% 别高兴，看到 -2% 也别慌，都只是几天的噪声。'));
+  al.appendChild(el("div", "alert warn",
+    '<b>样本单位是「一次选股」，不是「一笔交易」。</b>门槛 ' + MINOBS + ' 个已到期观测。' +
+    '同一天选出的 80 只票共享同一个市场日，算成 80 个样本会把误差缩小十几倍，' +
+    '看起来显著其实全是假的——这正是「短期测试无效」的算术原因。'));
+
+  // ── 还要多久才够：用实测离散度倒推，不给「再等等」这种空话 ──────
+  const cand = tradable.filter(function (s) {
+    return s.excess && s.excess.auto && s.excess.auto.n >= 2 && s.excess.auto.need;
+  }).sort(function (x, y) { return y.excess.auto.n - x.excess.auto.n; })[0];
+  if (cand) {
+    const ca = cand.excess.auto;
+    const gap = Math.max(0, ca.need - ca.n);
+    al.appendChild(el("div", "alert info",
+      '<b>还差多久能出第一份能用的结论。</b>用 ' + cand.id + ' 已到期观测的实际离散度（' +
+      (ca.sd * 100).toFixed(2) + ' 个百分点）倒推：要分辨 ' + COST.toFixed(1) +
+      '% 的成本线，需要约 <b>' + ca.need + ' 个观测</b>，现在有 ' + ca.n + ' 个。' +
+      '每天产出 1 个新观测，所以还需要约 <b>' + gap + ' 个交易日</b>。' +
+      '在那之前，任何排名都不成立。'));
   }
+
+  // ── 超额对照：同样是「扣掉大盘」之后，各打法还剩多少 ──────────
+  const xt = document.getElementById("xtab");
+  xt.appendChild(el("div", "xrow hd",
+    "<div class='id'>打法</div><div class='nm'>大样本池（每批 40~80 只），只用已到期的观测</div>" +
+    "<div class='v'>超额</div><div class='v'>扣成本</div><div class='vd'>判定</div>"));
+  const vdLabel = {pass: "站得住", fail: "否掉", sample: "样本不足",
+                   unclear: "方向未定", none: "—"};
+  tradable.forEach(function (st) {
+    const a = (st.excess && st.excess.auto) || {n: 0};
+    const r = el("div", "xrow");
+    let sub, v1 = "—", v2 = "—", cl1 = "flat", cl2 = "flat";
+    if (st.status === "all_gated") {
+      sub = "闸门全拒，从未下单";
+    } else if (!a.n) {
+      sub = "还没到期" + (st.n_pending ? "（" + st.n_pending + " 条在持仓）" : "");
+    } else {
+      sub = "毛 " + pct(a.gross) + " · 大盘 " + pct(a.bench) + " · 观测 " + a.n + " 个";
+      v1 = pct(a.mean); cl1 = cls(a.mean);
+      v2 = pct(a.mean - COST / 100); cl2 = cls(a.mean - COST / 100);
+    }
+    const noDue = (!a.n && st.status !== "all_gated");
+    const vlab = noDue ? "未到期" : (vdLabel[st.excess_verdict] || "—");
+    const vcls = noDue ? "none" : (st.excess_verdict || "none");
+    r.innerHTML = "<div class='id'>" + st.id + "</div>" +
+      "<div class='nm'>" + st.name.replace(/（.*?）/g, "") +
+      "<small>" + sub + "</small></div>" +
+      "<div class='v " + cl1 + "'>" + v1 + "</div>" +
+      "<div class='v " + cl2 + "'>" + v2 + "</div>" +
+      "<div class='vd " + vcls + "'>" + vlab + "</div>";
+    xt.appendChild(r);
+  });
+  document.getElementById("xtabTip").textContent =
+    "超额 = 毛收益 − 同期大盘 · 成本线 " + COST.toFixed(1) + "%";
 
   // ── 逐日账 ───────────────────────────────────────
   const days = document.getElementById("days");
@@ -202,9 +287,14 @@ function render() {
       } else if (m && m.skipped === "no_fill") {
         vv = "买不进"; ss = "当日无开盘价";
       } else if (m) {
-        vv = pct(m.ret); cl = cls(m.ret);
-        ss = m.done ? ("已平 " + m.n_closed + " 笔")
-                    : ("持有 " + m.n_left + " 只 · 浮盈浮亏");
+        if (m.excess !== null && m.excess !== undefined) {
+          vv = pct(m.excess); cl = cls(m.excess);
+          ss = "超额 · 绝对 " + pct(m.ret);
+        } else {
+          vv = pct(m.ret); cl = "flat";
+          ss = m.done ? "绝对 · 当日基准未发布" : "绝对 · 未到期";
+        }
+        ss += m.done ? ("　已平 " + m.n_closed + " 笔") : ("　持有 " + m.n_left + " 只");
       }
       c.innerHTML = '<div class="t"><span>' + st.id + ' ' + st.name.replace(/（.*?）/g, "") +
         '</span><em>' + (st.hold === 0 ? "T+0" : "T+" + st.hold) + '</em></div>' +
@@ -227,12 +317,17 @@ function render() {
   const stBox = document.getElementById("strats");
   D.strategies.forEach(function (st) {
     const r = el("div", "strat");
-    let right = '<span class="' + cls(st.ret) + '">' + pct(st.ret) + '</span>' +
-      '<small>' + (st.n_closed || 0) + ' 笔 · 胜率 ' +
-      (st.win_rate === null || st.win_rate === undefined ? "—" : (st.win_rate * 100).toFixed(0) + "%") +
-      '</small>';
+    const a2 = (st.excess && st.excess.auto) || {n: 0, mean: null};
+    let right;
+    if (a2.n && a2.mean !== null) {
+      right = '<span class="' + cls(a2.mean) + '">' + pct(a2.mean) + '</span>' +
+        '<small>超额 · 观测 ' + a2.n + ' 个</small>';
+    } else if (st.status === "all_gated") {
+      right = '<span class="warn">零交易</span><small>闸门全拒</small>';
+    } else {
+      right = '<span class="flat">—</span><small>还没到期</small>';
+    }
     if (st.reconcile_only) right = '<span class="flat">对账</span><small>不参与排名</small>';
-    if (st.status === "all_gated") right = '<span class="warn">零交易</span><small>闸门全拒</small>';
     let tag = '';
     if (st.stop_loss) tag = " 止损 " + (st.stop_loss * 100).toFixed(0) + "%";
     if (st.take_profit) tag = " 止盈 " + (st.take_profit * 100).toFixed(0) + "%";
@@ -251,7 +346,12 @@ function render() {
   document.getElementById("foot").innerHTML =
     '<b>怎么读这张表</b><br>' +
     '· 同一个日期往下数，就是同一批股票在 ' + tradable.length + ' 种打法下的结果，横向可比。<br>' +
-    '· 「仍在持有」表示还没到卖出条件，那个百分比是浮盈浮亏，会变。<br>' +
+    '· <b>看超额，不看绝对。</b>超额 = 毛收益 − 同期大盘（两融池等权、同窗口）涨跌。' +
+    '绝对收益里绝大部分是市场给的，扣完才是选股贡献；再扣 ' + COST.toFixed(1) +
+    '% 双边成本，才是真正落袋的。<br>' +
+    '· <b>未到期只显示绝对收益</b>，因为不同打法的持有天数不一样，浮盈没法跨打法比。<br>' +
+    '· <b>观测数 ≠ 笔数。</b>同一天选出的几十只票只算 1 个观测，' +
+    '它们共享同一个市场日，误差高度相关。<br>' +
     '· 「闸门拒」表示规则判定当天不该买，那条信号就空着，不产生任何收益。<br>' +
     '· S0 用来看引擎算得对不对（和选股台账的「当日收盘」口径对齐），不可交易，不参与排名。<br>' +
     '<b>生成时间</b> ' + (D.generated_at || '—') + ' ｜ 本金 ' +

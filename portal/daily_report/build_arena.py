@@ -38,6 +38,8 @@ def build_data() -> dict:
         "n_signals": r.get("n_signals"),
         "capital": r.get("capital"),
         "cost_one_side": r.get("cost_one_side"),
+        "cost_round": r.get("cost_round"),
+        "min_obs": r.get("min_obs"),
         "signals": r.get("signals") or [],
         "strategies": r.get("strategies") or [],
         "matrix": matrix,

@@ -26,7 +26,9 @@ import os
 import sys
 import glob
 import io
+import math
 import datetime
+from statistics import pstdev
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 COHORT_DIR = os.path.join(HERE, "cohorts")
@@ -39,8 +41,25 @@ import cohort_track as CT  # noqa: E402  复用它的 load_daily / load_adjf / t
 
 CAPITAL = 10_000_000.0   # 每条轨的本金（不共享），与 portfolio_sim 一致便于对照
 COST_ONE = 0.0015        # 单边成本（佣金+滑点），双边 0.3%
-MIN_SAMPLE_DAYS = 20     # 样本门槛：不满 20 个交易日一律不下结论
-MIN_SAMPLE_TRADES = 30
+COST_ROUND = 2 * COST_ONE
+
+# ── 样本门槛：单位必须是「独立观测」，不是「笔数」────────────────────
+# 2026-11-12 改。旧版用 MIN_SAMPLE_TRADES=30 判断，等于把同一天同一批 79 只票
+# 当成 79 个独立样本 —— 它们共享同一个市场日，误差高度相关。正确单位是
+# 「一次选股 = 一个观测」。用 10 个独立观测做门槛：
+# 实测超额日间标准差约 0.4~0.5pp，要检出 0.3pp 的成本线，n≈(1.96×0.45/0.3)²≈9。
+MIN_OBS = 10
+MIN_SAMPLE_TRADES = 30   # 仅作参考显示，不参与判定
+
+
+def _t975(df):
+    """t 分布 97.5% 分位（双侧 95%）。df>30 用 1.96。"""
+    tab = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447,
+           7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179,
+           13: 2.160, 14: 2.145, 15: 2.131, 16: 2.120, 17: 2.110, 18: 2.101,
+           19: 2.093, 20: 2.086, 21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064,
+           25: 2.060, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045, 30: 2.042}
+    return tab.get(int(df), 1.96)
 
 STRATEGIES = [
     # S0 不是策略，是对账锚点。cohort 台账的「N 日」= 买入起第 N 个交易日收盘，
@@ -143,6 +162,39 @@ class Px:
         return float(r[field]) * float(f) if f else None
 
 
+# ── 基准：两融标的池同窗口等权（与 cohort_track 的结算口径一致）──────────
+# 为什么必须有：绝对收益里绝大部分是市场涨跌（beta），只有扣掉基准的部分才是
+# 选股能力。2026-11-11 实测 4 个交易日日均值全为正（+0.83/+0.56/+0.28/+1.69%），
+# 那几天市场本来就在涨 —— 不扣基准的话「+2.26%」会被误读成选股 alpha。
+_POOL_CACHE = {}
+_BENCH_CACHE = {}
+
+
+def _pool(asof):
+    if asof not in _POOL_CACHE:
+        try:
+            _POOL_CACHE[asof] = CT.margin_pool(asof)
+        except Exception:
+            _POOL_CACHE[asof] = set()
+    return _POOL_CACHE[asof]
+
+
+def bench_ret(px, entry, exit_date):
+    """基准收益：两融池等权，entry 开盘 → exit_date 收盘。缺价票剔除。"""
+    key = (entry, exit_date)
+    if key in _BENCH_CACHE:
+        return _BENCH_CACHE[key]
+    rs = []
+    for code in _pool(entry):
+        po = px.price(entry, code, "open")
+        pc = px.price(exit_date, code, "close")
+        if po and pc:
+            rs.append(pc / po - 1.0)
+    v = (sum(rs) / len(rs)) if rs else None
+    _BENCH_CACHE[key] = v
+    return v
+
+
 def first_usable_cal(px, cal_all, signals):
     """能估值的最早/最晚交易日。从信号里取探测票，避免用死票误判「行情没出」。"""
     codes = []
@@ -228,7 +280,24 @@ def run_one(sig, st, cal, gate_map, px):
         if not pos:
             break     # 全部平掉，后面没有新的价格暴露
 
-    return {"sig": sig, "st": st, "nav_rows": nav_rows, "trades": trades, "ok": True}
+    # ── 毛收益 / 基准 / 超额 ─────────────────────────────────────
+    # 毛收益不能从 nav 反推：nav 里买卖两侧各扣过一次成本，已平仓与在持仓的
+    # 扣费次数不同（2 次 vs 1 次），反推会错。直接按持仓市值重算一遍最干净。
+    gross_val = 0.0
+    for t in trades:
+        gross_val += t["alloc"] * (t["exit_px"] / t["entry_px"])
+    for code, p in pos.items():
+        mark = last_close.get(code)
+        gross_val += p["alloc"] * ((mark / p["entry_px"]) if mark else 1.0)
+    gross_ret = gross_val / CAPITAL - 1.0
+    last_d = nav_rows[-1]["date"] if nav_rows else entry
+    b = bench_ret(px, entry, last_d)
+    return {"sig": sig, "st": st, "nav_rows": nav_rows, "trades": trades, "ok": True,
+            "gross_ret": round(gross_ret, 6),
+            "bench": round(b, 6) if b is not None else None,
+            "excess": round(gross_ret - b, 6) if b is not None else None,
+            "done": (len(pos) == 0),
+            "obs_date": entry}
 
 
 def aggregate(tracks):
@@ -262,6 +331,47 @@ def aggregate(tracks):
     return out
 
 
+def _ex_stats(objs):
+    """把一批「已到期且算得出基准」的轨做成超额统计。
+
+    只在 n 足够时给结论；不足时明确说「还判不了」，不给数字假象。
+    """
+    exs = [t["excess"] for t in objs]
+    n = len(exs)
+    out = {"n": n, "n_days": len({t.get("obs_date") for t in objs}),
+           "mean": None, "bench": None, "gross": None, "sd": None,
+           "ci": None, "need": None,
+           "verdict": "sample", "note": "观测 %d 个（门槛 %d），还判不了" % (n, MIN_OBS)}
+    if n == 0:
+        return out
+    b = [t["bench"] for t in objs if t.get("bench") is not None]
+    g = [t["gross_ret"] for t in objs if t.get("gross_ret") is not None]
+    out["mean"] = sum(exs) / n
+    out["bench"] = (sum(b) / len(b)) if b else None
+    out["gross"] = (sum(g) / len(g)) if g else None
+    if n < 2:
+        return out
+    sd = pstdev(exs)
+    se = sd / math.sqrt(n)
+    tq = _t975(n - 1)
+    lo, hi = out["mean"] - tq * se, out["mean"] + tq * se
+    out.update({"sd": sd, "ci": [lo, hi],
+                "need": int(math.ceil((1.96 * sd / COST_ROUND) ** 2)) if sd > 0 else None})
+    if n < MIN_OBS:
+        return out
+    if lo >= COST_ROUND:
+        out.update({"verdict": "pass",
+                    "note": "95% 下界 %+.2f%% 高于成本线 %.2f%%，站得住"
+                            % (lo * 100, COST_ROUND * 100)})
+    elif hi <= COST_ROUND:
+        out.update({"verdict": "fail",
+                    "note": "95% 上界 %+.2f%% 都够不到成本线 %.2f%%，否掉"
+                            % (hi * 100, COST_ROUND * 100)})
+    else:
+        out.update({"verdict": "unclear", "note": "区间跨过成本线，方向未定"})
+    return out
+
+
 def summarize(st, tracks, gate_map):
     ok = [t for t in tracks if t.get("ok")]
     skipped_gate = [t for t in tracks if t.get("skipped") == "gate"]
@@ -278,6 +388,12 @@ def summarize(st, tracks, gate_map):
 
     if not ok or not navs:
         base.update({"status": "all_gated", "n_closed": 0,
+                     "ret": None, "ret_realized": None, "ret_unreal": None,
+                     "excess": {"all": _ex_stats([]), "auto": _ex_stats([]),
+                                "main": _ex_stats([])},
+                     "excess_verdict": "none", "n_obs": 0, "n_obs_days": 0,
+                     "n_pending": 0, "enough_sample": False,
+                     "excess_note": "从未下单，没有可统计的收益",
                      "note": "全部信号被闸门拒绝，未产生任何交易"})
         return base
 
@@ -288,10 +404,34 @@ def summarize(st, tracks, gate_map):
         mdd = min(mdd, r["nav"] / peak - 1.0)
     wins = [t for t in trades if t["ret"] > 0]
     n = len(trades)
+    ret_total = nav_end / nav0 - 1.0
+
+    # 已实现 / 未实现必须分开：S5、S10 在 4 个交易日的样本里根本到不了期，
+    # 但组合净值按市价重估，会显示 +4.24%。那不是赚到的钱，是浮盈。
+    real_pnl = sum(x["alloc"] * x["ret"] for t in ok for x in t["trades"])
+    ret_real = (real_pnl / (CAPITAL * len(ok))) if ok else 0.0
+
+    # ── 超额统计：一个「轨」= 一个观测，且只用已到期的 ──────────────
+    # 两个必须分开的理由（2026-11-12 实测）：
+    # ① 未到期的轨是浮盈，horizon 长度都不一样，混进统计等于拿 1 天和 10 天比；
+    # ② auto 池每批 40~80 只，main 池 1~7 只。main 里 20261109 只有 1 只票，
+    #    单票 +12.66% 直接把「平均超额」抬到 +2.53% —— 那是运气，不是能力。
+    done = [t for t in ok if t.get("done") and t.get("excess") is not None]
+    stats = {
+        "all": _ex_stats(done),
+        "auto": _ex_stats([t for t in done if t["sig"]["pool"] == "auto"]),
+        "main": _ex_stats([t for t in done if t["sig"]["pool"] == "main"]),
+    }
+    n_pending = len([t for t in ok if not t.get("done")])
+    # 主判定用大样本池；它不达标就退回全体，绝不拿单票池的漂亮数字当结论
+    judged = stats["auto"] if stats["auto"]["n"] >= MIN_OBS else stats["all"]
+
     base.update({
         "status": "ok",
         "nav": round(nav_end, 2),
-        "ret": round(nav_end / nav0 - 1.0, 6),
+        "ret": round(ret_total, 6),
+        "ret_realized": round(ret_real, 6),
+        "ret_unreal": round(ret_total - ret_real, 6),
         "max_dd": round(mdd, 6),
         "n_closed": n,
         "n_open": sum(len([1 for c in t.get("nav_rows", [])[-1:] if c["n_pos"] > 0])
@@ -299,7 +439,14 @@ def summarize(st, tracks, gate_map):
         "win_rate": round(len(wins) / n, 4) if n else None,
         "avg_ret": round(sum(t["ret"] for t in trades) / n, 6) if n else None,
         "days": len(navs),
-        "enough_sample": (len(navs) >= MIN_SAMPLE_DAYS and n >= MIN_SAMPLE_TRADES),
+        # —— 超额层 ——
+        "excess": stats,
+        "excess_verdict": judged["verdict"],
+        "excess_note": judged["note"],
+        "n_obs": stats["all"]["n"],
+        "n_obs_days": stats["all"]["n_days"],
+        "n_pending": n_pending,
+        "enough_sample": stats["auto"]["n"] >= MIN_OBS,
     })
     return base
 
@@ -321,6 +468,7 @@ def build(verbose=True):
 
     result = {"generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
               "capital": CAPITAL, "cost_one_side": COST_ONE,
+              "cost_round": COST_ROUND, "min_obs": MIN_OBS,
               "cal": cal, "cal_first": cal[0], "cal_last": cal[-1],
               "n_signals": len(signals),
               "signals": [{"key": s["key"], "asof": s["asof"], "pool": s["pool"],
@@ -359,6 +507,9 @@ def build(verbose=True):
                     "n_buy": len(t["nav_rows"]) and None,
                     "n_closed": len(tr), "n_left": t["nav_rows"][-1]["n_pos"] if t["nav_rows"] else 0,
                     "ret": round(last_nav / CAPITAL - 1.0, 6),
+                    "gross": t.get("gross_ret"),
+                    "bench": t.get("bench"),
+                    "excess": t.get("excess"),
                     "win_rate": round(len([x for x in tr if x["ret"] > 0]) / len(tr), 4) if tr else None,
                     "done": t["nav_rows"][-1]["n_pos"] == 0 if t["nav_rows"] else False,
                 })
@@ -373,10 +524,13 @@ def build(verbose=True):
                 print("  %-4s %-14s 闸门全部拒绝，零交易（%d 个信号）"
                       % (st["id"], st["name"], s["n_tracks_gate_skip"]))
             else:
-                print("  %-4s %-14s 组合收益 %+7.2f%%  回撤 %6.2f%%  已平 %3d 笔  胜率 %5s"
-                      % (st["id"], st["name"], s["ret"] * 100, s["max_dd"] * 100,
-                         s["n_closed"],
-                         ("%.1f%%" % (s["win_rate"] * 100)) if s["win_rate"] is not None else "-"))
+                a = s["excess"]["auto"]
+                print("  %-4s %-14s 绝对 %+7.2f%%  已实现 %+6.2f%% 浮盈 %+6.2f%%  "
+                      "| auto池超额 %s (n=%d)  %s"
+                      % (st["id"], st["name"], s["ret"] * 100,
+                         s["ret_realized"] * 100, s["ret_unreal"] * 100,
+                         ("%+.2f%%" % (a["mean"] * 100)) if a["mean"] is not None else "  --  ",
+                         a["n"], s["excess_verdict"]))
 
     with io.open(os.path.join(ARENA_DIR, "latest.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
@@ -396,8 +550,7 @@ def main():
                  len(r["strategies"])))
         short = [s["id"] for s in r["strategies"] if not s.get("enough_sample")]
         if short:
-            print("样本不足（<%d 交易日或 <%d 笔）：%s"
-                  % (MIN_SAMPLE_DAYS, MIN_SAMPLE_TRADES, ", ".join(short)))
+            print("独立观测不足（<%d 个已到期信号日）：%s" % (MIN_OBS, ", ".join(short)))
             print("→ 这些数字只做留痕与对照，**不构成结论**。")
     return 0
 
