@@ -1158,6 +1158,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_d1_handoff
             api_d1_handoff.handle_post(self)
             return
+        # C1（K-DIALOG-C1-20261107）：对话内核写入口（token 闸门 :1063 已覆盖 /api/analysis/）
+        if path.startswith('/api/analysis/dialog/'):
+            import api_dialog
+            api_dialog.handle_post(
+                self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         # H3（K-ORG-20261031-APIHARDEN）：analysis 写分支移到 token 闸门+频控之后，
         # 不得再以“早分支”绕过 _MUTATION_POSTS 鉴权（审计 v2 H3）。
         if path.startswith('/api/analysis/'):
@@ -1759,6 +1765,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 return
             import api_monitor
             api_monitor.handle_get(self, path, qs)
+            return
+        if path.startswith('/api/analysis/dialog/'):
+            # C1（K-DIALOG-C1-20261107）：对话内核只读入口（独立文件 api_dialog.py）
+            import api_dialog
+            api_dialog.handle_get(self, path, qs)
             return
         if path.startswith('/api/analysis/'):
             # K-STOCK-ANALYSIS-P0C2 个股分析只读入口（独立文件 api_analysis.py）
@@ -3185,6 +3196,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._html_file(os.path.join(ROOT, "sa_workbench.html"))
         elif path == "/sa/monitor":
             self._html_file(os.path.join(ROOT, "sa_monitor.html"))
+        elif path == "/sa/chat":
+            # C1（K-DIALOG-C1-20261107）：对话式研究助手 PC 页
+            self._html_file(os.path.join(ROOT, "sa_chat.html"))
         elif path == "/bt-signals":
             # 飞书卡片「明日信号」按钮目标页：全池 4 策略持仓信号
             self._html_file(os.path.join(STATION, "quant_backtest",

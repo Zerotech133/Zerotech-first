@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-08T14:24:20",
+ "generated_at": "2026-11-10T04:51:50",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 324,
+ "total": 327,
  "signatures": [
   [
    "GET",
@@ -1076,6 +1076,11 @@
   [
    "GET",
    "exact",
+   "/sa/chat"
+  ],
+  [
+   "GET",
+   "exact",
    "/sa/monitor"
   ],
   [
@@ -1142,6 +1147,11 @@
    "GET",
    "prefix",
    "/api/analysis/"
+  ],
+  [
+   "GET",
+   "prefix",
+   "/api/analysis/dialog/"
   ],
   [
    "GET",
@@ -1572,6 +1582,11 @@
    "POST",
    "prefix",
    "/api/analysis/"
+  ],
+  [
+   "POST",
+   "prefix",
+   "/api/analysis/dialog/"
   ],
   [
    "POST",
