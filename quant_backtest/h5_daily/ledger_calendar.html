@@ -21,8 +21,15 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .ovtags h4{font-size:11px;color:#4f8fe6;margin-bottom:4px}
 .cbar{width:110px;height:8px;background:#1d2836;border-radius:4px;overflow:hidden}
 .cbar i{display:block;height:100%}
+.dayfull{background:#0e141d;border:1px solid #1f2835;border-radius:10px;padding:10px;margin-bottom:8px}
+.dh2{display:flex;gap:12px;align-items:baseline;margin-bottom:6px;font-size:13px}
+.dh2 b{font-size:14px}
+.dsum{font-size:12px;color:#c9d5e3;margin-top:6px;line-height:1.6}
 .daysgrid table td,.daysgrid table th{padding:3px 6px}
-.daysgrid a{color:#4f8fe6;cursor:pointer}
+.daysgrid a,.dayfull a{color:#4f8fe6;cursor:pointer}
+.dayfull table{width:100%;border-collapse:collapse}
+.dayfull th{color:#6b7787;font-weight:600;text-align:left;padding:3px 6px;border-bottom:1px solid #1f2835;font-size:11px}
+.dayfull td{padding:3px 6px;border-bottom:1px solid #161f2c;font-size:12px}
 .year{background:#121924;border:1px solid #1f2835;border-radius:12px;padding:12px;cursor:pointer;min-width:190px}
 .year:hover{border-color:#2a3546;background:#182130}
 .year h3{font-size:15px;margin-bottom:4px}
@@ -62,7 +69,7 @@ h1{font-size:17px;margin-bottom:2px}.m{color:#6b7787;font-size:11.5px;margin-bot
 .q{color:#e0b95c}
 </style></head><body>
 <h1>P1 日历账本 · 年 → 月 → 日 → 票</h1>
-<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 2026-11-12 04:44</div>
+<div class="m">手法 v3 · v1.0 · 逐层下钻看态势，点票看完整证据链（板块/因子/五问）· 生成 2026-11-12 04:56</div>
 <div class="crumbs" id="crumbs"></div>
 <div id="view"></div>
 <div id="modal" onclick="if(event.target===this)this.classList.remove('on')">
@@ -173,49 +180,48 @@ function renderMonths(y){
   +'<div class="mtags">'+facHtml+'</div>'
   +(secHtml?'<div class="mtags">'+secHtml+'</div>':'')
   +'<div class="mgo">进入逐日 →</div></div>'}).join('')+'</div>';}
-function dayOverviewHTML(ym){
- const ds=byMonth[ym.slice(0,6)]||[];
- if(!ds.length)return '';
- // 当日全景（取最新一天做样例说明 + 该月逐日摘要表）
- const last=ds[ds.length-1];
- const rets=last.picks.map(p=>p.ret).filter(v=>v!=null);
+function dayCardHTML(d){
+ // 单日全景卡：每日都有（不只末景日）
+ const rets=d.picks.map(p=>p.ret).filter(v=>v!=null);
  const mean=rets.length?rets.reduce((a,b)=>a+b,0)/rets.length:null;
- // 逐日表：每票表现 + 依据 + 贡献度
- const rowsHtml=last.picks.map((p,k)=>{
+ const rowsHtml=d.picks.map((p,k)=>{
   const f=p.factors;
   const basis=[f.bei?'bei':null,f.bei2?'bei2':null,f.bei24?'bei24':null,
    f.tbe24?'tbe24':null,f.mbei?'mbei':null].filter(Boolean).join('+')||'pos+vol';
-  const contrib=p.ret==null?0:p.ret/last.picks.length;
-  return '<tr><td><a onclick="show(event,\''+last.day+'\','+k+')">'+p.code.slice(0,9)+'</a></td>'
+  const contrib=p.ret==null?0:p.ret/d.picks.length;
+  const secN=(p.sectors&&p.sectors[0])?p.sectors[0].name:'—';
+  return '<tr><td><a onclick="show(event,\''+d.day+'\','+k+')">'+p.code.slice(0,9)+'</a></td>'
   +'<td>'+p.score+'</td>'
   +'<td style="color:'+col(p.ret)+'"><b>'+fmt(p.ret)+'%</b></td>'
   +'<td>'+(f.vr==null?'—':f.vr.toFixed(2))+'</td>'
   +'<td class="flat" style="font-size:11px">'+basis+'</td>'
+  +'<td class="flat" style="font-size:11px">'+secN+'</td>'
   +'<td><div class="cbar"><i style="width:'+Math.min(100,Math.abs(contrib)*220)+'px;background:'+col(contrib)+'"></i></div></td>'
   +'<td class="flat" style="color:'+col(contrib)+'">'+fmt(contrib)+'pp</td></tr>';}).join('');
- // 复盘与明日计划（规则生成 v0：正向票继续持有条件 / 负向票减仓纪律）
- const winners=last.picks.filter(p=>p.ret!=null&&p.ret>0).length;
- const losers=last.picks.filter(p=>p.ret!=null&&p.ret<0).length;
- const top=last.picks.reduce((a,b)=>(a.ret||-99)>=(b.ret||-99)?a:b);
- const bot=last.picks.reduce((a,b)=>(a.ret||99)<=(b.ret||99)?a:b);
- const review='<b>'+last.day.slice(4,6)+'-'+last.day.slice(6)+' 复盘：</b>'
-  +'选择 '+last.picks.length+' 笔，次日实况红 '+winners+' / 绿 '+losers
-  +'，日组合 '+fmt(mean)+'%。最强 '+top.code.slice(0,9)+' '+fmt(top.ret)
-  +'%（'+(top.factors.bei24||top.factors.bei?'背驰共振':'量能驱动')+'）；'
+ const winners=d.picks.filter(p=>p.ret!=null&&p.ret>0).length;
+ const losers=d.picks.filter(p=>p.ret!=null&&p.ret<0).length;
+ const top=d.picks.reduce((a,b)=>(a.ret||-99)>=(b.ret||-99)?a:b);
+ const bot=d.picks.reduce((a,b)=>(a.ret||99)<=(b.ret||99)?a:b);
+ const review='红 '+winners+' / 绿 '+losers+'，组合 '+fmt(mean)+'%。'
+  +'最强 '+top.code.slice(0,9)+' '+fmt(top.ret)+'%（'+(top.factors.bei24||top.factors.bei?'背驰共振':'量能驱动')+'）；'
   +'最弱 '+bot.code.slice(0,9)+' '+fmt(bot.ret)+'%。'
-  +(mean!=null&&mean<0?'组合为负：三买次日接力的短线拥挤度需要警惕，评分排序未提供保护。':'组合为正：量价配合的次日本人兑现尚可。');
- const plan='<b>明日计划：</b>'
-  +(mean!=null&&mean>0?'持有正贡献且量比 ≥1 的票；':'仅保留贴 zg（位置 ≤3%）的票；')
-  +'跌破 zg（'+last.picks.map(p=>p.factors.zg).filter(Boolean).slice(0,1).join('')+' 量级）减半，破 zd 清仓；'
-  +losers+' 只绿票若无量能回补（vr<0.8）优先减。';
+  +(mean!=null&&mean<0?'负日：评分排序未提供保护，明日收紧贴 zg 条件。':'正日：量价兑现尚可。');
+ const plan=(mean!=null&&mean>0?'持有正贡献且 vr≥1；':'仅留贴 zg≤3%；')
+  +'破 zg 减半、破 zd 清仓；绿票 vr<0.8 优先减。';
+ return '<div class="dayfull">'
+ +'<div class="dh2"><b>'+d.day.slice(4,6)+'-'+d.day.slice(6)+'</b>'
+ +'<span style="color:'+col(mean)+'">组合 '+fmt(mean)+'%</span>'
+ +'<span class="flat">'+d.picks.length+' 笔</span></div>'
+ +'<table><tr><th>票</th><th>评分</th><th>次日</th><th>vr</th><th>依据</th><th>板块</th><th colspan="2">贡献度</th></tr>'+rowsHtml+'</table>'
+ +'<div class="dsum"><span class="q">复盘</span> '+review+' <span class="q">明日</span> '+plan+'</div>'
+ +'</div>';}
+function dayOverviewHTML(ym){
+ const ds=byMonth[ym.slice(0,6)]||[];
+ if(!ds.length)return '';
  return '<div class="ovw">'
- +'<div class="ovtags" style="margin:0 0 6px"><h4>'+ym.slice(0,4)+'-'+ym.slice(4,6)+' 月逐日态势 · 末景 '+last.day+'</h4>'
- +'<span class="tag">月内 '+ds.length+' 交易日</span>'
- +ds.slice(-8).map(d=>'<span class="tag" style="color:'+col(d.mean)+'">'+d.day.slice(6)+'日 '+fmt(d.mean)+'%</span>').join('')+'</div>'
- +'<div class="sec" style="margin-bottom:8px"><h4>每只票的表现（'+last.day+' 选择 → 次日实况）</h4>'
- +'<table><tr><th>票</th><th>评分</th><th>次日</th><th>vr</th><th>依据</th><th colspan="2">贡献度</th></tr>'+rowsHtml+'</table></div>'
- +'<div class="sec" style="margin-bottom:8px"><h4>当日复盘</h4><div style="font-size:12.5px;line-height:1.7">'+review+'</div></div>'
- +'<div class="sec"><h4>明日计划（规则生成 v0）</h4><div style="font-size:12.5px;line-height:1.7">'+plan+'</div></div>'
+ +'<div class="ovtags" style="margin:0 0 8px"><h4>'+ym.slice(0,4)+'-'+ym.slice(4,6)+' 月 · 每日全景（'+ds.length+' 日，逐日逐票）</h4>'
+ +'<span class="tag">滚动到任意一天，每天都有一张全景卡</span></div>'
+ +ds.map(d=>dayCardHTML(d)).join('')
  +'</div>';}
 function monthReviewHTML(y){
  const mKeys=Object.keys(byMonth).filter(k=>k.startsWith(y)).sort();
