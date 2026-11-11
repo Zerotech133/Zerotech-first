@@ -5,7 +5,7 @@
 
 - ``TRACK_CURATED_DIR``：tushare_curated 数据根
 - ``TRACK_TDX_DIR``：tdx 分片表数据根
-- ``TRACK_WORK_ROOT``：产物根（默认 ``C:\\项目\\analysis_work\\track_review``）
+- ``TRACK_WORK_ROOT``：产物根（默认 ``<项目根>/analysis_work/track_review``）
 - ``TRACK_DB``：SQLite 路径覆盖（默认 ``<work_root>/track.db``）
 
 除了 ``ensure_dirs`` / ``write_json`` 会写 ``work_root`` 下的产物目录外，所有
@@ -21,9 +21,27 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-DEFAULT_CURATED_DIR = r"C:\项目\老田的AI助手\quant_backtest\data\tushare_curated"
-DEFAULT_TDX_DIR = r"C:\项目\老田的AI助手\quant_backtest\data\tdx"
-DEFAULT_WORK_ROOT = r"C:\项目\analysis_work\track_review"
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_REPO_ROOT = os.path.dirname(os.path.dirname(_THIS_DIR))
+
+
+def _default_work_root() -> str:
+    """产物根：取向上最近的「项目级」analysis_work（工作树里仓库自身也可能有同名目录，取最高层）。"""
+    found = None
+    cur = _REPO_ROOT
+    for _ in range(4):
+        parent = os.path.dirname(cur)
+        cand = os.path.join(parent, "analysis_work")
+        if os.path.isdir(cand):
+            found = cand
+        cur = parent
+    base = found or os.path.join(os.path.dirname(_REPO_ROOT), "analysis_work")
+    return os.path.join(base, "track_review")
+
+
+DEFAULT_CURATED_DIR = os.path.join(_REPO_ROOT, "quant_backtest", "data", "tushare_curated")
+DEFAULT_TDX_DIR = os.path.join(_REPO_ROOT, "quant_backtest", "data", "tdx")
+DEFAULT_WORK_ROOT = _default_work_root()
 
 # 公告关键词方向（与 TR0 原型保持一致，保证事件数可比）
 POS_WORDS = ("回购", "增持", "中标", "预增", "扭亏", "盈利", "上修", "买入", "推荐", "签署", "合作", "分红")
