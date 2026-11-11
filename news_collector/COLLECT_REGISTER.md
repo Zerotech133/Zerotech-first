@@ -38,14 +38,14 @@
 - [x] **R1 模块入库**：#2-#8 连同批文号（C9A-KOL-001）+ #11 桥，已 `git add` + 提交（commit `a6d383bd9`，11 文件 / 1788 行，pre-commit 凭据扫描 0 命中；老田 2026-11-10 批）。推送 GitHub 受本环境网络限制（`github.com:443` 代理不可达），待另行批准走自建 git 远端（触 10.205.0.118，需单独点头）。
 - [x] **R2 台账落地**：本文件（2026-11-10 建）
 - [x] **R3 路径修复（2026-11-10 完成）**：`xq_kol.py:44` 写死 `C:\aios\quant_backtest` → `env AIOS_ROOT` 优先 + 原默认值兜底（对齐 `tools/intel_source_health.py:72` 同款约定）；验证脚本码点级断言默认解析值与修复前逐字符一致、env 覆盖生效、生产 profile 目录不受影响。验证过程撞既有判例：bash `-c` 通道把断言字面量 `\a` 串味成 `/a`，改落盘脚本 + `chr(92)` 构造通过。
-- [ ] **R4 文档订正**：整合版 §1.2/§2.2 + `docs/采集情报_板块手册.md` 同步改判（2026-11-10 已同步）
+- [x] **R4 文档订正**：整合版 §1.2/§2.2 + `docs/采集情报_板块手册.md` 同步改判（2026-11-10 已同步）
 - [ ] **红线维持**：采集频率/源/反爬不进渲染链路；#3/#4 增删号只改 `news_config.json`，不动代码
 - [ ] **R5 Windows 计划任务**：`KStockIntelDaily`(每日07:30) 注册脚本已备（`register_kstock_intel_task.ps1`）；当前非管理员会话注册被拒（"拒绝访问"），待管理员以管理员 PowerShell 执行；WorkBuddy 自动化已作兜底(07:30 ACTIVE，id `a4c50019…`)
 - [x] **R6 侯风桥落地**：#12 桥完成（run_houfeng_intel.py + houfeng_watchlist.json + target_queue_houfeng.json）；首跑 2026-11-10 09:00 补齐 irm+162/sse+22/taoguba+373 条（失败0，合法空：10只SH无e互动、920599.BJ无淘股吧帖）；xq 并集合并验证 489=465+24 唯一代码全覆盖；WorkBuddy 自动化 `HoufengIntel`(07:40 ACTIVE, id `1e336f25…`)。已 git 入库（commit `347fb9570`），并经老田批准走自建 git 新仓 `aios.git` 推送（本地 remote `selfgit`）。
 - [x] **R7 164 候选池补齐（2026-11-10）**：老田裁定"纳入补齐"。pick 文件只留计数、明细未落盘 → `houfeng_cand164_replay.py` 按 `_pick_20261106_report.py` 冻结参数只读复现 `M_off["BUY"][t_sig]`，双金标准校验（候选数=164、top30 逐只逐序一致）全 PASS → `houfeng_candidates_164.json`（SZ70/SH93/BJ1，含 30 只、净增 134）。runner 采集范围改为选股∪候选池（分批≤40），首跑 2026-11-10 10:42，覆盖增量以 `logs/houfeng_intel_full164.log` 的 BEFORE/AFTER 为准；合法空口径同 R6。**候选池为 20261106 冻结快照、非每日重算**；如需刷新须上级裁定后重跑复现脚本。
-- [ ] **R8 xq 雪球队列扩容（待上级裁定）**：`target_queue_houfeng.json` 已登记 `candidate_pool`(164) + 开关 `xq_include_candidates`(默认 false)。开关 false → 07:00 `--queue all` = 489；置 true → 593（净增 104 只有头采集）。判据：164 池现仅 37/164 只有雪球数据（30 只选股 6/30、134 净增 31/134），扩容将新增约 104 只 Playwright 有头抓取，且 07:00→07:20→07:30→07:40→08:00 时序紧凑。裁定归上级，本席不擅动。
-- [ ] **R9 服务端孤儿 pack 清理（待批）**：`10.205.0.118:/home/git/repos/aios.git/objects/pack/tmp_pack_i87Acd`（146M，首次大 pack 推送被客户端自设 timeout 掐断留下的孤儿，非 finalize pack）。`git fsck --full` 零错误、819M 主 pack 完好；删除属生产服务器操作，须老田批准后执行。
-- [ ] **R10 两池 xq 雪球覆盖（待上级裁定）**：两池逐日滚动换仓，`target_queue_cohorts.json` 仅登记（开关 false）。若并入 07:00 有头管线需改 `xq_stock_timeline.load_queue` 增加该文件并集；判据：两池 59 只现仅 4 只有雪球数据，且两池与侯风/缠论队列交集极小（侯风 164 ∩ 两池 = 1 只）。逐日换仓意味着雪球队列每日变动，并入前须评估有头管线负载。
+- [x] **R8 xq 雪球队列扩容（R22 已执行，2026-11-11）**：`target_queue_houfeng.json` 已登记 `candidate_pool`(164) + 开关 `xq_include_candidates`(默认 false→**true**)。开关 false → 07:00 `--queue all` = 489；置 true → 593（净增 104 只有头采集）。R22 已将 `selection_universe.json` 置 `houfeng_candidates164.xq_include=true` 同步生效，并入 07:00 有头管线。
+- [x] **R9 服务端孤儿 pack 清理（R22 C 已清，2026-11-11）**：`10.205.0.118:/home/git/repos/aios.git/objects/pack/tmp_pack_i87Acd`（146M）经五要素批准删除，仓库 978M→832M，`git fsck --full` 零错误、无 tmp_pack 残留、HEAD 可达。
+- [x] **R10 两池 xq 雪球覆盖（R22 已执行，2026-11-11）**：两池逐日滚动换仓，`target_queue_cohorts.json` 置 `xq_include_cohorts=true` 同步，并经 B 注册表重构 `xq_stock_timeline.load_queue` 并集合并，并入 07:00 有头管线（59 只）。负载 +33% 属运营裁定（已批）。
 - [x] **R11 各策略出票统一汇总**：`strategy_picks_summary.py`（只读盘点 6 线：k_stock/侯风/两池/缠论/选股日更/策略库 S01-S12，含各线 OSINT 覆盖与缺口清单）→ `strategy_picks_summary.json`。k_stock 线 18 行持仓（ai_team 10 含港股3 / double_knife 2 / qingping_us 美股6）；缺口主线 = 两池 54/59 无覆盖（已由 #13 桥补齐）；selection_daily picks=0（S02 熔断暂停，无出票）。
 - [x] **R12 OSINT 方法论落地（2026-11-10，老田批「按计划实施」）**：依据 `docs/OSINT方法论结合方案_2026-11-10.md`（范本=丁爸《美国陆军未来关键发展趋势深度研究》）。L1+L4：手册 §六 增补四组判据（三层信源结构/事实状态词法标注/传闻-澄清对账/输出纪律）；L3：**派生标注层** `fact_type_annotate.py`（只读四源 → `data/fact_type/{src}/{code6}.jsonl`，50815 行：tier1 1282 / tier3 49533，plan 3292/fact 2983/mixed 1484）——**不改采集器落盘 schema**（契约变更方案经评估不采用，留痕于手册 §6.5）；L2：对账底表 `rumor_verification.py`（→ `data/rumor_check/reconciliation_*.json`，632 code：两端齐备 102/仅官方 1/仅传闻 529，**核验结论栏一律留空待分析岗**）。两工具均只读源、零契约风险、可整体重跑；红线维持：不进渲染链路，标注≠事实裁定。
 - [x] **R13 OSINT 收集方法落地 L1+L2（2026-11-11，老田批「执行L1+L2」）**：依据 `docs/OSINT收集方法学习_2026-11-11.md`（C1-C6：情报周期/PIR/NATO Admiralty Code/三角验证/SOCMINT）。**L1 零改动（手册 §6.6-6.9 即生效）**：独立性判据（转引≠独立源、结构性独立）、激励字段定义（六源倾向性基线）、回音室须知（单一伪影不支撑、样本偏差声明）、评级基线表（NATO Admiralty A-F×1-6 二维独立 + 六源可靠性基线）。**L2 小改 `rumor_verification.py`**：①核验栏加 `admiralty_code` 占位（NATO 格式如 `B2`，本席保持 null）；②code 级发帖量统计 `post_volume` + `rumor_by_source`/`official_by_source`（按源分列）；③官方端记录补 `src`（irm/sse 分离）。验收：全量重跑 summary 六项与基线完全一致（632/102/1/529/1282/37735），632 code 新字段断言 bad_count=0。**L3 待批（未执行）**：PIR 登记机制、xq 补 link 字段（溯源链断实证缺口 C6）、六源 track record 档案——均归上级裁定，本席不擅动。
@@ -71,3 +71,21 @@
   - **R10 两池 雪球扩容（已批）**：`selection_universe.json` 置 `cohorts.xq_include=true` + `target_queue_cohorts.json.xq_include_cohorts=true` 同步；`load_queue` 经 B 重构已并集合并。
   - **07:00 有头管线总并集 = 647**（原基线 489，净增 158 = ~104 侯风候选 + 59 两池 − ~5 交集）；`run_xq_daily.py` 用 `--queue all` 故即时生效。有头管线负载 +33%% 属运营裁定（已批）。
   - **C R9 孤儿 pack**：`10.205.0.118:/home/git/repos/aios.git/objects/pack/tmp_pack_i87Acd`(146M) 清理，五要素批准（见 C 执行记录）。
+
+## 四、遗忘事件自检（2026-11-11 22:41 马良 · 应老田「检查是否有遗忘事件」）
+
+### 已核实无遗忘（自纠）
+- **B 注册表并集 = 647 实测确认**：`xq_stock_timeline.load_queue('all')` 实跑 = 647；按源拆分 chanlun=465 / houfeng_picks=30 / houfeng_candidates164=164 / cohorts=59 / s12=20 / unified40=16。注册表注释「缠论基线465」正确（load_queue 读 scope=all 得 465，此前疑 489 为误判）。
+- **xq 07:00 有头管线确实在跑**：`data/xq_timeline/`(真实路径 `news_collector/data/xq_timeline`) 448 文件，最新 mtime 11-11 07:07；`run_xq_daily.py` 用 `--queue all --pages 1` 读注册表并集 → 扩源非死代码。
+
+### 🔴 实质风险（归上级裁定，本席不擅动）
+- **R22 扩源首次生效窗口 = 明日 07:00（11-12）**：commit `e72e68b0d` 时间 13:31 **晚于** 今日 07:07 那次 run；日志铁证 `109/489…130/489`，今日仍跑旧 489 并集。R8/R10 扩源（647）**尚未在任何实际 run 生效**，首次机会 = 11-12 07:00。
+- **WAF 挑战导致 xq 每日覆盖不完整**：今日日志 `003021 p1 防御触发(WAF_CHALLENGE)——停轮防拉黑`，run 在 ~130/489 处 **rc=2 中途 halted**。扩源到 647 后，若 WAF 在 ~130 就停轮，排在并集后部的侯风164+两池59 大概率永远跑不到 → **扩源可能形同虚设**。建议上级裁定：WAF 重试/分批/错峰策略，或接受「有头管线每日只能覆盖前段队列」的既定约束。
+
+### 🟡 台账卫生（本次已补）
+- §三 R4/R8/R9/R10 原标 `[ ] 待裁定/待批`，实际 R22 已执行 → 已勾 `[x]` 并补注 R22 落地（R9 孤儿 pack 亦已清）。
+
+### ⚪ 仍待老田输入/裁定（非遗忘，跨会话挂起）
+- **unified40 全 40 只 v3 总榜**待老田粘贴原文补全 → 方可评估 `xq_include` 扩源（现 false 关闭）。
+- **remote `main` 独立分叉**（main=8ef3f346 ≠ 我祖先），本次仅推 master；是否补推 main 待老田裁定（非快进，会改写 main 历史）。
+- **R5 Windows 任务 `KStockIntelDaily`** 注册脚本已备(`register_kstock_intel_task.ps1`)但非管理员会话被拒；WorkBuddy 自动化 `KStockIntel`(a4c50019, 07:30 ACTIVE) 已兜底，公开缺口非紧急。
