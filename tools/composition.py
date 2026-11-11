@@ -579,7 +579,9 @@ def _manifests(target: str):
         return [p]
     if p.is_dir() and (p / "manifest.yaml").exists():
         return [p / "manifest.yaml"]
-    return []
+    # 裸组合 id 兼容：validate acad1-legion → compositions/acad1-legion
+    cand = COMP / str(target or "").strip().strip('"') / "manifest.yaml"
+    return [cand] if cand.is_file() else []
 
 
 def cmd_validate(args):

@@ -2,7 +2,8 @@
 """dataset_registry 显式 ref 登记单测 — IFS-POOL（D1 6 data refs）。
 
 覆盖验收：
-1) dataset_refs_declared.json 契约：6 条 ref、唯一、planned 必带 owner/due；
+1) dataset_refs_declared.json 契约：8 条 ref（6 条 file + 2 条 pg declared，后者
+   2026-11-05 W1-PILOT-TOOLFIX 补登记）、唯一、planned 必带 owner/due；
 2) `dataset_registry_cli resolve-ref` 对 6 条 ref 返回 rc=0（已登记/可解析）；
 3) 载体状态不伪造：载体存在=active，缺失且声明 planned=planned，声明 active 但缺失=declared_missing；
 4) 契约非法（重复/缺 owner/planned 缺 due/schema 错）→ RegistryError（fail-visible）；
@@ -31,6 +32,13 @@ SIX_REFS = [
     "dataset/file/paper_ledger",
     "dataset/file/shadow_ledger",
     "dataset/file/d1_decisions",
+]
+
+#: 2026-11-05 W1-PILOT-TOOLFIX 补登记的 dataset/pg 声明（v2_bar_daily 物理表只读证据；
+#: v2_zhice_tables 非物理聚合口径/由 9 张 wave1 表支撑，ADR-019 P5 过渡期声明）。
+PG_DECLARED_REFS = [
+    "dataset/pg/v2_bar_daily",
+    "dataset/pg/v2_zhice_tables",
 ]
 
 
@@ -67,11 +75,19 @@ def _simple_ref(**overrides):
 
 # ── 1. 声明契约 ─────────────────────────────────────────────────────
 class TestDeclaredContract:
-    def test_six_refs_declared(self, declared):
+    def test_declared_refs_complete(self, declared):
         refs = [item["ref"] for item in declared]
-        assert len(refs) == 6
-        assert set(refs) == set(SIX_REFS)
+        assert len(refs) == 8
+        assert set(refs) == set(SIX_REFS) | set(PG_DECLARED_REFS)
         assert len(set(refs)) == len(refs)
+
+    def test_pg_declared_refs_marked(self, declared):
+        items = {item["ref"]: item for item in declared}
+        for ref in PG_DECLARED_REFS:
+            item = items[ref]
+            assert item["owner"] == "DATA1"
+            assert item["canonical_ref"] == ref
+            assert item["declared_at"] == "2026-11-05"
 
     def test_every_ref_has_owner_and_status(self, declared):
         for item in declared:
@@ -107,13 +123,14 @@ class TestResolveRef:
             assert row["status"] in ("active", "planned", "declared_missing")
 
     def test_active_and_planned_split(self, reg):
-        statuses = {}
-        for ref in SIX_REFS:
-            statuses[ref] = reg.resolve_ref(ref)["status"]
         # 2026-11-04 棘轮加固：d1_decisions 的声明为 planned，但共享机 runtime 产物可能
         # 已生成（D1 线交付后 resolve_ref 会如实返回 active）；测试校验"不伪造"语义，
         # 而非僵化要求永远 planned。
-        assert statuses["dataset/file/d1_decisions"] in ("active", "planned")
+        d1 = reg.resolve_ref("dataset/file/d1_decisions")
+        if d1["carrier"] in ("dir", "file"):
+            assert d1["status"] == "active"
+        else:
+            assert d1["status"] == "planned"
         # 其余 5 条在共享机（C:\项目\老田的AI助手 runtime data 存在）应为 active；
         # 干净检出/无 runtime 数据的机器上允许 planned（声明 planned）或 declared_missing（声明 active），
         # 但不得伪造 active。
@@ -137,15 +154,17 @@ class TestResolveRef:
 
     def test_list_file_dataset(self, reg):
         rows = reg.list(kinds="file_dataset", limit=20)
-        assert len(rows) == 6
+        # 6 条 file 声明 + 2 条 pg 声明（registry 对 declared 行统一建模为 file_dataset）
+        assert len(rows) == 8
+        assert set(SIX_REFS) <= {row["ref"] for row in rows}
         assert all(row["kind"] == "file_dataset" for row in rows)
 
     def test_declared_summary(self, reg):
         summary = reg.declared_summary()
-        assert summary["total"] == 6
+        assert summary["total"] == 8
         assert len(summary["active"]) + len(summary["planned"]) + len(
             summary["declared_missing"]
-        ) == 6
+        ) == 8
         # 2026-11-04 棘轮加固：d1_decisions 可能已由 D1 线交付而进入 active 桶
         # （active 桶是 ref 字符串列表，planned 桶才是带 owner/due 的 dict）；
         # 声明属性只在 planned 桶可校验，active 时校验其确已登记。
@@ -156,6 +175,9 @@ class TestResolveRef:
         if "dataset/file/d1_decisions" in planned:
             assert planned["dataset/file/d1_decisions"]["owner"] == "D1"
             assert planned["dataset/file/d1_decisions"]["due"] == "2026-11-16"
+        # pg 声明无物理/file 载体 → declared_missing（fail-visible，不假绿）
+        assert "dataset/pg/v2_bar_daily" in summary["declared_missing"]
+        assert "dataset/pg/v2_zhice_tables" in summary["declared_missing"]
 
 
 # ── 3. CLI 验收（resolve-ref rc=0） ─────────────────────────────────
@@ -188,7 +210,7 @@ class TestCli:
         proc = self._run("declared")
         assert proc.returncode == 0
         payload = json.loads(proc.stdout)
-        assert payload["total"] == 6
+        assert payload["total"] == 8
 
 
 # ── 4. 契约非法 fail-visible ────────────────────────────────────────
