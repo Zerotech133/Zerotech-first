@@ -1,0 +1,146 @@
+# 逻辑产物登记表 v1
+#
+# 为什么要有这一层（先读这段，避免被当成第四套平行登记）：
+#   已有的三层各管一段，都不管「一个逻辑产物由哪几片拼成」——
+#     tools/data_hub/sources.yaml        来源侧：能从哪取数、许可、频率、出口
+#     quant_backtest/data/catalog.json   物理侧：259 张表的存储路径、schema、行数
+#     agent_platform/tools/data_pipeline_probe.py  存活侧：http/tcp/mtime
+#   缺的是：涨停由 full + delta + tushare 日文件三片拼成，catalog 只有物理粒度，
+#   任何「按单表 max(date) 判新鲜度」的逻辑都会把 T+1 正常读成停更。
+#   2026-11-12 判例：只读 limit_list_d_full（停在 20261014），报「停更 20 天」，
+#   实际 delta 到 20261110，lag=1。
+#
+# 硬规矩：**lag 不写进这张表**。每次由 check_products.py 实测算。
+#   catalog.freshness 就是反例——它存的是 2026-11-11 06:23 生成时刻的快照，
+#   里面 limit_list_d 记 20261103，实测 20261110，差 7 个交易日。
+#   契约是常量，lag 是变量，混在一起必然过期。
+#
+# 字段契约（check_products.py 校验，缺必填即报错）：
+#   id          小写下划线，唯一
+#   name        中文名
+#   purpose     一句话说清它进哪条判断链
+#   writer      谁写、什么节奏（写实测到的事实，不写猜测）
+#   readers     谁读它——出问题时先看读方口径，再看写方履约
+#   compose     片子列表：path(支持 * 与 ${extra}) / date_from / min_rows_per_day
+#               date_from: filename（d_YYYYMMDD.parquet）| column:xxx | json:xxx
+#   merge       多片合成规则，max = 取最大日期（行集重叠，不做 union）
+#   promise     cadence(daily|daily_t1|weekly|oneoff) + lag_ok（允许落后几个交易日）
+#   success     成功判定口径——注意：不是「进程退出 0」
+#   history     踩过的坑，写着防止下一个人重犯
+
+version: 1
+updated: "2026-11-12"
+measured_by: "portal/daily_report/check_products.py"
+
+# lag 的分母。它没到，表示「今天本来就没数据」，不该记到别人头上。
+clock: quote_daily
+
+# project 相对本文件；extra 是本机另一处数据根，不入库，取值顺序：
+#   环境变量 ZQ_LENS_DATA → 同目录 lens_paths.json 的 extra_data → 未配置则相关产物降级 missing
+roots:
+  project: ".."
+  extra: "${ZQ_LENS_DATA}"
+
+products:
+  - id: quote_daily
+    name: 行情日线
+    purpose: 所有 lag 的分母；也是回测/记账的价格来源
+    writer: TushareIncrementGuard（实测 20:30 落盘，11-11 mtime 20:30:01）
+    readers: [paper_arena, lens_engine, cohort_track, arena_verify, select_asof]
+    compose:
+      - path: "quant_backtest/data/tushare/daily/d_*.parquet"
+        date_from: filename
+    merge: max
+    promise: {cadence: daily, lag_ok: 0}
+    success: "max(date) == 当日交易日，且文件数较前一交易日 +1"
+    history: "catalog.freshness 记 20261110（生成时刻快照），实测 20261111"
+
+  - id: limit_up
+    name: 涨停情绪
+    purpose: 多棱镜「涨停情绪」维度；情绪冰点/亢奋的判定依据
+    writer: data_hub 增量管道（实测 11-11 10:12 一次补齐 1105/1106/1109/1110）
+    readers: [lens_engine]
+    compose:
+      - path: "${extra}/limit_list_d_full.parquet"
+        date_from: "column:trade_date"
+        role: 历史底，20261014 之后不再更新
+      - path: "${extra}/limit_list_d_delta.parquet"
+        date_from: "column:trade_date"
+        role: 每日增量，真正的最新数据在这里
+      - path: "quant_backtest/data/tushare/limit_list_d/d_*.parquet"
+        date_from: filename
+        role: 同源日文件备份，可与 delta 互相印证
+    merge: max
+    promise: {cadence: daily_t1, lag_ok: 1}
+    success: "三片中任一 max(date) == 上一交易日；只看 full 片必误判"
+    history: >-
+      2026-11-12 只看 full 片（停 20261014），报「停更 20 个交易日」，
+      实际 delta 到 20261110、lag=1。catalog 记 20261103 也是同一类快照滞后。
+
+  - id: sector_daily
+    name: 板块轮动
+    purpose: 多棱镜「板块轮动」维度；行业层面的资金去向
+    writer: factor_proto/pull_tdx.py（一次性全量重写，无日更任务）
+    readers: [lens_engine]
+    compose:
+      - path: "${extra}/sector_daily.parquet"
+        date_from: "column:trade_date"
+        min_rows_per_day: 100
+        role: >-
+          全量快照，每个交易日 132 个板块（只含 industry_l1 + old_industry 两个段，
+          pull_tdx 的 SEG_WITH_DAILY 仅此两段，不是全板块）；7920 行 / 60 个交易日。
+          阈值按本产物实际密度设 100，不要按落湖那份的 1119 去卡。
+    merge: max
+    promise: {cadence: oneoff, lag_ok: 0}
+    success: "上游有新增即重跑 pull_tdx 全量；非日更产物，落后不等于本轮采集失败"
+    history: >-
+      2026-11-12 直连上游实测：start_date=20261023 返回 total=0 / total_exact=true，
+      无过滤首页首条即 20261022，_fetched_at=2026-10-22 17:00:33 —— 上游自 10-22
+      收盘后未再供数。另一份落湖产物 tdx_sector_daily 到 20261022，但 10-13 起
+      每天只 2~3 个板块（24 行/10 天），等于没有，故不登记为可用片。
+      配套假成功：TdxTailSync 每天 04:30 exit=0、日志写 DONE、1 秒完成、parts 数不变。
+
+  - id: margin_detail
+    name: 两融杠杆
+    purpose: 多棱镜「两融杠杆」维度；杠杆资金进出
+    writer: data_hub 增量管道 / TushareIncrementGuard
+    readers: [lens_engine]
+    compose:
+      - path: "${extra}/margin_detail_delta.parquet"
+        date_from: "column:trade_date"
+      - path: "quant_backtest/data/tushare/margin_detail/d_*.parquet"
+        date_from: filename
+    merge: max
+    promise: {cadence: daily_t1, lag_ok: 1}
+    success: "两融明细交易所 T+1 发布，lag<=1 属正常"
+    history: "catalog.freshness 记 20261109，实测 20261110"
+
+  - id: moneyflow
+    name: 大单资金
+    purpose: 多棱镜「大单资金」维度；大单净流入
+    writer: data_hub 增量管道 / TushareIncrementGuard
+    readers: [lens_engine]
+    compose:
+      - path: "${extra}/moneyflow_delta.parquet"
+        date_from: "column:trade_date"
+      - path: "quant_backtest/data/tushare/moneyflow/d_*.parquet"
+        date_from: filename
+    merge: max
+    promise: {cadence: daily_t1, lag_ok: 1}
+    success: "lag<=1；delta 落后一天属 T+1 早补，与涨停同族"
+    history: "delta 到 20261110、tushare 日文件到 20261111，取 max 后 lag=0"
+
+  - id: pick_cohorts
+    name: 选股台账
+    purpose: 前向记账的观测单位——每次选股一份，paper_arena 与 lens 都从这里取观测
+    writer: houfeng_daily_signal（08:40）/ houfeng_snap_daily（16:40）
+    readers: [paper_arena, lens_engine, arena_verify, verify_arena]
+    compose:
+      - path: "portal/daily_report/cohorts/cohort_*.json"
+        date_from: "json:asof"
+    merge: max
+    promise: {cadence: daily, lag_ok: 1}
+    success: "每个交易日应有 auto/main 两份；缺一份即选股链路断，不只是数据晚"
+    history: >-
+      台账是前向记账的唯一证据源，回测可调参、前向不可，所以这里缺一天
+      比任何行情缺一天都严重。lag 用 asof 字段算，不用文件 mtime。

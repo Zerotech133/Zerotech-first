@@ -446,6 +446,10 @@ portal/daily_report/_shot_lens*.png
 # 本机数据源路径（含另一个仓的本地目录），只留本机，绝不入库
 portal/daily_report/lens_paths.json
 
+# 2026-11-12 逻辑产物登记：yaml 是契约（入库），latest.json 是每次实测状态（运行态，不入库）。
+# 状态会随每次运行变化，存进 git 只会造成「快照被当成真值」——catalog.freshness 就是这么错的。
+portal/daily_report/registry_state/
+
 # 2026-11-10 瞬态运行日志（不入库）
 quant_backtest/logs_*.txt
 portal/_social_fetch_run_log.md
