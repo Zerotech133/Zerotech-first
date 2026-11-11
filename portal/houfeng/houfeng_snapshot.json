@@ -1,0 +1,313 @@
+{
+ "schema": "houfeng.snapshot/v1",
+ "generated_at": "2026-11-09 16:44",
+ "data_date": "20261106",
+ "strategy": {
+  "name": "候风",
+  "name_en": "HOUFENG",
+  "slogan": "候风而动，知止而得",
+  "former_name": "青萍之末",
+  "engine_code": "qpzm",
+  "form": {
+   "engine": "qpzm_backtest.py（逐笔锚，md5 d13225d0，v3b 重冻：load_wide 增读 low 列透传 _raw_low，不进任何引擎计算路径）",
+   "portfolio_sim": "portfolio_sim.py（组合层唯一裁判，md5 57de37c6）",
+   "rank": "score",
+   "weight_scheme": "inv_vol",
+   "lot_fill": "recycle",
+   "top_n": 30,
+   "hold": 5,
+   "gate": "env 闸门 v3_breadth40_med20（safe=false 一票否决，关闸期只出影子信号）",
+   "cost_roundtrip": 0.003,
+   "limit_mode": "exact",
+   "jev_mode": "missing",
+   "max_weight": 0.05,
+   "alloc": "cash",
+   "capital_ref": 10000000,
+   "drop_p1": true
+  },
+  "status": "FROZEN M2.1"
+ },
+ "gate": {
+  "safe": false,
+  "breadth": 0.3365,
+  "med20": -0.0473,
+  "upfrac": 0.2555,
+  "note": "safe=false 期间只供观察名单，不开新仓（闸门一票否决）"
+ },
+ "watchlist": {
+  "n_signals": 164,
+  "top_n": 20,
+  "as_of": "20261106",
+  "picks": [
+   {
+    "ts_code": "301313.SZ",
+    "name": "凡拓数创",
+    "industry": "文教休闲",
+    "score": 85.3,
+    "close": 67.88,
+    "pct_chg": 1.68,
+    "ret20": "137.6%",
+    "amount_yi": 15.34,
+    "note": ""
+   },
+   {
+    "ts_code": "688071.SH",
+    "name": "华依科技",
+    "industry": "专用机械",
+    "score": 84.2,
+    "close": 46.09,
+    "pct_chg": -7.39,
+    "ret20": "30.4%",
+    "amount_yi": 4.14,
+    "note": ""
+   },
+   {
+    "ts_code": "601328.SH",
+    "name": "交通银行",
+    "industry": "银行",
+    "score": 83.6,
+    "close": 8.3,
+    "pct_chg": 1.22,
+    "ret20": "6.7%",
+    "amount_yi": 17.51,
+    "note": ""
+   },
+   {
+    "ts_code": "600674.SH",
+    "name": "川投能源",
+    "industry": "水力发电",
+    "score": 83.3,
+    "close": 17.74,
+    "pct_chg": 3.62,
+    "ret20": "4.1%",
+    "amount_yi": 7.09,
+    "note": ""
+   },
+   {
+    "ts_code": "300133.SZ",
+    "name": "华策影视",
+    "industry": "影视音像",
+    "score": 83.2,
+    "close": 10.07,
+    "pct_chg": -2.8,
+    "ret20": "20.2%",
+    "amount_yi": 13.24,
+    "note": ""
+   },
+   {
+    "ts_code": "688322.SH",
+    "name": "奥比中光-W",
+    "industry": "元器件",
+    "score": 83.1,
+    "close": 109.05,
+    "pct_chg": -4.89,
+    "ret20": "33.8%",
+    "amount_yi": 13.48,
+    "note": ""
+   },
+   {
+    "ts_code": "603355.SH",
+    "name": "莱克电气",
+    "industry": "家用电器",
+    "score": 83.0,
+    "close": 33.19,
+    "pct_chg": -3.6,
+    "ret20": "2.9%",
+    "amount_yi": 1.63,
+    "note": ""
+   },
+   {
+    "ts_code": "003816.SZ",
+    "name": "中国广核",
+    "industry": "新型电力",
+    "score": 82.9,
+    "close": 4.75,
+    "pct_chg": 1.93,
+    "ret20": "7.2%",
+    "amount_yi": 6.48,
+    "note": ""
+   },
+   {
+    "ts_code": "601598.SH",
+    "name": "中国外运",
+    "industry": "仓储物流",
+    "score": 82.8,
+    "close": 7.07,
+    "pct_chg": 0.0,
+    "ret20": "2.5%",
+    "amount_yi": 1.12,
+    "note": ""
+   },
+   {
+    "ts_code": "600011.SH",
+    "name": "华能国际",
+    "industry": "火力发电",
+    "score": 82.0,
+    "close": 7.65,
+    "pct_chg": 3.38,
+    "ret20": "4.4%",
+    "amount_yi": 8.39,
+    "note": ""
+   },
+   {
+    "ts_code": "002889.SZ",
+    "name": "东方嘉盛",
+    "industry": "仓储物流",
+    "score": 81.9,
+    "close": 14.91,
+    "pct_chg": 10.04,
+    "ret20": "24.7%",
+    "amount_yi": 5.08,
+    "note": "已涨停/开盘难买"
+   },
+   {
+    "ts_code": "600350.SH",
+    "name": "山东高速",
+    "industry": "路桥",
+    "score": 81.9,
+    "close": 11.11,
+    "pct_chg": 2.78,
+    "ret20": "5.0%",
+    "amount_yi": 1.67,
+    "note": ""
+   },
+   {
+    "ts_code": "601985.SH",
+    "name": "中国核电",
+    "industry": "新型电力",
+    "score": 81.7,
+    "close": 9.65,
+    "pct_chg": 0.42,
+    "ret20": "5.9%",
+    "amount_yi": 9.18,
+    "note": ""
+   },
+   {
+    "ts_code": "002983.SZ",
+    "name": "芯瑞达",
+    "industry": "元器件",
+    "score": 81.6,
+    "close": 22.32,
+    "pct_chg": -2.19,
+    "ret20": "7.6%",
+    "amount_yi": 0.47,
+    "note": ""
+   },
+   {
+    "ts_code": "601825.SH",
+    "name": "沪农商行",
+    "industry": "银行",
+    "score": 81.6,
+    "close": 9.04,
+    "pct_chg": 4.27,
+    "ret20": "5.7%",
+    "amount_yi": 3.36,
+    "note": ""
+   },
+   {
+    "ts_code": "601077.SH",
+    "name": "渝农商行",
+    "industry": "银行",
+    "score": 81.3,
+    "close": 7.21,
+    "pct_chg": 1.84,
+    "ret20": "8.1%",
+    "amount_yi": 5.92,
+    "note": ""
+   },
+   {
+    "ts_code": "603886.SH",
+    "name": "元祖股份",
+    "industry": "食品",
+    "score": 81.2,
+    "close": 12.88,
+    "pct_chg": -4.17,
+    "ret20": "-1.7%",
+    "amount_yi": 0.68,
+    "note": ""
+   },
+   {
+    "ts_code": "688360.SH",
+    "name": "德马科技",
+    "industry": "机械基件",
+    "score": 81.1,
+    "close": 19.7,
+    "pct_chg": -5.79,
+    "ret20": "18.5%",
+    "amount_yi": 1.74,
+    "note": ""
+   },
+   {
+    "ts_code": "300314.SZ",
+    "name": "戴维医疗",
+    "industry": "医疗保健",
+    "score": 80.6,
+    "close": 14.05,
+    "pct_chg": -1.33,
+    "ret20": "9.3%",
+    "amount_yi": 1.11,
+    "note": ""
+   },
+   {
+    "ts_code": "920599.BJ",
+    "name": "同力股份",
+    "industry": "工程机械",
+    "score": 80.6,
+    "close": 18.22,
+    "pct_chg": -1.83,
+    "ret20": "5.0%",
+    "amount_yi": 0.41,
+    "note": ""
+   }
+  ]
+ },
+ "backtest_kpi": {
+  "win_36m_ret_pct": 117.71,
+  "win_36m_dd_pct": -21.18,
+  "win_36m_sharpe": 1.22,
+  "equal_36m_ret_pct": 73.37,
+  "equal_36m_sharpe": 0.8,
+  "a2_matrix": "5窗×双成本×4形态 10/10+10/10 通过",
+  "a3_impact": "保守档 4/5，参与率中位 <0.01%",
+  "evidence": [
+   "M2_FROZEN.json",
+   "a2_final/a2_matrix.md",
+   "a3_impact/a3_impact_report.md",
+   "risk_budget/na_bucket_verdict.md"
+  ]
+ },
+ "paper": {
+  "mode": "只记录不下场（≥3 个月）",
+  "latest": {
+   "date": "20261109",
+   "window": [
+    "20260810",
+    "20261109"
+   ],
+   "nav": 1.0,
+   "nav_basis": "chain",
+   "nav_seed_date": 20261106,
+   "nav_seed_value": 1.0,
+   "daily_ret": 0.0,
+   "window_return": -0.179981,
+   "n_pos": 0,
+   "util": 0.0,
+   "max_dd": -0.1825,
+   "sharpe": -4.145,
+   "n_buys": 580,
+   "gate_safe": false,
+   "n_signals": 0,
+   "deviation_check": "n/a",
+   "ts": "2026-11-09 16:44"
+  },
+  "acceptance": "≥58 交易日 + 累计偏差 ≤30bp → M2_PAPER_REPORT"
+ },
+ "disclosures": [
+  "绝对收益受真实冲击成本拖累：非复利口径 36m equal +38.4%→保守 +25.9%、combo +78.8%→+64.7%（A3 报告为准）",
+  "引擎虚拟净值口径已废弃，一切收益/回撤以组合模拟器真净值为准",
+  "top30 资金利用率 39~49%（闸门关闸期现金闲置），满仓折算口径须并列披露",
+  "跌停无法卖出未建模（高估方向）；竞价必成假设（高估方向）",
+  "NA 桶（停牌复牌跳空笔）24m 占盈亏 38.1% 为窗口性现象，属策略特性非缺陷",
+  "L-11 披露（老田 2026-11-09 裁定暂缓·只补披露）：data/ashare 为前复权(qfq)价，手数/资金分配按该绝对价估算；qfq vs bfq 同窗口（36m/exact/c30/inv_vol+recycle）收益差 29.4pp（差异在 skip_lot 路径被复利放大，非涨跌停判定）。A6 模拟盘 3 个月到期时一并评估数据层迁移（bfq+adj_factor），届时须全量重算历史+基线重冻，不得顺手改。证据：deliverables/2026-11-08_十年期回测_v1.md §5"
+ ]
+}

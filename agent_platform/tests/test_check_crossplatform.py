@@ -161,3 +161,41 @@ def test_no_baseline_mode_reports_all(xplat, tmp_path):
     (tmp_path / "portal").mkdir()
     (tmp_path / "portal" / "a.py").write_text("import msvcrt\n", encoding="utf-8")
     assert xplat.main(["--root", str(tmp_path), "--no-baseline"]) == 1
+
+
+def test_git_dash_C_in_dict_value_is_blocked(xplat):
+    """K-PR6：字典 value / return 里的 argv 构造（旧规则盲区）。"""
+    src = chr(10).join([
+        "def f(wt):",
+        '    return {"ok": True, "argv": ["git", "-C", str(wt), "status"]}',
+    ])
+    assert "R3_git_dash_C" in _rules(src, xplat)
+
+
+def test_git_dash_C_assigned_then_passed_is_blocked(xplat):
+    """K-PR6：先赋值再以变量名传给 subprocess（旧规则盲区）。"""
+    src = chr(10).join([
+        "import subprocess",
+        'args = ["git", "-C", "/repo", "diff", "--stat"]',
+        "subprocess.run(args)",
+    ])
+    assert "R3_git_dash_C" in _rules(src, xplat)
+
+
+def test_git_dash_C_direct_call_not_double_counted(xplat):
+    """K-PR6：调用点列表仍只计一次，既有基线指纹不漂移。"""
+    src = ("import subprocess" + chr(10)
+           + 'subprocess.run(["git", "-C", "/repo", "status"])')
+    fs = [f for f in xplat.scan_source("dup.py", src)
+          if f["rule"] == "R3_git_dash_C"]
+    assert len(fs) == 1, "调用点列表被重复计数: %s" % fs
+
+
+def test_git_dash_C_constructed_list_under_nt_guard_allowed(xplat):
+    """K-PR6：nt 守卫内的构造不算跨平台缺陷。"""
+    src = chr(10).join([
+        "import os",
+        "if os.name == 'nt':",
+        '    args = ["git", "-C", "C:/repo", "status"]',
+    ])
+    assert "R3_git_dash_C" not in _rules(src, xplat)

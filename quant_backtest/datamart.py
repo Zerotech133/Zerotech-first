@@ -566,10 +566,33 @@ def _read_by_date(store, dcol, ccol, start, end, codes, fields, cols=None):
                       pattern="d_*.parquet", name_prune=True)
 
 
-def _read_sqlite(tbl, start, end, codes, limit):
-    del end  # 信息表读取以 since + limit 为口径（tdx_read.read_info）
+def _read_sqlite(tbl, start, end, codes, limit, after=None):
+    # 2026-11-07 P0 RFC 方案②：end 透传为 until、after 透传游标；
+    # 两者缺省 None 时 read_info 走原口径（信息三表现无 end 调用方，零影响）。
     return pd.DataFrame(tdxr.read_info(tbl, codes=codes,
-                                       limit=limit or 200, since=start))
+                                       limit=limit or 200, since=start,
+                                       until=end, after=after))
+
+
+def _after_filter_rows(df, after, dcol):
+    """非 sqlite 布局的游标兜底（P0 RFC 方案② R2 降级语义）：
+    (日期, _fetched_at) 字典序严格大于游标；缺 _fetched_at 列时退化为
+    仅日期严格大于（同日并列组跨页有丢行风险，现网 fallback 源 anns_d
+    仅在真源不可用时才触达，风险已文档化）。sqlite 布局不走此函数
+    （游标已在 SQL 层下推，rowid 防并列丢行）。"""
+    if df is None or df.empty or not after:
+        return df
+    cd = str(after.get("date") or "").replace("-", "")[:8]
+    if len(cd) != 8 or dcol not in df.columns:
+        return df
+    d = df[dcol].astype(str).str[:10].str.replace("-", "", regex=False)
+    sub_col = "_fetched_at"
+    if sub_col in df.columns:
+        s = df[sub_col].astype(str)
+        keep = (d > cd) | ((d == cd) & (s > str(after.get("sub") or "")))
+    else:
+        keep = d > cd
+    return df[keep]
 
 
 def _read_pg(store, dcol, ccol, start, end, codes, fields, cols=None,
@@ -589,10 +612,10 @@ _READERS = {"part": _read_part, "by_code": _read_by_code,
             "by_period": _read_by_period, "pg": _read_pg}
 
 
-def _read_one(tbl, start, end, codes, fields, limit):
+def _read_one(tbl, start, end, codes, fields, limit, after=None):
     e = _catalog().get("tables", {}).get(tbl) or {}
     if e.get("layout") == "sqlite":
-        return _read_sqlite(tbl, start, end, codes, limit)
+        return _read_sqlite(tbl, start, end, codes, limit, after=after)
     fn = _READERS.get(e.get("layout"))
     if fn is None:
         return pd.DataFrame()
@@ -671,8 +694,14 @@ def read_physical(table, start=None, end=None, codes=None, fields=None,
 
 
 @_guard_table
-def read(table, start=None, end=None, codes=None, fields=None, limit=None):
-    """统一读。table 可为物理表名或别名；空结果返回空 DataFrame。"""
+def read(table, start=None, end=None, codes=None, fields=None, limit=None,
+         after=None):
+    """统一读。table 可为物理表名或别名；空结果返回空 DataFrame。
+
+    after（2026-11-07 P0 RFC 方案② R2）：游标 dict
+    {'date':'YYYYMMDD','sub':'<_fetched_at>','rid':<rowid>}——sqlite 布局
+    SQL 层下推（升序 + rowid 防并列丢行），其余布局客户端严格大于过滤。
+    缺省 None 行为逐字不变。"""
     got, entries = [], []
     alias = _catalog().get("aliases", {}).get(table) or {}
     merge_key = alias.get("merge_key")
@@ -684,7 +713,8 @@ def read(table, start=None, end=None, codes=None, fields=None, limit=None):
             internal_fields = fields
             if fields and merge_key:
                 internal_fields = list(dict.fromkeys(list(fields) + merge_key))
-            df = _read_one(t, start, end, codes, internal_fields, limit)
+            df = _read_one(t, start, end, codes, internal_fields, limit,
+                           after=after)
         except PublicationPending:
             raise
         except Exception:
@@ -692,6 +722,12 @@ def read(table, start=None, end=None, codes=None, fields=None, limit=None):
         if df is not None and not df.empty:
             entry = _catalog()["tables"][t]
             df = _normalize(df, [entry])
+            # 游标过滤按源施加：sqlite 布局已在 SQL 层精确过滤（rowid 三键），
+            # 重放客户端谓词会误删同 (日期,_fetched_at) 并列组——绝不重放；
+            # 其余布局此处过滤（降级语义）。
+            if after and entry.get("layout") != "sqlite":
+                df = _after_filter_rows(df, after,
+                                        entry.get("date_col") or "trade_date")
             if merge_key is None:
                 merge_key = entry.get("primary_key")
                 if merge_key is None:
@@ -723,7 +759,14 @@ def read(table, start=None, end=None, codes=None, fields=None, limit=None):
     dcol = next((e.get("date_col") for e in entries
                  if e.get("date_col") in out.columns), None)
     if dcol:
-        out = out.sort_values(dcol, kind="stable")
+        if after:
+            # 游标模式：亚日稳定排序（存在列才加，保证跨源 concat 后仍有序）；
+            # 过滤已按源完成（sqlite=SQL 下推 / 其余=客户端），此处不重放。
+            keys = [dcol] + [c for c in ("_fetched_at", "_src_rowid")
+                             if c in out.columns]
+            out = out.sort_values(keys, kind="stable")
+        else:
+            out = out.sort_values(dcol, kind="stable")
     out = _pick_fields(out, fields, "ts_code", dcol).reset_index(drop=True)
     if limit is not None and not out.empty:
         out = out.head(limit)

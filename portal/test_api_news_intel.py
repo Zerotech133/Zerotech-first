@@ -155,12 +155,13 @@ def test_flash_structure_and_window(root):
     assert len(fl["items"]) == 4
     ids = [i["source"] + ":" + (i["title"][:4]) for i in fl["items"]]
     assert all("旧闻" not in t for t in ids)
-    # id 倒序：sina:1 > govpol:1 > em:1 > cns:scroll:1
-    assert fl["items"][0]["title"].startswith("央行开展逆回购")
+    # ts DESC（2026-10-31 拍板：id 倒序会让旧闻顶第一屏，已改 ts 优先）：
+    # govpol(hm1) > cns(hm2) > sina(hm3) > em(hm4)
+    assert fl["items"][0]["title"].startswith("国务院关于XX试点")
     # ts 解析出 hm（HH:MM）+ hit 转 bool
     it = fl["items"][0]
     assert it["hm"] == it["ts"][-5:] and len(it["hm"]) == 5
-    assert it["hit"] is False
+    assert it["hit"] is True and it["pushed"] is True
     gov = next(i for i in fl["items"] if i["source"] == "govpolicy")
     assert gov["hit"] is True and gov["pushed"] is True
     # BASE_ROWS 未带 jev → 速报条目 jev 投影为 null（不炸，K-ORG-208）
@@ -340,15 +341,17 @@ def test_overview_counts_and_verdict_impact_priority(root):
     assert ov["total_judged"] == 4
     assert ov["bull"] == 1 and ov["bear"] == 2 and ov["neutral"] == 1
     assert ov["high_impact"] == 2
-    # 关键判读排序：impact 权重优先、conf 次级（高冲击低置信 > 低冲击高置信）
+    # 关键判读排序（2026-11-10 conf 弃用后新口径）：impact 权重优先、
+    # 事件类型分层次级（strong 优先、|signal| 再次）；甲/丙同层（无 event_type）
+    # → conf 不再分高下，按 id 基础序；丁(中冲击)、乙(低冲击)随后
     vd = p["verdicts"]
     assert vd["total"] == 4 and len(vd["items"]) == 4
-    assert [i["title"][0] for i in vd["items"]] == ["丙", "甲", "丁", "乙"]
+    assert [i["title"][0] for i in vd["items"]] == ["甲", "丙", "丁", "乙"]
     # 字段投影：hm 解析 / stocks JSON 数组解析 / bias_cn 兜底 / scope_cn 带出
-    top = vd["items"][0]
+    top = vd["items"][1]
     assert top["hm"] == top["ts"][-5:] and top["source"] == "xd_notice"
     assert top["jev"]["bias_cn"] == "利空"  # bias 兜底出中文
-    second = vd["items"][1]
+    second = vd["items"][0]
     assert second["stocks"] == ["300001.SZ"]
     assert second["jev"]["bias"] == "bull" and second["jev"]["conf"] == 0.5
     assert second["jev"]["scope_cn"] == "A股"

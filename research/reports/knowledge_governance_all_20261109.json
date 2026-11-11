@@ -1,0 +1,98 @@
+{
+ "generated_at": "2026-11-09T02:00:09+08:00",
+ "projects": [
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "units": 286,
+   "meta_lines": 0,
+   "dup_groups": 0,
+   "verified": 286,
+   "verify_pct": 100.0,
+   "avg_chars": 56,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "status": "distilling",
+   "units": 800,
+   "meta_lines": 4,
+   "dup_groups": 4,
+   "verified": 800,
+   "verify_pct": 100.0,
+   "avg_chars": 569,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "units": 1116,
+   "meta_lines": 14,
+   "dup_groups": 4,
+   "verified": 1095,
+   "verify_pct": 98.1,
+   "avg_chars": 213,
+   "junk_units": 871,
+   "junk_pct": 78.0
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "status": "distilling",
+   "units": 108,
+   "meta_lines": 0,
+   "dup_groups": 0,
+   "verified": 108,
+   "verify_pct": 100.0,
+   "avg_chars": 1419,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "status": "distilling",
+   "units": 3,
+   "meta_lines": 0,
+   "dup_groups": 0,
+   "verified": 3,
+   "verify_pct": 100.0,
+   "avg_chars": 222,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  },
+  {
+   "project_id": "视频号学习_全部文案_20261108",
+   "status": "distilling",
+   "units": 11335,
+   "meta_lines": 93,
+   "dup_groups": 64,
+   "verified": 10552,
+   "verify_pct": 93.1,
+   "avg_chars": 644,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  }
+ ],
+ "aggregate": {
+  "units": 13648,
+  "meta_lines": 111,
+  "dup_groups": 72,
+  "verified": 12844,
+  "junk_units": 871,
+  "projects": 6,
+  "verify_pct": 94.1,
+  "junk_pct": 6.4
+ },
+ "metrics": {
+  "units": 13648,
+  "meta_lines": 111,
+  "dup_groups": 72,
+  "verified": 12844,
+  "junk_units": 871,
+  "projects": 6,
+  "verify_pct": 94.1,
+  "junk_pct": 6.4,
+  "verified_pct": 94.1
+ }
+}

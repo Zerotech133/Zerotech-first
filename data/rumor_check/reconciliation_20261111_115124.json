@@ -1,0 +1,85 @@
+{
+ "asof": "2026-11-11 11:51:24",
+ "method": "结构对账底表；fact_type 为纯词法标注（判据见 docs/OSINT方法论结合方案_2026-11-10.md M2/M4）",
+ "summary": {
+  "codes_total": 1,
+  "codes_with_both": 1,
+  "codes_official_only": 0,
+  "codes_rumor_only": 0,
+  "verification_carried_from_prev": 0,
+  "official_rows_total": 7,
+  "rumor_rows_total": 6
+ },
+ "codes": [
+  {
+   "code": "600590",
+   "official_count": 7,
+   "rumor_count": 6,
+   "official_latest": [
+    {
+     "quote": "您好，公司定期报告基于真实业务进展情况进行披露，不存在虚构的情形。业务推进受市场环境、客户需求及交付周期等多重因素影响，具体请以公司披露的信息为准。感谢您的关注。",
+     "ref_id": "sse:600590:14849085497",
+     "ts": "2026-11-02 10:09",
+     "link": "",
+     "fact_type": "neutral",
+     "src": "sse"
+    },
+    {
+     "quote": "您好，李自强先生的学历信息以公司已披露公告为准。公司校企合作主要围绕主业技术研发与人才培养开展，具体合作事项如达到披露标准将及时公告。感谢您的关注。",
+     "ref_id": "sse:600590:57166479553",
+     "ts": "2026-10-26 10:04",
+     "link": "",
+     "fact_type": "neutral",
+     "src": "sse"
+    },
+    {
+     "quote": "您好，目前公司经营正常，不存在应披露而未披露的事项。二级市场股价波动受多种因素影响，请注意投资风险。感谢您的关注。",
+     "ref_id": "sse:600590:382415309651",
+     "ts": "2026-10-14 08:46",
+     "link": "",
+     "fact_type": "neutral",
+     "src": "sse"
+    }
+   ],
+   "rumor_latest": [
+    {
+     "quote": "9.18日复盘（3万实盘贴第4天）",
+     "ref_id": "tgb:T8761289",
+     "ts": "2026-09-20 15:52",
+     "link": "https://www.tgb.cn/a/2vfg5n2bGTo",
+     "fact_type": "neutral",
+     "src": "taoguba"
+    },
+    {
+     "quote": "心电力需求的爆发式增长。&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;泰豪科技：国内柴油发电机组核心企业，截至2026",
+     "ref_id": "tgb:R10650926f834",
+     "ts": "2026-09-20 00:43",
+     "link": "",
+     "fact_type": "neutral",
+     "src": "taoguba"
+    },
+    {
+     "quote": "电源：数据中心柴发大单落地（潍柴动力、泰豪科技）6、富S调样：A50&nbsp;纳入中微、生益",
+     "ref_id": "tgb:R184070df1c76",
+     "ts": "2026-09-18 08:19",
+     "link": "",
+     "fact_type": "fact",
+     "src": "taoguba"
+    }
+   ],
+   "official_by_source": {
+    "sse": 7
+   },
+   "rumor_by_source": {
+    "taoguba": 6
+   },
+   "post_volume": 6,
+   "verification": {
+    "status": "pending",
+    "by": null,
+    "note": null,
+    "admiralty_code": null
+   }
+  }
+ ]
+}

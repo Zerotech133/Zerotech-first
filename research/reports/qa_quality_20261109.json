@@ -1,0 +1,326 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-09T18:20:13+08:00",
+ "date": "2026-11-09",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 0,
+  "success": 0,
+  "fallback": 0,
+  "answerable_rate": 0.0,
+  "guard_pass_rate": 0.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 0.0,
+  "avg_citation_resolvable_rate": 0.0,
+  "avg_inference_ratio": 0.0,
+  "avg_elapsed_seconds": 0.0,
+  "avg_completeness_score": 0.0
+ },
+ "alerts": [
+  {
+   "code": "ANSWERABLE_LOW",
+   "level": "warn",
+   "message": "可答率 0% < 80% 阈值"
+  },
+  {
+   "code": "GUARD_LOW",
+   "level": "warn",
+   "message": "guard 通过率 0% < 80% 阈值"
+  },
+  {
+   "code": "TREND_DOWN",
+   "level": "warn",
+   "message": "可答率较 rolling 7d 均值 93% 下滑 93%（>15%）"
+  }
+ ],
+ "alert_text": "【问答质量告警 2026-11-09】发现 3 项漂移：\n- [ANSWERABLE_LOW] 可答率 0% < 80% 阈值\n- [GUARD_LOW] guard 通过率 0% < 80% 阈值\n- [TREND_DOWN] 可答率较 rolling 7d 均值 93% 下滑 93%（>15%）\n当日：可答率 0%、guard 0%、fallback 0%、样本 2 条\nrolling 7d：日均可答率 79%、guard 79%、fallback 7%（7 天）",
+ "rolling_7d": {
+  "n_days": 7,
+  "answerable_rate": 0.7857,
+  "guard_pass_rate": 0.7857,
+  "fallback_rate": 0.0714,
+  "avg_citations": 1.8571,
+  "avg_elapsed_seconds": 14.3971,
+  "window": 7,
+  "date_from": "2026-11-03",
+  "date_to": "2026-11-09"
+ },
+ "history_entries": 8,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-06",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.2,
+    "avg_elapsed_seconds": 21.9,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_ef78939178",
+     "q2_87eff8d7a3"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-07",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 3.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.195,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_0d7db24320",
+     "q2_4f34cbb059"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-08",
+    "n": 2,
+    "answerable_rate": 0.5,
+    "guard_pass_rate": 0.5,
+    "fallback_rate": 0.5,
+    "avg_citations": 1.0,
+    "avg_citation_resolvable_rate": 0.5,
+    "avg_inference_ratio": 0.25,
+    "avg_elapsed_seconds": 37.885,
+    "avg_completeness_score": 3.0,
+    "guard_pass_count": 1,
+    "sample_ids": [
+     "q2_7274d52791",
+     "q2_1595bd5290"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "FALLBACK_HIGH",
+     "TREND_DOWN"
+    ]
+   },
+   {
+    "date": "2026-11-09",
+    "n": 2,
+    "answerable_rate": 0.0,
+    "guard_pass_rate": 0.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 0.0,
+    "avg_citation_resolvable_rate": 0.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 0.0,
+    "avg_completeness_score": 0.0,
+    "guard_pass_count": 0,
+    "sample_ids": [
+     "q2_4b27690260",
+     "q2_b74f8cebda"
+    ],
+    "alerts": [
+     "ANSWERABLE_LOW",
+     "GUARD_LOW",
+     "TREND_DOWN"
+    ]
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 7,
+   "answerable_rate": 0.7857,
+   "guard_pass_rate": 0.7857,
+   "fallback_rate": 0.0714,
+   "avg_citations": 1.8571,
+   "avg_elapsed_seconds": 14.3971,
+   "window": 7,
+   "date_from": "2026-11-03",
+   "date_to": "2026-11-09"
+  },
+  "updated_at": "2026-11-09T18:20:12+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_4b27690260",
+   "category": "关键数据",
+   "theme": "量化/技术分析",
+   "question": "电气化率的关键参数或阈值有哪些？",
+   "http_status": 503,
+   "elapsed_seconds": 4.78,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 0,
+    "topk": 8,
+    "llm_called": false,
+    "prompt_version": null,
+    "guard_marker": null,
+    "citation_retry": null,
+    "citation_retry_info": null,
+    "cache_hit": false
+   },
+   "guard_meta": {},
+   "answer": "",
+   "answer_length": 0,
+   "citations": [],
+   "citation_count": 0,
+   "citation_resolvable_rate": 0.0,
+   "distinct_cited_units": 0,
+   "support_rate": 0.0,
+   "inference_ratio": 0.0,
+   "guard_passed_recomputed": false,
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units"
+   ],
+   "fallback": false,
+   "refusal": false,
+   "status": "no_evidence",
+   "completeness_score": 1,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改（HTTP 异常）"
+  },
+  {
+   "id": "q2_b74f8cebda",
+   "category": "如何识别",
+   "theme": "其他/综合",
+   "question": "计算机行业板块表现的验证方式与观测窗口是什么？",
+   "http_status": 503,
+   "elapsed_seconds": 0.08,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 0,
+    "topk": 8,
+    "llm_called": false,
+    "prompt_version": null,
+    "guard_marker": null,
+    "citation_retry": null,
+    "citation_retry_info": null,
+    "cache_hit": false
+   },
+   "guard_meta": {},
+   "answer": "",
+   "answer_length": 0,
+   "citations": [],
+   "citation_count": 0,
+   "citation_resolvable_rate": 0.0,
+   "distinct_cited_units": 0,
+   "support_rate": 0.0,
+   "inference_ratio": 0.0,
+   "guard_passed_recomputed": false,
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units"
+   ],
+   "fallback": false,
+   "refusal": false,
+   "status": "no_evidence",
+   "completeness_score": 1,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改（HTTP 异常）"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "attempted": true,
+  "sent": true,
+  "error": null
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261109.json",
+ "elapsed_seconds": 6.51,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

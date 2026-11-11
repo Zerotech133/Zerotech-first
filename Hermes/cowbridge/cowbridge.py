@@ -42,12 +42,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
-HERMES_HOME = Path(r"C:\Users\Administrator\.hermes")
+HERMES_HOME = Path(os.getenv("HERMES_HOME") or str(Path.home() / ".hermes"))
 COW_WORKSPACE = Path.home() / "cow"           # CowAgent 默认 workspace
 BRIDGE_DIR = Path(__file__).resolve().parent
 SHADOW = BRIDGE_DIR / "shadow"

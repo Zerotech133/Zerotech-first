@@ -1,0 +1,106 @@
+﻿kind,message_type,template_id,template_status,template_version,card_or_text,live_count,live_ok,last_seen,owner,m1_priority,note
+dead_letter_redelivery,internal,,internal,,unknown,5789,97,2026-11-08T08:32:36,TBD,P1,重投内部流水，不算独立工作线
+hub,message,,direct_unclassified,,unknown,5086,4635,2026-11-10T11:07:47,TBD,P1,
+hub|deny:silent window,message,,policy_deny,,unknown,2734,0,2026-11-10T07:29:09,TBD,P1,静默窗/闸门拒绝，不算模板
+auto:send_feishu,message,,direct_unclassified,,unknown,1355,1272,2026-11-10T07:29:11,TBD,P1,
+auto:news_collector,message,,direct_unclassified,,unknown,527,518,2026-11-10T07:21:17,TBD,P1,
+auto:push_admin_server,message,,direct_unclassified,,unknown,386,335,2026-10-18T22:51:18,TBD,P1,
+comm_patrol,message,,direct_text,,text,257,256,2026-11-10T09:06:41,TBD,P1,纯文本发送，非卡片模板
+daily:report,message,daily:report,candidate,unversioned,interactive,122,110,2026-11-10T03:00:07,TBD,P1,注册候选；M0 需定 version/owner
+subscribe:quote_move,message,,direct_unclassified,,unknown,112,74,2026-11-05T10:57:53,TBD,P1,
+watch:realtime,message,,direct_unclassified,,unknown,78,78,2026-11-10T10:33:31,TBD,P1,
+daily:report|deny:silent window,message,,policy_deny,,unknown,77,0,2026-11-10T03:00:06,TBD,P1,静默窗/闸门拒绝，不算模板
+daily:alert,message,daily:alert,candidate,unversioned,interactive,59,56,2026-11-09T08:25:09,TBD,P1,注册候选；M0 需定 version/owner
+auto:daily_report,message,,direct_unclassified,,unknown,45,43,2026-11-10T03:00:07,TBD,P1,
+subscribe:daily_batch,message,,direct_unclassified,,unknown,35,31,2026-11-09T15:30:07,TBD,P1,
+auto:morning_report,message,,direct_unclassified,,unknown,34,30,2026-11-10T07:03:46,TBD,P1,
+ops:health_notify,message,,direct_unclassified,,unknown,33,33,2026-11-10T10:00:14,TBD,P1,
+jev_feed_verify,message,,direct_unclassified,,unknown,29,26,2026-11-10T00:15:06,TBD,P1,
+daily:zhuge_brief,message,,direct_unclassified,,unknown,21,20,2026-11-10T08:55:03,TBD,P1,
+dead_letter_alert,message,,direct_text,,text,21,19,2026-11-08T07:56:24,TBD,P1,纯文本发送，非卡片模板
+auto:push_digest,message,,direct_unclassified,,unknown,19,8,2026-11-10T08:04:41,TBD,P2,
+auto:__main__,message,,direct_unclassified,,unknown,17,0,2026-11-07T00:54:12,TBD,P2,
+watch:alert,message,,direct_unclassified,,unknown,14,11,2026-11-06T09:25:59,TBD,P2,
+auto:s4u_alert,message,,direct_unclassified,,unknown,11,11,2026-11-10T03:18:19,TBD,P2,
+matrix:test,message,,direct_unclassified,,unknown,11,3,2026-10-19T04:14:49,TBD,P2,
+auto:kb_daily_push,message,,direct_unclassified,,unknown,9,2,2026-11-05T17:45:10,TBD,P2,
+auto:kg_brief,message,,direct_unclassified,,unknown,8,8,2026-11-07T06:38:57,TBD,P2,
+inbound:feed,message,inbound:feed,registered,unversioned,interactive,8,6,2026-11-05T07:15:58,TBD,P1,已注册但无显式版本
+auto:jev_gate,message,,direct_unclassified,,unknown,7,7,2026-10-17T03:04:11,TBD,P2,
+auto:devtask,message,,direct_unclassified,,unknown,6,6,2026-10-17T08:36:25,TBD,P2,
+auto:zhuge_brief_push,message,,direct_unclassified,,unknown,6,5,2026-11-06T23:42:58,TBD,P2,
+subscribe:alert_signal,message,,direct_unclassified,,unknown,6,6,2026-10-18T15:30:15,TBD,P2,
+auto:feishu_bot_ws,message,,direct_unclassified,,unknown,5,4,2026-10-30T00:51:52,TBD,P2,
+auto:jev_risk_alert,message,,direct_unclassified,,unknown,5,5,2026-11-09T23:05:51,TBD,P2,
+daily_health_alert,message,,direct_unclassified,,unknown,5,5,2026-11-09T18:10:08,TBD,P2,
+ops:health_notify|deny:silent window,message,,policy_deny,,unknown,5,0,2026-11-09T23:05:50,TBD,P2,静默窗/闸门拒绝，不算模板
+w3:selftest,message,,direct_unclassified,,unknown,5,4,2026-10-25T06:21:15,TBD,P2,
+auto:subscribe,message,,direct_unclassified,,unknown,4,0,2026-10-28T16:48:34,TBD,P2,
+comm_ticket,message,,direct_unclassified,,unknown,4,4,2026-10-26T13:23:43,TBD,P2,
+ops:notice,message,,direct_unclassified,,unknown,4,4,2026-10-24T15:57:33,TBD,P2,
+auto:-c,message,,direct_unclassified,,unknown,3,3,2026-10-18T23:47:42,TBD,P2,
+decision:announcement,confirm,decision:announcement,candidate,unversioned,interactive,3,3,2026-10-26T20:04:59,TBD,P1,注册候选；M0 需定 version/owner
+kb_morning_brief,message,,direct_unclassified,,unknown,3,3,2026-11-03T08:20:20,TBD,P2,
+auto:_check_feishu_channels,message,,direct_unclassified,,unknown,2,2,2026-11-01T23:48:54,TBD,P2,
+auto:intel_source_health,message,,direct_unclassified,,unknown,2,2,2026-11-08T13:05:20,TBD,P2,
+auto:jev_chart,message,auto:jev_chart,candidate,unversioned,interactive,2,1,2026-10-26T09:08:41,TBD,P1,注册候选；M0 需定 version/owner
+auto:send_watch_closeout_incident,message,,direct_unclassified,,unknown,2,1,2026-11-06T23:53:20,TBD,P2,
+comm_diag_v1,message,,direct_unclassified,,unknown,2,2,2026-10-21T16:53:57,TBD,P2,
+daily:news_digest,message,,direct_unclassified,,unknown,2,2,2026-10-15T08:30:04,TBD,P2,
+daily:zhuge_brief|deny:silent window,message,,policy_deny,,unknown,2,0,2026-11-06T23:42:55,TBD,P2,静默窗/闸门拒绝，不算模板
+decision:alert,confirm,,direct_unclassified,,unknown,2,0,2026-10-19T09:40:27,TBD,P2,
+push_admin|hub-test,message,,direct_unclassified,,unknown,2,1,2026-10-17T06:58:29,TBD,P2,
+qa_quality_alert,message,,direct_unclassified,,unknown,2,2,2026-11-09T18:20:13,TBD,P2,
+quant:watch_alert,message,,direct_unclassified,,unknown,2,0,2026-10-19T13:25:16,TBD,P2,
+sample:zhuge_brief|deny:silent window,message,,policy_deny,,unknown,2,0,2026-10-30T01:37:49,TBD,P2,静默窗/闸门拒绝，不算模板
+w41:deadpayload_selftest,message,,direct_unclassified,,unknown,2,0,2026-10-26T08:53:32,TBD,P2,
+watch:closeout|deny:silent window,message,,policy_deny,,unknown,2,0,2026-11-06T23:53:19,TBD,P2,静默窗/闸门拒绝，不算模板
+acad1-decision,message,,direct_unclassified,,unknown,1,1,2026-11-07T08:55:00,TBD,P2,
+auto:-,message,,direct_unclassified,,unknown,1,0,2026-11-01T23:54:35,TBD,P2,
+auto:_finish_k131_merge,message,,direct_unclassified,,unknown,1,1,2026-10-17T06:56:21,TBD,P2,
+auto:_w6_prod_sink,message,,direct_unclassified,,unknown,1,0,2026-11-04T15:15:34,TBD,P2,
+auto:_w6_targets,message,,direct_unclassified,,unknown,1,0,2026-11-04T15:15:42,TBD,P2,
+auto:_w6_targets2,message,,direct_unclassified,,unknown,1,0,2026-11-04T15:15:50,TBD,P2,
+auto:alert_push_watchdog,message,,direct_unclassified,,unknown,1,1,2026-11-08T07:00:38,TBD,P2,
+auto:daily_tasks_health,message,,direct_unclassified,,unknown,1,1,2026-11-06T23:48:25,TBD,P2,
+auto:kp4_diag_card,message,,direct_unclassified,,unknown,1,1,2026-10-17T08:28:48,TBD,P2,
+auto:push_digest|deny:silent window,message,,policy_deny,,unknown,1,0,2026-10-26T02:19:19,TBD,P2,静默窗/闸门拒绝，不算模板
+auto:watch_24h_probe,message,,direct_unclassified,,unknown,1,0,2026-11-05T12:44:38,TBD,P2,
+comm_diag_verify,message,,direct_unclassified,,unknown,1,1,2026-10-21T16:54:46,TBD,P2,
+comm_drilldown_test,message,,direct_unclassified,,unknown,1,1,2026-10-21T17:06:07,TBD,P2,
+comm_intake_diag,message,,direct_unclassified,,unknown,1,1,2026-10-21T16:53:04,TBD,P2,
+daily_health_alert|deny:silent window,message,,policy_deny,,unknown,1,0,2026-11-06T23:48:17,TBD,P2,静默窗/闸门拒绝，不算模板
+jev_feed_verify_probe,message,,direct_unclassified,,unknown,1,0,2026-11-08T02:54:45,TBD,P2,
+jev_feed_verify_probe|deny:silent window,message,,policy_deny,,unknown,1,0,2026-11-08T02:54:27,TBD,P2,静默窗/闸门拒绝，不算模板
+kb:daily_card|deny:silent window,message,,policy_deny,,unknown,1,0,2026-11-01T23:54:34,TBD,P2,静默窗/闸门拒绝，不算模板
+km_card,message,km_card,registered,unversioned,interactive,1,1,2026-10-14T01:29:40,TBD,P1,已注册但无显式版本
+matrix:us|deny:silent window,message,,policy_deny,,unknown,1,0,2026-10-18T23:41:51,TBD,P2,静默窗/闸门拒绝，不算模板
+ops:alert_push_watchdog,message,,direct_unclassified,,unknown,1,1,2026-11-09T08:00:04,TBD,P2,
+ops:alert_push_watchdog|deny:silent window,message,,policy_deny,,unknown,1,0,2026-11-08T07:00:37,TBD,P2,静默窗/闸门拒绝，不算模板
+push_admin|fallback-test,message,,direct_unclassified,,unknown,1,1,2026-10-17T06:58:45,TBD,P2,
+push_admin|hub-replay,message,,direct_unclassified,,unknown,1,1,2026-10-17T09:01:06,TBD,P2,
+selftest,message,,direct_unclassified,,unknown,1,1,2026-10-24T22:37:26,TBD,P2,
+w3:probe,message,,direct_unclassified,,unknown,1,0,2026-10-25T06:15:15,TBD,P2,
+watch:notice,message,,direct_unclassified,,unknown,1,1,2026-11-04T15:26:45,TBD,P2,
+ai_finance_daily,message,ai_finance_daily,registered,unversioned,interactive,0,0,,TBD,P1,已注册但无显式版本
+alert,message,alert,registered,unversioned,interactive,0,0,,TBD,P1,已注册但无显式版本
+announcement,message,announcement,registered,unversioned,interactive,0,0,,TBD,P1,已注册但无显式版本
+buy_point,message,,orphan,,unknown,0,0,,TBD,P3,
+card,message,,orphan,,unknown,0,0,,TBD,P3,
+connect_failed,message,,orphan,,unknown,0,0,,TBD,P3,
+deadline_watch,message,,orphan,,unknown,0,0,,TBD,P3,
+decision:%s,confirm,,orphan,,unknown,0,0,,TBD,P3,
+driver_missing,message,,orphan,,unknown,0,0,,TBD,P3,
+fallback_unavailable,message,,orphan,,unknown,0,0,,TBD,P3,
+jev_feed,message,,orphan,,unknown,0,0,,TBD,P3,
+matrix:%s,message,,orphan,,unknown,0,0,,TBD,P3,
+osint:cookie_expired,message,osint:cookie_expired,candidate,unversioned,interactive,0,0,,TBD,P1,注册候选；M0 需定 version/owner
+osint:cookie_updated,message,,direct_text,,text,0,0,,TBD,P3,纯文本发送，非卡片模板
+osint:daily_report,message,,direct_text,,text,0,0,,TBD,P3,纯文本发送，非卡片模板
+osint:dead_letter,message,osint:dead_letter,candidate,unversioned,interactive,0,0,,TBD,P1,注册候选；M0 需定 version/owner
+query_failed,message,,orphan,,unknown,0,0,,TBD,P3,
+quota_block:km_card,message,,orphan,,unknown,0,0,,TBD,P3,
+subscription_expiring,message,subscription_expiring,registered,unversioned,interactive,0,0,,TBD,P1,已注册但无显式版本
+subscription_guide,message,subscription_guide,registered,unversioned,interactive,0,0,,TBD,P1,已注册但无显式版本
+tp,message,,direct_text,,text,0,0,,TBD,P3,纯文本发送，非卡片模板
+watch_strategy,message,watch_strategy,registered,unversioned,interactive,0,0,,TBD,P1,已注册但无显式版本

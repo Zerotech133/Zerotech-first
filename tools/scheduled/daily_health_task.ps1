@@ -3,7 +3,7 @@
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Continue'
 $repo = 'C:\aios'
-$python = 'C:\项目\py312\python.exe'
+$python = 'C:\Program Files\Python311\python.exe'
 $log = 'C:\Temp\zero_daily_health.log'
 $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 try {
@@ -17,3 +17,4 @@ try {
     ($stamp + ' daily_health EXCEPTION: ' + $_.Exception.Message) | Out-File $log -Append -Encoding utf8
     exit 1
 }
+

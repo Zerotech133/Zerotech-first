@@ -188,11 +188,22 @@ def main():
     ap.add_argument("--limit", type=int, default=60, help="自动选票上限")
     ap.add_argument("--ps", type=int, default=GUBA_PS, help="每只票拉多少条帖子")
     ap.add_argument("--dry", action="store_true", help="只列清单，不请求不写盘")
+    ap.add_argument("--force", action="store_true",
+                    help="允许给非当日写快照（危险：会把查询时刻榜单错标成历史日，2026-11-10 判例）")
     a = ap.parse_args()
 
     sys.path.insert(0, os.path.join(STATION, "portal"))
     import jev_graph as G
     day = G.resolve_day(a.day or None)
+    # 同日守卫（2026-11-10 判例）：社交榜单是查询时刻实时值，不接日期参数。
+    # 给历史日写盘 = 把今天的热度错标成历史日（假数据）。历史快照只能前向累积。
+    # 守卫放在取数前，避免拒写还白拉一轮网络。
+    if not a.force and not a.dry:
+        _today = dt.date.today().strftime("%Y%m%d")
+        if day != _today:
+            log("拒绝取数/写盘：--day %s 不是今天（%s），榜单是查询时刻实时值，写历史日=假数据。"
+                "确需覆盖请加 --force。" % (day, _today))
+            return 2
 
     if a.codes:
         codes = [x.strip().upper() for x in a.codes.split(",") if x.strip()]

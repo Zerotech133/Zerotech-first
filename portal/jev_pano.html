@@ -272,7 +272,7 @@
       // 判定明细 top5
       var items=(j.items||[]).slice(0,5);
       if(items.length){
-        h+='<table class="ui-table" style="margin-top:8px"><thead><tr><th>时间</th><th>方向</th><th>conf</th><th>标题</th><th>命中依据</th><th>角色</th><th>来源</th></tr></thead><tbody>';
+        h+='<table class="ui-table" style="margin-top:8px"><thead><tr><th>时间</th><th>方向</th><th title="conf 已证伪（AUC 0.414 反相关：高 conf 反而更可能错）· 仅原始留痕，不参与决策">conf⚠</th><th>标题</th><th>命中依据</th><th>角色</th><th>来源</th></tr></thead><tbody>';
         var VN={text_confirmed:["文本确证","var(--color-up)"],industry_only:["板块级","var(--os-amber)"],code_only:["无支撑","var(--color-err)"],none:["—","var(--gray-5)"]};
         items.forEach(function(it){
           var b=it.basis||{},tm=b.terms||{};

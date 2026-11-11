@@ -1,0 +1,31 @@
+{
+ "ok": true,
+ "sent": true,
+ "kind": "daily:report",
+ "channel": "interactive",
+ "date": "20261111",
+ "sent_at": "2026-11-11T17:45:06+08:00",
+ "summary": {
+  "title": "零界知识库日报 2026-11-11",
+  "headline": "研报简报 20261101：6 篇研报 · 15 条知识单元",
+  "cards_count": 5,
+  "candidates_count": 1,
+  "reports_reviewed": 3,
+  "rejected_count": 2,
+  "strategy_takeaway": "策略线暂停新因子投入，除非出现「中性化 + walk-forward + 成本/容量」三关都过的新信号；",
+  "portal_links": [
+   {
+    "label": "📚 学习卡 / 今日简报",
+    "url": "http://127.0.0.1:8734/kb_reports.html"
+   },
+   {
+    "label": "🧠 研报候选面板",
+    "url": "http://127.0.0.1:8734/selection.html"
+   },
+   {
+    "label": "📊 知识入库状态",
+    "url": "http://127.0.0.1:8734/kb_ingest.html"
+   }
+  ]
+ }
+}

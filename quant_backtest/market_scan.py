@@ -141,37 +141,82 @@ def is_st_pit_blocked(code, day, intervals=None):
     return False
 
 
-def score_3buy(close, zg, vr, bei, bei2):
-    """三买评分（0-100，老田"评分取前十"规律）：位置贴近 40 + 量能 30 + 背驰 30。
+# 三买评分权重（2026-11-10 老田：位置 40/30/30 → 55/25/20）
+# ------------------------------------------------------------
+# 依据：位置分桶证据（三窗口）——close/zg−1 ≤2% 是唯一三年都为正的桶
+# （后20日 +1.44% / +1.06% / +6.49%），>20% 三年全负（−2.99% / −0.36% / −3.13%）。
+# 位置既然有单调性，就把它的权重从 40 提到 55；量能/背驰在 95 桶检验里从未通过
+# |t|≥2（背驰链路甚至 100% 空），降到 25/20。
+# 只改这里、不散落到函数里：改完必须重扫（评分是扫描器算好落缓存的）。
+# 2026-11-10 老田要求测 55/25/20，实测否证：IN 122bp +8.38%→+1.06%、OOS +29.62%→+26.25%
+# （PRE 不变：候选少于槽位排序不触发）。回退 40/30/30，参数保留可复测。
+SCORE_W = {"pos": 40.0, "vol": 30.0, "bei": 30.0}
+# 各维内部档位的相对比例（沿用旧结构，只按权重缩放，避免「权重一改档位也跟着变」）
+# 2026-11-10 老田批准（三买口径修正+背驰落地）：位置分基准从「信号日收盘
+# close/zg−1」改「回踩笔低点 low/zg−1」（20 课定理原文：三买的判据是回试
+# 笔低点不破 ZG，贴近度就该量回踩低点，不是信号日收盘——收盘可能已经反弹
+# 离开低点，中位 +14.1% 的旧口径其实量的是「反弹幅度」不是「回踩质量」）。
+_POS_RATIO = (1.00, 0.80, 0.60, 0.35, 0.20)  # ≤2% / ≤5% / ≤10% / ≤20% / >20%
+_VOL_RATIO = (1.00, 0.80, 0.53, 0.27)  # ≥1.5 / ≥1.0 / ≥0.7 / <0.7
+# 背驰分三源拆分（2026-11-10 背驰落地）：bei=回踩笔力度盘整背驰（P5）、
+# bei2=回踩vs前序同向腿力度衰竭（P6-b）、bei24=24课 MACD 柱面积背驰（新）。
+# 任一为 True 即得对应份额；三个字段 None（不判）不计分不扣分。
+_BEI_SPLIT = (0.40, 0.30, 0.30)  # bei / bei2 / bei24
 
-    - 位置：收盘距中枢上沿 zg 的回踩贴近度（贴近=洗盘充分·远离=追高风险）
+
+def score_weights_tag():
+    """一行摘要，写进事件缓存 meta 供事后核对口径（换了权重没重扫=静默错配）。"""
+    return "pos%d/vol%d/bei%d(%d%d%d)/low-base" % (
+        SCORE_W["pos"],
+        SCORE_W["vol"],
+        SCORE_W["bei"],
+        int(_BEI_SPLIT[0] * 10),
+        int(_BEI_SPLIT[1] * 10),
+        int(_BEI_SPLIT[2] * 10),
+    )
+
+
+def score_3buy(low, zg, vr, bei, bei2, bei24=None):
+    """三买评分（0-100，老田"评分取前十"规律）：位置 + 量能 + 背驰。
+
+    - 位置：回踩笔低点距中枢上沿 zg 的贴近度（20 课口径：三买=回试笔
+      低点不破 ZG，贴近=洗盘充分·远离=追高风险）。low 传回踩笔低点
+      （=信号 price），不再用信号日收盘。
     - 量能：信号日成交额 / 20 日均额（量比·放量过中枢优）
-    - 背驰：bei=回踩笔盘整背驰 18 分 · bei2=回踩vs离开力度背驰 12 分
+    - 背驰三源：bei=回踩笔盘整背驰 · bei2=回踩vs离开力度背驰 ·
+      bei24=24课 MACD 柱面积背驰（None 不判不计分）
+    权重见 SCORE_W（40/30/30）；背驰内部分 _BEI_SPLIT；内部档位按
+    _*_RATIO 比例缩放，总和恒 100。
     """
-    if not zg or zg <= 0:
+    if not zg or zg <= 0 or low is None:
         return None
-    t = close / zg - 1.0
+    t = low / zg - 1.0
     if t <= 0.02:
-        sp = 40
+        r = _POS_RATIO[0]
     elif t <= 0.05:
-        sp = 32
+        r = _POS_RATIO[1]
     elif t <= 0.10:
-        sp = 24
+        r = _POS_RATIO[2]
     elif t <= 0.20:
-        sp = 14
+        r = _POS_RATIO[3]
     else:
-        sp = 8
+        r = _POS_RATIO[4]
+    sp = SCORE_W["pos"] * r
     if vr is None:
-        sv = 15
+        sv = SCORE_W["vol"] * 0.5  # 无成交额数据：给中位，不奖不罚
     elif vr >= 1.5:
-        sv = 30
+        sv = SCORE_W["vol"] * _VOL_RATIO[0]
     elif vr >= 1.0:
-        sv = 24
+        sv = SCORE_W["vol"] * _VOL_RATIO[1]
     elif vr >= 0.7:
-        sv = 16
+        sv = SCORE_W["vol"] * _VOL_RATIO[2]
     else:
-        sv = 8
-    sb = (18 if bei else 0) + (12 if bei2 else 0)
+        sv = SCORE_W["vol"] * _VOL_RATIO[3]
+    sb = SCORE_W["bei"] * (
+        (_BEI_SPLIT[0] if bei else 0.0)
+        + (_BEI_SPLIT[1] if bei2 else 0.0)
+        + (_BEI_SPLIT[2] if bei24 else 0.0)
+    )
     return round(sp + sv + sb)
 
 
@@ -187,14 +232,20 @@ def scan_stock(args):
     b = pd.read_parquet(fp).sort_values("trade_date").reset_index(drop=True)
     if len(b) < WARMUP // 2:
         return []
-    r = b["pct_chg"] / 100.0
-    r.iloc[0] = 0.0
-    kfac = (1.0 + r).cumprod() / b["close"]
+    # 2026-11-10：本函数不再需要 pct_chg / 复权因子——四价一律用原始价（见下），
+    # 故 11-09 那批「210/5816 只缺 pct_chg 就 KeyError」的崩溃面自动消失。
+    # 2026-11-10 修：四价量纲必须统一。
+    # 旧版 o/h/l 用原始价、唯独 c 乘 kfac（复权归一化，上市首日≈1），于是
+    # score_3buy(close, zg) 里 close/zg-1 ≈ 1.9/158-1 = −98.8%，恒 ≤0.02
+    # → 位置分恒 40 分，40% 的权重变成常数，"最看好 5 只"实际只按量能+背驰排序。
+    # 结构层（包含处理/分型/笔/中枢）只用 h/l，zg/zd 一直是原始价量纲；
+    # 故这里把 c 也改回原始价——信号（日期/类型/zg）逐条不变，只有评分变，
+    # 且与引擎侧 px_raw() 的比较口径继续一致。
     amt = b["amount"].astype(float).tolist() if "amount" in b.columns else None
     bars_all = [
         {"dt": int(t), "o": float(o), "h": float(h), "l": float(l), "c": float(c)}
         for t, o, h, l, c in zip(
-            b["trade_date"], b["open"], b["high"], b["low"], b["close"] * kfac
+            b["trade_date"], b["open"], b["high"], b["low"], b["close"]
         )
     ]
     date2i = {int(t): i for i, t in enumerate(b["trade_date"])}
@@ -209,19 +260,32 @@ def scan_stock(args):
             w = amt[i - 19 : i + 1]
             m = sum(w) / 20.0
             vr = amt[i] / m if m > 0 else None
-        close = bars_all[i]["c"]
         out = {}
         for sg in (chan_analyze(seg) or {}).get("signals") or []:
             sc = None
             if sg["type"] == "3买":
-                sc = score_3buy(close, sg.get("zg"), vr, sg.get("bei"), sg.get("bei2"))
+                # 位置分基准=回踩笔低点（sg["price"] 即回踩笔终点价，20 课
+                # 口径）；背驰分三源：力度 bei/bei2 + 24课 MACD bei24
+                sc = score_3buy(
+                    sg.get("price"), sg.get("zg"), vr,
+                    sg.get("bei"), sg.get("bei2"), sg.get("bei24"),
+                )
             out[(code, sg["type"])] = {
                 "dt": int(sg["dt"]),
+                # 3买 的 price=回踩笔低点（评分位置分基准，20 课口径）；
+                # 其他类型 price=信号笔终点价。落盘供事后审计评分。
+                "price": sg.get("price"),
                 "zg": sg.get("zg"),
                 "zd": sg.get("zd"),
                 "vr": vr,
                 "bei": sg.get("bei"),
                 "bei2": sg.get("bei2"),
+                "bei24": sg.get("bei24"),
+                # 2026-11-11 补齐（任务#100 发现）：chanlun_signal 给 1买/1卖 生成的
+                # tbe24（24课趋势背驰）/mbei（MACD背驰）此前未落事件缓存 → 一买档
+                # 趋势背驰前瞻验证不可行。纯字段增补，不改评分与信号。
+                "tbe24": sg.get("tbe24"),
+                "mbei": sg.get("mbei"),
                 "score": sc,
             }
         return out
@@ -261,7 +325,9 @@ def scan_market(d0, d1, workers=None, progress=None):
     win = [d for d in cal_all if d0 <= d <= d1]
 
     tasks = [(s, d0, d1, init_day, win) for s in stocks]
-    n = workers or min(24, os.cpu_count() or 8)
+    # 硬限 16：32 核机器上不能把 CPU 打满，留一半给其他任务
+    n = workers or min(16, os.cpu_count() or 8)
+    n = max(1, min(n, 16))
     events = []
     t0 = time.time()
     ctx = get_context("spawn")
@@ -284,6 +350,9 @@ def scan_market(d0, d1, workers=None, progress=None):
         "workers": n,
         "seconds": round(time.time() - t0, 1),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        # 评分口径指纹：改了 SCORE_W 却没重扫 → 回测吃的是旧评分，
+        # 这种事在本项目已经发生过（参数看着传了、实际没生效）。写进产物就查得出来。
+        "score_weights": score_weights_tag(),
     }
     os.makedirs(OUT_DIR, exist_ok=True)
     fp = os.path.join(OUT_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))

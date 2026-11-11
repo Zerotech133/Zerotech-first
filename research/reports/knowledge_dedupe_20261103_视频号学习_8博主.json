@@ -1,14 +1,14 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-06T23:48:18+08:00",
+ "generated_at": "2026-11-11T20:00:13+08:00",
  "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
  "mode": "apply",
  "dry_run": false,
  "project": "视频号学习_8博主",
  "source": {
   "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_draft.jsonl",
-  "sha256": "3742dfad5976eb52552a887344848d50fcddc07e444a4a169035a8befe04243f",
+  "sha256": "59cc9d9a7b7dc6ea453c9ede2df4e2ea71a17ba127b30f9a81bf3317e0b37428",
   "bytes": 2114196
  },
  "policy": {
@@ -37,7 +37,7 @@
    "21": 1,
    "19": 1
   },
-  "output_sha256": "3fed1510813a9ad7ecd72ea5f88b6fee891ff4636b2a9f7c6a9c768d706710a0"
+  "output_sha256": "e25f791240fdd8dd836a2140458e60837f209e2c1420830df30a19fb97f132cd"
  },
  "duplicates": [
   {
@@ -589,7 +589,7 @@
  "notes": [
   "任务预期 -218 基于旧审计的 1018 单元快照；当前 30_知识单元 文件经 re-extraction 扩充为 1018 行（其中元数据行 148），实际重复 218 行（占比 25.1%，与旧审计 21.4% 一致）；按比例口径当前应约 -407，故实际值与旧预期 218 不同。"
  ],
- "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_8博主_units_draft.jsonl.20261106_234818.v1bak",
+ "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_8博主_units_draft.jsonl.20261111_200013.v1bak",
  "applied": true,
  "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。",
  "idempotent_noop": false

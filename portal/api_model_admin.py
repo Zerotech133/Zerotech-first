@@ -14,6 +14,7 @@
 退出码约定：端口被占用（已有实例）→ 静默 exit 0（计划任务重复触发自愈，同 8091）。
 """
 import json
+import os
 import shutil
 import sys
 import time
@@ -22,6 +23,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _audit_cfg_path():
+    """审计模型配置：vault 优先（2026-11-10 L2 迁移），兼容旧 portal 明文。"""
+    p = os.environ.get("AUDIT_AI_CONFIG_PATH") or r"C:\项目\_vault\secrets\portal_audit_ai_config.json"
+    if Path(p).exists():
+        return Path(p)
+    return ROOT / "portal" / "audit_ai_config.json"
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 import router as router_mod  # noqa: E402
@@ -65,7 +74,7 @@ def _loaded_models():
 
 def _cloud_status():
     """云端通道：key 配置态 + 熔断器状态（不发真请求，毫秒级）"""
-    key_file = ROOT / "portal" / "audit_ai_config.json"
+    key_file = _audit_cfg_path()
     has_key = False
     key_src = ""
     try:
@@ -265,7 +274,7 @@ GLM_ENDPOINT = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
 def _glm_key():
     """包年 key 优先（与 _cloud_status/引擎 GLMCloudLLM 同口径）"""
     try:
-        kf = ROOT / "portal" / "audit_ai_config.json"
+        kf = _audit_cfg_path()
         if kf.exists():
             zk = json.loads(kf.read_text(encoding="utf-8")).get("zhipu_key", "")
             if zk:

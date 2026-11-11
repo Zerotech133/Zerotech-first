@@ -110,7 +110,8 @@ TUNED_ENV = {
     # `ollama ps` 的 PROCESSOR 列是唯一能看穿它的判据。
     # 2026-10-18 的勘误文档已把它列为 watchdog 额外设置的第 7 项，本启动器此前漏了。
     "OLLAMA_VULKAN": "1",
-    "OLLAMA_CONTEXT_LENGTH": "16384",  # 2026-10-24 全仓收口（原 65536），与 watchdog 同值
+    # 2026-11-11 16384->32768 (lao tian approved): executor audit job (11 fg schemas + persona + prompt) exceeds 16k; q8_0+FLASH fixed f16 KV corruption; 35b deleted; 127GB RAM. 4-place sync same day.
+    "OLLAMA_CONTEXT_LENGTH": "32768",  # 2026-10-24 全仓收口（原 65536），与 watchdog 同值
     # 2026-10-24 收口：本启动器此前缺 MAX_LOADED_MODELS / DEBUG，且 KEEP_ALIVE 与
     # 看门狗不一致（2h vs 30m）——同一个服务换个入口拉起就是另一套参数，
     # 重启一次丢两项（当天实际丢了 MAX_LOADED_MODELS=3 与 DEBUG=1）。现全部对齐看门狗。
@@ -193,6 +194,7 @@ def server_config():
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except Exception:
+            logging.getLogger(__name__).debug("swallowed exception at line 195")
             continue
         # config 是**启动那一刻**写的一行，服务跑久后它早被挤出文件尾部
         # （tuned.log 20 分钟就到 1.1MB），所以头尾都要扫；中间是请求日志，无 config。

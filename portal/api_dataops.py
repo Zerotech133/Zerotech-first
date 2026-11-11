@@ -23,9 +23,10 @@ import sqlite3
 import time
 import logging
 
-QB = r"C:/项目/老田的AI助手/quant_backtest"
+STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+QB = os.path.join(STATION, "quant_backtest")
 DATA = os.path.join(QB, "data")
-RUNS = r"C:/aios/automation_runs"
+RUNS = os.path.join(STATION, "automation_runs")
 TASKS_DIR = r"C:/Windows/System32/Tasks"
 SEED_QUEUE_LEN = 11   # 与 xq_seed_auto.SEED_QUEUE 同步（20000..230000）
 
@@ -835,7 +836,7 @@ NODE_LAYERS = ["服务", "采集", "数据池", "管道", "消费"]
 NODES = [
     # 服务层
     {"id": "svc:portal_api", "layer": "服务", "name": "门户 API 8091", "x": 90,  "y": 60},
-    {"id": "svc:nginx",      "layer": "服务", "name": "Nginx 8080",    "x": 300, "y": 60},
+    {"id": "svc:nginx",      "layer": "服务", "name": "Nginx 8734",    "x": 300, "y": 60},
     {"id": "svc:hermes",     "layer": "服务", "name": "Hermes 8787",   "x": 620, "y": 60},
     {"id": "svc:ollama",     "layer": "服务", "name": "Ollama 11434",  "x": 1010, "y": 60},
     # 采集层（taskgroup 聚合节点，下钻展开明细）
@@ -900,7 +901,7 @@ EDGES = [
     ("page:home", "page:os", "复用首页 API", False),
 ]
 
-_SVC_PORTS = {"svc:portal_api": 8091, "svc:nginx": 8080, "svc:hermes": 8787, "svc:ollama": 11434}
+_SVC_PORTS = {"svc:portal_api": 8091, "svc:nginx": 8734, "svc:hermes": 8787, "svc:ollama": 11434}
 
 # agent_platform 三账本（消费层 ledger 节点：健康探测与实体下钻共用）
 AP_DATA = os.path.join(os.path.dirname(QB), "agent_platform", "data")

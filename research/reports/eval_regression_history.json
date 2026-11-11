@@ -58,8 +58,37 @@
    "tolerance": 0.02,
    "ok": true,
    "alerts": []
+  },
+  {
+   "run_at": "2026-11-09T09:00:11+08:00",
+   "date_tag": "20261102",
+   "set_id": "eval_set_20261101_v3",
+   "content_hash": "6b778e2c4c66d4b3b8c37a5184dd1741b8aa0015c1575c8d54618a4584f89787",
+   "current": {
+    "precision_at_k": 0.802,
+    "ndcg_at_k": 0.8549,
+    "coverage": 0.8931
+   },
+   "baseline": {
+    "precision_at_k": 0.8,
+    "ndcg_at_k": 0.857,
+    "coverage": 0.893
+   },
+   "deltas": {
+    "precision_at_k": 0.002,
+    "ndcg_at_k": -0.0021,
+    "coverage": 0.0001
+   },
+   "status": {
+    "precision_at_k": "ok",
+    "ndcg_at_k": "ok",
+    "coverage": "ok"
+   },
+   "tolerance": 0.02,
+   "ok": true,
+   "alerts": []
   }
  ],
- "updated_at": "2026-11-02T02:49:06+08:00",
- "total_runs": 2
+ "updated_at": "2026-11-09T09:00:11+08:00",
+ "total_runs": 3
 }

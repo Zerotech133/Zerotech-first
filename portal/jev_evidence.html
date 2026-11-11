@@ -276,7 +276,7 @@
               if(!dd.bias){h+='<span class="mini">'+esc(r.reason||"未判定")+'</span>'}
               else{
                 h+='<span class="bias-chip '+esc(dd.bias)+'">'+esc(dd.bias_cn||"")+'</span> '
-                  +'置信 <b>'+esc(dd.conf!=null?Number(dd.conf).toFixed(2):"—")+'</b> · '
+                  +'<span title="conf 已证伪（AUC 0.414 反相关）· 仅留痕不参与决策">置信⚠</span> <b>'+esc(dd.conf!=null?Number(dd.conf).toFixed(2):"—")+'</b> · '
                   +esc(dd.event_cn||dd.event_type||"—")+' · 影响'+esc(dd.impact_cn||"—")
                   +' · 周期'+esc(dd.horizon||"—")+'<br>';
                 var pr=dd.prob||{};

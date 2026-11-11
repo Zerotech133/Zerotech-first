@@ -43,6 +43,7 @@ import logging
 # safe_path=true 时脚本目录不入 sys.path：把本树根加入 path（helper 同目录）
 import sys as _sys
 from pathlib import Path as _Path
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 for _p in _Path(__file__).resolve().parents:
     if (_p / "safe_urlopen.py").exists():
         _sys.path.insert(0, str(_p))
@@ -137,10 +138,8 @@ def _heartbeat(tag=""):
         if parent:
             os.makedirs(parent, exist_ok=True)
         stamp = time.strftime("%Y-%m-%dT%H:%M:%S") + (" " + tag if tag else "")
-        tmp = _HEARTBEAT_FILE + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
+        with atomic_io.replacing(_HEARTBEAT_FILE) as f:
             f.write(stamp + "\n")
-        os.replace(tmp, _HEARTBEAT_FILE)
     except Exception as exc:
         _log("heartbeat write failed: %s" % exc)
 

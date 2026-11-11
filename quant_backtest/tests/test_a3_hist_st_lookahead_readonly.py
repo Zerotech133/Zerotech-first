@@ -88,6 +88,8 @@ def test_future_st_in_window_removes_earlier_signal(tmp_path, monkeypatch):
         "BASE": str(tmp_path),
         "cal_idx_all": ["20260105", "20260113"],
         "BUY_FILTERS": {"3": {"3买"}},
+        "_resolve_buy_filter": {"3": {"3买"}}.get,
+        # 2026-11-11：A4 收口后 buy_filter 走 _resolve_buy_filter，夹具缺它 → NameError（hist_st 分支从未被测到）
         "BUY_FILTER_LABEL": {"3": "仅三买"},
         "SELL_TYPES": {"1卖", "2卖", "3卖"},
     })

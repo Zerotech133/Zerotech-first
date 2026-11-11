@@ -77,7 +77,30 @@ _log("[boot] guard entered (pid=%s)" % os.getpid())
 # Python311 或 pm-runtime 引导壳时 agent 依赖不全 → MCP 0 工具、插件成片
 # 加载失败（No module named 'httpx'）。该 venv 与 PM selected 环境身份一致，
 # adopt_selected 不会跨版本重写 sys.path（pydantic_core 崩溃判例）。
-VENV_PY = r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv\Scripts\python.exe"
+# ── A2（2026-11-10）：venv 双哈希路径写死 → 重装 .hermes 即静默失效，
+# 改 env 解析 + fail-fast（见 _resolve_venv_py）。──────────────────
+def _resolve_venv_py():
+    """venv 解析顺序：HERMES_WEBUI_PYTHON / HERMES_VENV_PY env（受管约定，
+    与 server 消费的 env 同键）→ 现役生产 venv（原写死值，作回滚资产保留）
+    → 都不可用则 FATAL 退出。刻意不做 installs/* 自动发现：PM selected
+    环境身份敏感（adopt_selected 跨版本重写 sys.path → pydantic_core
+    崩溃判例），自动挑最新 venv 可能选错环境。重装 .hermes 后的正确
+    动作 = 设 HERMES_WEBUI_PYTHON 指向新 venv python.exe。"""
+    cand = os.environ.get("HERMES_WEBUI_PYTHON") or os.environ.get("HERMES_VENV_PY")
+    if cand and os.path.isfile(cand):
+        return cand
+    legacy = r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv\Scripts\python.exe"
+    if os.path.isfile(legacy):
+        return legacy
+    print("[FATAL] Hermes venv python 不可用：env 未给 HERMES_WEBUI_PYTHON/"
+          "HERMES_VENV_PY，且现役路径缺失（.hermes 可能已重装，venv 哈希已变）。"
+          "请设 HERMES_WEBUI_PYTHON=<新 venv>\\venv\\Scripts\\python.exe 后重试。")
+    _log("[FATAL] venv resolution failed: no env override, legacy path missing")
+    sys.exit(2)
+
+
+VENV_PY = _resolve_venv_py()
+_log("[venv] resolved: %s" % VENV_PY)
 # 2026-10-17 切推（B 方案验收通过）：server 切到 upstream master 快照
 # hermes-webui-next（+50 行定制接线 + 5 api 连接器模块）。旧目录
 # hermes-webui 原样保留 = 回滚资产（改回此路径即回滚）。state dir 不变
@@ -212,9 +235,12 @@ _log("[auth] trusted-header=%s (settings password overridden by ephemeral random
 # server 启动后 spawn 子进程会拿到坏解释器而静默死。守护链环境必须
 # 以系统 PATH 为底重建，剔除注入项。
 _sysroot = os.environ.get("SystemRoot", r"C:\Windows")
+# A2：PATH 的 venv 前缀从解析结果派生（不再写死哈希路径）
+_venv_scripts = os.path.dirname(VENV_PY)
+_venv_root = os.path.dirname(_venv_scripts)
 env["PATH"] = ";".join([
-    r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv\Scripts",
-    r"C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53f63c8bf44f54a7dfc492507ed00d\venv",
+    _venv_scripts,
+    _venv_root,
     r"C:\Program Files\Python311\Scripts",
     r"C:\Program Files\Python311",
     _sysroot,

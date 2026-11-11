@@ -12,14 +12,16 @@
   new <TID> <一句话描述> [--project <pid>] [--dept <部门>] [--acceptance "<命令串>"]
                             [--approver <席位>] [--expected-output <格式>]
                             [--boundaries <禁止动什么>] [--effort <预算档>]
-                            [--deps <TID1,TID2>]
+                            [--deps <TID1,TID2>] [--explore] [--write-scope <路径>]
                            建任务单+worktree+分支 task/<TID>；--dept 声明部门单，
                            命中研发试点门（agent_platform/config/dev_owner_gate.json）
                            时按 phase=warn 只告警 / phase=block 拒收，且拒收发生在
                            建 worktree 之前（不落空 worktree）（WO-LEGION-DEVEXEC-20261027）；
                            --approver 记研发域验收署名（charter dev-authority-v1）；
                            --expected-output/--boundaries/--effort/--deps 为任务契约 2.0
-                           可选字段（O2；落账不做强校验，供编排器/评审使用）。
+                           可选字段（O2；落账不做强校验，供编排器/评审使用）；
+                           --explore 开 explore 单：不建 worktree/分支、不占并发配额、
+                           不进 merge train（ADR-025；--write-scope 默认 runs/<TID>/）。
   list [--project <pid>] [--strict]
                            任务单总览（谁在干什么/分支/进度）；--strict 附跑
                            audit-worktrees，有违规则 rc=1（默认行为不变）
@@ -1135,9 +1137,76 @@ MAX_WORKTREES_DEFAULT = 80
 MAX_WORKTREES_ENV = "DEVTOOL_MAX_WORKTREES"
 KEEP_WORKTREE_ENV = "DEVTOOL_KEEP_WORKTREE"
 
+# ===== 2026-11-08 P1 修正版 D0（ADR-025）：治理四档 + 棘轮 cap + explore =====
+# GOV_MODE=off（默认）/shadow/warn/enforce；状态文件由 tools/gov_ratchet.py 维护。
+# off 档行为与既有路径完全一致；shadow/warn 只观测不拦；enforce 才复用原硬拒语义。
+GOV_STATE_ENV = "GOV_MODE"
+GOV_MODES = ("off", "shadow", "warn", "enforce")
+GOV_STATE_PATH = os.path.join(REPO, "config", "gov_state.json")
+GOV_SHADOW_LOG = os.path.join(tempfile.gettempdir(), "gov_observe", "gov_shadow.log")
+
+
+def _gov_state():
+    """读治理状态：文件缺失/坏 JSON/非法字段一律回落 off（fail-open）。"""
+    state = {"mode": "off", "cap": None, "target": 15, "ttl": None}
+    try:
+        with open(GOV_STATE_PATH, "r", encoding="utf-8") as fh:
+            raw = json.load(fh)
+    except (OSError, ValueError):
+        raw = {}
+    if isinstance(raw, dict):
+        mode = str(raw.get("mode") or "").strip().lower()
+        if mode in GOV_MODES:
+            state["mode"] = mode
+        cap = raw.get("cap")
+        try:
+            cap = int(float(cap)) if cap is not None and str(cap).strip() else None
+        except (TypeError, ValueError):
+            cap = None
+        if cap is not None and cap > 0:
+            state["cap"] = cap
+        target = raw.get("target")
+        try:
+            target = int(float(target)) if target is not None and str(target).strip() else None
+        except (TypeError, ValueError):
+            target = None
+        if target is not None and target > 0:
+            state["target"] = target
+        ttl = raw.get("ttl")
+        try:
+            ttl = float(ttl) if ttl is not None and str(ttl).strip() else None
+        except (TypeError, ValueError):
+            ttl = None
+        if ttl is not None and ttl > 0:
+            state["ttl"] = ttl
+    # 环境变量优先级最高（便于熔断：GOV_MODE=off 一行恢复）
+    env_mode = str(os.environ.get(GOV_STATE_ENV) or "").strip().lower()
+    if env_mode in GOV_MODES:
+        state["mode"] = env_mode
+    return state
+
+
+def _gov_shadow_log(cur, cap, verdict):
+    """shadow 档只落一行观测，不 print、不拦单。"""
+    try:
+        parent = os.path.dirname(GOV_SHADOW_LOG)
+        if parent and not os.path.isdir(parent):
+            os.makedirs(parent, exist_ok=True)
+        with open(GOV_SHADOW_LOG, "a", encoding="utf-8") as fh:
+            fh.write("%s\tmode=shadow\tcount=%d\tcap=%d\tverdict=%s\n"
+                     % (time.strftime("%F %T"), cur, cap, verdict))
+    except OSError:
+        pass
+
 
 def _ttl_hours():
-    """TTL 阈值（小时）：env DEVTOOL_WT_TTL_HOURS 可调，非法/非正回落默认 72。"""
+    """TTL 阈值（小时）：env DEVTOOL_WT_TTL_HOURS 可调，非法/非正回落默认 72。
+
+    P1：GOV_MODE != off 且 gov_state.ttl 合法时用状态值（仅影响 prune 标黄，不删）。
+    """
+    state = _gov_state()
+    if state["mode"] != "off" and state["ttl"] is not None:
+        return float(state["ttl"])
     raw = str(os.environ.get(WT_TTL_ENV) or "").strip()
     try:
         v = float(raw) if raw else WT_TTL_HOURS_DEFAULT
@@ -1182,13 +1251,22 @@ def _format_prune_wt(it, apply_=False):
 
 
 def _worktree_cap():
-    """并发上限：env DEVTOOL_MAX_WORKTREES 可调，非法/非正回落默认 60。"""
+    """并发上限：env DEVTOOL_MAX_WORKTREES 可调，非法/非正回落默认 80。
+
+    P1（ADR-025）：GOV_MODE != off 且 gov_state.cap 为合法正整数时用棘轮值；
+    off 档保持原逻辑（env > 默认），行为不变。
+    """
     raw = str(os.environ.get(MAX_WORKTREES_ENV) or "").strip()
     try:
         cap = int(float(raw)) if raw else MAX_WORKTREES_DEFAULT
     except (TypeError, ValueError):
         cap = MAX_WORKTREES_DEFAULT
-    return cap if cap > 0 else MAX_WORKTREES_DEFAULT
+    if cap <= 0:
+        cap = MAX_WORKTREES_DEFAULT
+    state = _gov_state()
+    if state["mode"] != "off" and state["cap"] is not None:
+        return int(state["cap"])
+    return cap
 
 
 def _concurrency_verdict(count, cap):
@@ -1218,9 +1296,28 @@ def _active_worktree_count(repo=None):
 
 
 def _enforce_worktree_cap():
-    """devtask new 前置并发闸：达上限硬拒、达 80% 只告警。"""
+    """devtask new 前置并发闸：达上限硬拒、达 80% 只告警。
+
+    P1 四档（ADR-025）：off=原语义；shadow=只写观测日志；warn=只 stderr 告警；
+    enforce=原硬拒语义（ratchet 保证 cap >= count+1，永不冻结）。
+    """
+    state = _gov_state()
+    mode = state["mode"]
     cap, cur = _worktree_cap(), _active_worktree_count()
     verdict = _concurrency_verdict(cur, cap)
+    if mode == "shadow":
+        if verdict in ("warn", "block"):
+            _gov_shadow_log(cur, cap, verdict)
+        return
+    if mode == "warn":
+        if verdict == "block":
+            print("[gov-warn] would-block：worktree %d/%d（GOV_MODE=warn，仅告警不拒单）"
+                  % (cur, cap), file=sys.stderr)
+        elif verdict == "warn":
+            print("[gov-warn] worktree %d/%d 已达 80%%（仅告警）" % (cur, cap),
+                  file=sys.stderr)
+        return
+    # off / enforce：保持既有语义（warn 打 stderr，block 硬拒）
     if verdict == "block":
         raise SystemExit(
             "并发 worktree 数 %d 已达上限 %d（%s 可调）——先收口再开单：\n"
@@ -1313,11 +1410,16 @@ def _validate_tid(tid):
 def cmd_new(tid=None, *desc):
     # 2026-11-06 FIX-DEVTASK-HELP：TID 校验必须先于 worktree cap/写盘/建分支。
     tid = _validate_tid(tid)
+    desc = list(desc)
+    # P1（ADR-025）：explore 单不建 worktree、不占 worktree 配额，故先于 cap 闸识别。
+    explore = "--explore" in desc
+    if explore:
+        desc = [x for x in desc if x != "--explore"]
     # 2026-10-31 WO-WORKTREE-MECH：并发上限闸（在任何副作用之前，达上限直接拒单）
-    _enforce_worktree_cap()
+    if not explore:
+        _enforce_worktree_cap()
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
     # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
-    desc = list(desc)
     project = "general"
     if "--project" in desc:
         i = desc.index("--project")
@@ -1370,6 +1472,8 @@ def cmd_new(tid=None, *desc):
     boundaries = _pop_opt("--boundaries")
     effort = _pop_opt("--effort")
     deps_raw = _pop_opt("--deps")
+    # P1（ADR-025 §3.3）：explore 单的写域（factors/<family>/ 或 runs/<run_id>/）。
+    write_scope = _pop_opt("--write-scope")
     # 2026-10-27 WO-AUTHORITY-D2：charter approval.mode=block 后，dev 单若未显式
     # 给 --approver，自动落 charter 默认署名（ARCH1），避免误建无署名单卡死在合并门。
     if dept is not None and not approver:
@@ -1438,11 +1542,23 @@ def cmd_new(tid=None, *desc):
                   % (w, gate.get("phase", "warn")), file=sys.stderr)
     branch = "task/" + tid
     wt = os.path.join(WT_DIR, tid)
-    _git("worktree", "add", wt, "-b", branch)
-    rec = {"desc": desc, "branch": branch, "worktree": wt,
-           "status": "doing", "created": time.strftime("%F %T"),
-           "project": project,
-           "owner": owner}
+    if explore:
+        # explore 不建 worktree/分支，不进 merge train；产物登记在 tasks.json。
+        rec = {"desc": desc, "branch": "", "worktree": "",
+               "status": "explore", "explore": True,
+               "write_scope": write_scope or ("runs/%s/" % tid),
+               "created": time.strftime("%F %T"),
+               "project": project,
+               "owner": owner}
+    else:
+        _git("worktree", "add", wt, "-b", branch)
+        # 2026-11-07 WO-GUANYU-DATASEED-20261106：gitignored 运行数据种子（缺失才复制，
+        # 失败只 warn 不阻断开单）——避免合并质量闸因缺 catalog/注册表/xueqiu 库假失败。
+        _seed_worktree_data(wt)
+        rec = {"desc": desc, "branch": branch, "worktree": wt,
+               "status": "doing", "created": time.strftime("%F %T"),
+               "project": project,
+               "owner": owner}
     # 显式声明 --dept 的单才落 dept/acceptance_cmd 新字段（旧调用字段集不变——
     # WO-TF-03「合法路径字段与现状一致」回归用例锁定；acceptance 缺省落 null）。
     if dept is not None:
@@ -1464,8 +1580,8 @@ def cmd_new(tid=None, *desc):
     tasks[tid] = rec
     _save(tasks, changed=(tid,))
     _ckpt(tid, "kai", tasks[tid]["owner"],
-          {"desc": desc, "branch": branch, "worktree": wt,
-           "project": project})
+          {"desc": desc, "branch": rec.get("branch", ""),
+           "worktree": rec.get("worktree", ""), "project": project})
     # 留痕走既有 task_start 事件（不新造 kind：events.KINDS 是白名单，未注册 kind
     # 会被 emit 静默吞掉反而丢痕）。标记前置，保证 detail 截断后仍可检出。
     if owner_ok is None:
@@ -1486,6 +1602,11 @@ def cmd_new(tid=None, *desc):
             gate_note += " " + "；".join(gate_warnings)
         detail = gate_note + " · " + detail
     _emit("task_start", tid, detail)
+    if explore:
+        print("工单 %s 已开（explore）：%s write_scope=%s owner=%s project=%s"
+              % (tid, desc, rec.get("write_scope"), tasks[tid]["owner"], project))
+        print("→ explore 单不建 worktree/分支、不进 merge train；产物写回 tasks.json。")
+        return 0
     print("工单 %s 已开：%s（分支 %s）owner=%s project=%s%s"
           % (tid, desc, branch, tasks[tid]["owner"], project,
              " dept=%s" % dept if dept is not None else ""))
@@ -1624,6 +1745,47 @@ def _resolve_main_repo(repo=None):
                     or os.path.isdir(os.path.join(parent, "portal"))):
                 return parent
     return repo
+
+
+# 2026-11-07 WO-GUANYU-DATASEED-20261106：worktree 数据种子（gitignored 运行数据）。
+# 背景：B4 修复合并第 2/3 次失败=新建 worktree 缺这些只读运行数据 → portal/datawarehouse
+# 测试假失败；第 4 次=dataset_registry.REPO 硬编码漂移。种子只读复制、不覆盖、缺失源仅 warn。
+WT_SEED_FILES = (
+    os.path.join("quant_backtest", "data", "catalog.json"),
+    os.path.join("quant_backtest", "data", "warehouse_registry.json"),
+    os.path.join("quant_backtest", "data", "xueqiu", "xueqiu_info.db"),
+)
+
+
+def _seed_worktree_data(wt, repo=None):
+    """把主仓 gitignored 运行数据复制进新 worktree（缺失才复制；失败只 warn）。
+
+    返回 [(相对路径, 状态)]，状态 ∈ copied / exists / missing-source / error。
+    只读源仓、不覆盖既有文件；任何异常不阻断开单（质量闸自带数据缺失败可见）。
+    """
+    src_repo = _resolve_main_repo(repo or REPO)
+    out = []
+    for rel in WT_SEED_FILES:
+        dst = os.path.join(wt, rel)
+        if os.path.exists(dst):
+            out.append((rel, "exists"))
+            continue
+        src = os.path.join(src_repo, rel)
+        if not os.path.isfile(src):
+            print("[warn] worktree 数据种子源缺失：%s" % src, file=sys.stderr)
+            out.append((rel, "missing-source"))
+            continue
+        try:
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy2(src, dst)
+        except OSError as exc:  # noqa: BLE001 - 种子失败不阻断开单
+            print("[warn] worktree 数据种子复制失败：%s -> %s（%s）"
+                  % (src, dst, exc), file=sys.stderr)
+            out.append((rel, "error"))
+            continue
+        out.append((rel, "copied"))
+        print("[info] worktree 数据种子已复制：%s" % rel)
+    return out
 
 
 def _audit_worktrees(repo=None):

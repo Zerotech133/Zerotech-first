@@ -3,6 +3,9 @@
 
 执行拍板 2/4（2026-10-31）：JEV 复核预算 = 人工 50 + 机器预审 200；news.db 里
 10,525 条 pending 一次分层，预算内保留 pending，其余归档为 unreviewed_legacy。
+2026-11-07 裁定（INTEL-DEC-20261107 A1 + ①a）：复核产能 200 条/日，本工具的归档
+保留预算同步由 250 对齐为 200；上面 10-31 的「人工 50 + 机器预审 200」是历史
+裁定原文，保留不改。
 
 分层规则（keep 优先序，全部可审计）：
   1) 高影响优先：解析 jev_review_queue.original_jev 的 impact（缺失时回退
@@ -10,7 +13,7 @@
   2) 低置信优先：conf <= 0.4 加分 > conf <= 0.6 加分（低置信更需要人工看）。
   3) 新来源优先：news.source 首次出现（MIN(ts)）在最近 novel-days 天内加分。
   4) 近 recent-days 天入队优先；同分按 queued_at 新→旧、id 升序稳定排序。
-  预算内（默认 250）保留 pending；预算外 → status='unreviewed_legacy'。
+  预算内（默认 200，2026-11-07 起按 A1 对齐；原 250）保留 pending；预算外 → status='unreviewed_legacy'。
 
 安全纪律：
   - 默认 --dry-run（只读连接 mode=ro，不做任何写操作）；
@@ -26,7 +29,7 @@
     python tools/intel_review_archive.py --dry-run
     python tools/intel_review_archive.py --db <news.db> --dry-run --samples 10
     python tools/intel_review_archive.py --apply --backup-dir C:\\Temp
-    python tools/intel_review_archive.py --apply --human-budget 50 --machine-budget 200
+    python tools/intel_review_archive.py --apply --human-budget 50 --machine-budget 150
 退出码：0=成功；1=参数/数据错误；2=备份/写库失败。
 """
 from __future__ import annotations
@@ -47,8 +50,12 @@ RULE_VERSION = "intel-review-archive/v1"
 PENDING_STATUS = "pending"
 LEGACY_STATUS = "unreviewed_legacy"
 HUMAN_BUDGET = 50
-MACHINE_BUDGET = 200
-PENDING_BUDGET = HUMAN_BUDGET + MACHINE_BUDGET
+# 2026-11-07 INTEL-DEC-20261107 A1（复核产能 200 条/日）+ ①a 裁定：归档保留预算
+# 与日产能对齐，合计由 250 降为 200（human 50 + machine 150）。**仅本工具**；
+# portal/api_jev_review.py 仍为 50+200=250，属已知口径差异，登记在
+# reports/intel_decision_impl_request_20261107.md §6。
+MACHINE_BUDGET = 150
+PENDING_BUDGET = HUMAN_BUDGET + MACHINE_BUDGET  # 200
 
 IMPACT_WEIGHT = {"high": 40, "medium": 20, "low": 5}
 CONF_LOW_STRONG_BONUS = 15   # conf <= 0.4

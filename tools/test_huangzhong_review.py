@@ -301,6 +301,24 @@ def test_misreject_review_missing_pending(tmp_path):
     assert len(it["detail"]["unreviewed"]) == 20
 
 
+def test_misreject_rate_complete_77_review_clean_ok(tmp_path):
+    """自然 REJECT≥20：77 单全部复核且 0 推翻 → ③ ✓（rate 口径）。"""
+    work = _work(tmp_path)
+    rejects = [_sha(0x7700 + i) for i in range(77)]
+    for i, sha in enumerate(rejects):
+        _add_sheet(work, sha, "REJECT", NOW - timedelta(hours=2 + i))
+    _write_json(work / "reject_review_20261111.json", {"reviews": [
+        {"sha": sha, "overturned": False, "reviewer": "DSH-Lead"}
+        for sha in rejects]})
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][2]
+    assert it["status"] == "✓"
+    assert it["detail"]["reviewed"] == 77
+    assert it["detail"]["unreviewed"] == []
+    assert it["value"]["rate"] == 0
+    assert "0/77" in it["measured"]
+
+
 def test_misreject_low_sample_manual_review_clean_ok(tmp_path):
     """自然 REJECT<20：复核清单覆盖全部 REJECT 且 0 推翻 → ③ ✓（v1.1 口径）。"""
     work = _work(tmp_path)

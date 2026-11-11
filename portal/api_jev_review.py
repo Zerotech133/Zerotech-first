@@ -52,10 +52,12 @@ PENDING_BUDGET = HUMAN_BUDGET + MACHINE_BUDGET
 LEGACY_STATUS = "unreviewed_legacy"
 STATUSES = ("pending", "resolved", LEGACY_STATUS, "all")
 BIASES = ("bull", "bear", "neutral")
+# conf 已弃用（反相关 AUC 0.414）：排序不再用 conf，改为按入队时间；
+# 保留原 key 名（conf_asc/conf_desc）以免前端联动断裂。
 SORTS = {
-    "conf_asc": "conf ASC, queued_at ASC",
-    "conf_desc": "conf DESC, queued_at ASC",
-    "queued_desc": "queued_at DESC, conf ASC",
+    "conf_asc": "queued_at ASC, id ASC",
+    "conf_desc": "queued_at DESC, id ASC",
+    "queued_desc": "queued_at DESC, id ASC",
 }
 DECISIONS = ("correct", "wrong", "uncertain")
 MAX_LIMIT = 500

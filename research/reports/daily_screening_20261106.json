@@ -1,7 +1,7 @@
 {
  "schema_version": "daily_screening.v1",
  "kind": "daily_screening",
- "generated_at": "2026-11-07T13:13:18+08:00",
+ "generated_at": "2026-11-08T20:50:55+08:00",
  "date": "20261106",
  "dry_run": false,
  "disclaimer": "研究输出，不构成投资建议；S02/S05 已暂停/关闭，RS 仅为当日相对强度。",

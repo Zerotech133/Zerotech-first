@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>候风 · M2 冻结看板</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding:24px;max-width:1440px;margin:0 auto}
+h1{font-size:22px;font-weight:600;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1 .tag{font-size:12px;font-weight:500;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:1px 8px}
+.sub{color:var(--muted);font-size:13px;margin:6px 0 20px}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:1fr 1fr}
+@media(max-width:1000px){.g4,.g3,.g2{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.g4,.g3,.g2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px}
+.card h2{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text)}
+.card h2 .note{font-weight:400;color:var(--dim);font-size:12px;margin-left:8px}
+.kpi{display:flex;flex-direction:column;gap:4px}
+.kpi .lab{font-size:12px;color:var(--muted)}
+.kpi .val{font-size:26px;font-weight:700;font-family:var(--mono)}
+.kpi .cmp{font-size:12px;color:var(--muted)}
+.pos{color:var(--up)} .neg{color:var(--dn)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);font-weight:500;text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid rgba(20,34,51,.14);text-align:right;font-family:var(--mono);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;font-family:inherit}
+tr:hover td{background:#eef3ff}
+.pill{display:inline-block;border-radius:10px;padding:0 8px;font-size:12px;font-family:var(--mono)}
+.pill.ok{background:var(--dn-bg);color:var(--ok)} .pill.bad{background:var(--up-bg);color:var(--up)}
+.bar-wrap{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.bar{height:8px;border-radius:2px;background:var(--accent);opacity:.75}
+.bar.neg{background:var(--dn)}
+.form-chip{display:inline-block;font-size:11px;border-radius:3px;padding:0 6px;margin-left:6px;border:1px solid var(--border);color:var(--muted)}
+.form-chip.on{border-color:var(--accent);color:var(--accent)}
+.gate{display:flex;gap:12px;align-items:center;background:var(--panel2);border-radius:6px;padding:10px 14px;margin-top:8px}
+.gate .led{width:10px;height:10px;border-radius:50%;background:var(--dn);box-shadow:0 0 8px var(--dn)}
+.gate .led.off{background:var(--up);box-shadow:0 0 8px var(--up)}
+.gate b{font-family:var(--mono)}
+.timeline{position:relative;padding-left:20px;margin-top:8px}
+.timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.tl-item{position:relative;padding:4px 0 4px 14px;font-size:13px}
+.tl-item::before{content:'';position:absolute;left:-18px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+.tl-item.done::before{background:var(--accent)}
+.tl-item.now::before{background:var(--gold);border-color:var(--gold);box-shadow:0 0 6px var(--gold)}
+.tl-item .d{color:var(--dim);font-size:11px;font-family:var(--mono)}
+.disc{font-size:12.5px;color:var(--muted);padding-left:1.2em}
+.disc li{margin:4px 0}
+footer{margin-top:24px;color:var(--dim);font-size:12px;border-top:1px solid var(--border);padding-top:12px}
+.spark{display:flex;gap:2px;align-items:flex-end;height:36px}
+.spark i{flex:1;background:var(--accent);border-radius:1px;min-width:3px;opacity:.85}
+.spark i.neg{background:var(--dn)}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+</head>
+<body>
+<div class="plat-bar"><a href="HOUFENG_STRATEGY_CARD.html">策略中心</a><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><a href="HOUFENG_PLAYBOOK.html">回放日历</a><span class="sep">/</span><a href="HOUFENG_ARENA.html">竞技场·一年</a><span class="sep">/</span><a href="HOUFENG_ARENA_36M.html">竞技场·三年</a><span class="sep">/</span><a href="HOUFENG_HOLDGRID.html">持仓网格</a><span class="sep">/</span><a href="HOUFENG_DIVIDEND.html">红利防御档</a><span class="sep">/</span><span class="cur">冻结看板</span></div>
+
+<h1>候风 · M2 冻结看板 <span class="tag">FROZEN 2026-11-07</span></h1>
+<div class="sub">综合分排序 · 波动率倒数加权 · 填单回收 · 30 只 · 持有 5 日 · 精确涨跌停 · 单往返 0.3% ｜ 数据末端 2026-11-06 ｜ 组合层真净值<details style="display:inline;margin-left:8px"><summary style="cursor:pointer;color:#8a93a8;display:inline">冻结参数原文</summary><span style="color:#8a93a8">rank=score · inv_vol · recycle · top30 · hold5 · exact · 30bp ｜ 组合层口径 portfolio_sim 真净值</span></details></div>
+
+<!-- ── 1. 闸门与形态 KPI ── -->
+<div class="grid g4">
+  <div class="card kpi">
+    <div class="lab">环境闸门（11-06）</div>
+    <div class="val neg">关闸</div>
+    <div class="cmp">市场宽度 31.8%（低于 40）｜ 20日中位 −8.98%（低于 −3%）｜ 连续关闸 ~28 日</div>
+  </div>
+  <div class="card kpi">
+    <div class="lab">36m 累计收益 · 30bp</div>
+    <div class="val pos">+117.71%</div>
+    <div class="cmp">等权基线 +73.37%（<span class="pos">+44.34pp</span>）</div>
+  </div>
+  <div class="card kpi">
+    <div class="lab">36m 最大回撤</div>
+    <div class="val">−21.18%</div>
+    <div class="cmp">等权基线 −25.73%（浅 4.55pp）</div>
+  </div>
+  <div class="card kpi">
+    <div class="lab">36m 夏普 / 笔数</div>
+    <div class="val">1.22</div>
+    <div class="cmp">等权 0.80 ｜ 8698 笔（填单率 79.2%）</div>
+  </div>
+</div>
+
+<!-- ── 2. A2 终验矩阵 ── -->
+<div class="card" style="margin-top:16px">
+  <h2>A2 终验矩阵<span class="note">5 窗 × 双成本 × 4 形态，Δ 为相对同格等权（pp）；红=更差</span></h2>
+  <table id="t-a2">
+    <thead><tr><th>成本/窗口</th><th>等权（基线）</th><th>波动率倒数</th><th>填单回收</th><th>组合（冻结档）</th><th>判定</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="grid g2" style="margin-top:16px">
+  <!-- ── 3. 冲击成本敏感性 ── -->
+  <div class="card">
+    <h2>A3 冲击成本敏感性<span class="note">combo−equal（36m，非复利 pp）</span></h2>
+    <table>
+      <thead><tr><th>场景</th><th>12m</th><th>24m</th><th>36m</th></tr></thead>
+      <tbody>
+        <tr><td>基线 30bp 常数</td><td class="pos">+8.43</td><td class="pos">+21.16</td><td class="pos">+40.38</td></tr>
+        <tr><td>中性（pr10%→30bp）</td><td class="pos">+8.29</td><td class="pos">+20.35</td><td class="pos">+38.93</td></tr>
+        <tr><td>保守（pr10%→50bp）</td><td class="pos">+8.28</td><td class="pos">+20.31</td><td class="pos">+38.83</td></tr>
+        <tr><td>激进（pr10%→80bp+8bp）</td><td class="pos">+8.19</td><td class="pos">+19.81</td><td class="pos">+37.90</td></tr>
+      </tbody>
+    </table>
+    <div class="sub" style="margin:10px 0 0">参与率中位 0.003~0.009%、P99 &lt;1% → 单笔更小、笔数更多的结构天然抗冲击，激进档优势仅衰减 6%。<br>⚠ 绝对收益须下修：36m 保守档 equal +38.4%→+25.9%、combo +78.8%→+64.7%（非复利）。</div>
+  </div>
+
+  <!-- ── 4. 否决清单 ── -->
+  <div class="card">
+    <h2>方向裁决记录<span class="note">数据否决的不重开，防止重复开跑</span></h2>
+    <table>
+      <thead><tr><th>方向</th><th>裁决</th><th>一句话证据</th></tr></thead>
+      <tbody>
+        <tr><td>ret20 加帽</td><td><span class="pill bad">否决</span></td><td>五窗口倒 U 型，36m 最热两桶恰是最好 alpha</td></tr>
+        <tr><td>RPS 排序键</td><td><span class="pill bad">否决</span></td><td>3/5 且回撤 10/10 更深（24m −33pp/36m −96pp）</td></tr>
+        <tr><td>score 负向</td><td><span class="pill bad">否决</span></td><td>收益 4 赢 6 输不稳健</td></tr>
+        <tr><td>残差排序</td><td><span class="pill bad">否决</span></td><td>2/5，24m 回撤 −8.01pp，beta 相关无差别</td></tr>
+        <tr><td>动态只数=环境分</td><td><span class="pill bad">否决</span></td><td>本质是集中度开关，非风险预算</td></tr>
+        <tr><td>「低波 alpha」叙事</td><td><span class="pill bad">证伪</span></td><td>36m 组内强度 −8%，真因是填单率 55.9%→79.2%</td></tr>
+        <tr><td>score 去 beta 化</td><td><span class="pill ok">P2 候选</span></td><td>score 是 beta 轴（回撤 10/10 随降序变浅）</td></tr>
+        <tr><td>RPS 周期1 过滤</td><td><span class="pill ok">P2 候选</span></td><td>周期1 差 1.7pp/笔，实现成本极低</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── 5. 11-06 影子信号 + Top20 ── -->
+<div class="card" style="margin-top:16px">
+  <h2>Top20 观察名单<span class="note">2026-11-06 收盘 · 影子信号（闸门关，不买入）· score 降序</span></h2>
+  <table id="t-top"></table>
+  <div class="gate">
+    <span class="led off"></span>
+    <div>闸门关闭中，名单仅观察用：<b>164</b> 个影子信号 · ret20 中位 <b class="pos">+12.0%</b>（全市场 −8.67%）· 市场分位中位 <b>95.4%</b> · 与 11-05 重叠 86% · <b>11 只已涨停</b>（T+1 可成交性风险）</div>
+  </div>
+</div>
+
+<!-- ── 6. 模拟盘进度 ── -->
+<div class="grid g2" style="margin-top:16px">
+  <div class="card">
+    <h2>A6 模拟盘<span class="note">≥3 个月 · 只记录不下场</span></h2>
+    <div class="timeline">
+      <div class="tl-item done"><span class="d">11-06</span> 基准行落账（nav=1.0，0 持仓）</div>
+      <div class="tl-item now"><span class="d">11-07 →</span> 每日盘后：冻结参数跑滚动 60 信号日 → 追加账本</div>
+      <div class="tl-item"><span class="d">偏差 &gt;15bp</span> 触发 review_YYYYMMDD.md 复核（缺口/一字/停牌）</div>
+      <div class="tl-item"><span class="d">~2027-02-07</span> 期满：≥58 交易日 + 累计偏差 ≤30bp → M2_PAPER_REPORT</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>披露与红线<span class="note">引用任何数字前必读</span></h2>
+    <ul class="disc">
+      <li>引擎虚拟净值口径已废弃（12m 曾虚拟 −4.72% vs 真组合 +14.21%），一切以组合模拟器为准</li>
+      <li>资金利用率 39~49%（关闸期现金闲置），满仓折算口径须并列披露</li>
+      <li>跌停无法卖出未建模、竞价必成假设（均偏乐观）</li>
+      <li>NA 桶（停牌复牌跳空）24m 占盈亏 38.1% 为窗口性策略特性，非缺陷</li>
+      <li>绝对收益受真实冲击成本拖累（见 A3 表）；阈值 75/50 与窗口 20251015~20261014 为冻结口径</li>
+      <li>参数变更 = 解冻，须重走六条验收判据（QPZM_RD_PLAN v2 §5）</li>
+    </ul>
+  </div>
+</div>
+
+
+
+<script>
+/* ── A2 数据（来自 _a2_agg_top30.json，top30）── */
+const A2 = {
+ 'c30|3m|equal':[-19.64,-21.68,-4.02,453],
+ 'c30|3m|invvol':[-19.49,-21.11,-4.39,575],
+ 'c30|3m|recycle':[-17.49,-19.6,-3.51,506],
+ 'c30|3m|combo':[-17.55,-19.25,-4.15,624],
+ 'c30|6m|equal':[-4.45,-19.37,-0.29,683],
+ 'c30|6m|invvol':[-3.4,-16.63,-0.24,786],
+ 'c30|6m|recycle':[-5.21,-19.03,-0.37,734],
+ 'c30|6m|combo':[-2.78,-16.16,-0.20,867],
+ 'c30|12m|equal':[16.36,-18.54,0.78,1705],
+ 'c30|12m|invvol':[19.35,-16.17,0.95,1996],
+ 'c30|12m|recycle':[16.73,-19.02,0.81,1945],
+ 'c30|12m|combo':[22.48,-16.09,1.10,2239],
+ 'c30|24m|equal':[20.0,-19.34,0.48,4324],
+ 'c30|24m|invvol':[34.88,-16.41,0.75,5322],
+ 'c30|24m|recycle':[36.64,-18.89,0.74,5405],
+ 'c30|24m|combo':[46.82,-16.48,0.95,6067],
+ 'c30|36m|equal':[73.37,-25.73,0.80,6140],
+ 'c30|36m|invvol':[89.66,-22.22,1.00,7722],
+ 'c30|36m|recycle':[82.97,-24.12,0.90,7561],
+ 'c30|36m|combo':[117.71,-21.18,1.22,8698],
+ 'c50|3m|equal':[-20.6,-22.46,-4.26,458],
+ 'c50|3m|invvol':[-20.52,-21.97,-4.68,576],
+ 'c50|3m|recycle':[-19.87,-21.74,-4.11,502],
+ 'c50|3m|combo':[-18.53,-20.04,-4.42,627],
+ 'c50|6m|equal':[-5.4,-19.29,-0.38,655],
+ 'c50|6m|invvol':[-4.94,-17.2,-0.41,775],
+ 'c50|6m|recycle':[-6.76,-19.68,-0.52,753],
+ 'c50|6m|combo':[-5.15,-16.76,-0.45,857],
+ 'c50|12m|equal':[10.54,-19.9,0.55,1677],
+ 'c50|12m|invvol':[13.72,-16.92,0.72,1995],
+ 'c50|12m|recycle':[10.09,-20.3,0.55,1939],
+ 'c50|12m|combo':[17.86,-16.66,0.91,2230],
+ 'c50|24m|equal':[9.97,-19.49,0.31,4304],
+ 'c50|24m|invvol':[25.57,-16.64,0.60,5397],
+ 'c50|24m|recycle':[18.19,-20.81,0.46,5392],
+ 'c50|24m|combo':[31.66,-16.59,0.71,6076],
+ 'c50|36m|equal':[49.68,-29.24,0.62,6272],
+ 'c50|36m|invvol':[61.13,-25.02,0.78,7688],
+ 'c50|36m|recycle':[60.43,-28.59,0.73,7561],
+ 'c50|36m|combo':[81.4,-23.59,0.96,8657]
+};
+const WINS=['3m','6m','12m','24m','36m'], FORMS=['invvol','recycle','combo'], CN={invvol:'inv_vol',recycle:'recycle',combo:'inv_vol+recycle'};
+const tb=document.querySelector('#t-a2 tbody');
+let html='';
+[['c30','30bp'],['c50','50bp']].forEach(([c,cn])=>{
+  WINS.forEach(w=>{
+    const e=A2[c+'|'+w+'|equal'];
+    let row=`<tr><td>${cn} · ${w}</td><td>${e[0].toFixed(2)}% / ${e[1].toFixed(2)}%</td>`;
+    let allOk=true;
+    FORMS.forEach(f=>{
+      const v=A2[c+'|'+w+'|'+f];
+      const dr=v[0]-e[0], ddd=v[1]-e[1];
+      const ok=dr>=0; if(!ok&&f==='combo')allOk=false;
+      row+=`<td class="${dr>=0?'pos':'neg'}">${dr>=0?'+':''}${dr.toFixed(2)} <span style="color:var(--dim)">(${ddd>=0?'+':''}${ddd.toFixed(2)})</span></td>`;
+    });
+    row+=`<td>${allOk?'<span class="pill ok">✓ 晋级</span>':'<span class="pill bad">miss</span>'}</td></tr>`;
+    html+=row;
+  });
+});
+tb.innerHTML=html;
+
+/* ── Top20 名单 ── */
+const TOP20=[
+["301313.SZ","凡拓数创","文教休闲",85.3,67.88,1.68,137.6,15.34,"极端动量"],
+["688071.SH","华依科技","专用机械",84.2,46.09,-7.39,30.4,4.14,"回撤中"],
+["601328.SH","交通银行","银行",83.6,8.30,1.22,6.7,17.51,"防御"],
+["600674.SH","川投能源","水力发电",83.3,17.74,3.62,4.1,7.09,"防御"],
+["300133.SZ","华策影视","影视音像",83.2,10.07,-2.80,20.2,13.24,""],
+["688322.SH","奥比中光-W","元器件",83.1,109.05,-4.89,33.8,13.48,""],
+["603355.SH","莱克电气","家用电器",83.0,33.19,-3.60,2.9,1.63,""],
+["003816.SZ","中国广核","新型电力",82.9,4.75,1.93,7.2,6.48,"防御"],
+["601598.SH","中国外运","仓储物流",82.8,7.07,0.00,2.5,1.12,"防御"],
+["600011.SH","华能国际","火力发电",82.0,7.65,3.38,4.4,8.39,"防御"],
+["002889.SZ","东方嘉盛","仓储物流",81.9,14.91,10.04,24.7,5.08,"⚠已涨停"],
+["600350.SH","山东高速","路桥",81.9,11.11,2.78,5.0,1.67,"防御"],
+["601985.SH","中国核电","新型电力",81.7,9.65,0.42,5.9,9.18,"防御"],
+["002983.SZ","芯瑞达","元器件",81.6,22.32,-2.19,7.6,0.47,"流动性偏低"],
+["601825.SH","沪农商行","银行",81.6,9.04,4.27,5.7,3.36,"防御"],
+["601077.SH","渝农商行","银行",81.3,7.21,1.84,8.1,5.92,"防御"],
+["603886.SH","元祖股份","食品",81.2,12.88,-4.17,-1.7,0.68,"唯一 ret20 负"],
+["688360.SH","德马科技","机械基件",81.1,19.70,-5.79,18.5,1.74,""],
+["920599.BJ","同力股份","工程机械",80.6,18.22,-1.83,5.0,0.41,"北交所"],
+["300314.SZ","戴维医疗","医疗保健",80.6,14.05,-1.33,9.3,1.11,""]
+];
+document.getElementById('t-top').innerHTML=
+ '<thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>score</th><th>收盘</th><th>当日%</th><th>ret20</th><th>成交额(亿)</th><th>备注</th></tr></thead><tbody>'+
+ TOP20.map((r,i)=>`<tr><td>${i+1}</td><td>${r[0]}</td><td style="font-family:inherit">${r[1]}</td><td style="font-family:inherit;color:var(--muted)">${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td class="${r[5]>=0?'pos':'neg'}">${r[5]>=0?'+':''}${r[5].toFixed(2)}</td><td class="${r[6]>=15?'pos':''}">${r[6]>=0?'+':''}${r[6].toFixed(1)}%</td><td>${r[7]}</td><td style="font-family:inherit;color:var(--muted)">${r[8]}</td></tr>`).join('')+'</tbody>';
+</script>
+<footer><span>候风 HOUFENG 产品族 · 冻结看板 ｜ 口号：候风而动，知止而得</span><details style="display:inline"><summary style="cursor:pointer;display:inline">多维加权与证据链</summary><span style="color:#8a93a8"><span style="color:#8a93a8">M2_FROZEN.json · a2_final/a2_matrix.md · a3_impact/a3_impact_report.md · na_bucket_verdict.md ｜ JEV 缺维归一 0.4667/0.3333/0.2</span></span></details><details style="display:inline"><summary style="cursor:pointer;display:inline">判据与冻结参数原文</summary><span style="color:#8a93a8"><span style="color:#8a93a8">rank=score · inv_vol · recycle · top30 · hold5 · exact · 30bp</span></span></details><span style="margin-left:auto">数据末端 2026-11-06 · 模拟盘数据 · 不构成投资建议 · 历史回测不代表未来表现（程序生成）</span></footer>
+</body>
+</html>

@@ -1,0 +1,1256 @@
+﻿{
+ "ok": true,
+ "tool": "huangzhong_1104_preflight.py",
+ "version": "v1 (2026-10-31)",
+ "generated_at": "2026-11-10T22:30:00+08:00",
+ "target_time": "2026-11-10T22:30:00+08:00",
+ "repo_root": "C:\\项目\\老田的AI助手",
+ "work_dir": "C:\\项目\\老田的AI助手\\work\\huangzhong",
+ "out_dir": "C:\\Temp\\hz_20261110_preflight_2230",
+ "read_only": true,
+ "checks": [
+  {
+   "id": "1",
+   "key": "evidence",
+   "name": "证据新鲜度（48h 认证门）",
+   "source": "agent_platform/data/test_baseline/latest.json；work/p1/redteam/redteam_*.json（最新）",
+   "result": "基线：新鲜 2.5h（门 ≤48h）；红队：新鲜 2.4h（门 ≤48h）",
+   "status": "✓"
+  },
+  {
+   "id": "2",
+   "key": "review",
+   "name": "六条复核报告（review）",
+   "source": "python -X utf8 tools/huangzhong_review.py --json → work/huangzhong/review_*.json（最新）",
+   "result": "六条 5/6 ✓；报告 review_20261110_223023.json（-0.0h 前）",
+   "status": "✓"
+  },
+  {
+   "id": "3",
+   "key": "go_no_go",
+   "name": "Go/No-Go 决策草案",
+   "source": "python -X utf8 tools/huangzhong_go_no_go.py --json --draft-dir <out>（存在才跑）",
+   "result": "rc=1 → NO_GO（建议 NO-GO）",
+   "status": "✓"
+  },
+  {
+   "id": "4",
+   "key": "maturity",
+   "name": "④ 满窗 maturity",
+   "source": "acceptance_*.json 直扫（PASS 非演练；generated_at+7d）",
+   "result": "now 满窗 153 / 跟踪 188；最早满窗 2026-11-04T07:18:01+08:00；11-10 22:30 预计满窗 153",
+   "status": "✓"
+  },
+  {
+   "id": "5",
+   "key": "incidents",
+   "name": "事故台账（incidents）",
+   "source": "work/huangzhong/incidents.jsonl",
+   "result": "存在 0 条（近 7 天 0 条；latest=—）",
+   "status": "✓"
+  }
+ ],
+ "evidence": {
+  "baseline": {
+   "kind": "baseline",
+   "path": "C:\\项目\\老田的AI助手\\agent_platform\\data\\test_baseline\\latest.json",
+   "exists": true,
+   "generated_at": "2026-11-10T20:00:01+08:00",
+   "age_hours": 2.5,
+   "stale": false,
+   "status": "✓",
+   "error": null,
+   "note": null
+  },
+  "redteam": {
+   "kind": "redteam",
+   "path": "C:\\项目\\老田的AI助手\\work\\p1\\redteam\\redteam_20261110_200528.json",
+   "exists": true,
+   "generated_at": "2026-11-10T20:05:28+08:00",
+   "age_hours": 2.41,
+   "stale": false,
+   "status": "✓",
+   "error": null,
+   "note": null,
+   "passed": 15,
+   "total": 15,
+   "pass_rate": 1.0
+  },
+  "redteam_candidates": 20,
+  "redteam_skipped": [],
+  "max_age_hours": 48.0,
+  "status": "✓",
+  "blockers": [],
+  "warnings": []
+ },
+ "review": {
+  "tool": "C:\\项目\\老田的AI助手\\tools\\huangzhong_review.py",
+  "cmd": [
+   "C:\\Program Files\\Python311\\python.exe",
+   "-X",
+   "utf8",
+   "tools/huangzhong_review.py",
+   "--json"
+  ],
+  "subprocess": {
+   "ok": true,
+   "rc": 1,
+   "error": null,
+   "elapsed_s": 0.33
+  },
+  "stdout_tail": " \"acceptance_invalid\": [],\n  \"drill_ledger_files\": [\n   \"C:\\\\项目\\\\老田的AI助手\\\\work\\\\huangzhong\\\\drills\\\\drill_ledger_20261030.json\"\n  ],\n  \"incidents_file\": \"C:\\\\项目\\\\老田的AI助手\\\\work\\\\huangzhong\\\\incidents.jsonl\",\n  \"audit_file\": \"C:\\\\项目\\\\老田的AI助手\\\\work\\\\huangzhong\\\\audit_sample_3.json\",\n  \"daily_file\": \"C:\\\\项目\\\\老田的AI助手\\\\work\\\\huangzhong\\\\daily.jsonl\",\n  \"dev_events_file\": \"C:\\\\项目\\\\老田的AI助手\\\\portal\\\\data\\\\dev_events.jsonl\"\n },\n \"warnings\": [],\n \"report_json\": \"C:\\\\项目\\\\老田的AI助手\\\\work\\\\huangzhong\\\\review_20261110_223023.json\",\n \"report_md\": \"C:\\\\项目\\\\老田的AI助手\\\\work\\\\huangzhong\\\\review_20261110_223023.md\"\n}\n",
+  "stderr_tail": "",
+  "path": "C:\\项目\\老田的AI助手\\work\\huangzhong\\review_20261110_223023.json",
+  "file": "review_20261110_223023.json",
+  "candidates": 93,
+  "skipped": [],
+  "items": [
+   {
+    "id": "①",
+    "title": "PASS 验收样本量",
+    "status": "✓",
+    "measured": "341/10 单",
+    "target": "≥10 单 PASS"
+   },
+   {
+    "id": "②",
+    "title": "受控拒收演练",
+    "status": "✓",
+    "measured": "2 次（REJECT=1 OBSERVE=1）",
+    "target": "≥1 次（verdict∈{REJECT,OBSERVE}）"
+   },
+   {
+    "id": "③",
+    "title": "误拒绝率 <5%",
+    "status": "pending",
+    "measured": "复核 28/77 单，清单不完整",
+    "target": "<5 推翻率（自然 REJECT≥20）"
+   },
+   {
+    "id": "④",
+    "title": "漏放 = 0",
+    "status": "✓",
+    "measured": "满窗 153 单，漏放 0",
+    "target": "满 7 天窗口 PASS 单事故数 = 0"
+   },
+   {
+    "id": "⑤",
+    "title": "证据链完整率 100% + 年龄 ≤48h",
+    "status": "✓",
+    "measured": "完整率 100.0%（335/335），新鲜 335/335，年龄门 ≤48h；legacy v0 豁免 6 单",
+    "target": "11 项必需字段完整率 100%；证据年龄 ≤48h"
+   },
+   {
+    "id": "⑥",
+    "title": "赵云抽查 3/3 一致",
+    "status": "✓",
+    "measured": "3/3 一致",
+    "target": "3 单抽查一致（3/3）"
+   }
+  ],
+  "summary": {
+   "overall_pass": false,
+   "passed": 5,
+   "total": 6,
+   "items": [
+    {
+     "id": "①",
+     "title": "PASS 验收样本量",
+     "status": "✓",
+     "measured": "341/10 单"
+    },
+    {
+     "id": "②",
+     "title": "受控拒收演练",
+     "status": "✓",
+     "measured": "2 次（REJECT=1 OBSERVE=1）"
+    },
+    {
+     "id": "③",
+     "title": "误拒绝率 <5%",
+     "status": "pending",
+     "measured": "复核 28/77 单，清单不完整"
+    },
+    {
+     "id": "④",
+     "title": "漏放 = 0",
+     "status": "✓",
+     "measured": "满窗 153 单，漏放 0"
+    },
+    {
+     "id": "⑤",
+     "title": "证据链完整率 100% + 年龄 ≤48h",
+     "status": "✓",
+     "measured": "完整率 100.0%（335/335），新鲜 335/335，年龄门 ≤48h；legacy v0 豁免 6 单"
+    },
+    {
+     "id": "⑥",
+     "title": "赵云抽查 3/3 一致",
+     "status": "✓",
+     "measured": "3/3 一致"
+    }
+   ],
+   "blocking_items": [
+    {
+     "id": "③",
+     "title": "误拒绝率 <5%",
+     "status": "pending",
+     "measured": "复核 28/77 单，清单不完整"
+    }
+   ]
+  },
+  "kpi": {
+   "window_days": 7,
+   "cutoff": "2026-11-03T22:30:23+08:00",
+   "runs": 458,
+   "counts": {
+    "PASS": 389,
+    "REJECT": 69,
+    "OBSERVE": 0
+   },
+   "pass_rate": 0.8493,
+   "merge_done": 149,
+   "merge_done_available": true,
+   "coverage_rate": 3.0738,
+   "daily_file": "C:\\项目\\老田的AI助手\\work\\huangzhong\\daily.jsonl",
+   "daily_bad_lines": 0,
+   "dev_events_file": "C:\\项目\\老田的AI助手\\portal\\data\\dev_events.jsonl",
+   "dev_events_bad_lines": 0,
+   "latest_run": "2026-11-10T22:15:01+08:00",
+   "kpi_note": "覆盖率 = 窗口内 runs / merge_done（抽检回填单不计，沿用决策包第六节口径）；误拒绝/漏放见 ③④"
+  },
+  "report_version": "v1.1 (2026-10-30)",
+  "generated_at": "2026-11-10T22:30:23+08:00",
+  "age_hours": -0.01,
+  "status": "✓",
+  "error": null,
+  "note": null,
+  "blockers": [],
+  "warnings": []
+ },
+ "go_no_go": {
+  "tool": "C:\\项目\\老田的AI助手\\tools\\huangzhong_go_no_go.py",
+  "available": true,
+  "cmd": [
+   "C:\\Program Files\\Python311\\python.exe",
+   "-X",
+   "utf8",
+   "tools/huangzhong_go_no_go.py",
+   "--json",
+   "--draft-dir",
+   "C:\\Temp\\hz_20261110_preflight_2230"
+  ],
+  "subprocess": {
+   "ok": true,
+   "rc": 1,
+   "error": null,
+   "elapsed_s": 0.13
+  },
+  "returncode": 1,
+  "exit_map": {
+   "0": "GO",
+   "1": "NO_GO",
+   "2": "CONDITIONAL_GO",
+   "3": "数据错误"
+  },
+  "decision": {
+   "code": "NO_GO",
+   "label": "建议 NO-GO",
+   "suggestion": "六条未全 ✓（5/6）：按缺口补证后重跑复核与本草稿；本次不接 merge 前置（Go 需老田 L3 单独批准）",
+   "rationale": [
+    "六条仅 5/6 ✓，未达 GO 前置",
+    "③ 误拒绝率 <5%：pending（复核 28/77 单，清单不完整）"
+   ],
+   "gaps": [
+    {
+     "id": "③",
+     "title": "误拒绝率 <5%",
+     "status": "pending",
+     "measured": "复核 28/77 单，清单不完整"
+    }
+   ],
+   "conditions": [],
+   "tracking_note": null,
+   "l3_required": true,
+   "rule": "六条全✓且kpi覆盖率≥10%→GO；六条全✓但覆盖率<10%→条件化GO；否则NO-GO"
+  },
+  "six": {
+   "passed": 5,
+   "total": 6,
+   "all_ok": false,
+   "threshold": 0.1,
+   "statuses": {
+    "①": "✓",
+    "②": "✓",
+    "③": "pending",
+    "④": "✓",
+    "⑤": "✓",
+    "⑥": "✓"
+   }
+  },
+  "kpi": {
+   "runs": 458,
+   "counts": {
+    "PASS": 389,
+    "REJECT": 69,
+    "OBSERVE": 0
+   },
+   "merge_done": 149,
+   "coverage_rate": 3.0738,
+   "window_days": 7,
+   "merge_done_available": true
+  },
+  "draft": {
+   "path": "C:\\Temp\\hz_20261110_preflight_2230\\2026-11-04_黄忠GoNoGo决策草案_20261110_223023.md",
+   "written": true
+  },
+  "data_error": false,
+  "status": "✓",
+  "error": null,
+  "note": null,
+  "blockers": [],
+  "warnings": []
+ },
+ "maturity": {
+  "pass_samples": 341,
+  "mature_count": 153,
+  "tracking_count": 188,
+  "mature_at_1030": 153,
+  "mature_at_1104": 153,
+  "target_time": "2026-11-10T22:30:00+08:00",
+  "window_days": 7,
+  "earliest_window_end": "2026-11-04T07:18:01+08:00",
+  "earliest_mature": "2026-11-04T10:54:45+08:00",
+  "next_window_end": "2026-11-10T22:45:01+08:00",
+  "expected_mature_by_target": [
+   {
+    "file": "acceptance_009f5b65.json",
+    "sha8": "009f5b65",
+    "generated_at": "2026-10-28T10:54:45+08:00",
+    "window_end": "2026-11-04T10:54:45+08:00"
+   },
+   {
+    "file": "acceptance_02fc06f8.json",
+    "sha8": "02fc06f8",
+    "generated_at": "2026-10-31T14:15:00+08:00",
+    "window_end": "2026-11-07T14:15:00+08:00"
+   },
+   {
+    "file": "acceptance_0729e8b2.json",
+    "sha8": "0729e8b2",
+    "generated_at": "2026-11-01T19:45:00+08:00",
+    "window_end": "2026-11-08T19:45:00+08:00"
+   },
+   {
+    "file": "acceptance_074f111f.json",
+    "sha8": "074f111f",
+    "generated_at": "2026-11-02T03:15:02+08:00",
+    "window_end": "2026-11-09T03:15:02+08:00"
+   },
+   {
+    "file": "acceptance_09e2218a.json",
+    "sha8": "09e2218a",
+    "generated_at": "2026-11-01T05:15:00+08:00",
+    "window_end": "2026-11-08T05:15:00+08:00"
+   },
+   {
+    "file": "acceptance_0a2d0aee.json",
+    "sha8": "0a2d0aee",
+    "generated_at": "2026-10-30T10:45:01+08:00",
+    "window_end": "2026-11-06T10:45:01+08:00"
+   },
+   {
+    "file": "acceptance_0e56b81c.json",
+    "sha8": "0e56b81c",
+    "generated_at": "2026-11-01T09:15:01+08:00",
+    "window_end": "2026-11-08T09:15:01+08:00"
+   },
+   {
+    "file": "acceptance_10dcd2ae.json",
+    "sha8": "10dcd2ae",
+    "generated_at": "2026-10-31T01:21:13+08:00",
+    "window_end": "2026-11-07T01:21:13+08:00"
+   },
+   {
+    "file": "acceptance_189672d4.json",
+    "sha8": "189672d4",
+    "generated_at": "2026-10-31T15:15:01+08:00",
+    "window_end": "2026-11-07T15:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1a6d8580.json",
+    "sha8": "1a6d8580",
+    "generated_at": "2026-11-01T07:15:01+08:00",
+    "window_end": "2026-11-08T07:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1bccbf22.json",
+    "sha8": "1bccbf22",
+    "generated_at": "2026-11-02T16:15:00+08:00",
+    "window_end": "2026-11-09T16:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1bd37c8d.json",
+    "sha8": "1bd37c8d",
+    "generated_at": "2026-10-31T00:45:03+08:00",
+    "window_end": "2026-11-07T00:45:03+08:00"
+   },
+   {
+    "file": "acceptance_1c6e4a3e.json",
+    "sha8": "1c6e4a3e",
+    "generated_at": "2026-11-03T17:34:25+08:00",
+    "window_end": "2026-11-10T17:34:25+08:00"
+   },
+   {
+    "file": "acceptance_1e2e38bf.json",
+    "sha8": "1e2e38bf",
+    "generated_at": "2026-10-30T02:29:00+08:00",
+    "window_end": "2026-11-06T02:29:00+08:00"
+   },
+   {
+    "file": "acceptance_1e85953d.json",
+    "sha8": "1e85953d",
+    "generated_at": "2026-11-02T17:15:01+08:00",
+    "window_end": "2026-11-09T17:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1e90f129.json",
+    "sha8": "1e90f129",
+    "generated_at": "2026-11-02T13:15:00+08:00",
+    "window_end": "2026-11-09T13:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1ec7543e.json",
+    "sha8": "1ec7543e",
+    "generated_at": "2026-11-01T17:15:00+08:00",
+    "window_end": "2026-11-08T17:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1f4d977b.json",
+    "sha8": "1f4d977b",
+    "generated_at": "2026-11-01T16:45:01+08:00",
+    "window_end": "2026-11-08T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_216bd4d2.json",
+    "sha8": "216bd4d2",
+    "generated_at": "2026-11-03T17:15:01+08:00",
+    "window_end": "2026-11-10T17:15:01+08:00"
+   },
+   {
+    "file": "acceptance_22c8bae9.json",
+    "sha8": "22c8bae9",
+    "generated_at": "2026-11-02T15:45:00+08:00",
+    "window_end": "2026-11-09T15:45:00+08:00"
+   },
+   {
+    "file": "acceptance_233c3ada.json",
+    "sha8": "233c3ada",
+    "generated_at": "2026-11-01T13:15:01+08:00",
+    "window_end": "2026-11-08T13:15:01+08:00"
+   },
+   {
+    "file": "acceptance_2363247d.json",
+    "sha8": "2363247d",
+    "generated_at": "2026-11-02T14:45:00+08:00",
+    "window_end": "2026-11-09T14:45:00+08:00"
+   },
+   {
+    "file": "acceptance_24d94c9d.json",
+    "sha8": "24d94c9d",
+    "generated_at": "2026-10-30T17:45:01+08:00",
+    "window_end": "2026-11-06T17:45:01+08:00"
+   },
+   {
+    "file": "acceptance_26b557b7.json",
+    "sha8": "26b557b7",
+    "generated_at": "2026-10-30T18:45:00+08:00",
+    "window_end": "2026-11-06T18:45:00+08:00"
+   },
+   {
+    "file": "acceptance_2a9aac08.json",
+    "sha8": "2a9aac08",
+    "generated_at": "2026-10-31T13:15:00+08:00",
+    "window_end": "2026-11-07T13:15:00+08:00"
+   },
+   {
+    "file": "acceptance_2c20f11d.json",
+    "sha8": "2c20f11d",
+    "generated_at": "2026-11-01T08:45:00+08:00",
+    "window_end": "2026-11-08T08:45:00+08:00"
+   },
+   {
+    "file": "acceptance_2d37b787.json",
+    "sha8": "2d37b787",
+    "generated_at": "2026-10-30T16:45:01+08:00",
+    "window_end": "2026-11-06T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_2e61af4f.json",
+    "sha8": "2e61af4f",
+    "generated_at": "2026-10-31T18:45:01+08:00",
+    "window_end": "2026-11-07T18:45:01+08:00"
+   },
+   {
+    "file": "acceptance_309e7d13.json",
+    "sha8": "309e7d13",
+    "generated_at": "2026-10-30T14:45:01+08:00",
+    "window_end": "2026-11-06T14:45:01+08:00"
+   },
+   {
+    "file": "acceptance_31c89439.json",
+    "sha8": "31c89439",
+    "generated_at": "2026-11-01T22:45:01+08:00",
+    "window_end": "2026-11-08T22:45:01+08:00"
+   },
+   {
+    "file": "acceptance_336ecc1c.json",
+    "sha8": "336ecc1c",
+    "generated_at": "2026-10-31T09:45:01+08:00",
+    "window_end": "2026-11-07T09:45:01+08:00"
+   },
+   {
+    "file": "acceptance_33dfc322.json",
+    "sha8": "33dfc322",
+    "generated_at": "2026-10-30T08:45:01+08:00",
+    "window_end": "2026-11-06T08:45:01+08:00"
+   },
+   {
+    "file": "acceptance_39df8806.json",
+    "sha8": "39df8806",
+    "generated_at": "2026-11-03T16:45:01+08:00",
+    "window_end": "2026-11-10T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_3c04aa9c.json",
+    "sha8": "3c04aa9c",
+    "generated_at": "2026-11-02T03:45:02+08:00",
+    "window_end": "2026-11-09T03:45:02+08:00"
+   },
+   {
+    "file": "acceptance_3ef7c42d.json",
+    "sha8": "3ef7c42d",
+    "generated_at": "2026-11-02T11:15:01+08:00",
+    "window_end": "2026-11-09T11:15:01+08:00"
+   },
+   {
+    "file": "acceptance_3f7733c4.json",
+    "sha8": "3f7733c4",
+    "generated_at": "2026-11-02T06:15:02+08:00",
+    "window_end": "2026-11-09T06:15:02+08:00"
+   },
+   {
+    "file": "acceptance_42ed858e.json",
+    "sha8": "42ed858e",
+    "generated_at": "2026-11-01T10:15:00+08:00",
+    "window_end": "2026-11-08T10:15:00+08:00"
+   },
+   {
+    "file": "acceptance_438b307b.json",
+    "sha8": "438b307b",
+    "generated_at": "2026-10-31T11:45:00+08:00",
+    "window_end": "2026-11-07T11:45:00+08:00"
+   },
+   {
+    "file": "acceptance_44a2bfed.json",
+    "sha8": "44a2bfed",
+    "generated_at": "2026-10-30T02:29:00+08:00",
+    "window_end": "2026-11-06T02:29:00+08:00"
+   },
+   {
+    "file": "acceptance_44e3ac21.json",
+    "sha8": "44e3ac21",
+    "generated_at": "2026-10-31T22:30:50+08:00",
+    "window_end": "2026-11-07T22:30:50+08:00"
+   },
+   {
+    "file": "acceptance_45a56a90.json",
+    "sha8": "45a56a90",
+    "generated_at": "2026-11-01T14:15:01+08:00",
+    "window_end": "2026-11-08T14:15:01+08:00"
+   },
+   {
+    "file": "acceptance_48cff91f.json",
+    "sha8": "48cff91f",
+    "generated_at": "2026-10-30T06:45:01+08:00",
+    "window_end": "2026-11-06T06:45:01+08:00"
+   },
+   {
+    "file": "acceptance_4beda7a6.json",
+    "sha8": "4beda7a6",
+    "generated_at": "2026-11-03T22:15:01+08:00",
+    "window_end": "2026-11-10T22:15:01+08:00"
+   },
+   {
+    "file": "acceptance_4d8a19a2.json",
+    "sha8": "4d8a19a2",
+    "generated_at": "2026-11-02T10:15:00+08:00",
+    "window_end": "2026-11-09T10:15:00+08:00"
+   },
+   {
+    "file": "acceptance_4eb494f6.json",
+    "sha8": "4eb494f6",
+    "generated_at": "2026-10-31T05:15:01+08:00",
+    "window_end": "2026-11-07T05:15:01+08:00"
+   },
+   {
+    "file": "acceptance_4ec2ae88.json",
+    "sha8": "4ec2ae88",
+    "generated_at": "2026-10-31T15:45:01+08:00",
+    "window_end": "2026-11-07T15:45:01+08:00"
+   },
+   {
+    "file": "acceptance_503853e2.json",
+    "sha8": "503853e2",
+    "generated_at": "2026-11-02T01:15:02+08:00",
+    "window_end": "2026-11-09T01:15:02+08:00"
+   },
+   {
+    "file": "acceptance_50d7d7b8.json",
+    "sha8": "50d7d7b8",
+    "generated_at": "2026-10-31T08:15:00+08:00",
+    "window_end": "2026-11-07T08:15:00+08:00"
+   },
+   {
+    "file": "acceptance_52a734fa.json",
+    "sha8": "52a734fa",
+    "generated_at": "2026-10-31T12:15:00+08:00",
+    "window_end": "2026-11-07T12:15:00+08:00"
+   },
+   {
+    "file": "acceptance_52d0c4b9.json",
+    "sha8": "52d0c4b9",
+    "generated_at": "2026-11-02T09:45:01+08:00",
+    "window_end": "2026-11-09T09:45:01+08:00"
+   }
+  ],
+  "mature_samples": [
+   {
+    "file": "acceptance_009f5b65.json",
+    "sha8": "009f5b65",
+    "generated_at": "2026-10-28T10:54:45+08:00",
+    "window_end": "2026-11-04T10:54:45+08:00"
+   },
+   {
+    "file": "acceptance_02fc06f8.json",
+    "sha8": "02fc06f8",
+    "generated_at": "2026-10-31T14:15:00+08:00",
+    "window_end": "2026-11-07T14:15:00+08:00"
+   },
+   {
+    "file": "acceptance_0729e8b2.json",
+    "sha8": "0729e8b2",
+    "generated_at": "2026-11-01T19:45:00+08:00",
+    "window_end": "2026-11-08T19:45:00+08:00"
+   },
+   {
+    "file": "acceptance_074f111f.json",
+    "sha8": "074f111f",
+    "generated_at": "2026-11-02T03:15:02+08:00",
+    "window_end": "2026-11-09T03:15:02+08:00"
+   },
+   {
+    "file": "acceptance_09e2218a.json",
+    "sha8": "09e2218a",
+    "generated_at": "2026-11-01T05:15:00+08:00",
+    "window_end": "2026-11-08T05:15:00+08:00"
+   },
+   {
+    "file": "acceptance_0a2d0aee.json",
+    "sha8": "0a2d0aee",
+    "generated_at": "2026-10-30T10:45:01+08:00",
+    "window_end": "2026-11-06T10:45:01+08:00"
+   },
+   {
+    "file": "acceptance_0e56b81c.json",
+    "sha8": "0e56b81c",
+    "generated_at": "2026-11-01T09:15:01+08:00",
+    "window_end": "2026-11-08T09:15:01+08:00"
+   },
+   {
+    "file": "acceptance_10dcd2ae.json",
+    "sha8": "10dcd2ae",
+    "generated_at": "2026-10-31T01:21:13+08:00",
+    "window_end": "2026-11-07T01:21:13+08:00"
+   },
+   {
+    "file": "acceptance_189672d4.json",
+    "sha8": "189672d4",
+    "generated_at": "2026-10-31T15:15:01+08:00",
+    "window_end": "2026-11-07T15:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1a6d8580.json",
+    "sha8": "1a6d8580",
+    "generated_at": "2026-11-01T07:15:01+08:00",
+    "window_end": "2026-11-08T07:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1bccbf22.json",
+    "sha8": "1bccbf22",
+    "generated_at": "2026-11-02T16:15:00+08:00",
+    "window_end": "2026-11-09T16:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1bd37c8d.json",
+    "sha8": "1bd37c8d",
+    "generated_at": "2026-10-31T00:45:03+08:00",
+    "window_end": "2026-11-07T00:45:03+08:00"
+   },
+   {
+    "file": "acceptance_1c6e4a3e.json",
+    "sha8": "1c6e4a3e",
+    "generated_at": "2026-11-03T17:34:25+08:00",
+    "window_end": "2026-11-10T17:34:25+08:00"
+   },
+   {
+    "file": "acceptance_1e2e38bf.json",
+    "sha8": "1e2e38bf",
+    "generated_at": "2026-10-30T02:29:00+08:00",
+    "window_end": "2026-11-06T02:29:00+08:00"
+   },
+   {
+    "file": "acceptance_1e85953d.json",
+    "sha8": "1e85953d",
+    "generated_at": "2026-11-02T17:15:01+08:00",
+    "window_end": "2026-11-09T17:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1e90f129.json",
+    "sha8": "1e90f129",
+    "generated_at": "2026-11-02T13:15:00+08:00",
+    "window_end": "2026-11-09T13:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1ec7543e.json",
+    "sha8": "1ec7543e",
+    "generated_at": "2026-11-01T17:15:00+08:00",
+    "window_end": "2026-11-08T17:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1f4d977b.json",
+    "sha8": "1f4d977b",
+    "generated_at": "2026-11-01T16:45:01+08:00",
+    "window_end": "2026-11-08T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_216bd4d2.json",
+    "sha8": "216bd4d2",
+    "generated_at": "2026-11-03T17:15:01+08:00",
+    "window_end": "2026-11-10T17:15:01+08:00"
+   },
+   {
+    "file": "acceptance_22c8bae9.json",
+    "sha8": "22c8bae9",
+    "generated_at": "2026-11-02T15:45:00+08:00",
+    "window_end": "2026-11-09T15:45:00+08:00"
+   },
+   {
+    "file": "acceptance_233c3ada.json",
+    "sha8": "233c3ada",
+    "generated_at": "2026-11-01T13:15:01+08:00",
+    "window_end": "2026-11-08T13:15:01+08:00"
+   },
+   {
+    "file": "acceptance_2363247d.json",
+    "sha8": "2363247d",
+    "generated_at": "2026-11-02T14:45:00+08:00",
+    "window_end": "2026-11-09T14:45:00+08:00"
+   },
+   {
+    "file": "acceptance_24d94c9d.json",
+    "sha8": "24d94c9d",
+    "generated_at": "2026-10-30T17:45:01+08:00",
+    "window_end": "2026-11-06T17:45:01+08:00"
+   },
+   {
+    "file": "acceptance_26b557b7.json",
+    "sha8": "26b557b7",
+    "generated_at": "2026-10-30T18:45:00+08:00",
+    "window_end": "2026-11-06T18:45:00+08:00"
+   },
+   {
+    "file": "acceptance_2a9aac08.json",
+    "sha8": "2a9aac08",
+    "generated_at": "2026-10-31T13:15:00+08:00",
+    "window_end": "2026-11-07T13:15:00+08:00"
+   },
+   {
+    "file": "acceptance_2c20f11d.json",
+    "sha8": "2c20f11d",
+    "generated_at": "2026-11-01T08:45:00+08:00",
+    "window_end": "2026-11-08T08:45:00+08:00"
+   },
+   {
+    "file": "acceptance_2d37b787.json",
+    "sha8": "2d37b787",
+    "generated_at": "2026-10-30T16:45:01+08:00",
+    "window_end": "2026-11-06T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_2e61af4f.json",
+    "sha8": "2e61af4f",
+    "generated_at": "2026-10-31T18:45:01+08:00",
+    "window_end": "2026-11-07T18:45:01+08:00"
+   },
+   {
+    "file": "acceptance_309e7d13.json",
+    "sha8": "309e7d13",
+    "generated_at": "2026-10-30T14:45:01+08:00",
+    "window_end": "2026-11-06T14:45:01+08:00"
+   },
+   {
+    "file": "acceptance_31c89439.json",
+    "sha8": "31c89439",
+    "generated_at": "2026-11-01T22:45:01+08:00",
+    "window_end": "2026-11-08T22:45:01+08:00"
+   },
+   {
+    "file": "acceptance_336ecc1c.json",
+    "sha8": "336ecc1c",
+    "generated_at": "2026-10-31T09:45:01+08:00",
+    "window_end": "2026-11-07T09:45:01+08:00"
+   },
+   {
+    "file": "acceptance_33dfc322.json",
+    "sha8": "33dfc322",
+    "generated_at": "2026-10-30T08:45:01+08:00",
+    "window_end": "2026-11-06T08:45:01+08:00"
+   },
+   {
+    "file": "acceptance_39df8806.json",
+    "sha8": "39df8806",
+    "generated_at": "2026-11-03T16:45:01+08:00",
+    "window_end": "2026-11-10T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_3c04aa9c.json",
+    "sha8": "3c04aa9c",
+    "generated_at": "2026-11-02T03:45:02+08:00",
+    "window_end": "2026-11-09T03:45:02+08:00"
+   },
+   {
+    "file": "acceptance_3ef7c42d.json",
+    "sha8": "3ef7c42d",
+    "generated_at": "2026-11-02T11:15:01+08:00",
+    "window_end": "2026-11-09T11:15:01+08:00"
+   },
+   {
+    "file": "acceptance_3f7733c4.json",
+    "sha8": "3f7733c4",
+    "generated_at": "2026-11-02T06:15:02+08:00",
+    "window_end": "2026-11-09T06:15:02+08:00"
+   },
+   {
+    "file": "acceptance_42ed858e.json",
+    "sha8": "42ed858e",
+    "generated_at": "2026-11-01T10:15:00+08:00",
+    "window_end": "2026-11-08T10:15:00+08:00"
+   },
+   {
+    "file": "acceptance_438b307b.json",
+    "sha8": "438b307b",
+    "generated_at": "2026-10-31T11:45:00+08:00",
+    "window_end": "2026-11-07T11:45:00+08:00"
+   },
+   {
+    "file": "acceptance_44a2bfed.json",
+    "sha8": "44a2bfed",
+    "generated_at": "2026-10-30T02:29:00+08:00",
+    "window_end": "2026-11-06T02:29:00+08:00"
+   },
+   {
+    "file": "acceptance_44e3ac21.json",
+    "sha8": "44e3ac21",
+    "generated_at": "2026-10-31T22:30:50+08:00",
+    "window_end": "2026-11-07T22:30:50+08:00"
+   },
+   {
+    "file": "acceptance_45a56a90.json",
+    "sha8": "45a56a90",
+    "generated_at": "2026-11-01T14:15:01+08:00",
+    "window_end": "2026-11-08T14:15:01+08:00"
+   },
+   {
+    "file": "acceptance_48cff91f.json",
+    "sha8": "48cff91f",
+    "generated_at": "2026-10-30T06:45:01+08:00",
+    "window_end": "2026-11-06T06:45:01+08:00"
+   },
+   {
+    "file": "acceptance_4beda7a6.json",
+    "sha8": "4beda7a6",
+    "generated_at": "2026-11-03T22:15:01+08:00",
+    "window_end": "2026-11-10T22:15:01+08:00"
+   },
+   {
+    "file": "acceptance_4d8a19a2.json",
+    "sha8": "4d8a19a2",
+    "generated_at": "2026-11-02T10:15:00+08:00",
+    "window_end": "2026-11-09T10:15:00+08:00"
+   },
+   {
+    "file": "acceptance_4eb494f6.json",
+    "sha8": "4eb494f6",
+    "generated_at": "2026-10-31T05:15:01+08:00",
+    "window_end": "2026-11-07T05:15:01+08:00"
+   },
+   {
+    "file": "acceptance_4ec2ae88.json",
+    "sha8": "4ec2ae88",
+    "generated_at": "2026-10-31T15:45:01+08:00",
+    "window_end": "2026-11-07T15:45:01+08:00"
+   },
+   {
+    "file": "acceptance_503853e2.json",
+    "sha8": "503853e2",
+    "generated_at": "2026-11-02T01:15:02+08:00",
+    "window_end": "2026-11-09T01:15:02+08:00"
+   },
+   {
+    "file": "acceptance_50d7d7b8.json",
+    "sha8": "50d7d7b8",
+    "generated_at": "2026-10-31T08:15:00+08:00",
+    "window_end": "2026-11-07T08:15:00+08:00"
+   },
+   {
+    "file": "acceptance_52a734fa.json",
+    "sha8": "52a734fa",
+    "generated_at": "2026-10-31T12:15:00+08:00",
+    "window_end": "2026-11-07T12:15:00+08:00"
+   },
+   {
+    "file": "acceptance_52d0c4b9.json",
+    "sha8": "52d0c4b9",
+    "generated_at": "2026-11-02T09:45:01+08:00",
+    "window_end": "2026-11-09T09:45:01+08:00"
+   }
+  ],
+  "tracking_samples": [
+   {
+    "file": "acceptance_00135966.json",
+    "sha8": "00135966",
+    "generated_at": "2026-11-09T15:45:01+08:00",
+    "window_end": "2026-11-16T15:45:01+08:00"
+   },
+   {
+    "file": "acceptance_01095301.json",
+    "sha8": "01095301",
+    "generated_at": "2026-11-07T11:15:00+08:00",
+    "window_end": "2026-11-14T11:15:00+08:00"
+   },
+   {
+    "file": "acceptance_025fc94c.json",
+    "sha8": "025fc94c",
+    "generated_at": "2026-11-09T00:15:05+08:00",
+    "window_end": "2026-11-16T00:15:05+08:00"
+   },
+   {
+    "file": "acceptance_0353b0bb.json",
+    "sha8": "0353b0bb",
+    "generated_at": "2026-11-10T15:15:00+08:00",
+    "window_end": "2026-11-17T15:15:00+08:00"
+   },
+   {
+    "file": "acceptance_0396559a.json",
+    "sha8": "0396559a",
+    "generated_at": "2026-11-10T18:15:00+08:00",
+    "window_end": "2026-11-17T18:15:00+08:00"
+   },
+   {
+    "file": "acceptance_03a05908.json",
+    "sha8": "03a05908",
+    "generated_at": "2026-11-07T15:15:01+08:00",
+    "window_end": "2026-11-14T15:15:01+08:00"
+   },
+   {
+    "file": "acceptance_05c7cfca.json",
+    "sha8": "05c7cfca",
+    "generated_at": "2026-11-09T16:45:01+08:00",
+    "window_end": "2026-11-16T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_0794099e.json",
+    "sha8": "0794099e",
+    "generated_at": "2026-11-06T07:15:04+08:00",
+    "window_end": "2026-11-13T07:15:04+08:00"
+   },
+   {
+    "file": "acceptance_0983a123.json",
+    "sha8": "0983a123",
+    "generated_at": "2026-11-06T09:45:06+08:00",
+    "window_end": "2026-11-13T09:45:06+08:00"
+   },
+   {
+    "file": "acceptance_09b8f298.json",
+    "sha8": "09b8f298",
+    "generated_at": "2026-11-06T06:45:03+08:00",
+    "window_end": "2026-11-13T06:45:03+08:00"
+   },
+   {
+    "file": "acceptance_0aaee40d.json",
+    "sha8": "0aaee40d",
+    "generated_at": "2026-11-07T12:45:00+08:00",
+    "window_end": "2026-11-14T12:45:00+08:00"
+   },
+   {
+    "file": "acceptance_0b6b94b5.json",
+    "sha8": "0b6b94b5",
+    "generated_at": "2026-11-04T11:45:00+08:00",
+    "window_end": "2026-11-11T11:45:00+08:00"
+   },
+   {
+    "file": "acceptance_0c51f7f1.json",
+    "sha8": "0c51f7f1",
+    "generated_at": "2026-11-07T11:45:00+08:00",
+    "window_end": "2026-11-14T11:45:00+08:00"
+   },
+   {
+    "file": "acceptance_0dbe702c.json",
+    "sha8": "0dbe702c",
+    "generated_at": "2026-11-08T11:45:04+08:00",
+    "window_end": "2026-11-15T11:45:04+08:00"
+   },
+   {
+    "file": "acceptance_12c32c60.json",
+    "sha8": "12c32c60",
+    "generated_at": "2026-11-09T16:15:01+08:00",
+    "window_end": "2026-11-16T16:15:01+08:00"
+   },
+   {
+    "file": "acceptance_14732868.json",
+    "sha8": "14732868",
+    "generated_at": "2026-11-09T13:15:01+08:00",
+    "window_end": "2026-11-16T13:15:01+08:00"
+   },
+   {
+    "file": "acceptance_14893aa3.json",
+    "sha8": "14893aa3",
+    "generated_at": "2026-11-07T15:45:01+08:00",
+    "window_end": "2026-11-14T15:45:01+08:00"
+   },
+   {
+    "file": "acceptance_157d2e0c.json",
+    "sha8": "157d2e0c",
+    "generated_at": "2026-11-07T21:15:00+08:00",
+    "window_end": "2026-11-14T21:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1596e633.json",
+    "sha8": "1596e633",
+    "generated_at": "2026-11-06T07:45:03+08:00",
+    "window_end": "2026-11-13T07:45:03+08:00"
+   },
+   {
+    "file": "acceptance_16cf6e17.json",
+    "sha8": "16cf6e17",
+    "generated_at": "2026-11-07T19:45:01+08:00",
+    "window_end": "2026-11-14T19:45:01+08:00"
+   },
+   {
+    "file": "acceptance_17165e97.json",
+    "sha8": "17165e97",
+    "generated_at": "2026-11-04T15:45:01+08:00",
+    "window_end": "2026-11-11T15:45:01+08:00"
+   },
+   {
+    "file": "acceptance_17fbf9df.json",
+    "sha8": "17fbf9df",
+    "generated_at": "2026-11-10T17:15:01+08:00",
+    "window_end": "2026-11-17T17:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1a9e70c8.json",
+    "sha8": "1a9e70c8",
+    "generated_at": "2026-11-04T03:15:05+08:00",
+    "window_end": "2026-11-11T03:15:05+08:00"
+   },
+   {
+    "file": "acceptance_1d52279d.json",
+    "sha8": "1d52279d",
+    "generated_at": "2026-11-07T14:15:00+08:00",
+    "window_end": "2026-11-14T14:15:00+08:00"
+   },
+   {
+    "file": "acceptance_1f3ca299.json",
+    "sha8": "1f3ca299",
+    "generated_at": "2026-11-04T13:15:01+08:00",
+    "window_end": "2026-11-11T13:15:01+08:00"
+   },
+   {
+    "file": "acceptance_1f784b56.json",
+    "sha8": "1f784b56",
+    "generated_at": "2026-11-06T17:15:02+08:00",
+    "window_end": "2026-11-13T17:15:02+08:00"
+   },
+   {
+    "file": "acceptance_201049fc.json",
+    "sha8": "201049fc",
+    "generated_at": "2026-11-04T07:15:00+08:00",
+    "window_end": "2026-11-11T07:15:00+08:00"
+   },
+   {
+    "file": "acceptance_22895def.json",
+    "sha8": "22895def",
+    "generated_at": "2026-11-06T08:45:06+08:00",
+    "window_end": "2026-11-13T08:45:06+08:00"
+   },
+   {
+    "file": "acceptance_238cbe30.json",
+    "sha8": "238cbe30",
+    "generated_at": "2026-11-06T16:45:02+08:00",
+    "window_end": "2026-11-13T16:45:02+08:00"
+   },
+   {
+    "file": "acceptance_243fff29.json",
+    "sha8": "243fff29",
+    "generated_at": "2026-11-10T15:45:00+08:00",
+    "window_end": "2026-11-17T15:45:00+08:00"
+   },
+   {
+    "file": "acceptance_25a5d5a4.json",
+    "sha8": "25a5d5a4",
+    "generated_at": "2026-11-10T10:15:00+08:00",
+    "window_end": "2026-11-17T10:15:00+08:00"
+   },
+   {
+    "file": "acceptance_2642d358.json",
+    "sha8": "2642d358",
+    "generated_at": "2026-11-08T16:15:03+08:00",
+    "window_end": "2026-11-15T16:15:03+08:00"
+   },
+   {
+    "file": "acceptance_2739cea5.json",
+    "sha8": "2739cea5",
+    "generated_at": "2026-11-03T22:45:01+08:00",
+    "window_end": "2026-11-10T22:45:01+08:00"
+   },
+   {
+    "file": "acceptance_27582688.json",
+    "sha8": "27582688",
+    "generated_at": "2026-11-06T04:15:02+08:00",
+    "window_end": "2026-11-13T04:15:02+08:00"
+   },
+   {
+    "file": "acceptance_2a3aeb8c.json",
+    "sha8": "2a3aeb8c",
+    "generated_at": "2026-11-10T12:45:01+08:00",
+    "window_end": "2026-11-17T12:45:01+08:00"
+   },
+   {
+    "file": "acceptance_2b20dd6b.json",
+    "sha8": "2b20dd6b",
+    "generated_at": "2026-11-10T07:45:01+08:00",
+    "window_end": "2026-11-17T07:45:01+08:00"
+   },
+   {
+    "file": "acceptance_2cc5b987.json",
+    "sha8": "2cc5b987",
+    "generated_at": "2026-11-10T05:15:02+08:00",
+    "window_end": "2026-11-17T05:15:02+08:00"
+   },
+   {
+    "file": "acceptance_2dc93d60.json",
+    "sha8": "2dc93d60",
+    "generated_at": "2026-11-07T00:15:03+08:00",
+    "window_end": "2026-11-14T00:15:03+08:00"
+   },
+   {
+    "file": "acceptance_2f87c9ad.json",
+    "sha8": "2f87c9ad",
+    "generated_at": "2026-11-08T21:15:05+08:00",
+    "window_end": "2026-11-15T21:15:05+08:00"
+   },
+   {
+    "file": "acceptance_2fb6094d.json",
+    "sha8": "2fb6094d",
+    "generated_at": "2026-11-10T06:15:01+08:00",
+    "window_end": "2026-11-17T06:15:01+08:00"
+   },
+   {
+    "file": "acceptance_3345e2dc.json",
+    "sha8": "3345e2dc",
+    "generated_at": "2026-11-10T08:45:01+08:00",
+    "window_end": "2026-11-17T08:45:01+08:00"
+   },
+   {
+    "file": "acceptance_3461e8e0.json",
+    "sha8": "3461e8e0",
+    "generated_at": "2026-11-05T20:45:00+08:00",
+    "window_end": "2026-11-12T20:45:00+08:00"
+   },
+   {
+    "file": "acceptance_3546255a.json",
+    "sha8": "3546255a",
+    "generated_at": "2026-11-07T16:45:01+08:00",
+    "window_end": "2026-11-14T16:45:01+08:00"
+   },
+   {
+    "file": "acceptance_357cf705.json",
+    "sha8": "357cf705",
+    "generated_at": "2026-11-08T07:15:04+08:00",
+    "window_end": "2026-11-15T07:15:04+08:00"
+   },
+   {
+    "file": "acceptance_35f5083e.json",
+    "sha8": "35f5083e",
+    "generated_at": "2026-11-06T02:45:02+08:00",
+    "window_end": "2026-11-13T02:45:02+08:00"
+   },
+   {
+    "file": "acceptance_37ca6b4d.json",
+    "sha8": "37ca6b4d",
+    "generated_at": "2026-11-06T02:15:02+08:00",
+    "window_end": "2026-11-13T02:15:02+08:00"
+   },
+   {
+    "file": "acceptance_38e1c58b.json",
+    "sha8": "38e1c58b",
+    "generated_at": "2026-11-06T03:15:02+08:00",
+    "window_end": "2026-11-13T03:15:02+08:00"
+   },
+   {
+    "file": "acceptance_3970756d.json",
+    "sha8": "3970756d",
+    "generated_at": "2026-11-08T18:45:03+08:00",
+    "window_end": "2026-11-15T18:45:03+08:00"
+   },
+   {
+    "file": "acceptance_3c5a4aea.json",
+    "sha8": "3c5a4aea",
+    "generated_at": "2026-11-06T12:45:02+08:00",
+    "window_end": "2026-11-13T12:45:02+08:00"
+   },
+   {
+    "file": "acceptance_3d484fbc.json",
+    "sha8": "3d484fbc",
+    "generated_at": "2026-11-10T08:15:01+08:00",
+    "window_end": "2026-11-17T08:15:01+08:00"
+   }
+  ],
+  "invalid_files": [],
+  "source": "acceptance_*.json 直扫（PASS 非演练；不依赖 review 明细 50 条截断）",
+  "note": "now 满窗 153 单 / 跟踪 188 单；11-10 22:30 预计满窗 153 单",
+  "status": "✓",
+  "blockers": [],
+  "warnings": []
+ },
+ "incidents": {
+  "path": "C:\\项目\\老田的AI助手\\work\\huangzhong\\incidents.jsonl",
+  "exists": true,
+  "rows": 0,
+  "bad_lines": 0,
+  "latest": null,
+  "window_days": 7,
+  "recent_window": 0,
+  "status": "✓",
+  "note": "事故台账 0 条（近 7 天 0 条；只读引用，漏放判定见复核报告 ④）",
+  "blockers": [],
+  "warnings": []
+ },
+ "blockers": [],
+ "warnings": [],
+ "ready": true,
+ "report_md": "C:\\Temp\\hz_20261110_preflight_2230\\2026-11-10_黄忠复核preflight_20261110_223000.md",
+ "report_written": true
+}

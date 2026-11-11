@@ -171,9 +171,11 @@ def cost_pct(price):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--workers", type=int, default=8,
+                    help="进程数上限 16")
     ap.add_argument("--out", default=os.path.join(HERE, "data", "chanlun_gold_b3.json"))
     a = ap.parse_args()
+    a.workers = max(1, min(a.workers, 16))
 
     t0 = time.time()
     dts, H, L, O, C = load_bars()

@@ -1,0 +1,7 @@
+﻿kind,message_type,send_context,action,owner
+decision:announcement,confirm,interactive,补注册/定版本/定 owner,TBD
+daily:alert,message,interactive,补注册/定版本/定 owner,TBD
+daily:report,message,interactive,补注册/定版本/定 owner,TBD
+auto:jev_chart,message,interactive,补注册/定版本/定 owner,TBD
+osint:cookie_expired,message,interactive,补注册/定版本/定 owner,TBD
+osint:dead_letter,message,interactive,补注册/定版本/定 owner,TBD

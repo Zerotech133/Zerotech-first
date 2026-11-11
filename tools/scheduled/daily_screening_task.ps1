@@ -3,7 +3,7 @@
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Continue'
 $repo = 'C://aios'
-$python = 'C://项目//py312//python.exe'
+$python = 'C:\Program Files\Python311\python.exe'
 $gate = 'C://aios//tools//scheduled//data_freshness_gate.py'
 $log = 'C://Temp//zero_daily_screening.log'
 $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -28,3 +28,4 @@ try {
     ($stamp + ' daily_screening EXCEPTION: ' + $_.Exception.Message) | Out-File $log -Append -Encoding utf8
     exit 1
 }
+

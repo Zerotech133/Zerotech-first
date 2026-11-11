@@ -1,0 +1,158 @@
+{
+ "generated_at": "2026-11-08T11:00:25+08:00",
+ "strategy": "S12_ZKG_AUTO_C20",
+ "name": "S12 ZKG_AUTO_C20 自动共识篮子（≥2 因子共振）",
+ "origin": "zerobound-kg/factor_proto 自动因子挖掘管线",
+ "signal_date": "20261106",
+ "n": 20,
+ "weight_per": 0.0025,
+ "rule": "≥2 晋升因子(SENT_S03/SENT_S04)共振点亮；H40/CD40/day_confirm/无止损/open(滑点0.45%)；5%名义等权月频",
+ "owner_chain": "张松主管→蒋琬执行→司马微五关复核→老田批准(2026-11-08)",
+ "baseline": "OOS-only open 净额 +2.88%（68笔）；60交易日影子，2027-02 三席联评",
+ "regime": {
+  "active": true,
+  "note": "共识点亮即活跃（无 regime 过滤）"
+ },
+ "capacity5_yi": "1.5",
+ "factors": {
+  "SENT_S03": {
+   "asof_picks": 73,
+   "wf": "4/4折正",
+   "port_oos_open": "+2.12%"
+  },
+  "SENT_S04": {
+   "asof_picks": 419,
+   "wf": "3/4折正",
+   "port_oos_open": "+1.37%"
+  }
+ },
+ "tracking": {
+  "days_recorded": 0,
+  "cur_ret_pct": 0.0,
+  "excess_pct": null,
+  "note": "影子记账自 2026-11-10 起（数据前沿 20261106）；净值口径=篮子等权×5%名义"
+ },
+ "holdings": [
+  {
+   "ts_code": "600026.SH",
+   "name": "中远海能",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600333.SH",
+   "name": "长春燃气",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600510.SH",
+   "name": "黑牡丹",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600575.SH",
+   "name": "淮河能源",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600589.SH",
+   "name": "大位科技",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600590.SH",
+   "name": "泰豪科技",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600648.SH",
+   "name": "外高桥",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600663.SH",
+   "name": "陆家嘴",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600758.SH",
+   "name": "辽宁能源",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600789.SH",
+   "name": "鲁抗医药",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600798.SH",
+   "name": "宁波海运",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600826.SH",
+   "name": "兰生股份",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "600881.SH",
+   "name": "亚泰集团",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "601009.SH",
+   "name": "南京银行",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "601061.SH",
+   "name": "中信金属",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "601229.SH",
+   "name": "上海银行",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "601898.SH",
+   "name": "中煤能源",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "601952.SH",
+   "name": "苏垦农发",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "688513.SH",
+   "name": "苑东生物",
+   "score": 1.0,
+   "w": 0.0025
+  },
+  {
+   "ts_code": "688550.SH",
+   "name": "瑞联新材",
+   "score": 1.0,
+   "w": 0.0025
+  }
+ ],
+ "disclaimer": "影子盘观察（零实盘资金）；非投资建议"
+}

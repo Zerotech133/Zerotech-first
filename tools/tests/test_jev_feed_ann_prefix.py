@@ -63,18 +63,45 @@ def test_prefix_in_middle_and_first_of_multiple():
 
 
 def test_row_stocks_upstream_priority():
-    assert jf._row_stocks({"ts_code": "600519.SH"}, "[000016 深康佳A]x") == ["600519.SH"]
-    assert jf._row_stocks({"symbol": "000001"}, "[600095 湘财股份]x") == ["000001"]
+    # P5.4 起返回 (codes, tag_conf)；上游结构化码 → tag_conf=None
+    assert jf._row_stocks({"ts_code": "600519.SH"}, "[000016 深康佳A]x") == (["600519.SH"], None)
+    assert jf._row_stocks({"symbol": "000001"}, "[600095 湘财股份]x") == (["000001"], None)
 
 
 def test_row_stocks_prefix_fallback():
-    assert jf._row_stocks({}, "[600095 湘财股份]关于回购") == ["600095.SH"]
-    assert jf._row_stocks({"ts_code": ""}, "[920285 N远大]上市") == ["920285.BJ"]
+    # 公告结构化前缀 → tag_conf=None（历史行为不变）
+    assert jf._row_stocks({}, "[600095 湘财股份]关于回购") == (["600095.SH"], None)
+    assert jf._row_stocks({"ts_code": ""}, "[920285 N远大]上市") == (["920285.BJ"], None)
 
 
 def test_row_stocks_empty_when_nothing():
-    assert jf._row_stocks({}, "普通新闻标题") == []
-    assert jf._row_stocks({}, "[999999 未知]x") == []
+    # 无上游码、无前缀、标题正文均无股票名 → ([], None)
+    assert jf._row_stocks({}, "普通新闻标题") == ([], None)
+    assert jf._row_stocks({}, "[999999 未知]x") == ([], None)
+
+
+def test_row_stocks_name_tag_high():
+    # P5.4：标题点名股票 → high 置信
+    codes, conf = jf._row_stocks({}, "【人形机器人板块持续拉升，宁德时代触及涨停】", "", "sina")
+    assert codes == ["300750.SZ"] and conf == "high"
+
+
+def test_row_stocks_name_tag_low():
+    # P5.4：仅正文提及 → low 置信（下游只作有信号判定，不作 Δmin 锚点）
+    codes, conf = jf._row_stocks({}, "今天市场普涨", "盘面上宁德时代大涨，拖动创业板指", "sina")
+    assert codes == ["300750.SZ"] and conf == "low"
+
+
+def test_row_stocks_ambiguous_rejected():
+    # 黑名单：通用词/地名简称不得打码
+    assert jf._row_stocks({}, "OpenAI面临诉讼浪潮，机器人产业遭殃") == ([], None)
+    assert jf._row_stocks({}, "美国房地产ETF跌1.14%，农产品期货走弱") == ([], None)
+
+
+def test_row_stocks_broker_sign_rejected():
+    # 研报署名「·华鑫证券」是落款不是标的
+    assert jf._row_stocks({}, "[个股研报·华鑫证券] 公司事件点评：投资太初集成电路",
+                          "华鑫证券分析师范益进", "report") == ([], None)
 
 
 @pytest.mark.parametrize("title, _", VALID)
@@ -116,7 +143,7 @@ def temp_news_db(tmp_path, monkeypatch):
     con.execute(
         "CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, title TEXT, "
         "content TEXT, hit INT, pushed INT, digested INT, created_at TEXT, "
-        "stocks TEXT, jev TEXT)")
+        "stocks TEXT, jev TEXT, tag_conf TEXT)")
     con.commit()
     con.close()
     monkeypatch.setattr(jf, "DB", str(p))
@@ -136,10 +163,10 @@ def _notice_df():
 def _read_stocks(path):
     con = sqlite3.connect(str(path))
     try:
-        rows = con.execute("SELECT stocks FROM news").fetchall()
+        rows = con.execute("SELECT stocks, tag_conf FROM news").fetchall()
     finally:
         con.close()
-    return [json.loads(r[0]) for r in rows]
+    return [(json.loads(r[0]), r[1]) for r in rows]
 
 
 def test_v1_feed_source_writes_prefix_code(temp_news_db, monkeypatch):
@@ -147,7 +174,8 @@ def test_v1_feed_source_writes_prefix_code(temp_news_db, monkeypatch):
     monkeypatch.setattr(jf.dm, "read", lambda *a, **k: df)
     n_ins, n_fetched, _max_date, err = jf.feed_source("notice", "notice", None, 2, 500)
     assert err is None and n_ins == 1
-    assert _read_stocks(temp_news_db) == [["600095.SH"]]
+    # 前缀兜底走历史行为：stocks=带后缀码、tag_conf=NULL
+    assert _read_stocks(temp_news_db) == [(["600095.SH"], None)]
 
 
 def test_v2_feed_source_writes_prefix_code(temp_news_db, monkeypatch):
@@ -155,7 +183,7 @@ def test_v2_feed_source_writes_prefix_code(temp_news_db, monkeypatch):
     monkeypatch.setattr(jf.dm, "read", lambda *a, **k: df)
     n_ins, _n_fetched, _new_wm, err = jf.feed_source_v2("notice", "notice", None, 2, 500)
     assert err is None and n_ins == 1
-    assert _read_stocks(temp_news_db) == [["600095.SH"]]
+    assert _read_stocks(temp_news_db) == [(["600095.SH"], None)]
 
 
 def test_upstream_code_still_wins_in_real_insert(temp_news_db, monkeypatch):
@@ -170,4 +198,4 @@ def test_upstream_code_still_wins_in_real_insert(temp_news_db, monkeypatch):
     monkeypatch.setattr(jf.dm, "read", lambda *a, **k: df)
     n_ins, _n, _m, err = jf.feed_source("news", "news", None, 2, 500)
     assert err is None and n_ins == 1
-    assert _read_stocks(temp_news_db) == [["600519.SH"]]
+    assert _read_stocks(temp_news_db) == [(["600519.SH"], None)]

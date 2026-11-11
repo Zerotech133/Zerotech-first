@@ -1,0 +1,83 @@
+# 闸门（gate_on vs gate_off）—— 唯一通过预判的历史贡献
+#
+# 用途：验证门禁「会放行」，不是只会拦。
+# 六次参数层实验（P63 地板/P64 提权/P64 阈值/P66 仓位/P68 排除项/P69 质量因子）
+# 全部否决，只有「环境闸门整月不交易」这一项被反复证实为正：
+# 闸门开 108,535 笔 +0.0638%，闸门关 146,315 笔 -0.3070%，差 +0.371pct。
+# 这个差值比参数层任何调整大 2~7 倍。
+#
+# 意义：alpha 在「何时不交易」，不在「买什么」。这张单子能通过，
+# 而上面六张都过不了，这个对照本身就是结论。
+
+meta:
+  exp_id: GATE_backfill
+  layer: 交易时点 - 环境闸门（breadth / med20 判据，整月离场）
+  hypothesis: 市场广度与个股涨跌中位数双弱时整月不交易，可显著改善组合收益
+  created: '2026-11-11'
+  status: backfilled
+  verdict: pass
+
+cap:
+  method: spread
+  upper_bound_pct: 0.371
+  cost_pct: 0.0
+  basis: >-
+    qpzm_backtest 全窗口 202509-202609 逐笔信号，同笔数对齐后比较
+    gate_on（108,535 笔）与 gate_off（146,315 笔）的逐笔平均超额
+  inputs:
+    quantiles: 2
+    holding_days: 20
+    spread_gross_pct: 0.371
+    cost_note: >-
+      闸门只减少交易次数，不增加单笔成本，故 cost_pct 记 0；
+      被砍掉的 37,780 笔本身就是 T+5 -1.389%、T+10 -3.032% 的确定性亏损。
+  note: >-
+    这是「两组对照」的上限，不是分位多空：闸门开组与关组的平均超额差
+    0.371pct，已扣成本（成本为 0）。上限为正 → 允许开跑。
+
+abandon:
+  threshold_pct: 0.0
+  rationale: 净上限 <= 0 就弃。本例 0.371 > 0，过线。
+
+falsify:
+  if_true:
+    - 闸门开组与关组逐笔平均超额差 >= 0.10pct（覆盖统计噪声）
+    - 分月看，下跌月里闸门组的超额改善 >= 5 个标准差为正向
+    - 被砍掉的笔数在 T+5 与 T+10 两个窗口都是负收益
+  if_false:
+    - 两组差异 < 0.05pct，或改善集中在单一个月（不稳健）
+    - 被砍掉的笔实际是正收益（闸门误杀）
+  monotonicity_rho_min: 0.5
+  t_min: 2.0
+  is_oos_sign_agree: true
+  sample_note: 至少 12 个月、两个组各 >= 5 万笔
+  observed: >-
+    实测 +0.371pct，被砍 37,780 笔 T+5 -1.389% / T+10 -3.032%，
+    两个窗口都为负 → 闸门没有误杀，符合 if_true。
+
+attempts:
+  family: 交易时点 - 环境闸门（整月离场判据）
+  total_trials: 1
+  same_sample: true
+  correction:
+    applied: false
+    method: none
+    note: >-
+      与参数层那 6 组不是同族：这里换的是"何时不交易"，不是"买什么"。
+      本族目前只有 1 组，未做多重检验也不打折。
+
+cost_sensitivity:
+  mode: not_applicable
+  reason: >-
+    闸门只减少交易笔数、不改单笔成本，cap.cost_pct 记 0；而这里的 spread 是
+    两组平均超额之差，不是可交易的多空组合。若对 0.20/0.30/0.50 三档成本做敏感性，
+    会得出"0.50 档翻负 -0.129"这类无意义结论（它只会说明"假如每笔多花 0.5pct"，
+    而闸门并不产生这样的单笔成本）。闸门的稳健性应由分月一致性检验
+    （见 falsify.if_true 第 2 条），不由成本档。
+
+selfcheck:
+  reference: P66 组合层总资金净值口径（二值 +2.90% / 线性 +0.50% / 满仓 -22.36%）
+  tolerance_pct: 5
+  note: >-
+    同一批信号换口径（逐笔均值 vs 组合净值）结论必须同向。
+    P66 实测二值仓位在总资金口径下也是最优，与逐笔口径一致。

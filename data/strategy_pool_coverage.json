@@ -1,0 +1,5138 @@
+{
+ "summary": {
+  "total": 426,
+  "covered": 129,
+  "uncovered": 297,
+  "covered_by_market": {
+   "ash": 67,
+   "asz": 62
+  },
+  "uncovered_by_market": {
+   "us": 7,
+   "ash": 129,
+   "asz": 145,
+   "bj": 13,
+   "hk": 3
+  },
+  "covered_by_source": {
+   "irm": 61,
+   "sse": 10,
+   "taoguba": 129,
+   "xq": 98
+  }
+ },
+ "rows": [
+  {
+   "code": "600593",
+   "raw": "600593.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "600887",
+   "raw": "600887.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "pltr",
+   "raw": "gb_pltr",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "tsm",
+   "raw": "gb_tsm",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "tsla",
+   "raw": "gb_tsla",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "mrvl",
+   "raw": "gb_mrvl",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "panw",
+   "raw": "gb_panw",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "lite",
+   "raw": "gb_lite",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600519",
+   "raw": "600519.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "be",
+   "raw": "gb_be",
+   "market": "us",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000001",
+   "raw": "000001.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600000",
+   "raw": "600000.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300740",
+   "raw": "300740.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "000993",
+   "raw": "000993.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "600613",
+   "raw": "600613.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "603188",
+   "raw": "603188.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "000011",
+   "raw": "000011.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "000560",
+   "raw": "000560.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000736",
+   "raw": "000736.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001317",
+   "raw": "001317.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002285",
+   "raw": "002285.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002696",
+   "raw": "002696.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "002811",
+   "raw": "002811.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300189",
+   "raw": "300189.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600026",
+   "raw": "600026.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600059",
+   "raw": "600059.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "600127",
+   "raw": "600127.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600189",
+   "raw": "600189.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600354",
+   "raw": "600354.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600371",
+   "raw": "600371.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600408",
+   "raw": "600408.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600573",
+   "raw": "600573.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600640",
+   "raw": "600640.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600663",
+   "raw": "600663.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600802",
+   "raw": "600802.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "600825",
+   "raw": "600825.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600838",
+   "raw": "600838.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600892",
+   "raw": "600892.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601015",
+   "raw": "601015.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601118",
+   "raw": "601118.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601566",
+   "raw": "601566.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "601579",
+   "raw": "601579.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601811",
+   "raw": "601811.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601872",
+   "raw": "601872.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601975",
+   "raw": "601975.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603073",
+   "raw": "603073.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603373",
+   "raw": "603373.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603598",
+   "raw": "603598.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603721",
+   "raw": "603721.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603727",
+   "raw": "603727.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603739",
+   "raw": "603739.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603818",
+   "raw": "603818.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603980",
+   "raw": "603980.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605188",
+   "raw": "605188.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "605303",
+   "raw": "605303.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605388",
+   "raw": "605388.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605577",
+   "raw": "605577.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688203",
+   "raw": "688203.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "688356",
+   "raw": "688356.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688710",
+   "raw": "688710.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "920021",
+   "raw": "920021.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600272",
+   "raw": "600272.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600540",
+   "raw": "600540.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605179",
+   "raw": "605179.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "000017",
+   "raw": "000017.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000798",
+   "raw": "000798.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002084",
+   "raw": "002084.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "003040",
+   "raw": "003040.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300684",
+   "raw": "300684.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300862",
+   "raw": "300862.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300917",
+   "raw": "300917.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301046",
+   "raw": "301046.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301047",
+   "raw": "301047.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600108",
+   "raw": "600108.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600400",
+   "raw": "600400.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600664",
+   "raw": "600664.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600721",
+   "raw": "600721.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600792",
+   "raw": "600792.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600865",
+   "raw": "600865.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601086",
+   "raw": "601086.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603221",
+   "raw": "603221.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605287",
+   "raw": "605287.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "688004",
+   "raw": "688004.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "920895",
+   "raw": "920895.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000002",
+   "raw": "000002.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000014",
+   "raw": "000014.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000020",
+   "raw": "000020.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "000058",
+   "raw": "000058.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000498",
+   "raw": "000498.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "000503",
+   "raw": "000503.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000504",
+   "raw": "000504.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000505",
+   "raw": "000505.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "000523",
+   "raw": "000523.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000532",
+   "raw": "000532.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000607",
+   "raw": "000607.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000678",
+   "raw": "000678.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "000710",
+   "raw": "000710.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000739",
+   "raw": "000739.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000892",
+   "raw": "000892.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000910",
+   "raw": "000910.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "000980",
+   "raw": "000980.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001211",
+   "raw": "001211.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001216",
+   "raw": "001216.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "001234",
+   "raw": "001234.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001266",
+   "raw": "001266.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001318",
+   "raw": "001318.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "001326",
+   "raw": "001326.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001330",
+   "raw": "001330.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001368",
+   "raw": "001368.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002029",
+   "raw": "002029.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002041",
+   "raw": "002041.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002099",
+   "raw": "002099.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002105",
+   "raw": "002105.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002164",
+   "raw": "002164.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "002172",
+   "raw": "002172.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002178",
+   "raw": "002178.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002188",
+   "raw": "002188.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002212",
+   "raw": "002212.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002232",
+   "raw": "002232.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002238",
+   "raw": "002238.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002242",
+   "raw": "002242.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "002246",
+   "raw": "002246.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002264",
+   "raw": "002264.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002292",
+   "raw": "002292.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002301",
+   "raw": "002301.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002316",
+   "raw": "002316.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002347",
+   "raw": "002347.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002349",
+   "raw": "002349.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002382",
+   "raw": "002382.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002388",
+   "raw": "002388.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002453",
+   "raw": "002453.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002454",
+   "raw": "002454.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002531",
+   "raw": "002531.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002614",
+   "raw": "002614.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002669",
+   "raw": "002669.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002679",
+   "raw": "002679.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002687",
+   "raw": "002687.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002702",
+   "raw": "002702.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002708",
+   "raw": "002708.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "002724",
+   "raw": "002724.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "002813",
+   "raw": "002813.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002819",
+   "raw": "002819.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002827",
+   "raw": "002827.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002832",
+   "raw": "002832.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "002846",
+   "raw": "002846.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002849",
+   "raw": "002849.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002866",
+   "raw": "002866.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002869",
+   "raw": "002869.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002882",
+   "raw": "002882.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002907",
+   "raw": "002907.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002909",
+   "raw": "002909.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002912",
+   "raw": "002912.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002913",
+   "raw": "002913.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002951",
+   "raw": "002951.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002988",
+   "raw": "002988.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "003006",
+   "raw": "003006.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300110",
+   "raw": "300110.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300111",
+   "raw": "300111.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300112",
+   "raw": "300112.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300133",
+   "raw": "300133.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "300162",
+   "raw": "300162.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300192",
+   "raw": "300192.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300207",
+   "raw": "300207.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300300",
+   "raw": "300300.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300311",
+   "raw": "300311.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300313",
+   "raw": "300313.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300340",
+   "raw": "300340.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300369",
+   "raw": "300369.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300404",
+   "raw": "300404.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300413",
+   "raw": "300413.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "300426",
+   "raw": "300426.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "300434",
+   "raw": "300434.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300457",
+   "raw": "300457.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300461",
+   "raw": "300461.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300473",
+   "raw": "300473.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300491",
+   "raw": "300491.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300522",
+   "raw": "300522.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300530",
+   "raw": "300530.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300579",
+   "raw": "300579.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300599",
+   "raw": "300599.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300619",
+   "raw": "300619.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300642",
+   "raw": "300642.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300647",
+   "raw": "300647.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300659",
+   "raw": "300659.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300676",
+   "raw": "300676.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300690",
+   "raw": "300690.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300691",
+   "raw": "300691.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300741",
+   "raw": "300741.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300756",
+   "raw": "300756.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300788",
+   "raw": "300788.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "300829",
+   "raw": "300829.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "300850",
+   "raw": "300850.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300890",
+   "raw": "300890.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300904",
+   "raw": "300904.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300909",
+   "raw": "300909.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300931",
+   "raw": "300931.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300964",
+   "raw": "300964.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300981",
+   "raw": "300981.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301080",
+   "raw": "301080.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301081",
+   "raw": "301081.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301118",
+   "raw": "301118.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301119",
+   "raw": "301119.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301152",
+   "raw": "301152.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301166",
+   "raw": "301166.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301190",
+   "raw": "301190.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301218",
+   "raw": "301218.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "301311",
+   "raw": "301311.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301325",
+   "raw": "301325.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301449",
+   "raw": "301449.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301486",
+   "raw": "301486.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301551",
+   "raw": "301551.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301560",
+   "raw": "301560.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301608",
+   "raw": "301608.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301662",
+   "raw": "301662.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600088",
+   "raw": "600088.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600094",
+   "raw": "600094.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600121",
+   "raw": "600121.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600130",
+   "raw": "600130.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600152",
+   "raw": "600152.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600256",
+   "raw": "600256.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600293",
+   "raw": "600293.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600313",
+   "raw": "600313.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600325",
+   "raw": "600325.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600359",
+   "raw": "600359.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600479",
+   "raw": "600479.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600503",
+   "raw": "600503.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600551",
+   "raw": "600551.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600617",
+   "raw": "600617.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600630",
+   "raw": "600630.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600657",
+   "raw": "600657.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600693",
+   "raw": "600693.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600722",
+   "raw": "600722.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600737",
+   "raw": "600737.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600785",
+   "raw": "600785.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600812",
+   "raw": "600812.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600843",
+   "raw": "600843.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601218",
+   "raw": "601218.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601949",
+   "raw": "601949.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601956",
+   "raw": "601956.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603002",
+   "raw": "603002.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603020",
+   "raw": "603020.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603042",
+   "raw": "603042.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603056",
+   "raw": "603056.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603067",
+   "raw": "603067.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603068",
+   "raw": "603068.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603155",
+   "raw": "603155.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603183",
+   "raw": "603183.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603200",
+   "raw": "603200.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603216",
+   "raw": "603216.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603230",
+   "raw": "603230.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603232",
+   "raw": "603232.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603236",
+   "raw": "603236.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603266",
+   "raw": "603266.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603328",
+   "raw": "603328.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603391",
+   "raw": "603391.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603395",
+   "raw": "603395.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603396",
+   "raw": "603396.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603507",
+   "raw": "603507.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603626",
+   "raw": "603626.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "603636",
+   "raw": "603636.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603669",
+   "raw": "603669.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603686",
+   "raw": "603686.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603696",
+   "raw": "603696.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603919",
+   "raw": "603919.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603928",
+   "raw": "603928.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603949",
+   "raw": "603949.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605058",
+   "raw": "605058.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "605069",
+   "raw": "605069.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "605100",
+   "raw": "605100.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605177",
+   "raw": "605177.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605366",
+   "raw": "605366.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605378",
+   "raw": "605378.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688023",
+   "raw": "688023.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "688026",
+   "raw": "688026.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688105",
+   "raw": "688105.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688114",
+   "raw": "688114.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688137",
+   "raw": "688137.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "688152",
+   "raw": "688152.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688175",
+   "raw": "688175.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688185",
+   "raw": "688185.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688225",
+   "raw": "688225.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688238",
+   "raw": "688238.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688244",
+   "raw": "688244.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688265",
+   "raw": "688265.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688293",
+   "raw": "688293.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688315",
+   "raw": "688315.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688345",
+   "raw": "688345.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688499",
+   "raw": "688499.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688512",
+   "raw": "688512.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688561",
+   "raw": "688561.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688661",
+   "raw": "688661.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688662",
+   "raw": "688662.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688678",
+   "raw": "688678.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688781",
+   "raw": "688781.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "920087",
+   "raw": "920087.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920284",
+   "raw": "920284.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920592",
+   "raw": "920592.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920627",
+   "raw": "920627.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920779",
+   "raw": "920779.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000820",
+   "raw": "000820.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920183",
+   "raw": "920183.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600352",
+   "raw": "600352.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600748",
+   "raw": "600748.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600801",
+   "raw": "600801.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "000159",
+   "raw": "000159.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000705",
+   "raw": "000705.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001220",
+   "raw": "001220.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001233",
+   "raw": "001233.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "001379",
+   "raw": "001379.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300143",
+   "raw": "300143.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300422",
+   "raw": "300422.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300485",
+   "raw": "300485.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300523",
+   "raw": "300523.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300653",
+   "raw": "300653.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300683",
+   "raw": "300683.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300692",
+   "raw": "300692.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300753",
+   "raw": "300753.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300796",
+   "raw": "300796.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300845",
+   "raw": "300845.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300982",
+   "raw": "300982.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300993",
+   "raw": "300993.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301116",
+   "raw": "301116.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600019",
+   "raw": "600019.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600081",
+   "raw": "600081.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600128",
+   "raw": "600128.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601727",
+   "raw": "601727.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603326",
+   "raw": "603326.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603680",
+   "raw": "603680.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603768",
+   "raw": "603768.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603787",
+   "raw": "603787.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603879",
+   "raw": "603879.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920433",
+   "raw": "920433.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920870",
+   "raw": "920870.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600303",
+   "raw": "600303.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603776",
+   "raw": "603776.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603248",
+   "raw": "603248.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000036",
+   "raw": "000036.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "001260",
+   "raw": "001260.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002519",
+   "raw": "002519.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002899",
+   "raw": "002899.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300260",
+   "raw": "300260.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300634",
+   "raw": "300634.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300733",
+   "raw": "300733.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301110",
+   "raw": "301110.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301186",
+   "raw": "301186.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301213",
+   "raw": "301213.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601112",
+   "raw": "601112.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603108",
+   "raw": "603108.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603615",
+   "raw": "603615.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "605222",
+   "raw": "605222.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "688186",
+   "raw": "688186.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688227",
+   "raw": "688227.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "688273",
+   "raw": "688273.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "688292",
+   "raw": "688292.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "688581",
+   "raw": "688581.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920357",
+   "raw": "920357.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601156",
+   "raw": "601156.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300665",
+   "raw": "300665.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600724",
+   "raw": "600724.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600881",
+   "raw": "600881.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603086",
+   "raw": "603086.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603697",
+   "raw": "603697.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002162",
+   "raw": "002162.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301231",
+   "raw": "301231.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601595",
+   "raw": "601595.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601998",
+   "raw": "601998.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603500",
+   "raw": "603500.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603533",
+   "raw": "603533.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  },
+  {
+   "code": "688156",
+   "raw": "688156.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002623",
+   "raw": "002623.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300921",
+   "raw": "300921.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "600750",
+   "raw": "600750.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603708",
+   "raw": "603708.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "605299",
+   "raw": "605299.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "000567",
+   "raw": "000567.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "000655",
+   "raw": "000655.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "000708",
+   "raw": "000708.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002004",
+   "raw": "002004.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002010",
+   "raw": "002010.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002090",
+   "raw": "002090.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002096",
+   "raw": "002096.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002117",
+   "raw": "002117.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002226",
+   "raw": "002226.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002262",
+   "raw": "002262.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002481",
+   "raw": "002481.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002533",
+   "raw": "002533.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002606",
+   "raw": "002606.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "002641",
+   "raw": "002641.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300146",
+   "raw": "300146.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300158",
+   "raw": "300158.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "300778",
+   "raw": "300778.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301068",
+   "raw": "301068.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301109",
+   "raw": "301109.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "301175",
+   "raw": "301175.SZ",
+   "market": "asz",
+   "covered": true,
+   "by_source": {
+    "irm": true,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600131",
+   "raw": "600131.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600517",
+   "raw": "600517.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600618",
+   "raw": "600618.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600738",
+   "raw": "600738.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600778",
+   "raw": "600778.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600919",
+   "raw": "600919.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600928",
+   "raw": "600928.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "600976",
+   "raw": "600976.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601026",
+   "raw": "601026.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601069",
+   "raw": "601069.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601116",
+   "raw": "601116.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "601908",
+   "raw": "601908.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603151",
+   "raw": "603151.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603165",
+   "raw": "603165.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603195",
+   "raw": "603195.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603444",
+   "raw": "603444.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603535",
+   "raw": "603535.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "603858",
+   "raw": "603858.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": true,
+    "xq": true
+   }
+  },
+  {
+   "code": "920166",
+   "raw": "920166.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "920541",
+   "raw": "920541.BJ",
+   "market": "bj",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "002445",
+   "raw": "002445.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "301010",
+   "raw": "301010.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "601988",
+   "raw": "601988.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603099",
+   "raw": "603099.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603336",
+   "raw": "603336.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603661",
+   "raw": "603661.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "605136",
+   "raw": "605136.SH",
+   "market": "ash",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "300750",
+   "raw": "300750.SZ",
+   "market": "asz",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "03690",
+   "raw": "03690.HK",
+   "market": "hk",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "01810",
+   "raw": "01810.HK",
+   "market": "hk",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "01299",
+   "raw": "01299.HK",
+   "market": "hk",
+   "covered": false,
+   "by_source": {
+    "irm": false,
+    "sse": false,
+    "taoguba": false,
+    "xq": false
+   }
+  },
+  {
+   "code": "603667",
+   "raw": "603667.SH",
+   "market": "ash",
+   "covered": true,
+   "by_source": {
+    "irm": false,
+    "sse": true,
+    "taoguba": true,
+    "xq": false
+   }
+  }
+ ]
+}

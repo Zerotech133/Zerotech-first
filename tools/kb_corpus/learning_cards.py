@@ -127,12 +127,13 @@ def main(argv=None) -> int:
     p.write_text("\n".join(md), encoding="utf-8")
     # 保留人工合并/修订卡（防止重跑覆盖 70 张卡池）：与生成卡按 concept 归一化去重，现有优先
     existing = []
+    old_doc = {}
     if OUT_JSON.exists():
         try:
             old_doc = json.loads(OUT_JSON.read_text(encoding="utf-8"))
             existing = old_doc.get("cards") or []
         except Exception:  # noqa: BLE001
-            existing = []
+            old_doc = {}
 
     merged = merge_cards(existing, cards)
     from collections import Counter as _Counter
@@ -140,6 +141,10 @@ def main(argv=None) -> int:
     payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                "total_units": len(units), "cards": merged, "daily": cards[0] if cards else None,
                "topics": dict(topics), "file": str(p)}
+    # 保留导入批次台账：merge_info 记录每批入平台卡（Top100/批次/缺口/混合批/缠论108课），
+    # 重跑生成器不得丢弃，否则无法追溯来源与回滚。
+    if isinstance(old_doc.get("merge_info"), dict):
+        payload["merge_info"] = old_doc["merge_info"]
     # 备份+原子写+写后 JSON 校验（保留 merge_cards 合并语义：现有卡全量保留）
     backup_then_atomic_write(OUT_JSON, payload)
     print(f"cards={len(cards)} units={len(units)} file={p}", flush=True)

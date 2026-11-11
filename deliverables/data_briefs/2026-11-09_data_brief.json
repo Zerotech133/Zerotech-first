@@ -1,0 +1,180 @@
+{
+  "schema": "hq/data_brief/v1",
+  "as_of": "2026-11-09T07:50:07+08:00",
+  "owner": {
+    "agent_id": "DATA1",
+    "name": "张松",
+    "position": "数据资源主官（兰台令）"
+  },
+  "data_health": {
+    "assets": {
+      "all": 406,
+      "registered": 357,
+      "exposed": 82,
+      "file": {
+        "total": 314,
+        "registered": 265,
+        "exposed": 72
+      },
+      "pg": {
+        "total": 91,
+        "registered": 91,
+        "available": 91
+      }
+    },
+    "catalog": {
+      "version": 43,
+      "tables": 258,
+      "updated": "2026-11-09T06:22:04"
+    },
+    "registry": {
+      "physical": 306,
+      "display": 258,
+      "drift": {
+        "catalog_tables": 258,
+        "registry_display": 258,
+        "registry_physical": 306,
+        "physical_minus_display": 48,
+        "note": "physical 为资产全量（含外部/非物理表资产），display 与 catalog 同为物理表口径；差值属正常，逐项明细见 P3-1 对账表"
+      }
+    },
+    "freshness": {
+      "data_date": "2026-11-02",
+      "data_date_source": "inventory_mtime",
+      "age_days": 7,
+      "inventory_age_days": 7,
+      "latest_trade_date": "2026-11-02",
+      "latest_trade_date_source": "inventory_max_latest（盘点时点口径，非实时）",
+      "collect_window_open": false,
+      "state": "ok"
+    },
+    "collectors": {
+      "red": [],
+      "today_zero": [
+        {
+          "name": "雪球同步",
+          "last_output_at": "2026-11-08 18:00:38"
+        },
+        {
+          "name": "雪球日采集",
+          "last_output_at": "2026-11-08 18:00:38"
+        }
+      ]
+    },
+    "contracts": {
+      "total": 4,
+      "active": 1,
+      "missing": 0,
+      "mismatch": 0,
+      "drift": 3,
+      "by_status": {
+        "drift": 3,
+        "active": 1
+      }
+    }
+  },
+  "alarms": [
+    {
+      "severity": "info",
+      "code": "today_pending",
+      "summary": "采集窗口（18:00）未到，当日增量为 0 属时点常态，不作为断流",
+      "evidence": [
+        {
+          "name": "雪球同步",
+          "last_output_at": "2026-11-08 18:00:38"
+        },
+        {
+          "name": "雪球日采集",
+          "last_output_at": "2026-11-08 18:00:38"
+        }
+      ]
+    },
+    {
+      "severity": "info",
+      "code": "catalog_registry_drift",
+      "summary": "catalog/display 同为 258 表已对齐；physical 资产全量 306（含 48 项非物理表资产）",
+      "evidence": {
+        "catalog_tables": 258,
+        "registry_display": 258,
+        "registry_physical": 306,
+        "physical_minus_display": 48,
+        "note": "physical 为资产全量（含外部/非物理表资产），display 与 catalog 同为物理表口径；差值属正常，逐项明细见 P3-1 对账表"
+      }
+    }
+  ],
+  "mining_signals": [
+    {
+      "id": "factor.decay",
+      "kind": "risk",
+      "summary": "因子日更：0 个因子，0 个四关 PASS(LS)，0 个 FAIL，0 个衰减告警",
+      "evidence": {
+        "as_of": null,
+        "owner": null,
+        "pass_ls": [],
+        "fail": [],
+        "decay": []
+      },
+      "decision_hint": "PASS 不等于可交易；FAIL/衰减因子不得进策略或需重新验证"
+    },
+    {
+      "id": "selection.executability",
+      "kind": "decision",
+      "summary": "选股库 2 策略，0 获批，picks=0；当前无自动可执行 alpha",
+      "evidence": {
+        "date": "2026-11-06",
+        "statuses": {
+          "SENT_S03": "auto_running",
+          "SENT_S04": "auto_running"
+        },
+        "approved": []
+      },
+      "decision_hint": "没有获批策略时，指挥部不应把研究候选当交易信号"
+    },
+    {
+      "id": "learning.yield",
+      "kind": "coverage",
+      "summary": "学习语料：8 文件，800 单元，候选池 539，卡片 370",
+      "evidence": {
+        "units_with_domain": 258,
+        "unusable_reasons": {
+          "生成阶段拒绝": {
+            "duplicate_batch_concept": 3020,
+            "answer_too_long": 583,
+            "duplicate_existing_answer": 27,
+            "duplicate_existing_concept": 6
+          },
+          "预审阶段驳回": {
+            "concept_no_domain_term": 382,
+            "concept_sentence_like": 190,
+            "concept_meta_or_person": 23,
+            "concept_answer_mismatch": 21,
+            "other": 70
+          }
+        }
+      },
+      "decision_hint": "语料产能不等于可用知识；先看领域覆盖与卡片通过率"
+    }
+  ],
+  "questions": [
+    {
+      "to": "DATA1",
+      "q": "数据集盘点（dataset_inventory）仍是 2026-11-02 那一版（距今 7 天）：它只反映盘点时刻，不代表数据断流；何时重跑盘点？"
+    },
+    {
+      "to": "A0/ACAD1",
+      "q": "当前无可执行 picks，今天指挥部按“研究/观察”还是“空仓”处理？"
+    }
+  ],
+  "boundaries": [
+    "DATA1 只提供数据资源/证据，不裁决业务口径",
+    "挖掘信号不是交易建议；无获批策略时不得当信号执行",
+    "不得把 today=0 的存量当当日新增"
+  ],
+  "sources": [
+    "http://127.0.0.1:8091/api/dw/stats",
+    "http://127.0.0.1:8091/api/dataops/overview",
+    "portal/static/factor_daily.json",
+    "portal/static/selection_daily.json",
+    "portal/static/learning_capability.json"
+  ]
+}

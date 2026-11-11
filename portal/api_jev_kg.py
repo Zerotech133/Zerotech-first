@@ -14,8 +14,10 @@
 graph 响应由既有 `/api/jev/graph` 链路的 60s 缓存提供；那条链路里 xtcloud
 兜底是其既有行为，不是 KG 引入的采集。KG 只是数据的使用方。
 
-将来采集工位落盘 `_jev_kg/<day>_<board>_<kind>.json` 后，`src=snapshot`
-（或环境变量 `JEV_KG_SNAPSHOT=1`）即可走纯快照路径，连既有链路都不碰。
+采集工位 `tools/jev_kg_fetch.py --day YYYYMMDD --all-boards` 会把**原始 graph
+响应**落盘到 `_jev_kg/<day>_<board>_<kind>.json`；`src=snapshot`（或环境变量
+`JEV_KG_SNAPSHOT=1`）只读该快照后现编译，连既有链路都不碰。快照是冻结态，
+上游分钟写回会让它与实时 graph 分叉，重跑采集工位即可对齐（判例 #33）。
 
 ## 参数
 

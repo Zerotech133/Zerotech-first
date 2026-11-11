@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$CostBp = "",
     [string]$CostFile = "",
     [switch]$Send,
@@ -21,7 +21,7 @@ try {
     # Keep running even if the host refuses console encoding changes.
 }
 $Repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$Py = Join-Path (Split-Path $Repo -Parent) "py312\python.exe"
+$Py = 'C:\Program Files\Python311\python.exe'
 # Use ASCII relative paths for Python args: Windows PowerShell 5.1 converts
 # native-process arguments through the ANSI code page, which corrupts the
 # Chinese repo path before Python sees it. Run from the repo root instead.
@@ -93,3 +93,4 @@ try {
     Write-Log ("ERROR: {0}" -f $_.Exception.Message)
     exit 0
 }
+

@@ -1,4 +1,4 @@
-# setup_named_tunnel.ps1 - named cloudflare tunnel for mobile H5 (ASCII only)
+﻿# setup_named_tunnel.ps1 - named cloudflare tunnel for mobile H5 (ASCII only)
 # Usage:
 #   A) cert mode (after `cloudflared tunnel login` wrote ~/.cloudflared/cert.pem):
 #      powershell -File portal\setup_named_tunnel.ps1 -Domain m.example.com -TunnelName lingjie-mobile
@@ -17,7 +17,7 @@ $portal = Join-Path $root 'portal'
 $cf = Join-Path $root 'bin\cloudflared.exe'
 $cfgDir = Join-Path $env:USERPROFILE '.cloudflared'
 $cfLog = 'C:\Temp\m_named_tunnel.log'
-$py = 'C:\项目\py312\python.exe'
+$py = 'C:\Program Files\Python311\python.exe'
 
 if (-not (Test-Path $cf)) { Write-Output 'cloudflared.exe missing'; exit 1 }
 
@@ -104,3 +104,4 @@ try {
 } catch {
     Write-Output ("VERIFY_FAIL " + $_.Exception.Message + " (check " + $cfLog + ")")
 }
+

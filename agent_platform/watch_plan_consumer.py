@@ -26,6 +26,7 @@ trigger 独立账本（IFS F3c）由 ``watch_trigger_ledger`` 管理：仅显式
 """
 from __future__ import annotations
 
+import logging
 import argparse
 import copy
 import json
@@ -385,6 +386,7 @@ def trigger_plan(plan_id, path=None, data_dir=None, now=None, trigger_ledger=Non
                             confirmation, trigger_id, data_dir=data_dir
                         )
                     except Exception:  # noqa: BLE001 - 幂等分支只读补齐失败不影响结论
+                        logging.getLogger(__name__).exception("swallowed exception at line 387")
                         pass
         return {
             "schema": SCHEMA,

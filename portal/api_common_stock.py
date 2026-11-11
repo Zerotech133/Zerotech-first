@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 
 from api_common import (
     STATION,
@@ -16,18 +17,28 @@ from api_common import (
     log_exc,
 )
 
+if os.path.join(STATION, "tools") not in sys.path:
+    sys.path.insert(0, os.path.join(STATION, "tools"))
+from jev_signal import event_type_tier
+
 
 MKT_LABEL = {"cn": "A股", "us": "美股", "hk": "港股", "crypto": "加密货币"}
 
 def _pool_bear_news(codes_names, days=5, min_conf=0.75, limit=12):
-    """预警池利空消息警示（news.db 只读）：近 days 天 bias=bear 且
-    置信≥min_conf、可归属到池内个股的消息。
+    """
+预警池利空消息警示（news.db 只读）：近 days 天 bias=bear、可归属到池内个股的消息。
 
-    依据（docs/ops/portal_llm观察记录.md 回测 v2）：偏空消息 T+1 跑输全市场 ~0.5pp，
-    「避雷」方向有效 —— 只提示不拦截、不用于增强买入。
-    归属三路：① stocks 列真 ts_code ② 标题前缀代码 [600853 龙建股份]
-    / [个股研报·org] 300059 ③ 股票名出现在标题。
-    返回 [{ts, code, name, title, conf, reason}]，新→旧。"""
+依据（docs/ops/portal_llm观察记录.md 回测 v2）：偏空消息 T+1 跑输全市场 ~0.5pp，
+「避雷」方向有效 —— 只提示不拦截、不用于增强买入。
+归属三路：① stocks 列真 ts_code ② 标题前缀代码 [600853 龙建股份]
+/ [个股研报·org] 300059 ③ 股票名出现在标题。
+返回 [{ts, code, name, title, conf, tier, reason}]，新→旧。
+
+质量门（2026-11-10 改）：原按 conf>=min_conf 过滤——但 conf 经 jev_calibrate
+后验证实反相关（AUC=0.414，越高越可能错），已弃用。现改用事件类型分层：
+显式弱信号类型（price/supply，方向命中率 <0.5、反向）一律不进避雷池，
+strong 与未标注类型保留。conf 仅保留为显示字段，不再参与过滤。
+    """
     import sqlite3
     from datetime import datetime as _dt, timedelta as _td
     if not codes_names:
@@ -54,7 +65,13 @@ def _pool_bear_news(codes_names, days=5, min_conf=0.75, limit=12):
             jv = json.loads(jev)
         except Exception:
             continue
-        if jv.get("bias") != "bear" or (jv.get("conf") or 0) < min_conf:
+        if jv.get("bias") != "bear":
+            continue
+        # conf 弃用（AUC 0.414 反相关，见 jev_calibrate_20261110）：质量门改用
+        # 事件类型分层——显式弱信号类型（price/supply，命中率<0.5 反向）不进避雷池，
+        # strong 与未标注类型保留（避免对噪声类型误报/漏报）。
+        et = jv.get("event_type")
+        if event_type_tier(et) == "weak" and str(et or "").strip():
             continue
         if jv.get("scope") != "cn":
             # 只取 A 股域消息：宏观/港股/商品域新闻按名归属噪声大
@@ -91,6 +108,7 @@ def _pool_bear_news(codes_names, days=5, min_conf=0.75, limit=12):
                     "name": codes_names.get(hit, ""),
                     "title": title[:60],
                     "conf": round((jv.get("conf") or 0) * 100),
+                    "tier": event_type_tier(jv.get("event_type")),
                     "reason": (jv.get("reason") or "")[:40]})
         if len(out) >= limit:
             break

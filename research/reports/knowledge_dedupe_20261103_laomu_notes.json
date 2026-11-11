@@ -1,14 +1,14 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-06T23:48:17+08:00",
+ "generated_at": "2026-11-11T20:00:13+08:00",
  "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
  "mode": "apply",
  "dry_run": false,
  "project": "laomu_notes",
  "source": {
   "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_draft.jsonl",
-  "sha256": "7144bf1b0ec2b0d6b77e62e1229cb4b516ce7dfee0ae7188170d776d49e041f9",
+  "sha256": "a894513a6b59790dbc10715b975fbaefddabad01d2f6c06cf1a4e35de066291b",
   "bytes": 113823
  },
  "policy": {
@@ -27,7 +27,7 @@
   "by_group_size": {
    "3": 1
   },
-  "output_sha256": "9611a1ebdcb7b03ff1da2224dcf5190e88d1a6fc2feecb8fdd0f91eaa4632d49"
+  "output_sha256": "e233973ce641441c88a73a9eeb1ba08df3992b6338a8342365395bcb2772f329"
  },
  "duplicates": [
   {
@@ -55,7 +55,7 @@
   "learn_laomu_notes_0010"
  ],
  "notes": [],
- "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\laomu_notes_units_draft.jsonl.20261106_234817.v1bak",
+ "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\laomu_notes_units_draft.jsonl.20261111_200013.v1bak",
  "applied": true,
  "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。",
  "idempotent_noop": false

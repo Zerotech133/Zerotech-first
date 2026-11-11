@@ -34,21 +34,40 @@ if (-not $got) {
 
 function Ensure-NotifyBot {
     if (-not (Test-Path -LiteralPath $notify_bot)) { Write-Log "ABORT notify bot missing"; return }
-    $n = @(Get-CimInstance Win32_Process -Filter "name = 'python.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -like '*feishu_notify_bot.py*' })
-    if ($n.Count -gt 0) {
-        Write-Log ("notify alive pid=" + (($n | ForEach-Object { $_.ProcessId }) -join ','))
+    # ★2026-11-09 加固：独立全局 Mutex（CommandLine 在 S4U/非管理员下返回 NULL，
+    # 纯进程枚举完全失效；Mutex 是跨账户可靠的幂等锁）。
+    $nMutex = $null; $nGot = $false
+    try {
+        $nMutex = New-Object System.Threading.Mutex($false, 'Global\FeishuNotifyBotStart')
+        $nGot = $nMutex.WaitOne(0)
+    } catch { $nGot = $false }
+    if (-not $nGot) {
+        Write-Log "notify start mutex busy - skip"
         return
     }
-    Write-Log "starting notify bot ..."
-    $np = Start-Process -FilePath $py_src `
-        -ArgumentList @("-u", "-X", "utf8", $notify_bot) `
-        -WorkingDirectory "C:\aios\portal" `
-        -WindowStyle Hidden `
-        -RedirectStandardOutput $notify_out `
-        -RedirectStandardError $notify_err `
-        -PassThru
-    if ($np) { Write-Log "NOTIFY STARTED pid=$($np.Id)" } else { Write-Log "FAIL notify Start-Process null" }
+    try {
+        $n = @(Get-CimInstance Win32_Process -Filter "name = 'python.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -like '*feishu_notify_bot.py*' })
+        if ($n.Count -gt 0) {
+            Write-Log ("notify alive pid=" + (($n | ForEach-Object { $_.ProcessId }) -join ','))
+            return
+        }
+        Write-Log "starting notify bot ..."
+        $np = Start-Process -FilePath $py_src `
+            -ArgumentList @("-u", "-X", "utf8", $notify_bot) `
+            -WorkingDirectory "C:\aios\portal" `
+            -WindowStyle Hidden `
+            -RedirectStandardOutput $notify_out `
+            -RedirectStandardError $notify_err `
+            -PassThru
+        if ($np) {
+            Write-Log "NOTIFY STARTED pid=$($np.Id)"
+            Start-Sleep -Seconds 3
+        } else { Write-Log "FAIL notify Start-Process null" }
+    } finally {
+        try { $nMutex.ReleaseMutex() } catch { }
+        try { $nMutex.Dispose() } catch { }
+    }
 }
 
 try {
@@ -75,7 +94,10 @@ try {
         -RedirectStandardOutput $out `
         -RedirectStandardError $err `
         -PassThru
-    if ($proc) { Write-Log "STARTED pid=$($proc.Id)" } else { Write-Log "FAIL Start-Process null" }
+    if ($proc) {
+        Write-Log "STARTED pid=$($proc.Id)"
+        Start-Sleep -Seconds 3
+    } else { Write-Log "FAIL Start-Process null" }
 } catch {
     Write-Log ("FAIL " + $_.Exception.Message)
 } finally {

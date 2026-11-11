@@ -78,6 +78,20 @@ EXPIRED_PCT = 20.0
 EXPIRED_AGE = 40
 BROKEN_PCT = -8.0
 
+FAR_PCT = 20.0          # 余量超过 20% 的止损线已经不可用（等于没有）
+
+
+def _death_state(death, px):
+    """生死线相对现价的位置：四档，含义完全不同，不能并成一个「余量」。"""
+    if death >= px:
+        return "breached"          # 已在生死线下方：结构已破
+    m = px / death - 1.0
+    if m < 0.03:
+        return "tight"             # 余量 <3%：随时触发，风险贴脸
+    if m > FAR_PCT / 100.0:
+        return "far"               # 余量 >20%：止损形同虚设，回调先破位
+    return "valid"
+
 
 def _one(job):
     code, typ, sig_dt, name = job
@@ -139,15 +153,19 @@ def _one(job):
     px_vs_sig = (px / sig_px - 1.0) * 100
     sig_age = (d0 - i_sig) if i_sig is not None else None
 
-    # 生死线：ZG 下 1.5%，但必须夹在现价下方 3%~15%
-    if zg and zone != "below":
-        death = max(zg * 0.985, px * 0.85)
-        death = min(death, px * 0.97)
-        death_rule = "ZG 下 1.5%（收盘跌破即出）"
+    # 生死线 = 结构失效位，纯结构推导，不夹现价。
+    #
+    # 早期版本写的是 death = min(max(结构位, px*0.85), px*0.97)，把线硬夹在
+    # 现价下方 3%~15%。后果是 257/489 只（52.6%）的「生死线」退化成 px*0.97，
+    # 变成一条随价移动的固定止损，标签却仍写「ZG 下 1.5%」。余量恒等于 3%，
+    # 观察台上既无法逼近也无法拉开，C 栏机械命中 257 只 —— 这条线就废了。
+    # 结构位离现价远，说明的是「追得太高」，该由位置条件否决，不该把线挪过来。
+    if zg and zone == "above":
+        death, death_rule = zg * 0.985, "站上中枢：回踩不破 ZG（ZG 下 1.5%）"
+    elif zg and zd and zone == "inside":
+        death, death_rule = zd * 0.985, "中枢内：跌破 ZD 1.5% 即结构坏"
     else:
-        death = max(sig_px * 0.92, px * 0.85)
-        death = min(death, px * 0.97)
-        death_rule = "信号价 -8%（已在 ZG 下方，ZG 不适用）"
+        death, death_rule = sig_px * 0.92, "信号价 -8%（ZG 在现价上方，不适用）"
 
     # 生命周期
     if break_pct is not None and break_pct <= BROKEN_PCT:
@@ -173,6 +191,10 @@ def _one(job):
         "break_pct": round(break_pct, 2) if break_pct is not None else None,
         "death_px": round(death, 3), "death_rule": death_rule,
         "death_disp_pct": round((death / px - 1) * 100, 2),
+        # 余量 = 现价高出结构线多少。>=0 不是「余量很小」，是「已经在下方」。
+        # 四档分开，观察台才不会把破位票排进「最安全」那一栏，也不会把
+        # 已经跑到结构位 2 倍以上的票当成「余量充足」——那种线的止损等于没有。
+        "death_state": _death_state(death, px),
         "stage": stage, "stale": stale,
         "type_alpha_pct": TYPE_ALPHA.get(typ, {}).get("alpha_pct"),
         "type_alpha_t": TYPE_ALPHA.get(typ, {}).get("t"),
@@ -195,6 +217,44 @@ def grade(r):
     return "observe"
 
 
+def trade_of(r):
+    """L1 选择层的真正输出：这笔够不够格进**交易层**。
+
+    依据（见 hold_term_verify.py §C，829 笔已到期）：
+      1买  持 3 日 +2.29%（t=2.50）、持 5 日 +1.92%（t=1.99）、持 20 日 −1.47%
+      2买  任何持有期都不显著且全为负（持3 −0.56% t=−0.85、持20 −0.40% t=−0.24）
+      3买  系统差于基准（alpha −0.42%，t=−3.98）
+
+    所以只有 1买 进交易层；2买 留池观察不交易；3买 与破位直接不给资格。
+    「进交易层」也不等于"现在买"——还要过 Layer 2 的势闸门。
+    """
+    if r["type"] != "1买" or r["stage"] == "broken":
+        return "no"
+    return "candidate" if r["stage"] == "new" else "watch_only"
+
+
+def idx_mom20(code="000985.CSI", n=20):
+    """指数过去 n 日累计涨跌（Layer 2 势闸门，建仓当日收盘即可算）。"""
+    import glob
+
+    try:
+        import pandas as pd
+    except ImportError:
+        return None
+    d_dir = os.path.join(ROOT, "quant_backtest", "data", "tdx", "ts_index_daily")
+    clos = {}
+    for p in sorted(glob.glob(os.path.join(d_dir, "*.parquet"))):
+        d = pd.read_parquet(p, columns=["ts_code", "trade_date", "close"])
+        d = d[d["ts_code"] == code]
+        for dt, c in zip(d["trade_date"].astype(str), d["close"].astype(float)):
+            if c == c and c > 0:            # 剔 NaN
+                clos[dt.replace("-", "")[:8]] = c
+    ds = sorted(clos)
+    if len(ds) <= n:
+        return None
+    return clos[ds[-1]] / clos[ds[-1 - n]] - 1.0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--top", type=int, default=15)
@@ -213,6 +273,7 @@ def main():
         for k, res in enumerate(ex.map(_one, jobs, chunksize=10)):
             if res:
                 res["grade"] = grade(res)
+                res["trade"] = trade_of(res)
                 rows.append(res)
             if (k + 1) % 100 == 0:
                 print("  ...%d/%d" % (k + 1, len(jobs)))
@@ -238,33 +299,48 @@ def main():
         "%s=%d" % (k, v) for k, v in sorted(Counter(r["stage"] for r in rows).items())))
     print("有中枢   %d 只（能算 ZG 生死线）；无中枢 %d 只"
           % (sum(1 for r in rows if r["zg"]), sum(1 for r in rows if not r["zg"])))
+    print("交易层   %s" % "  ".join(
+        "%s=%d" % (k, v) for k, v in sorted(Counter(r["trade"] for r in rows).items())))
+    print("         candidate=够格进交易层（1买且新鲜）；watch_only=留池等回踩；no=不给资格")
+
+    mom20 = idx_mom20()
+    gate = "未知" if mom20 is None else ("停手（弱市）" if mom20 < -0.02
+                                        else ("正常做（强市，可持 5~8 日）" if mom20 > 0.02
+                                              else "只做隔日（中市）"))
 
     print("\n" + "-" * 92)
-    print("【Layer 2 择势】%s｜产出是仓位上限，不是买卖信号" % g)
+    print("【Layer 2 择势】%s｜产出是「今天开不开新仓」，不是仓位微调" % g)
     print("-" * 92)
     print("  主判 %s（%s）收 %.2f" % (regime.get("primary"), d.get("name"), st.get("px") or 0))
     for lv in (regime.get("next_levels") or [])[:2]:
         dd = lv.get("dist_pct")
         print("  %-6s %s%s" % (lv.get("to"), lv.get("need"),
                               ("（%+.2f%%）" % dd) if dd is not None else ""))
-    print("  实证：择势判不了方向（顺向 t=−2.72；逆向剔 2024-09 后 t=−16.14）")
-    print("        → RED 的含义是「不新增 beta 暴露」，不是「马上要跌」。")
+    if mom20 is not None:
+        print("  动量闸门 %s 20 日累计 %+.2f%% → **%s**（阈值 ±2%%）"
+              % (regime.get("primary"), mom20 * 100, gate))
+    print("  实证：按笔等权，弱市任何持有期都亏且越持越亏（持5 −0.90% t=−2.42，")
+    print("        持20 −5.57% t=−7.31）；强市持5~8日为正（+1.08% t=2.49 / +1.73% t=3.17）。")
+    print("        → 势不是开关方向的，是决定「允不允许开仓、允许拿多久」。")
 
     print("\n" + "-" * 92)
-    print("【Layer 3 择时】只做出场")
+    print("【Layer 3 择时】不找入场点位，只定持有期 + 出场")
     print("-" * 92)
-    print("  七种入场规则全量 829 笔全负（最好次日开盘 −3.06%，t=−5.86）")
-    print("  ZG 止损是唯一有效的一层：%+.2fpp（−2.94%% → −0.62%%），触发率 86%%" % EXIT_GAIN)
-    print("  → 每只标 death_px，跌破无条件出，不看理由、不等反弹。")
+    print("  入场：七种规则全量 829 笔全负（最好次日开盘 −3.06%，t=−5.86）→ 不等价格")
+    print("  持有：强市 5~8 日｜中市 1 日｜弱市 0（不建仓）")
+    print("  同一批信号只改持有期：持20日 −4.98% → 持5日 +6.16%（自检 A4 归零检验 11.2pp）")
+    print("  ZG 止损仍保留作下限：%+.2fpp（−2.94%% → −0.62%%），触发率 86%%，先触发先出" % EXIT_GAIN)
 
     print("\n" + "-" * 92)
-    print("【Layer 1 结构层】三类买点实证 alpha（全样本 20 日，扣 beta）")
+    print("【Layer 1 结构层】三类买点 × 持有期，按笔等权（决定够不够格进交易层）")
     print("-" * 92)
     for t in ("1买", "2买", "3买"):
         v = TYPE_ALPHA[t]
-        print("  %-4s alpha %+6.2f%%  t=%+5.2f  n=%6d  %s"
+        print("  %-4s 20日alpha %+6.2f%%  t=%+5.2f  n=%6d  %s"
               % (t, v["alpha_pct"], v["t"], v["n"], v["note"]))
-    print("  → 1买 alpha≈0 表示「只暴露 beta」；3买 −0.42% 表示「系统性差于基准」。")
+    print("  短持有实测：1买 持3 +2.29%(t=2.50) / 持5 +1.92%(t=1.99)；")
+    print("              2买 任何持有期全负（持3 −0.56% t=−0.85）。")
+    print("  → 只有 1买 进交易层；2买 留池观察不交易；3买 与破位出池。")
 
     for gr, title in (("watch", "核心观察｜新鲜且在有效位置"),
                       ("observe", "观察不主动"),
@@ -291,36 +367,42 @@ def main():
                      r["sig_age"] if r["sig_age"] is not None else "-"))
 
     n_new = sum(1 for r in rows if r["stage"] == "new")
-    n_watch = sum(1 for r in rows if r["grade"] == "watch")
-    n_watch_new = sum(1 for r in rows if r["grade"] == "watch" and r["stage"] == "new")
+    n_cand = sum(1 for r in rows if r["trade"] == "candidate")
+    n_cand_below = sum(1 for r in rows if r["trade"] == "candidate" and r["zone"] == "below")
     print("\n" + "=" * 92)
     print("池内结论")
     print("=" * 92)
-    print("  · %d 只入池 → 核心观察 %d 只，其中「新鲜且结构有效」只有 %d 只"
-          % (len(rows), n_watch, n_watch_new))
-    print("  · 新鲜（未过期）合计 %d 只；过期 %d 只、破位 %d 只"
+    print("  · %d 只入池 → 交易层够格 %d 只（1买且新鲜）；留池等回踩 %d 只；不给资格 %d 只"
+          % (len(rows), n_cand, sum(1 for r in rows if r["trade"] == "watch_only"),
+             sum(1 for r in rows if r["trade"] == "no")))
+    print("  · 新鲜 %d 只；过期 %d 只、破位 %d 只"
           % (n_new, sum(1 for r in rows if r["stage"] == "expired"),
              sum(1 for r in rows if r["stage"] == "broken")))
-    print("  · 现在一只都不建议动手，三条理由同时成立：")
-    print("      ① 三类买点 alpha ≤ 0（3买 t=−3.98）→ 结构层不产生超额")
-    print("      ② 势 %s → 择势层不允许新增 beta 暴露" % g)
-    print("      ③ ZG 止损触发率 86%%、中位第 1 天 → 多数信号一进场就触发")
-    print("  · 池子的用途是**监控结构转折**，等三件事之一：")
-    print("      ① 势转 AMBER（需站回 %s，%+.2f%%）"
-          % (st.get("zd"), (st["zd"] / st["px"] - 1) * 100 if st.get("zd") and st.get("px") else 0))
-    n_tri = sum(1 for r in rows if r.get("pv_up") == 1 and r.get("zone") == "above"
-                and (r.get("break_pct") or 0) >= 0)
-    print("      ② 池内出现「中枢上移 + 站上 ZG + 回踩不破」同时成立")
-    print("         （宽松口径当前 %d 只；上一轮叠加空间与流动性后只剩 3 只）" % n_tri)
-    print("      ③ 2买 alpha 按季复算重新转正（2025 后已衰减到 0）")
-    print("  · 若坚持要做：2买 ＞ 1买 ＞＞ 3买，且必须承认这是 beta 暴露不是 alpha。")
+    print("  · 现在一只都不动手，三条理由按重要性排：")
+    if mom20 is not None:
+        need = (0.98 / (1.0 + mom20) - 1.0) * 100
+        print("      ① 势闸门：20 日动量 %+.2f%% → %s。恢复到「允许开仓」需 +%.2f%%"
+              % (mom20 * 100, gate, need))
+    print("      ② 交易层只认 1买：持3 +2.29%(t=2.50)、持5 +1.92%(t=1.99)；")
+    print("         2买 任何持有期全负（持3 −0.56% t=−0.85），留池观察不交易")
+    print("      ③ 够格的 1买 只有 %d 只%s"
+          % (n_cand, ("，其中 %d 只还在最后一个中枢下方（zone=below）" % n_cand_below)
+             if n_cand_below else ""))
+    print("  · 池子的用途是**监控结构转折**，恢复交易只有一个条件：")
+    print(f"      20 日动量回到 −2% 以上（比上一轮的「站回中枢下沿 {st.get('zd')}」更早触发，")
+    print("      因为动量是 20 日窗口、中枢是绝对价位；且前者有 §3.2 的实证支撑）")
+    print("  · 若势转中/强：1买 优先，强市持 5~8 日、中市只做隔日，单票 ≤5%。")
+    print("    2买/3买 不因势转好而解禁——它们的问题在结构质量，不在市场环境。")
     print("=" * 92)
 
     out = {"asof": ASOF, "n": len(rows),
            "n_by_grade": dict(Counter(r["grade"] for r in rows)),
            "n_by_type": dict(Counter(r["type"] for r in rows)),
            "n_by_stage": dict(Counter(r["stage"] for r in rows)),
+           "n_by_trade": dict(Counter(r["trade"] for r in rows)),
            "regime": {"grade": g, "primary": regime.get("primary"),
+                      "mom20_pct": round(mom20 * 100, 2) if mom20 is not None else None,
+                      "gate": gate,
                       "next_levels": regime.get("next_levels", [])},
            "evidence": {"type_alpha": TYPE_ALPHA, "zone_ret": ZONE_RET,
                         "exit_zg_gain_pp": EXIT_GAIN},

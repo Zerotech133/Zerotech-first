@@ -168,9 +168,12 @@ def test_all_ok(tmp_path, monkeypatch):
     _, rep = _call(root, monkeypatch)
     assert rep["status"] == "ok"
     assert rep["ok"] is True
-    assert [c["status"] for c in rep["checks"]] == ["ok"] * 7
-    assert rep["summary"] == {"ok": 7, "warn": 0, "fail": 0, "skipped": 0,
-                              "total": 7}
+    assert [c["status"] for c in rep["checks"][:7]] == ["ok"] * 7
+    # A8：第 8 项 station_junction 在 tmp 根评估时 skipped（作用域门）
+    assert rep["checks"][7]["id"] == "station_junction"
+    assert rep["checks"][7]["status"] == "skipped"
+    assert rep["summary"] == {"ok": 7, "warn": 0, "fail": 0, "skipped": 1,
+                              "total": 8}
     assert rep["push"]["enabled"] is True
     assert "enabled（B ON）" in rep["push"]["state_txt"]
     assert rep["scheduled_tasks"] and all(
@@ -402,7 +405,7 @@ def test_check_exec_ok(tmp_path, monkeypatch):
     _, rep = _call(root, monkeypatch, check_exec_flag=True)
     check = _check(rep, "exec_selfcheck")
     assert check["status"] == "ok"
-    assert len(rep["checks"]) == 8
+    assert len(rep["checks"]) == 9
     assert rep["status"] == "ok"
 
 

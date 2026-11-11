@@ -1,0 +1,2 @@
+{"ref_id": "irm:11_2392426054090579968", "src": "irm", "code": "001219", "field": "content", "source_tier": 3, "fact_type": "neutral", "hit_plan": [], "hit_fact": [], "quote": "董秘您好，请问在出口过程中有无数字人民币结算，或者推动跨境人民币结算的相关体系或业务呢", "ref_ts": "2026-10-29 13:17:30", "annotated_at": "2026-11-11 08:20:20"}
+{"ref_id": "irm:11_2318280521811546112", "src": "irm", "code": "001219", "field": "content", "source_tier": 3, "fact_type": "plan", "hit_plan": ["计划"], "hit_fact": [], "quote": "公司股价跌跌不休，是否有回购计划？公司未来发展计划？如何确保能落实？", "ref_ts": "2026-07-21 15:36:13", "annotated_at": "2026-11-11 08:20:20"}

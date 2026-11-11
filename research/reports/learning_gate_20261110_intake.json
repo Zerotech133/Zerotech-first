@@ -1,0 +1,102 @@
+{
+ "generated_at": "2026-11-10T23:33:17+08:00",
+ "stage": "intake",
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "status": "archived",
+   "stages": {
+    "archive": {
+     "ok": false,
+     "errors": [
+      "manifest.v2 artifact sha mismatch: research/strategy_specs/005_金线战法三步曲.yaml"
+     ]
+    }
+   },
+   "fail": 1
+  },
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "视频号学习_全部文案_20261108",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "微信公众号_缠论108课_20261110",
+   "status": "intake_pending",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  }
+ ],
+ "summary": {
+  "projects": 8,
+  "checks": 8,
+  "fail": 1
+ },
+ "ok": false
+}

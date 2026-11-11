@@ -1,0 +1,36 @@
+﻿task_id,owner,created,worktree,desc
+UI-MOBILE-RESIDUAL-20261104,DEV3,2026-11-04 02:51:17,C:\项目\老田的AI助手\.worktrees\UI-MOBILE-RESIDUAL-20261104,UI残余收口：学习项目/回测页短屏化+methods/screening等390横向溢出修复
+UI-GATECHECK-20261104,DEV3,2026-11-04 02:51:23,C:\项目\老田的AI助手\.worktrees\UI-GATECHECK-20261104,UI门禁聚合器：standalone ui_gate_checks.py（tokens/page_manifest/page_shell changed/visual）不接merge闸
+K-STOCK-ANALYSIS-NORTH-20261104,DEV2,2026-11-04 03:01:05,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-NORTH-20261104,数据P1 北向资金维度：analysis/northbound.py 接入 extras/snapshot/报告（栈在 P2.9 分支）
+K-STOCK-ANALYSIS-MONSCHED-20261104,DEV1,2026-11-04 03:01:14,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONSCHED-20261104,批量监控运营化：15:40 批后自动跑监控 + 飞书告警推送（栈在 MONPAGE 分支）
+K-STOCK-ANALYSIS-F3-20261104,DOC1,2026-11-04 03:44:36,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-F3-20261104,F3 策略工作室前端页 /sa/strategy：Spec 编辑→校验→预览→保存，演示降级（栈 F2）
+K-STOCK-ANALYSIS-MONCFG-20261104,DEV1,2026-11-04 03:44:42,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONCFG-20261104,监控规则配置化：阈值/规则按池配置 + /api/monitor/config + 页面规则面板（栈 MONSCHED）
+K-STOCK-ANALYSIS-DATA2-20261104,DEV6,2026-11-04 03:44:49,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-DATA2-20261104,数据P1续：limit_list_d 上游空分区诊断修复 + 龙虎榜 top_list/top_inst extras 接入（栈 NORTH）
+UI-A11Y2-20261104,DEV3,2026-11-04 03:49:09,C:\项目\老田的AI助手\.worktrees\UI-A11Y2-20261104,a11y第三波：10个未触碰active页focus/aria/表格语义深修（无视觉变化）
+CATALOG-PERSIST-20261104,ARCH1,2026-11-04 14:03:36,C:\项目\老田的AI助手\.worktrees\CATALOG-PERSIST-20261104,Catalog外部资产持久化修复(方案A):external_assets_registry+build_catalog合并+回归测试 [UNOWNED]
+WO-DEVBUS-ROUTE-20261106,DEV1,2026-11-06 08:20:35,C:\项目\老田的AI助手\.worktrees\WO-DEVBUS-ROUTE-20261106,P0-B 席位路由与WIP上限：dev_routing_rules v2 + dev_bus_route（audit/plan/apply/dry-run）+ wip_check 扩展；34条路由计划，apply默认不执行；只读复核/测试
+K-DIALOG-C1-20261107,DSH-Lead,2026-11-07 08:52:41,C:\项目\老田的AI助手\.worktrees\K-DIALOG-C1-20261107,个股分析对话式研究助手 C1：对话内核（会话/意图/反问/动作）+ PC 对话页 /sa/chat
+K-STOCK-ANALYSIS-T2FIX-20261107,DSH-Lead,2026-11-07 13:32:33,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-T2FIX-20261107,盘后批 T2 修复：run_id 冲突幂等修复 + 批启动迟到告警（analysis/db.py、analysis/batch.py）
+K-STOCK-ANALYSIS-TR1-20261107,DSH-Lead,2026-11-07 13:32:39,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-TR1-20261107,TR1 事件—价格影响跟踪：行业加权基准 + track.db + 每日盘后 Top 列表（analysis/track_review/）
+K-STOCK-ANALYSIS-TR2-20261107,DSH-Lead,2026-11-07 15:23:49,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-TR2-20261107,TR2a 一致预期自建（ts_report_rc PIT 快照+修正事件+consensus.db）
+K-STOCK-ANALYSIS-CLEANUP-20261107,DSH-Lead,2026-11-07 18:41:59,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-CLEANUP-20261107,代码清理与BUG修复：重复测试类F811、死代码F841、废弃文件清理（不改行为，测试证明）
+K-PUSH-20261108-HUBTIMEOUT,Trae·A,2026-11-08 02:57:30,c:\项目\老田的AI助手\.worktrees\K-PUSH-20261108-HUBTIMEOUT,jev verify hub send timeout 8s false negative fix [UNOWNED]
+K-SEC-20261108-PORT-8870,DSH-Lead,2026-11-08 10:08:49,C:\项目\老田的AI助手\.worktrees\K-SEC-20261108-PORT-8870,P2-01：认领并处置未登记监听 127.0.0.1:8870（PID 37264，C:\项目\py312\python.exe server.py）：先确认进程归属/用途，不直接杀未知进程；正式服务则登记 check_ports REGISTRY 并补启停说明，临时/废弃则停止并记录原因；复跑 strict 门禁。
+K-STOCK-ANALYSIS-SA-UX-20261109,DSH-Lead,2026-11-08 23:59:38,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-SA-UX-20261109,个股分析页 UX：代码免后缀+自动归一、提交进度、按钮接线
+legion-1109080009,A0A,2026-11-09 08:00:40,C:\项目\老田的AI助手\.worktrees\legion-1109080009,[A0A] 军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日）
+legion-1109080109,A0A,2026-11-09 08:01:43,C:\项目\老田的AI助手\.worktrees\legion-1109080109,[A0A] 军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日）
+legion-1109080209,A0A,2026-11-09 08:02:36,C:\项目\老田的AI助手\.worktrees\legion-1109080209,[A0A] 军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日）
+legion-1109093009,T1,2026-11-09 09:30:43,C:\项目\老田的AI助手\.worktrees\legion-1109093009,[T1] 盘前 weak 池三线扫描
+legion-1109093110,T1,2026-11-09 09:31:29,C:\项目\老田的AI助手\.worktrees\legion-1109093110,[T1] 盘前 weak 池三线扫描
+WO-SYNTAX-POOLH5-20261109,DSH-Lead,2026-11-09 14:08:56,C:\项目\老田的AI助手\.worktrees\WO-SYNTAX-POOLH5-20261109,修复 pool_report_h5.py 的无效转义告警，解除语法门
+legion-1109175009,A0A,2026-11-09 17:50:22,C:\aios\.worktrees\legion-1109175009,[A0A] 每日复盘三问汇总
+legion-1110093814,T1,2026-11-10 09:38:46,C:\aios\.worktrees\legion-1110093814,[T1] 盘前 weak 池三线扫描
+legion-1110093846,T1,2026-11-10 09:39:02,C:\aios\.worktrees\legion-1110093846,[T1] 盘前 weak 池三线扫描
+legion-1110093902,T1,2026-11-10 09:39:18,C:\aios\.worktrees\legion-1110093902,[T1] 盘前 weak 池三线扫描
+legion-1110093919,T1,2026-11-10 09:39:34,C:\aios\.worktrees\legion-1110093919,[T1] 盘前 weak 池三线扫描
+legion-1110093934,T1,2026-11-10 09:39:51,C:\aios\.worktrees\legion-1110093934,[T1] 盘前 weak 池三线扫描
+legion-1110093951,T1,2026-11-10 09:40:06,C:\aios\.worktrees\legion-1110093951,[T1] 盘前 weak 池三线扫描
+legion-1110094009,T1,2026-11-10 09:40:20,C:\aios\.worktrees\legion-1110094009,[T1] 盘前 weak 池三线扫描
+K-SECRETS-VAULT-20261110,DSH-Lead,2026-11-10 17:40:09,C:\项目\老田的AI助手\.worktrees\K-SECRETS-VAULT-20261110,portal 两个明文密钥迁 _vault + 读取方改 vault 优先（L2 2026-11-10 批准；临时放宽 worktree 上限至 82，已记录）
+INTEL-JUDGE-P0P3-20261111,dsh-lead,2026-11-11 02:00:00,C:\项目\老田的AI助手\.worktrees\INTEL-JUDGE-P0P3-20261111,情报判断层 P0-P3：研判卡字段/G4 检查单/优先级评分/交叉影响/结果反馈
+K-INTEL-OUTCOME-20261111,DSH-Lead,2026-11-11 06:34:55,C:\项目\老田的AI助手\.worktrees\K-INTEL-OUTCOME-20261111,K-INTEL-OUTCOME 预警应验回流：alert_outcomes 表 + 判定器 + 规则命中率

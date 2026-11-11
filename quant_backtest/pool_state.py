@@ -210,10 +210,14 @@ def _bei_flags(sig):
     if not sig:
         return ""
     out = []
+    if sig.get("tbe24"):
+        out.append("24课趋势背驰")
     if sig.get("tbe"):
         out.append("趋势背驰")
     if sig.get("mbei"):
         out.append("MACD背驰")
+    if sig.get("bei24"):
+        out.append("24课盘整背驰")
     if sig.get("bei2"):
         out.append("同向力度衰竭")
     if sig.get("bei"):

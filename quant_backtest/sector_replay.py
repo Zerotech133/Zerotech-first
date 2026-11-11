@@ -413,10 +413,12 @@ def main():
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--workers", type=int, default=6,
+                    help="进程数上限 16")
     ap.add_argument("--level", default=None)
     ap.add_argument("--save", action="store_true")
     a = ap.parse_args()
+    a.workers = max(1, min(a.workers, 16))
     if a.run:
         return cmd_run(a)
     if a.report:

@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-11-10T08:50:18+08:00",
+  "doing": 25,
+  "worktrees": 68,
+  "worktree_actions": {
+    "stale_review": 37,
+    "merged_cleanup": 4,
+    "dirty_review": 2,
+    "active_task_review": 25
+  },
+  "doing_owners": {
+    "DEV3": 3,
+    "DEV2": 1,
+    "DEV1": 3,
+    "DOC1": 1,
+    "DEV6": 1,
+    "ARCH1": 1,
+    "DSH-Lead": 8,
+    "Trae·A": 1,
+    "A0A": 4,
+    "T1": 2
+  },
+  "targets": {
+    "doing": 8,
+    "worktree": 20,
+    "parked": 8
+  }
+}

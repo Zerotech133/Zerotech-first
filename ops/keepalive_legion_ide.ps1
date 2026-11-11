@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [string]$Repo = "C:\项目\老田的AI助手",
-    [string]$Python = "C:\项目\py312\python.exe",
+    [string]$Python = "C:\Program Files\Python311\python.exe",
     [int]$Port = 8103,
     [string]$LogFile = "C:\Temp\legion_ide_keepalive.log",
     [switch]$DryRun
@@ -52,3 +52,4 @@ Start-Sleep -Seconds 2
 $conn2 = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($conn2) { Write-KeepLog "STARTED legion-ide pid=$($conn2.OwningProcess) port=$Port"; exit 0 }
 Write-KeepLog "ERROR start attempted but port $Port not listening"; exit 1
+

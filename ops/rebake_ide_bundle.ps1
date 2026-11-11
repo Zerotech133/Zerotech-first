@@ -16,7 +16,7 @@
 [CmdletBinding()]
 param(
     [string]$Repo = "C:\项目\老田的AI助手",
-    [string]$Python = "C:\项目\py312\python.exe",
+    [string]$Python = "C:\Program Files\Python311\python.exe",
     [string]$DeployDir = "C:\项目\_vault\legion_ide",
     [string]$LogFile = "C:\Temp\legion_ide_rebake.log"
 )
@@ -52,3 +52,4 @@ Write-RebakeLog ("OK bundle -> " + $dst + " (" + (Get-Item $dst).Length + " byte
 # 不再 `git checkout --` 还原、不产生提交；部署副本仍是 8103/独立 IDE 的数据源。
 Write-RebakeLog ("OK bundle generated (untracked/ignored; no git commit): " + $srcBundle)
 exit 0
+

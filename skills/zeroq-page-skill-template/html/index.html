@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零界页面型技能骨架</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #26215c; background: #faf9ff; }
+.wrap { max-width: 860px; margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 500; margin: 0 0 6px; }
+p.sub { margin: 0 0 20px; color: #5f5e5a; font-size: 13px; }
+.card { background: #fff; border: 1px solid #e3e0f5; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+.badge.ok { background: #e1f5ee; color: #085041; }
+.badge.empty { background: #faeeda; color: #633806; }
+.badge.err { background: #fcebeb; color: #791f1f; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #eeedfe; }
+th { font-weight: 500; color: #5f5e5a; }
+.hint { color: #5f5e5a; font-size: 13px; line-height: 1.6; }
+code { background: #f1efe8; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>零界页面型技能骨架</h1>
+  <p class="sub">自带页面型技能的最小可运行示例 · 数据经同源数据桥获取</p>
+  <div class="card">
+    <div id="status" class="badge empty">加载中</div>
+    <p class="hint" id="summary"></p>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>代码</th><th>标签</th><th>数值</th><th>更新时间</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="hint" id="emptyHint" hidden>暂无数据：请先让 Agent 运行 <code>ingest.py</code> 灌入演示数据。</p>
+  </div>
+</div>
+<script>
+var API = "../../api/";
+function get(name) {
+  return fetch(API + name, { credentials: "include" }).then(function (r) { return r.json(); });
+}
+function badge(text, cls) {
+  var el = document.getElementById("status");
+  el.textContent = text;
+  el.className = "badge " + cls;
+}
+function renderRows(items) {
+  var body = document.getElementById("rows");
+  body.textContent = "";
+  items.forEach(function (it) {
+    var tr = document.createElement("tr");
+    [it.code, it.label, it.value, it.updatedAt].forEach(function (v) {
+      var td = document.createElement("td");
+      td.textContent = String(v);
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  document.getElementById("emptyHint").hidden = items.length > 0;
+}
+get("summary").then(function (s) {
+  if (s.empty) {
+    badge("空数据", "empty");
+    document.getElementById("summary").textContent = s.hint || "Agent 运行 ingest 后可查看";
+    renderRows([]);
+    return;
+  }
+  badge("数据就绪", "ok");
+  document.getElementById("summary").textContent = "共 " + s.count + " 条记录，最近更新 " + (s.updatedAt || "未知") + "。";
+  return get("items").then(function (r) { renderRows(r.items || []); });
+}).catch(function (e) {
+  badge("取数失败", "err");
+  document.getElementById("summary").textContent = "数据桥请求失败：" + String(e);
+  renderRows([]);
+});
+</script>
+</body>
+</html>

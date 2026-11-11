@@ -48,19 +48,41 @@ def main():
 
     print("池子自检 · %s · %d 只\n" % (os.path.basename(args.pool), len(pool)))
 
-    # A1 生死线必须存在、且在现价下方 3%~15%
+    # A1 生死线必须是结构位本身，不许按现价夹
+    #
+    # 这条断言原本写的是「death 夹在现价下方 3%~15%」，它保护的不是正确性，
+    # 而是那个把线硬夹到 px*0.97 的 bug —— 断言和 bug 互相作证，52.6% 的票
+    # 生死线退化成随价移动的 3% 止损，还一路「OK」通过。
+    # 正确的断言是反过来的：death 必须精确等于其规则对应的结构位。
     miss = [r for r in pool if not r.get("death_px")]
     chk(len(miss) == 0, "A1a 每只都有 death_px（缺失 %d 只）" % len(miss))
-    bad_disp = [r for r in pool
-                if r.get("death_disp_pct") is None
-                or not (-15.5 <= r["death_disp_pct"] <= -2.5)]
-    chk(len(bad_disp) == 0,
-        "A1b death 夹在现价下方 3%%~15%%（越界 %d 只%s）"
-        % (len(bad_disp),
-           ("，如 " + ", ".join("%s %.1f%%" % (r["code"], r["death_disp_pct"])
-                               for r in bad_disp[:3])) if bad_disp else ""))
-    above = [r for r in pool if r.get("death_px") and r["death_px"] >= r["px"]]
-    chk(len(above) == 0, "A1c death 必须在现价下方（上方 %d 只）" % len(above))
+    off = []
+    for r in pool:
+        zg, zd, sp = r.get("zg"), r.get("zd"), r.get("sig_px")
+        if r["death_rule"].startswith("站上中枢"):
+            ref = zg * 0.985 if zg else None
+        elif r["death_rule"].startswith("中枢内"):
+            ref = zd * 0.985 if zd else None
+        else:
+            ref = sp * 0.92 if sp else None
+        if ref is None or abs(r["death_px"] / ref - 1.0) > 0.005:
+            off.append("%s %s death=%.3f ref=%s"
+                       % (r["code"], r["death_rule"][:6], r["death_px"],
+                          "%.3f" % ref if ref else "无"))
+    chk(len(off) == 0, "A1b death 等于结构位本身（偏离 %d 只%s）"
+        % (len(off), ("，如 " + "；".join(off[:3])) if off else ""))
+
+    # A1c 已跌破的必须同时被判为破位，否则说明结构线选错了分支
+    wrong = [r for r in pool if r.get("death_state") == "breached"
+             and r.get("stage") != "broken"]
+    chk(len(wrong) == 0, "A1c 跌破生死线 ⇒ stage=broken（不符 %d 只%s）"
+        % (len(wrong), ("，如 " + ", ".join(r["code"] for r in wrong[:3]))
+           if wrong else ""))
+    st_dist = {}
+    for r in pool:
+        st_dist[r.get("death_state")] = st_dist.get(r.get("death_state"), 0) + 1
+    chk(sum(st_dist.values()) == len(pool) and None not in st_dist,
+        "A1d 每只都标了 death_state（valid/tight/breached 分布 %s）" % st_dist)
 
     # A2 zone 与 zg/zd 自洽
     inc = []

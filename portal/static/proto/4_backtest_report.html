@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>回测报告 · 零界</title>
+<link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>零界 <small>· 个股分析</small></div>
+  <nav class="tabs">
+    <a href="1_sa_workbench.html">工作台</a>
+    <a href="2_nl_screener.html">条件选股</a>
+    <a href="3_strategy_studio.html">策略工作室</a>
+    <a class="active" href="#">回测报告</a>
+    <a href="#">报告库</a>
+  </nav>
+  <div class="top-right">
+    <span class="pill"><span class="dot"></span>数据 2026-11-02 · T+1</span>
+    <a class="btn sm" href="#">💬 Hermes 对话</a>
+  </div>
+</div>
+
+<main>
+  <div class="crumbs"><a href="#">零界</a> / 个股分析 / 策略工作室 / 回测报告</div>
+
+  <div class="row" style="align-items:flex-start">
+    <div>
+      <h1>低估值高成长月轮动 <span class="badge blue" style="vertical-align:middle">v3</span></h1>
+      <p class="sub" style="margin:6px 0 0">
+        回测区间 <b>2019-01-01 ~ 2026-10-31</b> · 基准 沪深300 · 月频调仓 · 20 只等权 · 双边 20bp ·
+        <span class="mono">job bt-20261102-021</span>
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <div class="row">
+      <button class="btn" onclick="toast('已导出 Markdown + CSV')">导出</button>
+      <button class="btn" onclick="toast('已推送到飞书（需登录）')">推送飞书</button>
+      <button class="btn primary" onclick="toast('已提交重跑：bt-20261103-002')">再跑一次</button>
+    </div>
+  </div>
+
+  <!-- 合规提示 -->
+  <div class="notice warn" style="margin-top:14px">
+    <span>⚠️</span><div><b>回测报告仅供研究：</b>历史表现不代表未来收益；未考虑你的资金规模、税费与滑点差异；平台不构成投资建议、不代客交易。</div>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid-kpi">
+    <div class="kpi"><div class="k">年化收益</div><div class="v up">+9.8%</div><div class="d">基准 +3.2%</div></div>
+    <div class="kpi"><div class="k">年化超额</div><div class="v up">+6.6%</div><div class="d">IR 0.61</div></div>
+    <div class="kpi"><div class="k">最大回撤</div><div class="v dn">-18.2%</div><div class="d">基准 -24.6%</div></div>
+    <div class="kpi"><div class="k">夏普</div><div class="v">0.74</div><div class="d">无风险 2%</div></div>
+    <div class="kpi"><div class="k">月度胜率</div><div class="v">58.4%</div><div class="d">72 / 123 月</div></div>
+    <div class="kpi"><div class="k">年换手</div><div class="v">6.2x</div><div class="d">成本敏感性见下</div></div>
+  </div>
+
+  <!-- 净值 / 回撤 -->
+  <div class="grid grid-2">
+    <section class="card">
+      <h2><span>净值曲线</span><span class="hint">策略 vs 基准（归一化）</span></h2>
+      <svg class="chart" id="navChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+      <div class="chart-legend">
+        <span><i class="sw" style="background:#58a6ff"></i>策略</span>
+        <span><i class="sw" style="background:#8b949e"></i>基准 沪深300</span>
+      </div>
+    </section>
+    <section class="card">
+      <h2><span>回撤</span><span class="hint">策略最大 -18.2%</span></h2>
+      <svg class="chart" id="ddChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+      <div class="chart-legend"><span><i class="sw" style="background:#f85149"></i>策略回撤</span></div>
+    </section>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- 分年度 -->
+    <section class="card">
+      <h2><span>分年度表现</span><span class="hint">策略 / 基准</span></h2>
+      <table>
+        <thead><tr><th>年度</th><th class="num">策略</th><th class="num">基准</th><th class="num">超额</th><th class="num">最大回撤</th></tr></thead>
+        <tbody>
+          <tr><td>2019</td><td class="num up">+21.4%</td><td class="num up">+18.6%</td><td class="num up">+2.8%</td><td class="num dn">-9.1%</td></tr>
+          <tr><td>2020</td><td class="num up">+34.2%</td><td class="num up">+27.2%</td><td class="num up">+7.0%</td><td class="num dn">-12.4%</td></tr>
+          <tr><td>2021</td><td class="num up">+12.8%</td><td class="num dn">-5.2%</td><td class="num up">+18.0%</td><td class="num dn">-10.2%</td></tr>
+          <tr><td>2022</td><td class="num dn">-8.4%</td><td class="num dn">-21.6%</td><td class="num up">+13.2%</td><td class="num dn">-16.8%</td></tr>
+          <tr><td>2023</td><td class="num up">+6.1%</td><td class="num dn">-11.4%</td><td class="num up">+17.5%</td><td class="num dn">-12.9%</td></tr>
+          <tr><td>2024</td><td class="num up">+8.2%</td><td class="num up">+14.7%</td><td class="num dn">-6.5%</td><td class="num dn">-18.2%</td></tr>
+          <tr><td>2025</td><td class="num up">+10.6%</td><td class="num up">+6.8%</td><td class="num up">+3.8%</td><td class="num dn">-11.5%</td></tr>
+          <tr><td>2026 至今</td><td class="num up">+7.1%</td><td class="num up">+4.3%</td><td class="num up">+2.8%</td><td class="num dn">-8.7%</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 规则与校验 -->
+    <section class="card">
+      <h2><span>策略规则与校验</span><span class="hint">版本 v3</span></h2>
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge ok">PIT 通过</span><span class="badge ok">无未来函数</span><span class="badge ok">停牌/涨跌停已处理</span><span class="badge warn">成本未含滑点</span>
+      </div>
+      <table>
+        <tbody>
+          <tr><td class="muted" style="width:110px">股票池</td><td>A 股非 ST（PIT，剔除上市 &lt; 250 日、成交额 &lt; 5,000 万）</td></tr>
+          <tr><td class="muted">筛选</td><td>PS 历史分位 ≤ 60%；净利润同比 ≥ 20%</td></tr>
+          <tr><td class="muted">排序</td><td>质量分降序</td></tr>
+          <tr><td class="muted">持仓</td><td>前 20 只等权；单票 ≤ 10%；行业 ≤ 3 只</td></tr>
+          <tr><td class="muted">调仓</td><td>月频（每月最后交易日信号，次一交易日开盘执行）</td></tr>
+          <tr><td class="muted">成本</td><td>双边 20bp；印花税卖出 5bp（如适用）</td></tr>
+          <tr><td class="muted">数据</td><td>本地数据仓 · 行情 11-02 · 财务 10-31 · 财报按 ann_date 截止</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <!-- 样本外 -->
+  <section class="card">
+    <h2><span>样本外（OOS）表现</span><span class="hint">最近 24 个月 · 2024-11 ~ 2026-10</span></h2>
+    <div class="grid grid-4">
+      <div class="kpi"><div class="k">OOS 年化</div><div class="v up">+8.9%</div><div class="d">样本内 +10.2%</div></div>
+      <div class="kpi"><div class="k">OOS 超额</div><div class="v up">+4.2%</div><div class="d">IR 0.48</div></div>
+      <div class="kpi"><div class="k">OOS 回撤</div><div class="v dn">-16.4%</div><div class="d">样本内 -18.2%</div></div>
+      <div class="kpi"><div class="k">衰减比</div><div class="v">0.87</div><div class="d">OOS / IS 年化</div></div>
+    </div>
+    <div class="notice info" style="margin-bottom:0"><span>🧪</span><div>样本外表现存在衰减属正常现象；衰减比、换手与容量须结合你的资金规模评估。回测不预测未来。</div></div>
+  </section>
+
+  <!-- 交易明细 -->
+  <section class="card">
+    <h2><span>交易明细（示例）</span><span class="hint">最近 8 笔 · 共 1,246 笔</span></h2>
+    <table>
+      <thead><tr><th>日期</th><th>方向</th><th>代码</th><th>名称</th><th class="num">价格</th><th class="num">数量</th><th class="num">金额</th><th class="num">盈亏</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">2026-10-08</td><td><span class="badge up">买入</span></td><td class="code">600337.SH</td><td>ST美克</td><td class="num">3.31</td><td class="num">18,000</td><td class="num">59,580</td><td class="num muted">—</td></tr>
+        <tr><td class="mono">2026-10-08</td><td><span class="badge up">买入</span></td><td class="code">688023.SH</td><td>安恒信息</td><td class="num">41.20</td><td class="num">1,400</td><td class="num">57,680</td><td class="num muted">—</td></tr>
+        <tr><td class="mono">2026-10-21</td><td><span class="badge dn">卖出</span></td><td class="code">603667.SH</td><td>五洲新春</td><td class="num">18.66</td><td class="num">3,100</td><td class="num">57,846</td><td class="num up">+4,216</td></tr>
+        <tr><td class="mono">2026-10-21</td><td><span class="badge dn">卖出</span></td><td class="code">605258.SH</td><td>协和电子</td><td class="num">24.05</td><td class="num">2,400</td><td class="num">57,720</td><td class="num dn">-1,824</td></tr>
+        <tr><td class="mono">2026-10-21</td><td><span class="badge up">买入</span></td><td class="code">603816.SH</td><td>顾家家居</td><td class="num">28.30</td><td class="num">2,000</td><td class="num">56,600</td><td class="num muted">—</td></tr>
+        <tr><td class="mono">2026-10-21</td><td><span class="badge up">买入</span></td><td class="code">002572.SZ</td><td>索菲亚</td><td class="num">14.12</td><td class="num">4,000</td><td class="num">56,480</td><td class="num muted">—</td></tr>
+        <tr><td class="mono">2026-10-21</td><td><span class="badge dn">卖出</span></td><td class="code">603833.SH</td><td>欧派家居</td><td class="num">52.40</td><td class="num">1,100</td><td class="num">57,640</td><td class="num up">+2,051</td></tr>
+        <tr><td class="mono">2026-10-21</td><td><span class="badge dn">卖出</span></td><td class="code">603180.SH</td><td>金牌家居</td><td class="num">17.86</td><td class="num">3,200</td><td class="num">57,152</td><td class="num dn">-1,267</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 成本敏感性 -->
+  <section class="card">
+    <h2><span>成本敏感性</span><span class="hint">年化收益随成本上升的衰减</span></h2>
+    <table>
+      <thead><tr><th>双边成本</th><th class="num">年化</th><th class="num">年化超额</th><th class="num">对比基准</th></tr></thead>
+      <tbody>
+        <tr><td>10bp</td><td class="num up">+11.6%</td><td class="num up">+8.4%</td><td class="num up">+8.4%</td></tr>
+        <tr><td>20bp（默认）</td><td class="num up">+9.8%</td><td class="num up">+6.6%</td><td class="num up">+6.6%</td></tr>
+        <tr><td>30bp</td><td class="num up">+8.0%</td><td class="num up">+4.8%</td><td class="num up">+4.8%</td></tr>
+        <tr><td>50bp</td><td class="num up">+4.6%</td><td class="num up">+1.4%</td><td class="num up">+1.4%</td></tr>
+      </tbody>
+    </table>
+    <div class="notice warn" style="margin-bottom:0"><span>📉</span><div>若你的实际成本高于 30bp 或资金规模带来冲击成本，该策略超额可能显著收窄甚至消失。</div></div>
+  </section>
+
+  <footer>
+    <span>run bt-20261102-021 · 引擎 monthly_factor · 数据 2026-11-02</span>
+    <span>合规：研究分析，不构成投资建议；历史回测不代表未来</span>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600);}
+
+/* 生成示例曲线：确定性数据（非真实回测） */
+function gen(n, seed, drift){
+  const pts=[];let v=100;let s=seed;
+  for(let i=0;i<n;i++){
+    s=(s*9301+49297)%233280;const r=s/233280;
+    v=v*(1+drift+ (r-0.5)*0.03);
+    pts.push(v);
+  }
+  return pts;
+}
+const nav=gen(96,11,0.008);
+const bench=gen(96,7,0.004);
+
+function linePath(pts, min, max, w, h, pad){
+  const x=i=>pad+i/(pts.length-1)*(w-2*pad);
+  const y=v=>h-pad-(v-min)/(max-min)*(h-2*pad);
+  return pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+}
+function yOf(v,min,max,h,pad){return h-pad-(v-min)/(max-min)*(h-2*pad);}
+
+function draw(){
+  const W=800,H=220,PAD=28;
+  const svg=document.getElementById('navChart');
+  const all=[...nav,...bench];
+  const min=Math.min(...all)-2,max=Math.max(...all)+2;
+  let s='';
+  for(let i=0;i<=4;i++){
+    const y=PAD+(H-2*PAD)*i/4;
+    const val=max-(max-min)*i/4;
+    s+=`<line x1="${PAD}" y1="${y.toFixed(1)}" x2="${W-PAD}" y2="${y.toFixed(1)}" stroke="#21262d" stroke-width="1"/>`;
+    s+=`<text x="4" y="${(y+3).toFixed(1)}" fill="#8b949e" font-size="10">${val.toFixed(0)}</text>`;
+  }
+  s+=`<path d="${linePath(bench,min,max,W,H,PAD)}" fill="none" stroke="#8b949e" stroke-width="1.6" stroke-dasharray="5 4" opacity=".8"/>`;
+  s+=`<path d="${linePath(nav,min,max,W,H,PAD)}" fill="none" stroke="#58a6ff" stroke-width="2.2"/>`;
+  svg.innerHTML=s;
+
+  const dd=document.getElementById('ddChart');
+  const values=[];let peak=0;
+  for(const v of nav){peak=Math.max(peak,v);values.push((v-peak)/peak*100);}
+  const dmin=Math.min(...values)-1,dmax=0;
+  let t='';
+  for(let i=0;i<=4;i++){
+    const y=PAD+(H-2*PAD)*i/4;
+    const val=dmax-(dmax-dmin)*i/4;
+    t+=`<line x1="${PAD}" y1="${y.toFixed(1)}" x2="${W-PAD}" y2="${y.toFixed(1)}" stroke="#21262d" stroke-width="1"/>`;
+    t+=`<text x="4" y="${(y+3).toFixed(1)}" fill="#8b949e" font-size="10">${val.toFixed(0)}%</text>`;
+  }
+  const px=i=>PAD+i/(values.length-1)*(W-2*PAD);
+  const line=values.map((v,i)=>(i?'L':'M')+px(i).toFixed(1)+' '+yOf(v,dmin,dmax,H,PAD).toFixed(1)).join(' ');
+  const base=yOf(dmax,dmin,dmax,H,PAD);
+  const area=line+` L ${W-PAD} ${base.toFixed(1)} L ${PAD} ${base.toFixed(1)} Z`;
+  t+=`<path d="${area}" fill="rgba(248,81,73,.16)" stroke="none"/>`;
+  t+=`<path d="${line}" fill="none" stroke="#f85149" stroke-width="1.8"/>`;
+  dd.innerHTML=t;
+}
+draw();
+</script>
+</body>
+</html>

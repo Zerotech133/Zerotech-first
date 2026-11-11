@@ -1,0 +1,31 @@
+/* hf_tokens.css — 候风产品族单一事实源（2026-11-10 P1 落地）
+ * 9 页 :root 变量并集；改版只动这一个文件。
+ * 中国股市约定：涨红（--up）跌绿（--dn）。
+ * 与 tokens.css（主站 GitHub Dark）刻意不同：本族是浅色对外产品层。
+ */
+:root {
+  --accent: #2a5be2;
+  --bg: #f5f7fc;
+  --bg-soft: #f5f7fc;
+  --border: #e4e8f2;
+  --brand: #2a5be2;
+  --brand-2: #547be7;
+  --card: #fff;
+  --deep: #0d1a3a;
+  --deep-2: #1d2948;
+  --dim: #8a93a8;
+  --dn: #0f9d58;
+  --dn-bg: #eef8f2;
+  --err: #d93025;
+  --gold: #b7791f;
+  --line: #e4e8f2;
+  --mono: 'SF Mono',Consolas,'Cascadia Mono',monospace;
+  --muted: #5a6478;
+  --ok: #0f9d58;
+  --panel: #ffffff;
+  --panel2: #f0f3fa;
+  --text: #1a2233;
+  --up: #e0342c;
+  --up-bg: #fdf1f0;
+  --warn: #d98600;
+}

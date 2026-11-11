@@ -1,7 +1,7 @@
 {
  "pid": "视频号学习_8博主",
- "units_fingerprint": "1548366|1793980098|3fed1510813a9ad7",
- "last_run": "2026-11-07T06:30:13+08:00",
+ "units_fingerprint": "1548366|1794312008|8f7f8c822b2d7a1f",
+ "last_run": "2026-11-11T06:30:29+08:00",
  "last_status": "ok",
  "stats": {
   "candidates": 497,
@@ -9,5 +9,5 @@
   "reject": 353,
   "revise": 0
  },
- "candidate_file": "card_candidates_视频号学习_8博主_v2_20261107.json"
+ "candidate_file": "card_candidates_视频号学习_8博主_v2_20261111.json"
 }

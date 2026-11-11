@@ -1,10 +1,10 @@
 {
  "schema": "qpzm_m2_frozen/v1.1",
  "generated_at": "2026-11-09 15:45",
- "status": "FROZEN M2.1 - 老田 2026-11-07 13:08 确认（drop_p1 入场过滤启用）；2026-11-09 签 b 指纹重冻（引擎/裁判对齐 t7_lock v3b，口径零变更，复跑 12m 0 差异实证）",
+ "status": "FROZEN M2.1 - 老田 2026-11-07 13:08 确认（drop_p1 入场过滤启用）；2026-11-09 签 b 指纹重冻（引擎/裁判对齐 t7_lock v3b）；2026-11-10 审计重冻 v3c（全项目代码审计：引擎一字板板块前缀错位修复 + 裁判死代码清理，口径参数零变更）",
  "form": {
-  "engine": "qpzm_backtest.py（逐笔锚，md5 d13225d0，v3b 重冻：load_wide 增读 low 列透传 _raw_low，不进任何引擎计算路径）",
-  "portfolio_sim": "portfolio_sim.py（组合层唯一裁判，md5 57de37c6）",
+  "engine": "qpzm_backtest.py（逐笔锚，md5 b8631e8e，v3c 重冻：审计修复 load_wide 一字板板块前缀 判定 codes[j][2:4]→codes[j][:2]，20cm 板块 approx 阈值恢复正确；仅影响 exact 缓存缺失回退日与 approx 口径运行，策略参数零变更）",
+  "portfolio_sim": "portfolio_sim.py（组合层唯一裁判，md5 690505da，v3c 重冻：仅删除 main 尾部不可达死代码块，逻辑零变更）",
   "rank": "score",
   "weight_scheme": "inv_vol",
   "lot_fill": "recycle",
@@ -66,5 +66,12 @@
    "verdict": "❌ 1/5",
    "evidence": "36m −99.4pp；高位入场下 TP 频触、剪碎 5 日波段引擎"
   }
- ]
+ ],
+ "refreeze_20261110": {
+  "what": "审计重冻 v3c：引擎 d13225d0→b8631e8e（一字板板块前缀 [2:4]→[:2]，创业板/科创板 20cm approx 阈值失效修复）；裁判 57de37c6→690505da（删除不可达死代码）。top_n/hold/cost/weight_scheme/lot_fill/limit_mode/drop_p1 全部零变更。",
+  "impact": "引擎修复只影响 approx 一字板判定（exact 模式下仅缓存缺失回退日生效）；M2.1 官方标定均走 limit_mode=exact，历史冻结数字不受回退日以外路径影响，回退日敏感的结论如需引用应重跑验证。",
+  "scope": "本审计同步修复：_pick_live.py 口径对齐（lot_fill/limit_mode 参数化+exact）、daily_run 传参与 verify 扩展、houfeng_agent_brief lim_pct_of 同款前缀错位、guardian v1.0.4 TP 前置统一、_dividend_defense sweep 阈值、_pick_20261106_report 口径对齐+预热 120、paper_daily 净值链/原子写、replay_ledger --limit 覆盖陷阱、_a3_impact_run 冲击模型 ×0.1 校准错、快照生成器响亮失败。",
+  "approved_by": "laotian（2026-11-10 WorkBuddy 指令「项目代码审计，bug 进行修复」）",
+  "addendum": "07:55 追冻：E2E 演练实锤 _plan_shares 的 st[recycle_capped] 对普通 dict 必 KeyError（此前被 _pick_live strict 硬编码掩盖）——裁判 _plan_shares 改 st.get 防御式计数，裁判 md5 更新为 690505da；引擎指纹 b8631e8e 不再变动。"
+ }
 }

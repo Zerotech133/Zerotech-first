@@ -1,0 +1,3 @@
+﻿strategy_id,market,signal_date,entry_date,code,name,signal,ret_t1,max_dd,market_ret,excess,draft_category
+v1-cn-strat-4,CN,2026-11-06,2026-11-09,000526.SZ,学大教育,CHAN,-0.02101,-0.02101,-0.003050524419753342,-0.01795947558024666,小幅负收益/待复盘
+v1-cn-strat-4,CN,2026-11-06,2026-11-09,002762.SZ,金发拉比,CHAN,-0.006188,-0.006188,-0.003050524419753342,-0.003137475580246658,小幅负收益/待复盘

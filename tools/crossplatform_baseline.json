@@ -309,15 +309,6 @@
       "registered_at": "2026-11-07",
       "reason": "存量冻结，待分批清理；新增一律拦截"
     },
-    "x7e18b7fdabc7259": {
-      "path": "agent_platform/legion_ide/serve.py",
-      "rule": "R3_git_dash_C",
-      "level": "BLOCK",
-      "code": "proc = subprocess.run(",
-      "owner": "K-RELEASE-20261106",
-      "registered_at": "2026-11-07",
-      "reason": "存量冻结，待分批清理；新增一律拦截"
-    },
     "xc8c0b4034bacbb4": {
       "path": "agent_platform/memory/vector.py",
       "rule": "R3_git_dash_C",
@@ -467,15 +458,6 @@
       "rule": "R3_git_dash_C",
       "level": "BLOCK",
       "code": "r = subprocess.run(",
-      "owner": "K-RELEASE-20261106",
-      "registered_at": "2026-11-07",
-      "reason": "存量冻结，待分批清理；新增一律拦截"
-    },
-    "x498cc0e1bdd3b79": {
-      "path": "agent_platform/tests/test_legion_ide_http.py",
-      "rule": "R3_git_dash_C",
-      "level": "BLOCK",
-      "code": "subprocess.run([\"git\", \"-C\", str(cwd), *args], check=True,",
       "owner": "K-RELEASE-20261106",
       "registered_at": "2026-11-07",
       "reason": "存量冻结，待分批清理；新增一律拦截"
@@ -1532,6 +1514,249 @@
       "owner": "K-RELEASE-20261106",
       "registered_at": "2026-11-07",
       "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x61508d6dc93aed0": {
+      "path": "tools/agent_coder.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", root] + args, capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xc7f74276d33e677": {
+      "path": "tools/huangzhong_blind_audit.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cmd = [\"git\", \"-C\", str(repo), \"-c\", \"core.quotepath=false\",",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x34f0ebf6255a0e3": {
+      "path": "tools/huangzhong_blocking_sim.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cmd = [\"git\", \"-C\", str(repo), \"-c\", \"core.quotepath=false\"]",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x71ac14b08f6a7d3": {
+      "path": "tools/huangzhong_blocking_sim.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "info = {\"cmd\": [\"git\", \"-C\", str(repo), \"-c\", \"core.quotepath=false\"] + cmd,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xb2977eb86bd9416": {
+      "path": "tools/huangzhong_impact.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return run_fn([\"git\", \"-C\", str(repo), \"-c\", \"core.quotepath=false\"]",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x4a8417c62d8d172": {
+      "path": "tools/huangzhong_risk_coverage.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cmd = [\"git\", \"-C\", repo_path, \"-c\", \"core.quotepath=false\"] + list(args)",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x49cba1e4f46e583": {
+      "path": "tools/mcp_ro_git.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(GIT_REPO)] + args,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x784cb17505ac61e": {
+      "path": "tools/ocr_gate_eval.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "p = subprocess.run([\"git\", \"-C\", str(REPO)] + list(args), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xa5c9f1a16b5f913": {
+      "path": "tools/prompt_version_registry.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cmd = [\"git\", \"-C\", ROOT, \"log\", \"--follow\", \"-n\", str(limit),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xa70d979b4079db7": {
+      "path": "tools/scan_secrets.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cmd = [\"git\", \"-C\", repo, \"ls-files\", \"-z\"]",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x86b12098764bdbc": {
+      "path": "tools/scan_secrets.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cmd = [\"git\", \"-C\", repo, \"diff\", \"--cached\", \"--name-only\", \"-z\"]",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xf914ff6256540e5": {
+      "path": "tools/test_sandbox_verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "subprocess.run([\"git\", \"-C\", str(repo)] + list(args), check=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xc28f4605aa886ad": {
+      "path": "tools/w0_prep_merge.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "_run([\"git\", \"-C\", str(wt), \"add\", \"--\"] + base_changed)",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x7a0b690ff486062": {
+      "path": "tools/w0_prep_merge.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "rc, out = _run([\"git\", \"-C\", str(wt), \"-c\", \"user.name=DSH-Lead\",",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xcb39711aaaa5388": {
+      "path": "tools/branch_audit/conflict_classify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", REPO] + list(a), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x1fb0e20427839d2": {
+      "path": "tools/branch_audit/conflict_detail.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", REPO] + list(a), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x113031baec0cf57": {
+      "path": "tools/branch_audit/conflict_effort.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", REPO] + list(a), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xcfd5531c85704ca": {
+      "path": "tools/branch_audit/dominance.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", REPO] + list(a), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x2b3236771410e59": {
+      "path": "tools/branch_audit/gen_candidates_doc.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(['git', '-C', REPO] + list(args),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x4243bb68b923a22": {
+      "path": "tools/branch_audit/global_merge_drill.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(['git', '-C', REPO] + list(args),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x749202f64ae4ab1": {
+      "path": "tools/branch_audit/merge_candidates_v2.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(['git', '-C', REPO] + list(args),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x7e2520c831d9d21": {
+      "path": "tools/branch_audit/merge_plan_v3.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(['git', '-C', REPO] + list(args),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x18828a004507f8d": {
+      "path": "tools/branch_audit/missing_vs_both.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", REPO] + list(a), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xa51ada31c2c2a1d": {
+      "path": "tools/branch_audit/recency.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", REPO] + list(a), capture_output=True,",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x3c2af809afcf497": {
+      "path": "quant_backtest/tools/d1_s1_precheck.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "[\"git\", \"-C\", REPO] + list(a),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "xd09589f26f46f93": {
+      "path": "quant_backtest/tools/frozen_tag_gate.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "[\"git\", \"-C\", REPO] + list(args),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
+    },
+    "x0a168802b28d748": {
+      "path": "quant_backtest/tools/frozen_tag_gate.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "[\"git\", \"-C\", REPO] + list(args),",
+      "owner": "K-PR6",
+      "registered_at": "2026-11-07",
+      "reason": "K-PR6：R3 规则升级后显形的存量（非本次新增代码），待分批清理"
     }
   }
 }

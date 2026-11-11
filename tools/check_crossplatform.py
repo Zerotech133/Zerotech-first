@@ -192,6 +192,10 @@ def scan_source(path: str, src: str):
             if not _is_guarded(node, parents):
                 add(node, "R1_win_only_import", "BLOCK")
 
+    # 2026-11-07 K-PR6：记录已在调用点登记过的列表节点，供下方全量扫描去重，
+    # 保证既有基线条目（指纹基于 Call 节点行号）不变、且同一节点不会被计两次。
+    r3_seen_lists = set()
+
     # R2 / R3 / R4: 调用点
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -208,6 +212,7 @@ def scan_source(path: str, src: str):
         if isinstance(first, (ast.List, ast.Tuple)) and len(first.elts) >= 2:
             a, b = _const_str(first.elts[0]), _const_str(first.elts[1])
             if a and a.rstrip(".exe") == "git" and b == "-C" and not guarded:
+                r3_seen_lists.add(id(first))
                 add(node, "R3_git_dash_C", "BLOCK")
         # git -C：shell 字符串形式
         if first is not None:
@@ -219,6 +224,21 @@ def scan_source(path: str, src: str):
         if (isinstance(fn, ast.Attribute) and isinstance(fn.value, ast.Name)
                 and fn.value.id == "os" and fn.attr == "startfile" and not guarded):
             add(node, "R4_os_startfile", "BLOCK")
+
+    # R3（2026-11-07 K-PR6 规则升级）：git -C 的列表/元组构造形态。
+    # 旧版只检查 ast.Call 的第一个参数，漏掉两类真实写法：
+    #   · {"ok": True, "argv": ["git", "-C", str(wt), ...]}（字典 value / return）
+    #   · args = ["git", "-C", ...] 后 subprocess.run(args, ...)
+    # 改为遍历全部 List/Tuple 节点；调用点已登记的节点跳过，避免重复计数。
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.List, ast.Tuple)) or len(node.elts) < 2:
+            continue
+        if id(node) in r3_seen_lists:
+            continue
+        a, b = _const_str(node.elts[0]), _const_str(node.elts[1])
+        if (a and a.rstrip(".exe") == "git" and b == "-C"
+                and not _is_guarded(node, parents)):
+            add(node, "R3_git_dash_C", "BLOCK")
 
     # R5: 盘符路径字面量（WARN；函数内默认值同样提示）
     for node in ast.walk(tree):

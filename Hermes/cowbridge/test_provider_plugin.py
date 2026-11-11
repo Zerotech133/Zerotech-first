@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """cowbridge provider 插件 v0.2 自测——用 Hermes 真实加载器全流程验证。
 
-运行方式（须 hermes venv + hermes-agent 目录在 sys.path）：
-  C:/Users/Administrator/.hermes/venv/Scripts/python.exe test_provider_plugin.py
-（脚本自身已把 hermes-agent 插到 sys.path[0]，cwd 无要求）
+运行方式（须在 hermes venv 内执行，HERMES_HOME 默认 ~/.hermes）：
+  python test_provider_plugin.py
+（脚本自身已把 hermes-agent 插到 sys.path[0]，cwd 无要求；可用 HERMES_HOME / HERMES_AGENT_DIR 覆盖路径）
 
 覆盖：
   1 发现启发式识别  2 register 模式装载  3 discover 列表可见
@@ -16,12 +16,13 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
 import time
 from pathlib import Path
 
-AGENT_DIR = Path(r"C:\Users\Administrator\.hermes\hermes-agent")
+AGENT_DIR = Path(os.getenv("HERMES_AGENT_DIR") or os.getenv("HERMES_HOME") or str(Path.home() / ".hermes")) / "hermes-agent"
 if str(AGENT_DIR) not in sys.path:
     sys.path.insert(0, str(AGENT_DIR))
 

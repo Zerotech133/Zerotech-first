@@ -303,10 +303,15 @@ def _code_col(df):
 
 
 @guarded_read(lambda *args, **kwargs: [Path(INFO_DB).parent])
-def read_info(tbl, codes=None, limit=200, since=None):
+def read_info(tbl, codes=None, limit=200, since=None, until=None,
+                  after=None):
     """信息三表（公告/个股新闻/研报）→ list[dict]，按日期倒序。
 
     codes：ts_code 精确或 6 位前缀；since：'YYYYMMDD' 起始。
+    until：'YYYYMMDD' 截止（含）；after：游标 dict
+    {'date':'YYYYMMDD','sub':'<_fetched_at>','rid':<rowid>}——P0 RFC 方案②
+    R2 分页口径：此时改升序 + rowid 第三键，WHERE 严格大于游标，
+    同 (日期,_fetched_at) 并列组由 rowid 防跨页丢行。缺省 None 逐字保持旧行为。
     参数化查询，防注入。
     """
     if tbl not in SQLITE_TABLES:
@@ -331,10 +336,36 @@ def read_info(tbl, codes=None, limit=200, since=None):
         where.append("%s >= ?" % date_col)
         nd = _norm_day(since)  # 库内存 'YYYY-MM-DD'
         params.append("%s-%s-%s" % (nd[:4], nd[4:6], nd[6:8]))
-    sql = "SELECT * FROM %s" % tbl  # nosec B608 - 值参数化/内部标识符（已抽查）
+    if until:
+        where.append("%s <= ?" % date_col)
+        nu = _norm_day(until)
+        params.append("%s-%s-%s" % (nu[:4], nu[4:6], nu[6:8]))
+    # after 游标（P0 RFC 方案② R2）：AND 组内 (date, _fetched_at, rowid)
+    # 字典序严格大于游标；rowid 作第三键保证并列组跨页不重不漏。
+    if after:
+        cd = _norm_day(str(after.get("date") or ""))
+        cd = "%s-%s-%s" % (cd[:4], cd[4:6], cd[6:8]) if len(cd) == 8 else ""
+        csub = str(after.get("sub") or "")
+        crid = int(after.get("rid") or 0)
+        where.append(
+            "(%s > ? OR (%s = ? AND COALESCE(_fetched_at,'') > ?) "
+            "OR (%s = ? AND COALESCE(_fetched_at,'') = ? AND rowid > ?))"
+            % (date_col, date_col, date_col)
+        )
+        params.extend([cd, cd, csub, cd, csub, crid])
+    if after:
+        sql = ("SELECT rowid AS _src_rowid, * FROM %s" % tbl)  # nosec B608 - 同上
+    else:
+        sql = "SELECT * FROM %s" % tbl  # nosec B608 - 值参数化/内部标识符（已抽查）
     if where:
         sql += " WHERE " + " AND ".join(where)
-    sql += " ORDER BY %s DESC LIMIT %d" % (date_col, int(limit))
+    if after:
+        # 升序游标走法：与 WHERE 严格大于配套，LIMIT 窗口沿游标前移。
+        sql += (" ORDER BY %s ASC, COALESCE(_fetched_at,'') ASC, rowid ASC LIMIT %%d"
+                % date_col)
+    else:
+        sql += " ORDER BY %s DESC LIMIT %%d" % date_col
+    sql %= int(limit)
     try:
         conn = sqlite3.connect(INFO_DB, timeout=30)
         conn.row_factory = sqlite3.Row

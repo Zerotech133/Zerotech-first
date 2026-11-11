@@ -1,12 +1,12 @@
 {
  "schema_version": 1,
  "date": "20261101",
- "generated_at": "2026-11-07T08:58:14+08:00",
+ "generated_at": "2026-11-11T02:30:42+08:00",
  "generator": "tools/kb_corpus/card_proposal_v3.py",
  "status": "pending_review",
  "baseline": {
-  "expected_total": 400,
-  "cards_file": 400,
+  "expected_total": 1096,
+  "cards_file": 1096,
   "note": "70 张基线 = 现有 cards 文件 + 清单 pass36（已授权合并）+ 修订 merge_fix14；按 concept 去重"
  },
  "coverage": {
@@ -15,21 +15,21 @@
   "covered_after": 21,
   "coverage_rate_before": 1.0,
   "coverage_rate_after": 1.0,
-  "depth_covered_before": 19,
-  "depth_covered_after": 19,
-  "depth_coverage_rate_before": 0.9048,
-  "depth_coverage_rate_after": 0.9048,
+  "depth_covered_before": 21,
+  "depth_covered_after": 21,
+  "depth_coverage_rate_before": 1.0,
+  "depth_coverage_rate_after": 1.0,
   "units_total": 516,
-  "unit_coverage_before": 0.7752,
-  "unit_coverage_after": 0.8411,
-  "cards_before": 400,
-  "cards_after": 434,
+  "unit_coverage_before": 2.124,
+  "unit_coverage_after": 2.1899,
+  "cards_before": 1096,
+  "cards_after": 1130,
   "rows": [
    {
     "theme": "其他",
     "units": 117,
-    "cards_before": 201,
-    "cards_after": 204,
+    "cards_before": 742,
+    "cards_after": 745,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -37,8 +37,8 @@
    {
     "theme": "AI算力/硬件",
     "units": 108,
-    "cards_before": 37,
-    "cards_after": 40,
+    "cards_before": 61,
+    "cards_after": 64,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -46,8 +46,8 @@
    {
     "theme": "新能源/电力",
     "units": 71,
-    "cards_before": 19,
-    "cards_after": 22,
+    "cards_before": 23,
+    "cards_after": 26,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -55,8 +55,8 @@
    {
     "theme": "宏观/政策",
     "units": 42,
-    "cards_before": 21,
-    "cards_after": 24,
+    "cards_before": 34,
+    "cards_after": 37,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -64,8 +64,8 @@
    {
     "theme": "量学/交易",
     "units": 31,
-    "cards_before": 25,
-    "cards_after": 28,
+    "cards_before": 80,
+    "cards_after": 83,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -73,8 +73,8 @@
    {
     "theme": "消费/零售",
     "units": 27,
-    "cards_before": 8,
-    "cards_after": 11,
+    "cards_before": 13,
+    "cards_after": 16,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -82,8 +82,8 @@
    {
     "theme": "金融/地产",
     "units": 25,
-    "cards_before": 17,
-    "cards_after": 20,
+    "cards_before": 25,
+    "cards_after": 28,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -91,8 +91,8 @@
    {
     "theme": "机械/制造",
     "units": 17,
-    "cards_before": 10,
-    "cards_after": 13,
+    "cards_before": 19,
+    "cards_after": 22,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -100,8 +100,8 @@
    {
     "theme": "军工/航天",
     "units": 16,
-    "cards_before": 7,
-    "cards_after": 10,
+    "cards_before": 9,
+    "cards_after": 12,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -109,8 +109,8 @@
    {
     "theme": "化工/材料",
     "units": 9,
-    "cards_before": 4,
-    "cards_after": 7,
+    "cards_before": 5,
+    "cards_after": 8,
     "delta": 3,
     "covered_before": true,
     "covered_after": true
@@ -136,8 +136,8 @@
    {
     "theme": "有色/金属",
     "units": 7,
-    "cards_before": 8,
-    "cards_after": 9,
+    "cards_before": 17,
+    "cards_after": 18,
     "delta": 1,
     "covered_before": true,
     "covered_after": true
@@ -154,8 +154,8 @@
    {
     "theme": "半导体/电子",
     "units": 5,
-    "cards_before": 8,
-    "cards_after": 8,
+    "cards_before": 13,
+    "cards_after": 13,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -163,8 +163,8 @@
    {
     "theme": "评级/研报方法论",
     "units": 5,
-    "cards_before": 3,
-    "cards_after": 5,
+    "cards_before": 11,
+    "cards_after": 13,
     "delta": 2,
     "covered_before": true,
     "covered_after": true
@@ -172,8 +172,8 @@
    {
     "theme": "建筑/建材",
     "units": 4,
-    "cards_before": 4,
-    "cards_after": 4,
+    "cards_before": 5,
+    "cards_after": 5,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -181,8 +181,8 @@
    {
     "theme": "通信/互联网",
     "units": 4,
-    "cards_before": 4,
-    "cards_after": 4,
+    "cards_before": 6,
+    "cards_after": 6,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -190,8 +190,8 @@
    {
     "theme": "医药/生物",
     "units": 3,
-    "cards_before": 3,
-    "cards_after": 3,
+    "cards_before": 6,
+    "cards_after": 6,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -199,8 +199,8 @@
    {
     "theme": "传媒/文化",
     "units": 2,
-    "cards_before": 1,
-    "cards_after": 1,
+    "cards_before": 6,
+    "cards_after": 6,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -208,8 +208,8 @@
    {
     "theme": "汽车/智驾",
     "units": 2,
-    "cards_before": 2,
-    "cards_after": 2,
+    "cards_before": 3,
+    "cards_after": 3,
     "delta": 0,
     "covered_before": true,
     "covered_after": true
@@ -221,12 +221,12 @@
    "theme": "AI算力/硬件",
    "count": 3,
    "units": 108,
-   "before": 37,
-   "after": 40,
+   "before": 61,
+   "after": 64,
    "card_ids": [
-    "CP3-20261101-029",
-    "CP3-20261101-030",
-    "CP3-20261101-031"
+    "CP3-20261101-026",
+    "CP3-20261101-027",
+    "CP3-20261101-028"
    ]
   },
   {
@@ -236,15 +236,15 @@
    "before": 6,
    "after": 7,
    "card_ids": [
-    "CP3-20261101-006"
+    "CP3-20261101-004"
    ]
   },
   {
    "theme": "其他",
    "count": 3,
    "units": 117,
-   "before": 201,
-   "after": 204,
+   "before": 742,
+   "after": 745,
    "card_ids": [
     "CP3-20261101-032",
     "CP3-20261101-033",
@@ -255,32 +255,32 @@
    "theme": "军工/航天",
    "count": 3,
    "units": 16,
-   "before": 7,
-   "after": 10,
+   "before": 9,
+   "after": 12,
    "card_ids": [
-    "CP3-20261101-007",
-    "CP3-20261101-008",
-    "CP3-20261101-009"
+    "CP3-20261101-005",
+    "CP3-20261101-006",
+    "CP3-20261101-007"
    ]
   },
   {
    "theme": "化工/材料",
    "count": 3,
    "units": 9,
-   "before": 4,
-   "after": 7,
+   "before": 5,
+   "after": 8,
    "card_ids": [
-    "CP3-20261101-003",
-    "CP3-20261101-004",
-    "CP3-20261101-005"
+    "CP3-20261101-001",
+    "CP3-20261101-002",
+    "CP3-20261101-003"
    ]
   },
   {
    "theme": "宏观/政策",
    "count": 3,
    "units": 42,
-   "before": 21,
-   "after": 24,
+   "before": 34,
+   "after": 37,
    "card_ids": [
     "CP3-20261101-023",
     "CP3-20261101-024",
@@ -291,20 +291,20 @@
    "theme": "新能源/电力",
    "count": 3,
    "units": 71,
-   "before": 19,
-   "after": 22,
+   "before": 23,
+   "after": 26,
    "card_ids": [
-    "CP3-20261101-020",
-    "CP3-20261101-021",
-    "CP3-20261101-022"
+    "CP3-20261101-017",
+    "CP3-20261101-018",
+    "CP3-20261101-019"
    ]
   },
   {
    "theme": "有色/金属",
    "count": 1,
    "units": 7,
-   "before": 8,
-   "after": 9,
+   "before": 17,
+   "after": 18,
    "card_ids": [
     "CP3-20261101-013"
    ]
@@ -313,8 +313,8 @@
    "theme": "机械/制造",
    "count": 3,
    "units": 17,
-   "before": 10,
-   "after": 13,
+   "before": 19,
+   "after": 22,
    "card_ids": [
     "CP3-20261101-014",
     "CP3-20261101-015",
@@ -325,8 +325,8 @@
    "theme": "消费/零售",
    "count": 3,
    "units": 27,
-   "before": 8,
-   "after": 11,
+   "before": 13,
+   "after": 16,
    "card_ids": [
     "CP3-20261101-010",
     "CP3-20261101-011",
@@ -337,35 +337,35 @@
    "theme": "评级/研报方法论",
    "count": 2,
    "units": 5,
-   "before": 3,
-   "after": 5,
+   "before": 11,
+   "after": 13,
    "card_ids": [
-    "CP3-20261101-001",
-    "CP3-20261101-002"
+    "CP3-20261101-008",
+    "CP3-20261101-009"
    ]
   },
   {
    "theme": "量学/交易",
    "count": 3,
    "units": 31,
-   "before": 25,
-   "after": 28,
+   "before": 80,
+   "after": 83,
    "card_ids": [
-    "CP3-20261101-026",
-    "CP3-20261101-027",
-    "CP3-20261101-028"
+    "CP3-20261101-029",
+    "CP3-20261101-030",
+    "CP3-20261101-031"
    ]
   },
   {
    "theme": "金融/地产",
    "count": 3,
    "units": 25,
-   "before": 17,
-   "after": 20,
+   "before": 25,
+   "after": 28,
    "card_ids": [
-    "CP3-20261101-017",
-    "CP3-20261101-018",
-    "CP3-20261101-019"
+    "CP3-20261101-020",
+    "CP3-20261101-021",
+    "CP3-20261101-022"
    ]
   }
  ],
@@ -374,10 +374,10 @@
   "themes_covered_after": 21,
   "coverage_rate_before": 1.0,
   "coverage_rate_after": 1.0,
-  "depth_coverage_rate_before": 0.9048,
-  "depth_coverage_rate_after": 0.9048,
-  "unit_coverage_before": 0.7752,
-  "unit_coverage_after": 0.8411,
+  "depth_coverage_rate_before": 1.0,
+  "depth_coverage_rate_after": 1.0,
+  "unit_coverage_before": 2.124,
+  "unit_coverage_after": 2.1899,
   "gap_themes": [
    "AI算力/硬件",
    "交运/物流",
@@ -403,83 +403,13 @@
   {
    "card_id": "CP3-20261101-001",
    "status": "pending_review",
-   "theme": "评级/研报方法论",
+   "theme": "化工/材料",
    "angle": "definition",
    "angle_cn": "概念定义",
-   "q": "什么是「趋势模板」？",
-   "a": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
-   "concept": "趋势模板",
-   "unit_id": "u001",
-   "unit_key": {
-    "book": "米勒维尼_趋势交易体系",
-    "chapter": "一、趋势模板（00:00–00:26）",
-    "p1": 1,
-    "p2": 1
-   },
-   "book": "米勒维尼_趋势交易体系",
-   "chapter": "一、趋势模板（00:00–00:26）",
-   "page_start": 1,
-   "page_end": 1,
-   "evidence": "米勒维尼用一张清单筛股，称之为趋势模板；八条：50/150/200 均线上方且多头排列；200 日线上升≥1 个月；52 周低点+30%以上；52 周高点-25%以内；相对强度≥70（最好90+）。先筛出领涨股，再找买点。",
-   "claim": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
-   "source_tag": "策略经典",
-   "quality_score": 70.8,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-002",
-   "status": "pending_review",
-   "theme": "评级/研报方法论",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「RS 评级口径」有哪些关键事实或数据？",
-   "a": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
-   "concept": "RS 评级口径",
-   "unit_id": "u002",
-   "unit_key": {
-    "book": "米勒维尼_趋势交易体系",
-    "chapter": "十二、资源：O'Neil RS Rating 方法",
-    "p1": 13,
-    "p2": 13
-   },
-   "book": "米勒维尼_趋势交易体系",
-   "chapter": "十二、资源：O'Neil RS Rating 方法",
-   "page_start": 13,
-   "page_end": 13,
-   "evidence": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
-   "claim": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。",
-   "source_tag": "策略经典",
-   "quality_score": 66.2,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-003",
-   "status": "pending_review",
-   "theme": "化工/材料",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「原材料价格变动」的影响与传导是什么？",
-   "a": "截至 2026 年 9 月 18 日，铁矿石期货价格为 715.5 元/吨，环比下降；铜、铝现货价格分别上涨 2.0% 和 0.3%。 依据：本周铁矿石期货收盘价 715.5 元/吨，环比 -2.5 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3512 元/吨，环比 -14 元/吨；铜、铝现货价格分别为 14529、3285 美元/吨，单价分别+290.5、+11 美元/吨。",
+   "q": "什么是「原材料价格变动」？",
+   "a": "截至 2026 年 9 月 18 日，铁矿石期货价格为 715.5 元/吨，环比下降；铜、铝现货价格分别上涨 2.0% 和 0.3%。",
    "concept": "原材料价格变动",
-   "unit_id": "u003",
+   "unit_id": "u001",
    "unit_key": {
     "book": "rp_AP202610021830105333",
     "chapter": "市场研究部 2026 年9 月22 日",
@@ -506,15 +436,15 @@
    }
   },
   {
-   "card_id": "CP3-20261101-004",
+   "card_id": "CP3-20261101-002",
    "status": "pending_review",
    "theme": "化工/材料",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「化工行业产业链议价能力」？",
-   "a": "化工行业中游制造环节受上下游双重挤压，利润空间有限；仅具备技术壁垒的高端精细化学品或寡头垄断品类（如 MDI）拥有较强议价权，通用大宗品缺乏定价权。",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「化工行业产业链议价能力」有哪些关键事实或数据？",
+   "a": "上游资源端凭借禀赋拥有强议价权，下游对通用产品有强议价能力。中游大宗品因产能过剩普遍缺乏定价权，但二苯基甲烷二异氰酸酯（MDI）等寡头垄断品类基本可完全转嫁成本，高端领域可凭技术壁垒构筑优势。",
    "concept": "化工行业产业链议价能力",
-   "unit_id": "u004",
+   "unit_id": "u002",
    "unit_key": {
     "book": "rp_AP202610021830105528",
     "chapter": "摘要：",
@@ -541,15 +471,15 @@
    }
   },
   {
-   "card_id": "CP3-20261101-005",
+   "card_id": "CP3-20261101-003",
    "status": "pending_review",
    "theme": "化工/材料",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「化工行业信用风险格局」有哪些关键事实或数据？",
-   "a": "微观财务数据显示，多数企业维持正向现金流，但盈利修复缓慢；头部企业凭规模与融资优势率先修复，尾部企业在现金成本以下持续亏损。预计 2026 年下半年，尾部企业信用事件进入高发区间。",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「化工行业信用风险格局」的影响与传导是什么？",
+   "a": "化工行业信用风险呈现“头部稳健、中部分化、尾部承压”的格局，预计下半年尾部企业信用事件将进入高发区间，因其在现金成本以下持续亏损且融资优势丧失。 依据：微观财务数据显示，多数企业维持正向现金流，但盈利修复缓慢；头部企业凭规模与融资优势率先修复，尾部企业在现金成本以下持续亏损。预计 2026 年下半年，尾部企业信用事件进入高发区间。",
    "concept": "化工行业信用风险格局",
-   "unit_id": "u005",
+   "unit_id": "u003",
    "unit_key": {
     "book": "rp_AP202610021830105528",
     "chapter": "摘要：",
@@ -576,15 +506,15 @@
    }
   },
   {
-   "card_id": "CP3-20261101-006",
+   "card_id": "CP3-20261101-004",
    "status": "pending_review",
    "theme": "交运/物流",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「快递行业量价走势」的影响与传导是什么？",
-   "a": "淡季下快递业务量环比回落，但单件均价保持稳健回升态势。 依据：8 月淡季短期快递量环比仍有所下滑，但件均价保持稳健；1-8 月单件均价为 7.68 元/件，同比 +2.7%。",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「快递行业量价走势」？",
+   "a": "淡季下快递业务量环比回落，但单件均价保持稳健回升态势。",
    "concept": "快递行业量价走势",
-   "unit_id": "u006",
+   "unit_id": "u004",
    "unit_key": {
     "book": "rp_AP202609301830034661",
     "chapter": "8 月快递行业月度数据跟踪报告 强于大市(维持)",
@@ -611,15 +541,15 @@
    }
   },
   {
-   "card_id": "CP3-20261101-007",
+   "card_id": "CP3-20261101-005",
    "status": "pending_review",
    "theme": "军工/航天",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「进口产品结构」？",
-   "a": "2026 年 1-8 月，中国无人驾驶航空器进口额中，“仅使用遥控飞行”类产品占比高达 98.6%，显示出极高的市场集中度。",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「进口产品结构」有哪些关键事实或数据？",
+   "a": "2026 年 1-8 月，中国无人驾驶航空器进口额排名前二的产品为仅使用遥控飞行的无人驾驶航空器和其他...分别占无人驾驶航空器贸易进口总额的 98.6%和 1.4%。",
    "concept": "进口产品结构",
-   "unit_id": "u007",
+   "unit_id": "u005",
    "unit_key": {
     "book": "rp_AP202610061830165864",
     "chapter": "一、贸易总体情况",
@@ -646,15 +576,15 @@
    }
   },
   {
-   "card_id": "CP3-20261101-008",
+   "card_id": "CP3-20261101-006",
    "status": "pending_review",
    "theme": "军工/航天",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「主要出口市场」有哪些关键事实或数据？",
-   "a": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚...分别占无人驾驶航空器贸易出口总额的 14.5%、10.4%和 6.6%。",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「主要出口市场」的影响与传导是什么？",
+   "a": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚，合计占出口总额的约 31.5%。 依据：2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚...分别占无人驾驶航空器贸易出口总额的 14.5%、10.4%和 6.6%。",
    "concept": "主要出口市场",
-   "unit_id": "u008",
+   "unit_id": "u006",
    "unit_key": {
     "book": "rp_AP202610061830165864",
     "chapter": "一、贸易总体情况",
@@ -681,15 +611,15 @@
    }
   },
   {
-   "card_id": "CP3-20261101-009",
+   "card_id": "CP3-20261101-007",
    "status": "pending_review",
    "theme": "军工/航天",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「航空煤油价格风险」的影响与传导是什么？",
-   "a": "受原油价格震荡攀升影响，预计 2026 年 10 月航空煤油价格将进一步上行，推升航空运输成本，对板块形成短期压制。 依据：9 月 1 日中国航空煤油（出厂价 (含税)）为 8170.00 元/吨，较 8 月 1 日上涨 7.8%。由于近期油价持续震荡盘升，预计 10 月航空煤油价格进一步抬升。",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「航空煤油价格风险」？",
+   "a": "受原油价格震荡攀升影响，预计 2026 年 10 月航空煤油价格将进一步上行，推升航空运输成本，对板块形成短期压制。",
    "concept": "航空煤油价格风险",
-   "unit_id": "u009",
+   "unit_id": "u007",
    "unit_key": {
     "book": "rp_AP202609301830022766",
     "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
@@ -704,6 +634,76 @@
    "claim": "受原油价格震荡攀升影响，预计 2026 年 10 月航空煤油价格将进一步上行，推升航空运输成本，对板块形成短期压制。",
    "source_tag": "研报",
    "quality_score": 53.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-008",
+   "status": "pending_review",
+   "theme": "评级/研报方法论",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「趋势模板」有哪些关键事实或数据？",
+   "a": "米勒维尼用一张清单筛股，称之为趋势模板；八条：50/150/200 均线上方且多头排列；200 日线上升≥1 个月；52 周低点+30%以上；52 周高点-25%以内；相对强度≥70（最好90+）。先筛出领涨股，再找买点。",
+   "concept": "趋势模板",
+   "unit_id": "u008",
+   "unit_key": {
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "一、趋势模板（00:00–00:26）",
+    "p1": 1,
+    "p2": 1
+   },
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "一、趋势模板（00:00–00:26）",
+   "page_start": 1,
+   "page_end": 1,
+   "evidence": "米勒维尼用一张清单筛股，称之为趋势模板；八条：50/150/200 均线上方且多头排列；200 日线上升≥1 个月；52 周低点+30%以上；52 周高点-25%以内；相对强度≥70（最好90+）。先筛出领涨股，再找买点。",
+   "claim": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
+   "source_tag": "策略经典",
+   "quality_score": 70.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-009",
+   "status": "pending_review",
+   "theme": "评级/研报方法论",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「RS 评级口径」的影响与传导是什么？",
+   "a": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。 依据：来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
+   "concept": "RS 评级口径",
+   "unit_id": "u009",
+   "unit_key": {
+    "book": "米勒维尼_趋势交易体系",
+    "chapter": "十二、资源：O'Neil RS Rating 方法",
+    "p1": 13,
+    "p2": 13
+   },
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "十二、资源：O'Neil RS Rating 方法",
+   "page_start": 13,
+   "page_end": 13,
+   "evidence": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
+   "claim": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。",
+   "source_tag": "策略经典",
+   "quality_score": 66.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -963,118 +963,13 @@
   {
    "card_id": "CP3-20261101-017",
    "status": "pending_review",
-   "theme": "金融/地产",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「北京房地产新政」有哪些关键事实或数据？",
-   "a": "2026 年 9 月 24 日，北京发布《关于完善商品住房销售制度的通知》的实施意见，明确全面加强预售管理、有序实施现房销售、推行主办银行制度等六方面政策措施。新出让住宅用地首付不低于 50%，余款两年内缴清，不计利息。",
-   "concept": "北京房地产新政",
-   "unit_id": "u017",
-   "unit_key": {
-    "book": "rp_AP202609301830054738",
-    "chapter": "中性",
-    "p1": 1,
-    "p2": 12
-   },
-   "book": "rp_AP202609301830054738",
-   "chapter": "中性",
-   "page_start": 1,
-   "page_end": 12,
-   "evidence": "2026 年 9 月 24 日，北京发布《关于完善商品住房销售制度的通知》的实施意见，明确全面加强预售管理、有序实施现房销售、推行主办银行制度等六方面政策措施。新出让住宅用地首付不低于 50%，余款两年内缴清，不计利息。",
-   "claim": "北京自 2026 年 9 月 24 日起实施与上海类似的完善商品住房销售制度，包括提高预售门槛、优先现房销售及土地款分期缴纳政策。",
-   "source_tag": "研报",
-   "quality_score": 59.6,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-018",
-   "status": "pending_review",
-   "theme": "金融/地产",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「上海房地产新政」的影响与传导是什么？",
-   "a": "上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高（主体结构封顶）、房贷延后发放及土地款分期免息等政策。 依据：上海市四部门联合印发《关于贯彻落实〈关于完善商品住房销售制度的通知〉的实施意见》，主要包括加强预售管理、实施现房销售、推行主办银行制度等 6 个方面政策措施。新公告出让土地的商品住房项目优先现房销售，预售门槛提高，房贷发放延后。",
-   "concept": "上海房地产新政",
-   "unit_id": "u018",
-   "unit_key": {
-    "book": "rp_AP202609301830054738",
-    "chapter": "中性",
-    "p1": 1,
-    "p2": 12
-   },
-   "book": "rp_AP202609301830054738",
-   "chapter": "中性",
-   "page_start": 1,
-   "page_end": 12,
-   "evidence": "上海市四部门联合印发《关于贯彻落实〈关于完善商品住房销售制度的通知〉的实施意见》，主要包括加强预售管理、实施现房销售、推行主办银行制度等 6 个方面政策措施。新公告出让土地的商品住房项目优先现房销售，预售门槛提高，房贷发放延后。",
-   "claim": "上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高（主体结构封顶）、房贷延后发放及土地款分期免息等政策。",
-   "source_tag": "研报",
-   "quality_score": 59.5,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-019",
-   "status": "pending_review",
-   "theme": "金融/地产",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「购房成本节约测算」？",
-   "a": "以 100 万元商业贷款期限 30 年、贷款利率 3.05% 计算，享受贴息政策后，累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
-   "concept": "购房成本节约测算",
-   "unit_id": "u019",
-   "unit_key": {
-    "book": "rp_AP202609301830023754",
-    "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
-    "p1": 1,
-    "p2": 2
-   },
-   "book": "rp_AP202609301830023754",
-   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
-   "page_start": 1,
-   "page_end": 2,
-   "evidence": "对购房者来说，以 100 万元商业贷款期限 30 年、贷款利率 3.05%、等额本息计算，贴息 5 年累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
-   "claim": "以 100 万元商业贷款期限 30 年、贷款利率 3.05% 计算，享受贴息政策后，累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
-   "source_tag": "研报",
-   "quality_score": 57.3,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-020",
-   "status": "pending_review",
    "theme": "新能源/电力",
    "angle": "key_fact",
    "angle_cn": "关键事实",
    "q": "「光伏产业链价格」有哪些关键事实或数据？",
    "a": "根据 datayes，9 月 23 日硅料成交价为 42 元/kg，环比 +2 元/kg；电池成交价 0.32 元/W，环比 +1 分/W；组件成交价为 0.73 元/W，环比持平。3.2mm、2mm 光伏玻璃价格分别为 17、10 元/平米，银浆价格为 15890 元/kg，均环比持平。",
    "concept": "光伏产业链价格",
-   "unit_id": "u020",
+   "unit_id": "u017",
    "unit_key": {
     "book": "rp_AP202610021830105370",
     "chapter": "市场研究部 2026 年9 月30 日",
@@ -1101,7 +996,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-021",
+   "card_id": "CP3-20261101-018",
    "status": "pending_review",
    "theme": "新能源/电力",
    "angle": "impact",
@@ -1109,7 +1004,7 @@
    "q": "「电力设备行业周度表现」的影响与传导是什么？",
    "a": "2026 年 9 月 21 日至 25 日，申万电力设备指数下跌 2.50%，跑输沪深 300 指数 0.99 个百分点，在 31 个行业中排名第 29 位。 依据：本周（2026/09/21-2026/09/25）沪深 300 指数 -1.51%，申万 31 个行业指数 9 个上涨，电力设备（申万）指数本周 -2.50%，排在第 29 位，跑输指数 0.99pct。",
    "concept": "电力设备行业周度表现",
-   "unit_id": "u021",
+   "unit_id": "u018",
    "unit_key": {
     "book": "rp_AP202610021830105372",
     "chapter": "市场研究部 2026 年9 月30 日",
@@ -1136,7 +1031,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-022",
+   "card_id": "CP3-20261101-019",
    "status": "pending_review",
    "theme": "新能源/电力",
    "angle": "definition",
@@ -1144,7 +1039,7 @@
    "q": "什么是「乘用车高端化趋势」？",
    "a": "三季度 140-160Wh/kg 能量密度的电池占比达 51%，乘用车 B 级车型销售增长，显示高端化正在拉动高密度电池需求。",
    "concept": "乘用车高端化趋势",
-   "unit_id": "u022",
+   "unit_id": "u019",
    "unit_key": {
     "book": "rp_AP202609301830049884",
     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
@@ -1159,6 +1054,111 @@
    "claim": "三季度 140-160Wh/kg 能量密度的电池占比达 51%，乘用车 B 级车型销售增长，显示高端化正在拉动高密度电池需求。",
    "source_tag": "研报",
    "quality_score": 61.6,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-020",
+   "status": "pending_review",
+   "theme": "金融/地产",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「北京房地产新政」有哪些关键事实或数据？",
+   "a": "2026 年 9 月 24 日，北京发布《关于完善商品住房销售制度的通知》的实施意见，明确全面加强预售管理、有序实施现房销售、推行主办银行制度等六方面政策措施。新出让住宅用地首付不低于 50%，余款两年内缴清，不计利息。",
+   "concept": "北京房地产新政",
+   "unit_id": "u020",
+   "unit_key": {
+    "book": "rp_AP202609301830054738",
+    "chapter": "中性",
+    "p1": 1,
+    "p2": 12
+   },
+   "book": "rp_AP202609301830054738",
+   "chapter": "中性",
+   "page_start": 1,
+   "page_end": 12,
+   "evidence": "2026 年 9 月 24 日，北京发布《关于完善商品住房销售制度的通知》的实施意见，明确全面加强预售管理、有序实施现房销售、推行主办银行制度等六方面政策措施。新出让住宅用地首付不低于 50%，余款两年内缴清，不计利息。",
+   "claim": "北京自 2026 年 9 月 24 日起实施与上海类似的完善商品住房销售制度，包括提高预售门槛、优先现房销售及土地款分期缴纳政策。",
+   "source_tag": "研报",
+   "quality_score": 59.6,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-021",
+   "status": "pending_review",
+   "theme": "金融/地产",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「上海房地产新政」的影响与传导是什么？",
+   "a": "上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高（主体结构封顶）、房贷延后发放及土地款分期免息等政策。 依据：上海市四部门联合印发《关于贯彻落实〈关于完善商品住房销售制度的通知〉的实施意见》，主要包括加强预售管理、实施现房销售、推行主办银行制度等 6 个方面政策措施。新公告出让土地的商品住房项目优先现房销售，预售门槛提高，房贷发放延后。",
+   "concept": "上海房地产新政",
+   "unit_id": "u021",
+   "unit_key": {
+    "book": "rp_AP202609301830054738",
+    "chapter": "中性",
+    "p1": 1,
+    "p2": 12
+   },
+   "book": "rp_AP202609301830054738",
+   "chapter": "中性",
+   "page_start": 1,
+   "page_end": 12,
+   "evidence": "上海市四部门联合印发《关于贯彻落实〈关于完善商品住房销售制度的通知〉的实施意见》，主要包括加强预售管理、实施现房销售、推行主办银行制度等 6 个方面政策措施。新公告出让土地的商品住房项目优先现房销售，预售门槛提高，房贷发放延后。",
+   "claim": "上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高（主体结构封顶）、房贷延后发放及土地款分期免息等政策。",
+   "source_tag": "研报",
+   "quality_score": 59.5,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-022",
+   "status": "pending_review",
+   "theme": "金融/地产",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「购房成本节约测算」？",
+   "a": "以 100 万元商业贷款期限 30 年、贷款利率 3.05% 计算，享受贴息政策后，累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
+   "concept": "购房成本节约测算",
+   "unit_id": "u022",
+   "unit_key": {
+    "book": "rp_AP202609301830023754",
+    "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+    "p1": 1,
+    "p2": 2
+   },
+   "book": "rp_AP202609301830023754",
+   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+   "page_start": 1,
+   "page_end": 2,
+   "evidence": "对购房者来说，以 100 万元商业贷款期限 30 年、贷款利率 3.05%、等额本息计算，贴息 5 年累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
+   "claim": "以 100 万元商业贷款期限 30 年、贷款利率 3.05% 计算，享受贴息政策后，累计可节约利息支出约 4.7 万元，月均节约成本约 789 元。",
+   "source_tag": "研报",
+   "quality_score": 57.3,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1278,118 +1278,13 @@
   {
    "card_id": "CP3-20261101-026",
    "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "key_fact",
-   "angle_cn": "关键事实",
-   "q": "「伏击涨停第三定律」有哪些关键事实或数据？",
-   "a": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
-   "concept": "伏击涨停第三定律",
-   "unit_id": "u026",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "第一节",
-    "p1": 13,
-    "p2": 25
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "第一节",
-   "page_start": 13,
-   "page_end": 25,
-   "evidence": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
-   "claim": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
-   "source_tag": "书籍",
-   "quality_score": 54.3,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-027",
-   "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "impact",
-   "angle_cn": "影响传导",
-   "q": "「量学核心逻辑」的影响与传导是什么？",
-   "a": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。 依据：第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
-   "concept": "量学核心逻辑",
-   "unit_id": "u027",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "第一节",
-    "p1": 13,
-    "p2": 25
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "第一节",
-   "page_start": 13,
-   "page_end": 25,
-   "evidence": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
-   "claim": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。",
-   "source_tag": "书籍",
-   "quality_score": 54.2,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-028",
-   "status": "pending_review",
-   "theme": "量学/交易",
-   "angle": "definition",
-   "angle_cn": "概念定义",
-   "q": "什么是「拐点形成规律」？",
-   "a": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
-   "concept": "拐点形成规律",
-   "unit_id": "u028",
-   "unit_key": {
-    "book": "伏击涨停(2)",
-    "chapter": "序言1",
-    "p1": 5,
-    "p2": 6
-   },
-   "book": "伏击涨停(2)",
-   "chapter": "序言1",
-   "page_start": 5,
-   "page_end": 6,
-   "evidence": "但是，A 点、B 点（拐点）的形成并不是随机的，某些位置是它们出现的大概率位置，这些位置经常出现在重 要的量柱上！如果说股价走势的历史对当下有什么影响的话，那就体现在量线上。",
-   "claim": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
-   "source_tag": "书籍",
-   "quality_score": 52.2,
-   "traceable": true,
-   "review": {
-    "checkboxes": {
-     "pass": false,
-     "modify": false,
-     "reject": false
-    },
-    "notes": "",
-    "reviewer": ""
-   }
-  },
-  {
-   "card_id": "CP3-20261101-029",
-   "status": "pending_review",
    "theme": "AI算力/硬件",
    "angle": "key_fact",
    "angle_cn": "关键事实",
    "q": "「CoWoP封装方案」有哪些关键事实或数据？",
    "a": "CoWoP（Chip-on-Wafer-on-PCB）...核心思路简洁却极具革命性：在传统CoWoS方案中，芯片需依次经过硅中介层、ABF封装基板与BGA焊球三级结构才能安装到主板上；而CoWoP方案直接去掉ABF封装基板与BGA焊球，将硅中介层（Si Interposer）与GPU/HBM组合直接安装在强化型基板级PCB（Platform PCB）上。",
    "concept": "CoWoP封装方案",
-   "unit_id": "u029",
+   "unit_id": "u026",
    "unit_key": {
     "book": "rp_AP202610071830180005",
     "chapter": "图表目录",
@@ -1416,7 +1311,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-030",
+   "card_id": "CP3-20261101-027",
    "status": "pending_review",
    "theme": "AI算力/硬件",
    "angle": "impact",
@@ -1424,7 +1319,7 @@
    "q": "「M9 材料体系」的影响与传导是什么？",
    "a": "M9 级覆铜板通过升级增强骨架（第三代Low DK 石英布）、导电层（HVLP4/5 超低轮廓铜箔）及树脂粘结剂（碳氢或苊烯树脂），将介电损耗压低至0.0015以下，支持224Gbps超高速信号传输与78层超高密度PCB量产。 依据：M9级覆铜板体系的代际升级，本质上是树脂、增强材料、导电层与填料四个维度的系统性跃迁...英伟达Rubin/Rubin Ultra全面采用M9体系：增强骨架材料由传统玻纤布升级为第三代Low DK石英布（Q布），导电层铜箔升级为HVLP4/5超低轮廓铜箔，树脂粘结剂体系升级为碳氢树脂（PCH）或苊烯树脂（EX）。",
    "concept": "M9 材料体系",
-   "unit_id": "u030",
+   "unit_id": "u027",
    "unit_key": {
     "book": "rp_AP202610071830180005",
     "chapter": "图表目录",
@@ -1451,7 +1346,7 @@
    }
   },
   {
-   "card_id": "CP3-20261101-031",
+   "card_id": "CP3-20261101-028",
    "status": "pending_review",
    "theme": "AI算力/硬件",
    "angle": "definition",
@@ -1459,7 +1354,7 @@
    "q": "什么是「Meta Ray-Ban Meta Audio」？",
    "a": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
    "concept": "Meta Ray-Ban Meta Audio",
-   "unit_id": "u031",
+   "unit_id": "u028",
    "unit_key": {
     "book": "rp_AP202610031830126605",
     "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
@@ -1474,6 +1369,111 @@
    "claim": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
    "source_tag": "研报",
    "quality_score": 73.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-029",
+   "status": "pending_review",
+   "theme": "量学/交易",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「伏击涨停第三定律」有哪些关键事实或数据？",
+   "a": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "concept": "伏击涨停第三定律",
+   "unit_id": "u029",
+   "unit_key": {
+    "book": "伏击涨停(2)",
+    "chapter": "第一节",
+    "p1": 13,
+    "p2": 25
+   },
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "evidence": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "claim": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
+   "source_tag": "书籍",
+   "quality_score": 54.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-030",
+   "status": "pending_review",
+   "theme": "量学/交易",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「量学核心逻辑」的影响与传导是什么？",
+   "a": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。 依据：第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "concept": "量学核心逻辑",
+   "unit_id": "u030",
+   "unit_key": {
+    "book": "伏击涨停(2)",
+    "chapter": "第一节",
+    "p1": 13,
+    "p2": 25
+   },
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "evidence": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "claim": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。",
+   "source_tag": "书籍",
+   "quality_score": 54.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "notes": "",
+    "reviewer": ""
+   }
+  },
+  {
+   "card_id": "CP3-20261101-031",
+   "status": "pending_review",
+   "theme": "量学/交易",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「拐点形成规律」？",
+   "a": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
+   "concept": "拐点形成规律",
+   "unit_id": "u031",
+   "unit_key": {
+    "book": "伏击涨停(2)",
+    "chapter": "序言1",
+    "p1": 5,
+    "p2": 6
+   },
+   "book": "伏击涨停(2)",
+   "chapter": "序言1",
+   "page_start": 5,
+   "page_end": 6,
+   "evidence": "但是，A 点、B 点（拐点）的形成并不是随机的，某些位置是它们出现的大概率位置，这些位置经常出现在重 要的量柱上！如果说股价走势的历史对当下有什么影响的话，那就体现在量线上。",
+   "claim": "股价走势中的 A 点、B 点（拐点）的形成并非随机，经常出现在重要量柱位置，体现了股价运行的内在规律。",
+   "source_tag": "书籍",
+   "quality_score": 52.2,
    "traceable": true,
    "review": {
     "checkboxes": {
@@ -1603,8 +1603,8 @@
   },
   "cards": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
-   "sha256_before": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081",
-   "sha256_after": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081"
+   "sha256_before": "e9ed33c0a0cedb22fdd2d11003d451e3f58b09345410f21a69cc9dbedc4d09d0",
+   "sha256_after": "e9ed33c0a0cedb22fdd2d11003d451e3f58b09345410f21a69cc9dbedc4d09d0"
   },
   "checklist": {
    "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json",

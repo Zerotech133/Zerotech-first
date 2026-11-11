@@ -29,11 +29,15 @@ def build_data() -> dict:
     """汇总台账数据。任何一段缺失记 None，页面自行显示「没接上」。"""
     data = {"gen_at": None, "run_at": None, "as_of_from": None,
             "today": None, "bench": None, "cohorts": [], "settlements": [],
-            "rolling": {}}
+            "rolling": {}, "price": {"ok": True, "warnings": []}}
 
     st_fp = os.path.join(COHORT_DIR, "status_latest.json")
     if os.path.exists(st_fp):
         st = json.load(io.open(st_fp, encoding="utf-8"))
+        # 价格守卫结论（cohort_track.snap 落盘）。旧版 status 没有这两个键，
+        # 按「无告警」处理 —— 不能让缺字段变成页面上的假警报。
+        ws = st.get("warnings") or []
+        data["price"] = {"ok": st.get("price_ok", not ws), "warnings": ws}
         data["run_at"] = st.get("run_at")
         data["as_of_from"] = st.get("as_of_from")
         data["today"] = "-".join([st["today"][:4], st["today"][4:6], st["today"][6:]])
@@ -57,26 +61,33 @@ def build_data() -> dict:
         cs.sort(key=lambda c: (0 if c["pool"] == "main" else 1,
                                -(int(c["asof"] or 0))))
         data["cohorts"] = cs
+        # 滚动超额与降级线：status_latest 里已有就直接用（cohort_track.snap 落盘，
+        # 含 _degrade 判定）。2026-11-11 起口径唯一来源是 cohort_track.rolling_alpha()，
+        # 本文件不再重算，避免两套实现各自漂移。
+        if st.get("rolling"):
+            data["rolling"] = st["rolling"]
 
     se_fp = os.path.join(COHORT_DIR, "settlements.jsonl")
     if os.path.exists(se_fp):
         rows = [json.loads(l) for l in io.open(se_fp, encoding="utf-8")
                 if l.strip()]
         data["settlements"] = rows
-        # 滚动超额（auto 池，按 N 桶）——与 cohort_track.rolling_alpha 同口径
-        agg = {}
-        for r in rows:
-            if r.get("pool") != "auto" or r.get("excess") is None:
-                continue
-            a = agg.setdefault(str(r["n"]), {"list": []})
-            a["list"].append(r["excess"])
-        for n, a in agg.items():
-            ex = a["list"]
-            data["rolling"][n] = {
-                "n": len(ex),
-                "mean_pp": round(sum(ex) / len(ex) * 100, 2),
-                "win": round(sum(1 for x in ex if x > 0) / len(ex) * 100, 0),
-            }
+        # 回退路径：仅当 status_latest.json 还没有 rolling 字段时（旧版快照）才本地自算。
+        # 正常路径走上面 st["rolling"]，不执行这一段。
+        if not data["rolling"]:
+            agg = {}
+            for r in rows:
+                if r.get("pool") != "auto" or r.get("excess") is None:
+                    continue
+                a = agg.setdefault(str(r["n"]), {"list": []})
+                a["list"].append(r["excess"])
+            for n, a in agg.items():
+                ex = a["list"]
+                data["rolling"][n] = {
+                    "n": len(ex),
+                    "mean_pp": round(sum(ex) / len(ex) * 100, 2),
+                    "win": round(sum(1 for x in ex if x > 0) / len(ex) * 100, 0),
+                }
     return data
 
 

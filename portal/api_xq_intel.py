@@ -30,11 +30,15 @@ GET /api/xq/intel/coverage
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
-REPORT_ROOT = Path(r"C:/aios/automation_runs/xq_report")
-COVERAGE_SNAPSHOT = Path(r"C:/aios/automation_runs/xq_classify/coverage_snapshot.json")
+# A8（2026-11-10）：路径锚统一走 env AIOS_ROOT 覆盖 + C:/aios 别名默认
+# （与 api_daily_data REPO 判例一致），不再写死双斜杠全路径。
+REPO = Path(os.environ.get("AIOS_ROOT", "C:/aios"))
+REPORT_ROOT = REPO / "automation_runs" / "xq_report"
+COVERAGE_SNAPSHOT = REPO / "automation_runs" / "xq_classify" / "coverage_snapshot.json"
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _TICKER_CODE_RE = re.compile(r"^[0-9A-Za-z]{4,6}$")
 _TICKER_DAYS_RE = re.compile(r"^\d{1,2}$")

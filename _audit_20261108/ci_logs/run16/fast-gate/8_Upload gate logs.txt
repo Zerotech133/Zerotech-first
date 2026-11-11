@@ -1,0 +1,31 @@
+﻿2026-11-08T07:29:14.0715617Z ##[group]Run actions/upload-artifact@v4
+2026-11-08T07:29:14.0716040Z with:
+2026-11-08T07:29:14.0716316Z   name: gate-logs-42458368903
+2026-11-08T07:29:14.0716648Z   path: D:\a\_temp/test_gate_*.log
+2026-11-08T07:29:14.0716970Z   if-no-files-found: ignore
+2026-11-08T07:29:14.0717255Z   retention-days: 14
+2026-11-08T07:29:14.0717528Z   compression-level: 6
+2026-11-08T07:29:14.0717791Z   overwrite: false
+2026-11-08T07:29:14.0718054Z   include-hidden-files: false
+2026-11-08T07:29:14.0718382Z env:
+2026-11-08T07:29:14.0718609Z   TEST_GATE_PROFILE: ci
+2026-11-08T07:29:14.0718955Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T07:29:14.0719483Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+2026-11-08T07:29:14.0719994Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T07:29:14.0720452Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T07:29:14.0720903Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+2026-11-08T07:29:14.0721354Z ##[endgroup]
+2026-11-08T07:29:14.2653855Z (node:8612) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-08T07:29:14.2654670Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-08T07:29:14.2752374Z With the provided path, there will be 12 files uploaded
+2026-11-08T07:29:14.2757446Z Artifact name is valid!
+2026-11-08T07:29:14.2759669Z Root directory input is valid!
+2026-11-08T07:29:14.4953156Z Beginning upload of artifact content to blob storage
+2026-11-08T07:29:14.5492594Z (node:8612) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-08T07:29:14.5950733Z Uploaded bytes 19437
+2026-11-08T07:29:14.6138234Z Finished uploading artifact content to blob storage!
+2026-11-08T07:29:14.6140128Z SHA256 digest of uploaded artifact zip is 4aa381657d14bdbd9352b684d9f05731fa501c34e727f7651cc6a6d8bb464565
+2026-11-08T07:29:14.6142448Z Finalizing artifact upload
+2026-11-08T07:29:14.9884668Z Artifact gate-logs-42458368903.zip successfully finalized. Artifact ID 13608712672
+2026-11-08T07:29:14.9885936Z Artifact gate-logs-42458368903 has been successfully uploaded! Final size is 19437 bytes. Artifact ID is 13608712672
+2026-11-08T07:29:14.9897216Z Artifact download URL: https://github.com/Zerotech133/Zerotech-first/actions/runs/42458368903/artifacts/13608712672

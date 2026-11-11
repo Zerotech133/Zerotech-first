@@ -8,17 +8,17 @@
 # 恢复条件：只有换到信号频率 ≥ 数十个/年的标的才值得重启影子期；沪金不满足。
 # 依据：deliverables/2026-11-05_沪金b3信号_实时可见性_v7_边际证据判定.md
 #
-# 【已知缺陷·未修·重启前必须修】面板结算存在前视：
-#   第 107 行 i0 = idx.get(j["dt"]) 用「结构端点日」定位，第 110/112 行按
-#   i0+1 开盘入场，忽略了「确认滞后」（detect_date 与 dt 之差，中位 1 日、
-#   最大 3 日）。模块自己的 docstring 已记录该滞后存在，但结算未使用它。
+# 【已修 2026-11-07 · P2-a】面板结算前视已改正：
+#   旧实现 i0 = idx.get(j["dt"])（结构端点日）→ entry = opens[i0+1]，等于提前
+#   1~3 日知道端点（detect_date 与 dt 之差，中位 1 日、最大 3 日）。
 #   实测影响（v7 逐日截断重放，n=33）：事后 d20 +2.64% → 实时 +1.85%，
 #   前视虚增 0.80pp；K226 报的 d5 胜率 97.0% 在实时口径降至 75.8%。
-#   正确做法：i0 = idx.get(j["detect_date"])，entry = opens[i0+1]。
-#   当前未改的理由：任务已停用、样本为 0，改动无法被任何数据验证；
-#   留待重启影子期时连同标的更换一并修改。
-#   已加防线（不改口径）：结算前若 dt != detect_date 直接 raise，任务重启后
-#   第一笔样本即崩，避免带着前视继续产出「漂亮」面板。journal 为空，当前不触发。
+#   现在：settle_anchor() 按 detect_date 定位，anchor = 第一个 >= detect_date 的
+#   交易日，entry = opens[anchor+1]；detect_date 非交易日（周末/停牌）时取之前
+#   最后一根 bar 作锚，入场仍是其后第一根。
+#   旧 journal 行若缺 detect_date，退回 dt 结算并在面板标 settle_basis=legacy_dt，
+#   审计时一眼可辨，不再用 raise 一刀切（原防线会崩掉整日任务）。
+#   注意：改动后旧面板数字不可与新面板混读，重启影子期须重新起算。
 # =============================================================================
 """gold_signal_shadow: 沪金 3买/3卖 影子标注（K227，structure-signal-shadow-eval
 流程第二阶段）。
@@ -26,7 +26,8 @@
 每日 18:30 任务 GoldShadow → 全史重跑缠论（与 K226 影子统计同引擎同口径）
 → 检出 dt >= JOURNAL_START 的新增 b3/s3（键 (t,dt) 幂等）→ 落 jsonl 日志
 （记录 detect_date 与笔终点日 dt——实测确认滞后 = 两者之差）→ 面板 json
-原子再生（L=1 可成交口径 d5/10/20 跟踪：entry=信号日后第 1 根开盘价）。
+原子再生（L=1 可成交口径 d5/10/20 跟踪：entry=detect_date 后第 1 根开盘价，
+即「看见信号的第一个交易时点」，不用结构端点日 dt）。
 
 影子纪律：只记不推，不改任何信号/推送/入池口径；影子期面板对照达标才谈
 接入（structure-signal-shadow-eval 第三阶段）。历史信号（dt < JOURNAL_START）
@@ -37,6 +38,7 @@
 退出码：0 正常；1 异常（包装脚本 alert_fail 告警）。
 """
 
+import bisect
 import json
 import os
 import sys
@@ -60,6 +62,28 @@ def _atomic_write(path, text):
     with os.fdopen(fd, "w", encoding="utf-8") as fp:
         fp.write(text)
     os.replace(tmp, path)
+
+
+def settle_anchor(dts, j):
+    """结算定位（P2-a）：返回 (anchor_i, basis, lag_bars)。
+
+    实时口径：入场只能发生在"第一次看见该信号"之后。
+      · 有 detect_date：anchor = 第一个 >= detect_date 的交易日；
+        若 detect_date 本身不是交易日（周末/停牌），anchor 取它之前最后一根，
+        入场仍是 anchor+1（即 detect_date 之后的第一个交易日）。
+      · 无 detect_date（旧 journal 行）：退回 dt，basis=legacy_dt 供审计。
+    lag_bars = detect_date 相对 dt 滞后了几根 bar（无数据时为 None）。
+    """
+    dd = j.get("detect_date")
+    dt_i = dts.index(j["dt"]) if j.get("dt") in dts else None
+    if not dd:
+        return dt_i, "legacy_dt", None
+    k = bisect.bisect_left(dts, dd)
+    anchor = k if (k < len(dts) and dts[k] == dd) else k - 1
+    if anchor < 0:
+        return None, "detect_date", None
+    lag = (k - dt_i) if (dt_i is not None and k < len(dts)) else None
+    return anchor, "detect_date", lag
 
 
 def _load_journal():
@@ -125,20 +149,11 @@ def main():
     entries = []
     for j in journal:
         e = dict(j)
-        # TODO(前视): 下方用 j["dt"]（结构端点日）定位后按 i0+1 入场，忽略确认滞后，
-        # 属前视口径（实测虚增 d20 0.80pp）。重启影子期前应改为 j["detect_date"]。
-        # 详见文件头「已知缺陷·未修」段与 v7 报告。
-        # 前视守卫（2026-11-05 加）：任务已停用、journal 为空，此守卫当前不触发。
-        # 一旦重启影子期且有样本进来，dt != detect_date 会立即报错，而不是继续
-        # 产出一份偏乐观的面板。宁可崩，不可静默虚增。
-        _dd = j.get("detect_date")
-        if _dd and _dd != j["dt"]:
-            raise RuntimeError(
-                "gold_signal_shadow 结算前视拦截：dt=%s detect_date=%s（滞后 %s 日）。"
-                "请先把结算改为按 j['detect_date'] 定位入场（见文件头「已知缺陷·未修」）。"
-                % (j["dt"], _dd, j.get("lag", "?"))
-            )
-        i0 = idx.get(j["dt"])
+        # P2-a（2026-11-07）：按 detect_date 定位入场，不再用结构端点日 dt。
+        # 见文件头「已修」段；旧行缺 detect_date 时退回 dt 并标 legacy_dt。
+        i0, _basis, _lag = settle_anchor(dts, j)
+        e["settle_basis"] = _basis
+        e["confirm_lag_bars"] = _lag
         e["status"] = "pending_entry"
         if i0 is not None and i0 + 1 < len(opens) and opens[i0 + 1]:
             e["entry_date"] = dts[i0 + 1]
@@ -169,6 +184,8 @@ def main():
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "symbol": SYM,
         "journal_start": JOURNAL_START,
+        "settle_rule": "entry = detect_date 后第一根开盘（P2-a 实时口径）；"
+                       "legacy_dt 行为旧口径结果，不可与新行混算",
         "summary": summary,
         "entries": entries,
     }

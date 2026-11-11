@@ -3,7 +3,7 @@
 
 GET /api/daily/data   零参数
     → 多维数据日报机读投影，五节各独立 fail-visible（一节坏不拖垮整卡）：
-      dist   当日 JEV 判定分布：bias 计数 / conf 三桶(对齐 K-ORG-157)/
+      dist   当日 JEV 判定分布：bias 计数 / 事件类型分层 tier(替代已弃用 conf 三桶, K-ORG-157 口径升级)/
              scope / event_type / bias_probs 均值(K-ORG-176 新字段首次出口) /
              近 7 日逐日趋势（news.db mode=ro 直连，沿 api_dataops 先例）
       bt     情绪×次日实证投影（news_collector/data/sentiment_bt_result.json）
@@ -14,6 +14,10 @@ GET /api/daily/data   零参数
              {kind, errno, stage, type, message, dsn(脱敏)}；口令绝不出现，
              error 字符串保留（data_daily.html 兼容），exists=false 语义不变
       health 管道体检：四产物 mtime / 内嵌 generated_at / 时效小时数
+      sent   五源情绪分布卡（news_collector/data/sentiment_cards.json，
+             sentiment_card 产出；活跃标的前 20，2026-11-09）
+      market 市场级情绪指数（news_collector/data/market_sentiment.json，
+             market_sentiment 产出；指数/状态/广度/分源，2026-11-09）
 
 只读纪律（沿 api_capability 判例）：mode=ro / fail-visible（产物缺失返回
 exists=false 合法观测态而非 500，坏 JSON 带 error 不吞）；参数白名单空集，
@@ -29,6 +33,7 @@ import json
 import os
 import re
 import sqlite3
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -37,9 +42,19 @@ REPO = Path(os.environ.get("AIOS_ROOT", "C:/aios"))
 NEWS_DB = REPO / "news_collector" / "news.db"
 BT_JSON = REPO / "news_collector" / "data" / "sentiment_bt_result.json"
 IMPACT_JSON = REPO / "news_collector" / "data" / "jev_impact.json"
-XQ_LATEST = Path("C:/aios/automation_runs/xq_report/latest.json")
+SENT_JSON = REPO / "news_collector" / "data" / "sentiment_cards.json"
+MARKET_JSON = REPO / "news_collector" / "data" / "market_sentiment.json"
+# A8（2026-11-10）：XQ_LATEST 收编进 REPO 锚（原写死 C:/aios 全路径绕过了
+# env AIOS_ROOT 覆盖——G2 判例的锚不一致病灶，genkit/paths.py 已立案）
+XQ_LATEST = REPO / "automation_runs" / "xq_report" / "latest.json"
 
 CST = timezone(timedelta(hours=8))
+
+# conf 已弃用（AUC=0.414 反相关，见 JEV_capability_ledger）；当日分布改用事件类型分层
+if str(REPO / "tools") not in sys.path:
+    sys.path.insert(0, str(REPO / "tools"))
+from jev_signal import event_type_tier  # noqa: E402
+
 DRIFT_TITLE_LIKE = "JEV判定漂移%"
 
 # 懒加载 jev_common（feishu_control 判例）：DB 断连不拖垮整卡
@@ -147,7 +162,7 @@ def dist_section() -> dict:
         out["error"] = "query failed: %r" % e
         return out
     bias = {"bull": 0, "bear": 0, "neutral": 0}
-    conf = {"low": 0, "mid": 0, "high": 0}
+    tier = {"strong": 0, "weak": 0, "unknown": 0}
     scope = {}
     event = {}
     trend = {}   # day -> Counter(bias)
@@ -167,16 +182,13 @@ def dist_section() -> dict:
             trend[day][b] += 1
             if day == today:
                 bias[b] += 1
-                c = j.get("conf")
-                if isinstance(c, (int, float)):
-                    k = "high" if c >= 0.9 else ("mid" if c >= 0.7 else "low")
-                    conf[k] += 1
                 sc = (j.get("scope") or "").strip()
                 if sc:
                     scope[sc] = scope.get(sc, 0) + 1
                 ev = (j.get("event_type") or "").strip()
                 if ev:
                     event[ev] = event.get(ev, 0) + 1
+                    tier[event_type_tier(ev)] += 1
                 probs = j.get("bias_probs")
                 if isinstance(probs, dict):
                     vals = {k: probs.get(k) for k in bp}
@@ -191,7 +203,7 @@ def dist_section() -> dict:
         trend7.append({"day": d, **c, "total": sum(c.values())})
     out.update({
         "exists": True, "day": today,
-        "total": sum(bias.values()), "bias": bias, "conf_buckets": conf,
+        "total": sum(bias.values()), "bias": bias, "tier_buckets": tier,
         "scope": scope, "event_type": event, "bad_jev_rows": bad,
         "bias_probs_avg": ({k: round(v / bp_n, 4) for k, v in bp.items()}
                            if bp_n else None),
@@ -291,6 +303,58 @@ def health_section() -> dict:
     return {"items": items, "checked_at": datetime.now(CST).isoformat()}
 
 
+def sent_section() -> dict:
+    """五源情绪分布卡投影（news_collector/data/sentiment_cards.json）。
+
+    生成器 news_collector/sentiment_card.py（K263 口径扩展）：
+    股吧/淘股吧/互动易=引擎打分，雪球=LLM 原生标注，新闻流=声量。
+    只暴露 volume>0 的活跃标的前 20（全量 500 票太大，前端无益）。
+    """
+    data, err = _read_json(SENT_JSON)
+    if err:
+        return {"exists": True, "error": err}
+    if data is None:
+        return {"exists": False, "error": None}
+    cards = data.get("cards") or []
+    active = [c for c in cards if c.get("volume", 0) > 0]
+    return {
+        "exists": True,
+        "generated_at": data.get("generated_at"),
+        "days": data.get("days"),
+        "n_codes": data.get("n_codes"),
+        "n_active": len(active),
+        "top": active[:20],
+    }
+
+
+def market_section() -> dict:
+    """市场级情绪指数投影（news_collector/data/market_sentiment.json）。
+
+    生成器 news_collector/market_sentiment.py（P5，2026-11-09）：
+    六源情绪卡 → 指数 0-100 + 5 档状态机 + 广度 + 分源极性。
+    history 序列（market_sentiment_history.jsonl）留在生成器侧，
+    出口只投影当日读数（R1 双序列校准是离线分析，不走门户）。
+    """
+    data, err = _read_json(MARKET_JSON)
+    if err:
+        return {"exists": True, "error": err}
+    if data is None:
+        return {"exists": False, "error": None}
+    return {
+        "exists": True,
+        "generated_at": data.get("generated_at"),
+        "days": data.get("days"),
+        "index": data.get("index"),
+        "state": data.get("state"),
+        "breadth_pct": data.get("breadth_pct"),
+        "n_codes": data.get("n_codes"),
+        "n_samples": data.get("n_samples"),
+        "sources": data.get("sources") or {},
+        "news_volume": data.get("news_volume"),
+        "ver": data.get("ver"),
+    }
+
+
 class Handler:
     def _daily_data(self, qs):
         # 零参数出口：参数白名单空集，带任何参数走 400（api_perf 判例）
@@ -305,4 +369,6 @@ class Handler:
             "impact": impact_section(),
             "drift": drift_section(),
             "health": health_section(),
+            "sent": sent_section(),
+            "market": market_section(),
         })

@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>候风 HOUFENG · 策略中心</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.7 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 22px 48px}
+/* ── 平台头 ── */
+.plat-bar{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar .home{color:var(--brand);font-weight:600}
+.plat-bar .sep{color:var(--line)}
+/* ── 策略卡头 ── */
+.hero{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);border-radius:14px;color:#fff;padding:24px 28px;position:relative;overflow:hidden}
+.hero .en{position:absolute;right:18px;top:14px;font-size:12px;color:#cdd9ff;letter-spacing:2px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:1px;display:inline}
+.hero .frozen{display:inline-block;margin-left:10px;vertical-align:6px;font-size:10.5px;border:1px solid rgba(255,255,255,.5);border-radius:4px;padding:0 6px;color:#eaf0ff;font-weight:600}
+.hero .slogan{font-size:14px;color:#dce6ff;margin-top:4px}
+.hero .meta{display:flex;gap:8px 16px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:#c8d6ff}
+.hero .meta b{color:#fff}
+.hero-links{position:absolute;right:18px;top:44px;display:flex;gap:8px}
+.hero-links a{color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:4px 13px;font-size:12.5px;text-decoration:none;white-space:nowrap}
+.hero-links a:hover{background:rgba(255,255,255,.28)}
+/* ── 闸门横幅（三灯）── */
+.gate-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:12px 16px;margin-top:12px}
+.gate-bar .verdict{font-size:15px;font-weight:700;color:var(--warn)}
+.gate-bar .verdict.on{color:var(--ok)}
+.gate-lamp{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.gate-lamp b{font-family:var(--mono);font-size:13px}
+.gate-lamp .dot{width:9px;height:9px;border-radius:50%;background:var(--err)}
+.gate-lamp.pass .dot{background:var(--ok)}
+.gate-bar .rule{margin-left:auto;font-size:11.5px;color:var(--dim);max-width:420px}
+/* ── KPI + 窗口切换 ── */
+.win-tabs{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.win-tabs .wl{font-size:12px;color:var(--dim);margin-right:2px}
+.win-tab{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 14px;font-size:12.5px;cursor:pointer;color:var(--muted);font-family:var(--mono)}
+.win-tab.on{border-color:var(--brand);color:var(--brand);font-weight:700;background:#eaf0ff}
+.win-note{font-size:12px;color:var(--warn);margin-left:8px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .v{font-size:21px;font-weight:800;font-family:var(--mono)}
+.kpi .v.pos{color:var(--up)} .kpi .v.dnv{color:var(--dn)}
+.kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+/* ── 布局 ── */
+.cols{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-top:14px}
+@media(max-width:1000px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.panel h2{font-size:15.5px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.panel h2 .tag{font-size:11px;color:var(--brand);background:#eaf0ff;border-radius:4px;padding:1px 8px;font-weight:600}
+.panel h2 .right{margin-left:auto;font-weight:400;font-size:12px;color:var(--dim)}
+/* ── 表格 ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px}
+th{color:var(--dim);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);font-size:11.5px;white-space:nowrap;cursor:pointer;user-select:none}
+th.nos{cursor:default}
+td{padding:6px 8px;border-bottom:1px solid #eef1f8;text-align:right;font-family:var(--mono);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;font-family:inherit}
+tbody tr:hover td{background:#f8faff}
+.pos{color:var(--up)} .neg{color:var(--dn)}
+.badge{display:inline-block;font-size:10.5px;border-radius:3px;padding:0 6px;background:#fdeeee;color:var(--up)}
+.badge.def{background:#eef7f0;color:var(--ok)}
+.badge.gray{background:#f0f2f8;color:var(--dim)}
+.bar-cell{display:inline-block;height:10px;border-radius:2px;vertical-align:-1px;opacity:.85}
+/* ── 图（零依赖 SVG）── */
+.chart-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.chart-head .big{font-size:20px;font-weight:800;font-family:var(--mono)}
+.chart-head .sub{font-size:11.5px;color:var(--dim)}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+svg text{font-family:var(--mono)}
+/* ── 右栏 ── */
+.mini{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}
+.mini:last-child{border-bottom:0;margin-bottom:0}
+.mini h3{font-size:13px;color:var(--brand);margin-bottom:6px;font-weight:700}
+.mini p{font-size:12px;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;gap:8px}
+.kv b{font-family:var(--mono);font-weight:600;text-align:right}
+/* ── 月度条 ── */
+.mrow{display:grid;grid-template-columns:44px 1fr 70px;gap:8px;align-items:center;font-size:11.5px;padding:2px 0;font-family:var(--mono)}
+.mrow .bar-zone{position:relative;height:14px;background:#f4f6fb;border-radius:3px;overflow:hidden}
+.mrow .bar{position:absolute;top:0;bottom:0}
+.mrow .bar.p{background:var(--up)}
+.mrow .bar.n{background:var(--dn)}
+.mrow .val{text-align:right}
+/* ── 分布 ── */
+.drow{display:grid;grid-template-columns:52px 1fr 84px;gap:8px;align-items:center;font-size:11.5px;padding:2px 0;font-family:var(--mono)}
+.drow .bar-zone{height:14px;background:#f4f6fb;border-radius:3px;position:relative;overflow:hidden}
+.drow .bar{position:absolute;top:0;left:0;bottom:0}
+/* ── 反事实 ── */
+.cf{font-size:12px}
+.cf .row{display:grid;grid-template-columns:110px 70px 1fr;gap:8px;padding:4px 0;align-items:center}
+.cf .bar-zone{height:13px;background:#f4f6fb;border-radius:3px;position:relative;overflow:hidden}
+.cf .bar{position:absolute;top:0;bottom:0;background:var(--brand-2)}
+.cf .bar.neg{background:var(--err)}
+.cf b{font-family:var(--mono);text-align:right}
+/* ── 操作 ── */
+.ops{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
+.btn{border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--brand);color:var(--brand);background:#fff}
+.btn.primary{background:var(--brand);color:#fff}
+.btn[disabled]{border-color:var(--line);color:var(--dim);background:#f5f6fa;cursor:not-allowed}
+.ops-note{font-size:11.5px;color:var(--dim);margin-top:8px}
+footer{margin-top:22px;color:var(--dim);font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap}
+.err{background:#fdeeee;color:#c0392b;padding:10px 16px;font-size:13px;border-radius:8px;margin-bottom:12px;display:none}
+details.df{font-size:12px;color:var(--muted)}
+details.df summary{cursor:pointer;color:var(--brand);font-size:12.5px;font-weight:600}
+details.df li{margin-left:18px;margin-top:4px}
+</style>
+<style id="hf-unify">
+/* 候风产品族统一层 2026-11-10：基准浅色族 */
+.plat-bar{display:flex;align-items:center;gap:8px;color:#8a93a8;font-size:12.5px;margin-bottom:14px;flex-wrap:wrap}
+.plat-bar a{color:#2a5be2;text-decoration:none;padding:2px 8px;border-radius:14px}
+.plat-bar a:hover{background:#eef3ff}
+.plat-bar .sep{color:#dfe4ef}
+.plat-bar .cur{background:#eef3ff;border:1px solid #cfdcf8;border-radius:14px;padding:2px 10px;color:#1a2233;font-weight:600}
+.plat-bar [id]{font-weight:600;color:#5a6478}
+footer{margin-top:22px;color:#8a93a8;font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid #e4e8f2;padding-top:10px}
+</style>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>/* 页级覆盖：与本页原值逐位一致（视觉零变化） */
+:root {--mono:'SF Mono',Consolas,'Courier New',monospace; --warn:#e39b0c;}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="plat-bar"><span class="cur">策略中心</span><span class="sep">/</span><a href="HOUFENG_BROCHURE.html">解决方案</a><span class="sep">/</span><a href="HOUFENG_PICK_20261106.html">盘后选股</a><span class="sep">/</span><a href="HOUFENG_PLAYBOOK.html">回放日历</a><span class="sep">/</span><a href="HOUFENG_ARENA.html">竞技场·一年</a><span class="sep">/</span><a href="HOUFENG_ARENA_36M.html">竞技场·三年</a><span class="sep">/</span><a href="HOUFENG_HOLDGRID.html">持仓网格</a><span class="sep">/</span><a href="HOUFENG_DIVIDEND.html">红利防御档</a><span class="sep">/</span><a href="M2_DASHBOARD.html">冻结看板</a><span style="margin-left:auto"><b id="d-date">—</b><b id="d-gen">—</b><b id="d-pb">—</b></span></div>
+
+  <div class="hero">
+    <div class="en">HOUFENG STRATEGY</div>
+    <h1>候风</h1><span class="frozen" id="st-frozen">M2 FROZEN</span>
+    <div class="slogan">候风而动，知止而得 ｜ 多维加权（技术/RPS/环境）· 环境闸门一票否决</div>
+    <div class="meta">
+      <span>排序 <b>综合分</b></span><span>加权 <b>波动率倒数</b></span><span>填单 <b>回收再分配</b></span>
+      <span>组合 <b>30 只</b></span><span>持有 <b>5 个交易日</b></span><span>成本 <b>单往返 0.3%</b></span>
+      <span>涨跌停 <b>精确价</b></span><span>本金 <b>1000 万</b></span><span>单票上限 <b id="f-mw">5%</b></span>
+    </div>
+    <details style="margin-top:8px;font-size:12.5px;color:#5a6478;background:#f7f8fb;border:1px solid #e4e8f2;border-radius:8px;padding:8px 12px"><summary style="cursor:pointer">技术口径与证据（展开）</summary><div style="padding:6px 0 0;line-height:1.8">冻结参数原文：rank=score · inv_vol · recycle · top30 · hold5 · exact · 30bp。<br>闸门判据定义：breadth = 站上 20 日均线的股票占比；med20 = 全市场 20 日收益中位数。开闸需 breadth 连续 3 日 ≥40% 且 med20 ≥−3%（10-09 判例：连续性优先于单日冲高）。<br>证据文件：M2_FROZEN.json · a2_matrix.md · a3_impact_report.md · na_bucket_verdict.md。<br>指纹对象：qpzm_backtest.py（候风引擎）· portfolio_sim.py（组合模拟器）· gate policy。<br>数据源：houfeng_snapshot.json + houfeng_playbook.json + paper_ledger_replay_12m.jsonl。内部代号 qpzm。</div></details>
+    <div class="hero-links">
+      <a href="HOUFENG_PICK_20261106.html" style="margin-right:10px;font-weight:700">11/6 盘后选股 →</a>
+      <a href="HOUFENG_DIVIDEND.html" style="margin-right:10px;font-weight:700">红利防御档（弱市）→</a>
+      <a href="HOUFENG_ARENA.html" style="margin-right:10px">方法论竞技场 ⚔</a><a href="HOUFENG_PLAYBOOK.html">操盘回放 →</a>
+      <a href="M2_DASHBOARD.html">M2 证据 →</a>
+      <a href="HOUFENG_BROCHURE.html">手册 →</a>
+    </div>
+  </div>
+
+  <!-- 闸门横幅：三灯 + 一票否决 -->
+  <div class="gate-bar" id="gate-bar">
+    <span class="verdict" id="g-verdict">—</span>
+    <span class="gate-lamp" id="lamp-b"><span class="dot"></span>市场宽度 <b id="g-b">—</b><span style="color:var(--dim)">≥40%</span></span>
+    <span class="gate-lamp" id="lamp-m"><span class="dot"></span>20日中位 <b id="g-m">—</b><span style="color:var(--dim)">≥−3%</span></span>
+    <span class="gate-lamp" id="lamp-u"><span class="dot"></span>上涨占比 <b id="g-u">—</b></span>
+    <span class="rule" id="g-rule">开闸需「市场宽度」连续 3 日不低于 40%，且全市场 20 日涨跌中位数回到 −3% 以上；关闸期不开新仓、名单照常供给。连续性优先于单日冲高（10-09 判例）。</span>
+  </div>
+
+  <!-- 五窗 KPI：切换 -->
+  <div class="win-tabs" id="win-tabs">
+    <span class="wl">回测窗口</span>
+    <!-- js 生成 5 个 tab -->
+    <span class="win-note" id="win-note"></span>
+  </div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="cols">
+    <div> <!-- 左列 -->
+      <div class="panel">
+        <h2>模拟盘净值 · 12 个月回放 <span class="tag">组合模拟器真净值</span>
+          <span class="right" id="nav-meta">—</span></h2>
+        <div class="chart-head">
+          <span class="big" id="nav-now">—</span>
+          <span class="sub" id="nav-sub">—</span>
+          <span class="legend" style="margin-left:auto">
+            <span><i style="background:var(--brand)"></i>净值</span>
+            <span><i style="background:#f3d99a"></i>空仓段（闸门关）</span>
+          </span>
+        </div>
+        <div id="nav-chart"></div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2>今日观察名单 <span class="tag">Top20 · 影子信号</span><span class="tag" id="n-sig">—</span>
+          <span class="right">点击列头排序</span></h2>
+        <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th class="nos">#</th><th class="nos">代码</th><th class="nos">名称</th><th class="nos">行业</th>
+            <th data-k="score">score</th><th data-k="close">收盘</th><th data-k="pct_chg">当日%</th>
+            <th data-k="ret20n">ret20</th><th data-k="amount_yi">成交额(亿)</th>
+            <th class="nos">标签</th>
+          </tr></thead>
+          <tbody id="picks"></tbody>
+        </table>
+        </div>
+        <div class="ops" style="margin-top:12px">
+          <button class="btn primary" id="btn-copy">复制 Top20 清单</button>
+          <button class="btn" disabled title="闸门关闭中">买入组合（闸门开）</button>
+          <button class="btn" id="btn-json">查看数据包</button>
+        </div>
+        <div class="ops-note">闸门关闭期间仅观察。口径：起始资金 <b>1000 万</b>；收益/回撤以组合模拟器真净值为准（引擎虚拟净值口径已废弃）。</div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <h2>月度盈亏 · 12 个月 <span class="tag" id="mo-tag">—</span>
+          <span class="right">红涨绿跌（A 股口径）</span></h2>
+        <div id="months"></div>
+      </div>
+
+      <div class="cols" style="grid-template-columns:1fr 1fr;margin-top:14px">
+        <div class="panel" style="margin-top:0">
+          <h2>单笔收益分布 <span class="tag">2238 笔</span></h2>
+          <div id="dist"></div>
+        </div>
+        <div class="panel" style="margin-top:0">
+          <h2>M3 反事实 <span class="tag">止损/止盈敏感性</span></h2>
+          <div class="cf" id="cf"></div>
+          <p style="font-size:11px;color:var(--dim);margin-top:8px" id="cf-note">—</p>
+        </div>
+      </div>
+    </div>
+
+    <div> <!-- 右列 -->
+      <div class="panel">
+        <div class="mini">
+          <h3>模拟盘账本</h3>
+          <div id="paper-kv">—</div>
+        </div>
+        <div class="mini">
+          <h3>验收与证据</h3>
+          <div class="kv"><span>A2 矩阵（5窗×双成本）</span><b id="e-a2">—</b></div>
+          <div class="kv"><span>A3 冲击（保守档）</span><b id="e-a3">—</b></div>
+          <div class="kv"><span>资金利用率（top30）</span><b id="e-util">39~49%</b></div>
+          <div class="kv"><span>paper 验收</span><b style="font-size:11px">≥58 交易日 + 偏差 ≤30bp</b></div>
+        </div>
+        <div class="mini">
+          <h3>口径红线</h3>
+          <details class="df" open>
+            <summary>五条披露（点开收起）</summary>
+            <ul id="df-list"></ul>
+          </details>
+        </div>
+        <div class="mini">
+          <h3>引擎指纹</h3>
+          <div class="kv"><span>候风引擎</span><b id="ef-engine">—</b></div>
+          <div class="kv"><span>组合模拟器</span><b id="ef-sim">—</b></div>
+          <div class="kv"><span>闸门策略</span><b id="ef-gate">—</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>候风 HOUFENG · 曾用名青萍之末</span>
+    <span>证据与技术文件名见页内「技术口径与证据」抽屉</span>
+    <span style="margin-left:auto">模拟盘数据 · 不构成投资建议（程序生成）</span>
+  </footer>
+</div>
+
+<script>
+var S=null, PB=null, LEDGER=null;
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fmtPct(v,d){if(v==null)return '—';return (v>=0?'+':'')+v.toFixed(d==null?2:d)+'%'}
+
+/* ── 闸门三灯 ── */
+function renderGate(g){
+  var safe=!!g.safe;
+  $('g-verdict').textContent=safe?'闸门开启 · 可开新仓':'闸门关闭 · 只观察不开新仓';
+  $('g-verdict').className='verdict'+(safe?' on':'');
+  $('gate-bar').style.borderLeftColor=safe?'var(--ok)':'var(--warn)';
+  $('lamp-b').className='gate-lamp'+(g.breadth>=0.4?' pass':'');
+  $('lamp-m').className='gate-lamp'+(g.med20>=-0.03?' pass':'');
+  $('lamp-u').className='gate-lamp'+(g.upfrac>=0.4?' pass':'');
+  $('g-b').textContent=(g.breadth*100).toFixed(1)+'%';
+  $('g-m').textContent=(g.med20*100).toFixed(2)+'%';
+  $('g-u').textContent=(g.upfrac*100).toFixed(1)+'%';
+}
+
+/* ── 五窗 KPI ── */
+var winData=null, curWin='12 个月';
+function renderWinTabs(){
+  var tabs=$('win-tabs');
+  // BUGFIX 2026-11-07：先清掉旧 tab 按钮（保留 .wl 标签与 win-note），否则每次点击重复堆叠
+  var old=tabs.querySelectorAll('button.win-tab');
+  for(var i=0;i<old.length;i++){old[i].parentNode.removeChild(old[i]);}
+  winData.forEach(function(w){
+    var b=document.createElement('button');
+    b.className='win-tab'+(w.w===curWin?' on':'');
+    b.textContent=w.w;
+    b.onclick=function(){curWin=w.w;renderWinTabs();renderKpis();};
+    tabs.insertBefore(b,$('win-note'));
+  });
+  var cur=null; winData.forEach(function(w){if(w.w===curWin)cur=w});
+  $('win-note').textContent=cur?('（'+cur.note+'）'):'';
+}
+function kpi(cls,v,l){return '<div class="kpi"><div class="v '+(cls||'')+'">'+v+'</div><div class="l">'+l+'</div></div>'}
+function renderKpis(){
+  var k=S.backtest_kpi, ov=PB.overview, cur=null;
+  winData.forEach(function(w){if(w.w===curWin)cur=w});
+  var is12=curWin==='12 个月';
+  var ret=is12?ov.total_return_pct:cur.ret;
+  var dd=is12?ov.max_dd_pct:cur.dd;
+  var sharpe=is12?ov.sharpe:k.win_36m_sharpe;
+  if(curWin==='36 个月'){ret=k.win_36m_ret_pct;dd=k.win_36m_dd_pct;sharpe=k.win_36m_sharpe}
+  var equal=is12?null:(curWin==='36 个月'?k.equal_36m_ret_pct:null);
+  $('kpis').innerHTML=
+    kpi(ret>=0?'pos':'dnv',fmtPct(ret,1),'累计收益'+(equal?'（等权 '+fmtPct(equal,1)+'）':''))+
+    kpi('dnv',dd.toFixed(1)+'%','最大回撤')+
+    kpi('',sharpe.toFixed(2),'夏普'+(is12?'（replay 实测）':''))+
+    kpi('',is12?ov.win_rate.toFixed(1)+'%':'—','胜率'+(is12?'（'+ov.win_n+'胜/'+ov.loss_n+'负）':''))+
+    kpi('',is12?ov.pl_ratio.toFixed(2):'—','盈亏比'+(is12?'（均赢 +'+ov.avg_win_pct+'% / 均亏 '+ov.avg_loss_pct+'%）':''))+
+    kpi('',is12?(ov.avg_util*100).toFixed(0)+'%':'—','资金利用率');
+}
+
+/* ── 净值曲线（SVG 零依赖） ── */
+function renderNav(){
+  var W=860,H=220,P={l:52,r:14,t:10,b:22};
+  var rows=LEDGER, n=rows.length;
+  var navs=rows.map(function(r){return r.nav});
+  var lo=Math.min.apply(null,navs), hi=Math.max.apply(null,navs);
+  lo=Math.min(lo,1); hi=Math.max(hi,1.02);
+  var x=function(i){return P.l+(W-P.l-P.r)*i/(n-1)};
+  var y=function(v){return P.t+(H-P.t-P.b)*(1-(v-lo)/(hi-lo))};
+  var path='', area='';
+  rows.forEach(function(r,i){path+=(i?'L':'M')+x(i).toFixed(1)+','+y(r.nav).toFixed(1)+' '});
+  area=path+'L'+x(n-1).toFixed(1)+','+y(lo)+' L'+x(0).toFixed(1)+','+y(lo)+' Z';
+  // 空仓段（n_pos==0 连续区间）底色
+  var flat='', segs=[], s=-1;
+  rows.forEach(function(r,i){ if(r.n_pos===0){ if(s<0)s=i } else if(s>=0){ segs.push([s,i]); s=-1 } });
+  if(s>=0)segs.push([s,n-1]);
+  segs.forEach(function(g){ flat+='<rect x="'+x(g[0]).toFixed(1)+'" y="'+P.t+'" width="'+(x(g[1])-x(g[0])).toFixed(1)+'" height="'+(H-P.t-P.b)+'" fill="#f3d99a" opacity=".35"/>' });
+  // 网格线（0.25 步进）
+  var grid='', labs='';
+  var step=0.25, v0=Math.ceil(lo/step)*step;
+  for(var v=v0; v<hi; v+=step){
+    grid+='<line x1="'+P.l+'" y1="'+y(v)+'" x2="'+(W-P.r)+'" y2="'+y(v)+'" stroke="#eef1f8"/>';
+    labs+='<text x="'+(P.l-6)+'" y="'+(y(v)+3)+'" text-anchor="end" font-size="10" fill="#8a93a8">'+v.toFixed(2)+'</text>';
+  }
+  var first=rows[0].date, last=rows[n-1].date;
+  labs+='<text x="'+P.l+'" y="'+(H-6)+'" font-size="10" fill="#8a93a8">'+first.slice(0,4)+'-'+first.slice(4,6)+'-'+first.slice(6)+'</text>';
+  labs+='<text x="'+(W-P.r)+'" y="'+(H-6)+'" text-anchor="end" font-size="10" fill="#8a93a8">'+last.slice(0,4)+'-'+last.slice(4,6)+'-'+last.slice(6)+'</text>';
+  $('nav-chart').innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+flat+grid+
+    '<path d="'+area+'" fill="#2a5be2" opacity=".07"/>'+
+    '<path d="'+path+'" fill="none" stroke="#2a5be2" stroke-width="1.8"/>'+
+    labs+'</svg>';
+  var nav=rows[n-1].nav, ret12=(nav-1)*100;
+  var util=PB.overview.avg_util*100;
+  $('nav-now').textContent='净值 '+nav.toFixed(4);
+  $('nav-now').style.color=ret12>=0?'var(--up)':'var(--dn)';
+  $('nav-sub').textContent='12 个月 '+fmtPct(ret12,1)+' · 空仓 '+Math.round((1-util/100)*100)+'% 的交易日（闸门纪律）';
+  $('nav-meta').textContent=LEDGER.length+' 个交易日 · 末值 '+last;
+}
+
+/* ── 月度条 ── */
+function renderMonths(){
+  var ms=PB.months, mx=Math.max.apply(null,ms.map(function(m){return Math.abs(m.pnl_wan)}));
+  var html='',tot=0;
+  ms.forEach(function(m){
+    tot+=m.pnl_wan;
+    var wp=Math.max(0,m.pnl_wan)/mx*50, wn=Math.max(0,-m.pnl_wan)/mx*50;
+    html+='<div class="mrow"><span>'+m.month+'</span>'+
+      '<span class="bar-zone"><span class="bar p" style="right:50%;width:'+wp+'%"></span>'+
+      '<span class="bar n" style="left:50%;width:'+wn+'%"></span></span>'+
+      '<span class="val '+(m.pnl_wan>=0?'pos':'neg')+'">'+(m.pnl_wan>=0?'+':'')+m.pnl_wan.toFixed(1)+' 万</span></div>';
+  });
+  $('months').innerHTML=html;
+  $('mo-tag').textContent='合计 '+(tot>=0?'+':'')+tot.toFixed(1)+' 万';
+}
+
+/* ── 分布 ── */
+function renderDist(){
+  var ds=PB.distribution, mx=Math.max.apply(null,ds.map(function(d){return Math.abs(d.pnl_wan)}));
+  var html='';
+  ds.forEach(function(d){
+    var w=Math.abs(d.pnl_wan)/mx*100, neg=d.pnl_wan<0;
+    html+='<div class="drow"><span>'+esc(d.label)+'%</span>'+
+      '<span class="bar-zone"><span class="bar" style="width:'+w+'%;background:'+(neg?'var(--dn)':'var(--up)')+'"></span></span>'+
+      '<span style="text-align:right" class="'+(neg?'neg':'pos')+'">'+(d.pnl_wan>=0?'+':'')+d.pnl_wan.toFixed(0)+' 万 · '+d.pct+'%</span></div>';
+  });
+  $('dist').innerHTML=html;
+}
+
+/* ── 反事实 ── */
+function renderCf(){
+  var c=PB.counterfactual, base=c.base_wan, rows=[
+    ['基准（无止损止盈）',c.base_wan],
+    ['止损 5%',c.sl5],['止损 7%',c.sl7],
+    ['止盈 10%',c.tp10],['止损5%+止盈10%',c.both]
+  ];
+  var mx=Math.max.apply(null,rows.map(function(r){return Math.abs(r[1])}));
+  var html='';
+  rows.forEach(function(r){
+    var w=Math.abs(r[1])/mx*100, neg=r[1]<base-0.05;
+    var delta=r[1]-base;
+    html+='<div class="row"><span>'+r[0]+'</span><b>'+r[1].toFixed(0)+' 万</b>'+
+      '<span class="bar-zone"><span class="bar'+(r[1]<0?' neg':'')+'" style="width:'+w+'%"></span></span></div>';
+  });
+  $('cf').innerHTML=html;
+  $('cf-note').textContent=c.note;
+}
+
+/* ── Top20 可排序表 ── */
+var picksSort={k:null,asc:false};
+function pickVal(p,k){
+  if(k==='ret20n'){var s=String(p.ret20||'').replace('%','');return parseFloat(s)||0}
+  return p[k];
+}
+function renderPicks(){
+  var ps=S.watchlist.picks.slice();
+  if(picksSort.k){
+    var k=picksSort.k, asc=picksSort.asc;
+    ps.sort(function(a,b){var va=pickVal(a,k),vb=pickVal(b,k);return (va-vb)*(asc?1:-1)});
+  }
+  var mx=Math.max.apply(null,ps.map(function(p){return p.score||0}));
+  var html='';
+  ps.forEach(function(p,i){
+    var pct=p.pct_chg==null?'—':(p.pct_chg>=0?'+':'')+p.pct_chg.toFixed(2);
+    var cls=p.pct_chg>=0?'pos':'neg';
+    var tag='';
+    if((p.note||'').indexOf('涨停')>=0)tag='<span class="badge">涨停</span>';
+    else if((p.note||'').indexOf('防御')>=0)tag='<span class="badge def">防御</span>';
+    else if(p.note)tag='<span class="badge gray">'+esc(p.note.slice(0,6))+'</span>';
+    html+='<tr><td>'+(i+1)+'</td><td>'+esc(p.ts_code)+'</td><td>'+esc(p.name)+'</td>'+
+      '<td style="font-family:inherit;color:#8a93a8">'+esc(p.industry)+'</td>'+
+      '<td>'+p.score.toFixed(1)+'<span class="bar-cell" style="width:'+((p.score/mx)*26)+'px;background:#cdd9fd;margin-left:4px"></span></td>'+
+      '<td>'+(p.close==null?'—':p.close.toFixed(2))+'</td>'+
+      '<td class="'+cls+'">'+pct+'</td><td>'+esc(p.ret20||'—')+'</td>'+
+      '<td>'+(p.amount_yi==null?'—':p.amount_yi.toFixed(2))+'</td><td>'+tag+'</td></tr>';
+  });
+  $('picks').innerHTML=html;
+}
+
+/* ── 初始化 ── */
+function init(){
+  $('d-date').textContent=S.data_date; $('d-gen').textContent=S.generated_at;
+  $('d-pb').textContent=PB.generated;
+  $('n-sig').textContent=S.watchlist.n_signals+' 个信号 · 取前 '+S.watchlist.top_n;
+  $('f-mw').textContent=(S.strategy.form.max_weight*100).toFixed(0)+'%';
+  $('st-frozen').textContent=S.strategy.status==='FROZEN'?'M2 FROZEN':S.strategy.status;
+  $('e-a2').textContent=S.backtest_kpi.a2_matrix.split(' ').pop();
+  $('e-a3').textContent=S.backtest_kpi.a3_impact;
+  $('e-util').textContent=Math.round(PB.overview.avg_util*100)+'%（replay 实测）';
+  // 引擎指纹
+  var f=S.strategy.form;
+  $('ef-engine').textContent=(f.engine.match(/md5 ([0-9a-f]{8})/)||[,'—'])[1];
+  $('ef-sim').textContent=(f.portfolio_sim.match(/md5 ([0-9a-f]{8})/)||[,'—'])[1];
+  $('ef-gate').textContent=f.gate.split('（')[0].replace('闸门 ','');
+  // 披露
+  $('df-list').innerHTML=S.disclosures.map(function(x){return '<li>'+esc(x)+'</li>'}).join('');
+  // paper 账本（快照的 paper.latest 是另一条线：真 paper 从 10-16 起闸门关空仓）
+  var pl=S.paper.latest;
+  var seed=pl.nav_seed_date?('自 '+pl.nav_seed_date+' 起链式'):'';
+  var days=LEDGER.length, last=LEDGER[LEDGER.length-1];
+  $('paper-kv').innerHTML=
+    '<div class="kv"><span>replay 净值（'+last.date+'）</span><b>'+last.nav.toFixed(4)+'</b></div>'+
+    '<div class="kv"><span>replay 窗口</span><b>'+LEDGER[0].date+' ~ '+last.date+'</b></div>'+
+    '<div class="kv"><span>有仓交易日</span><b>'+LEDGER.filter(function(r){return r.n_pos>0}).length+' / '+days+'</b></div>'+
+    '<div class="kv"><span>真·paper（'+pl.date+'，闸门关空仓'+(seed?'，'+seed:'')+'）</span><b>nav '+pl.nav.toFixed(4)+'</b></div>'+
+    '<div class="kv"><span>paper 模式</span><b style="font-size:11px">'+esc(S.paper.mode)+'</b></div>';
+  renderGate(S.gate);
+  winData=PB.window_guide.windows;
+  renderWinTabs(); renderKpis(); renderNav(); renderMonths(); renderDist(); renderCf(); renderPicks();
+  // 排序绑定
+  document.querySelectorAll('th[data-k]').forEach(function(th){
+    th.onclick=function(){
+      var k=th.getAttribute('data-k');
+      if(picksSort.k===k){picksSort.asc=!picksSort.asc}
+      else{picksSort.k=k;picksSort.asc=false}
+      renderPicks();
+    };
+  });
+  // 复制
+  $('btn-copy').onclick=function(){
+    var txt='【候风 Top20 观察名单 '+S.data_date+'】闸门'+(S.gate.safe?'开':'关')+'，仅观察\n'+
+      S.watchlist.picks.map(function(p,i){return (i+1)+'. '+p.ts_code+' '+p.name+' score='+p.score}).join('\n');
+    var btn=this;
+    navigator.clipboard.writeText(txt).then(function(){btn.textContent='已复制';setTimeout(function(){btn.textContent='复制 Top20 清单'},1500)});
+  };
+  $('btn-json').onclick=function(){window.open('houfeng_snapshot.json')};
+}
+
+Promise.all([
+  fetch('houfeng_snapshot.json',{cache:'no-store'}).then(function(r){return r.json()}),
+  fetch('houfeng_playbook.json',{cache:'no-store'}).then(function(r){return r.json()}),
+  fetch('paper_ledger_replay_12m.jsonl',{cache:'no-store'}).then(function(r){return r.text()})
+]).then(function(arr){
+  S=arr[0]; PB=arr[1];
+  LEDGER=arr[2].trim().split('\n').map(function(l){return JSON.parse(l)});
+  init();
+}).catch(function(e){
+  var el=document.querySelector('.err');
+  if(el){el.style.display='block';el.textContent='数据包加载失败（需以 http 服务打开本页）：'+e;}
+  console.warn('数据包加载失败：',e);
+});
+</script>
+</body>
+</html>

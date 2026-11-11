@@ -520,7 +520,7 @@ def test_daily_payload(monkeypatch):
         "dist": {
             "total": 813,
             "bias": {"bull": 106, "bear": 68, "neutral": 639},
-            "conf_buckets": {"low": 10, "mid": 212, "high": 576},
+            "tier_buckets": {"strong": 212, "weak": 364, "unknown": 237},
             "event_type": {"earnings": 170, "equity": 81},
         },
         "generated_at": "2026-10-25T10:00:00+08:00",

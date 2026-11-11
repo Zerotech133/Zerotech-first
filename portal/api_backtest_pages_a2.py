@@ -13,6 +13,10 @@ import time
 from api_common import (
     QBT_DIR, ROOT, STATION, _read_json, pill_nav)
 
+if os.path.join(STATION, "tools") not in sys.path:
+    sys.path.insert(0, os.path.join(STATION, "tools"))
+from jev_signal import event_type_tier, jev_signal_score
+
 
 def _bt_seat_page(self, qs):
         """坐席（营业部/机构席位）下钻页：该坐席近60日上榜明细
@@ -257,6 +261,9 @@ def _bt_jev(self):
                 "ts": t, "ts_s": (r["ts"] or "")[-5:], "title": r["title"] or "",
                 "bias": j.get("bias", "?"), "bias_cn": _BJ.get(j.get("bias")),
                 "conf": float(j.get("conf") or 0),
+                "event_type": str(j.get("event_type") or ""),
+                "tier": event_type_tier(j.get("event_type")),
+                "signal": jev_signal_score(j),
                 "scope": j.get("scope") or "?",
                 "scope_cn": _SC.get(j.get("scope")) or (j.get("scope") or "?")})
 
@@ -368,61 +375,61 @@ def _bt_jev(self):
                     for lb in labels)
                 + "</div>") if day else ""
 
-        # 块5 置信度分布直方图（近7天，10% 分桶，竖条内多/空/中堆叠，点击下钻）
-        cbuckets = {}  # (lo%) -> {"bull":n,"bear":n,"neutral":n}
+        # 块5 事件类型分层分布（近7天：strong/weak/unknown 三桶，按 bias 堆叠，点击下钻）
+        tbuckets = {t: {"bull": 0, "bear": 0, "neutral": 0}
+                    for t in ("strong", "weak", "unknown")}
         for x in week:
-            pc = int(x["conf"] * 100)
-            lo = min(max((pc // 10) * 10, 40), 90)
-            cbuckets.setdefault(lo, {"bull": 0, "bear": 0, "neutral": 0})
-            cbuckets[lo][x["bias"] if x["bias"] in cbuckets[lo] else
-                          "neutral"] += 1
-        cpeak = max((sum(v.values()) for v in cbuckets.values()), default=1) or 1
-        hist_cols = []
-        for lo in range(40, 100, 10):
-            v = cbuckets.get(lo) or {"bull": 0, "bear": 0, "neutral": 0}
+            tk = x["tier"] if x["tier"] in tbuckets else "unknown"
+            tbuckets[tk][x["bias"] if x["bias"] in tbuckets[tk] else
+                           "neutral"] += 1
+        tpeak = max((sum(v.values()) for v in tbuckets.values()), default=1) or 1
+        _TIER_LABEL = {"strong": "强信号", "weak": "弱信号", "unknown": "未分层"}
+        tier_cols = []
+        for tk in ("strong", "weak", "unknown"):
+            v = tbuckets[tk]
             tot = sum(v.values())
             segs = ""
             for b, col in (("neutral", "#8b949e"), ("bear", "#3fb950"),
                            ("bull", "#f85149")):  # 堆叠：中在下、空、多在上
                 if v[b]:
                     segs += ("<div style='width:100%%;height:%.0f%%;"
-                             "background:%s'></div>" % (v[b] / cpeak * 100, col))
-            hist_cols.append(
-                "<div id='h%d' data-dj='1' role='button' tabindex='0' style='%s;flex:1;display:flex;flex-direction:"
+                             "background:%s'></div>" % (v[b] / tpeak * 100, col))
+            tier_cols.append(
+                "<div data-dj='1' role='button' tabindex='0' style='%s;flex:1;display:flex;flex-direction:"
                 "column;align-items:center;gap:2px;border-radius:4px;"
                 "padding:2px 0'%s>"
                 "<div style='height:60px;width:70%%;display:flex;"
                 "flex-direction:column-reverse;justify-content:flex-start;"
                 "align-items:stretch;border-radius:2px'>%s</div>"
                 "<div style='font-size:10px;color:%s'>%s</div>"
-                "<div style='font-size:9px;color:#58606a'>%d-%d%%</div></div>"
-                % (lo, _CLICK, _ON % "{'cmin':%d,'cmax':%d}" % (lo, lo + 10),
+                "<div style='font-size:9px;color:#58606a'>%d</div></div>"
+                % (_CLICK, _ON % "{'tier':'%s'}" % tk,
                    segs, "#c9d1d9" if tot else "#30363d",
-                   str(tot) if tot else "-", lo, lo + 9))
+                   _TIER_LABEL[tk], tot))
         blk5 = ("<div style='font-size:13px;color:#c9d1d9;margin:18px 0 6px'>"
-                "▍置信度分布直方图（近7天 · 竖条内自下而上：中性/利空/利多 · "
+                "▍事件类型分层分布（近7天 · 竖条内自下而上：中性/利空/利多 · "
                 "点击下钻）</div>"
                 "<div style='display:flex;gap:3px;align-items:flex-end'>%s</div>"
-                % "".join(hist_cols)) if week else ""
+                % "".join(tier_cols)) if week else ""
 
-        # 块4 高置信要闻榜（近7天 conf≥0.7，利空在前）
+        # 块4 强信号要闻榜（近7天 · 事件类型分层：strong 类型优先，按 signal 排序，利空在前）
         def _wt(items, bias):
             sel = sorted((x for x in items
-                          if x["bias"] == bias and x["conf"] >= 0.7),
-                         key=lambda x: -x["conf"])[:5]
+                          if x["bias"] == bias and x["tier"] == "strong"),
+                         key=lambda x: -abs(x["signal"]))[:5]
             return [("<div style='margin:4px 0;font-size:12.5px'>"
-                     "<span style='color:%s;font-weight:700'>%s %d%%</span>"
+                     "<span style='color:%s;font-weight:700'>%s "
+                     "<span style='color:#58a6ff'>强信号</span></span>"
                      "<span style='color:#58606a'> · %s</span> %s</div>"
                      % ("#3fb950" if bias == "bear" else "#f85149",
                         "利空" if bias == "bear" else "利多",
-                        round(x["conf"] * 100),
                         _SC.get(x["scope"], x["scope"]),
                         _html.escape(x["title"][:40]))) for x in sel]
         hot = _wt(week, "bear") + _wt(week, "bull")
         blk4 = ("<div style='font-size:13px;color:#c9d1d9;margin:18px 0 6px'>"
-                "▍高置信要闻（近7天 · 置信度≥70%）</div>" + "".join(hot)
+                "▍强信号要闻（近7天 · 事件类型分层）" + ("".join(hot)
                 if hot else "<div style='color:#58606a;font-size:12px;"
-                            "margin:18px 0'>（暂无置信度≥70%的判断）</div>")
+                            "margin:18px 0'>（近7天无强信号类型判断）</div>"))
 
         # 块6 研报 AI 观点（report_events.jsonl，本地 Ollama 语义抽取，
         # 已并入事件图谱与个股时衰共振净分）
@@ -448,7 +455,7 @@ def _bt_jev(self):
                 _code = ((x.get("stocks") or [""])[0] or "")[:6]
                 rows6.append(
                     "<div style='margin:4px 0;font-size:12.5px'>"
-                    "<span style='color:%s;font-weight:700'>%s %d%%</span>"
+                    "<span style='color:%s;font-weight:700' title='conf 已证伪（AUC 0.414 反相关：高 conf 反而更可能错）· 百分比仅原始留痕，不参与决策'>%s %d%%⚠</span>"
                     "<span style='color:#58606a'> · %s · %s</span> "
                     "<a href='/jev_target.html#%s' style='color:#58a6ff' title='JEV 标的下钻：三面依据一页出'>⇱</a> <a href='/kg/stock/%s' style='color:#58a6ff'>%s</a>"
                     "</div>"
@@ -463,6 +470,7 @@ def _bt_jev(self):
                 blk6 = ("<div style='font-size:13px;color:#c9d1d9;"
                         "margin:18px 0 6px'>▍研报 AI 观点（近30天 %d 条 · "
                         "本地 Ollama 语义抽取 · 已并入事件图谱共振净分 · "
+                        "conf 已证伪仅供参考 · "
                         "点击进个股全景）</div>" % len(_rp)) + "".join(rows6)
         except Exception:
             blk6 = ""
@@ -474,7 +482,7 @@ def _bt_jev(self):
         dj_data = json.dumps([{
             "t": x["ts_s"], "h": int((now - x["ts"]).total_seconds() // 7200),
             "title": x["title"][:64], "bias": x["bias"], "bias_cn": x["bias_cn"],
-            "conf": round(x["conf"] * 100), "scope": x["scope"],
+            "conf": round(x["conf"] * 100), "tier": x["tier"], "scope": x["scope"],
             "scope_cn": x["scope_cn"]} for x in week], ensure_ascii=False)
         dj_panel = ("<div id='dj-panel' style='display:none;background:#161b22;"
                     "border:1px solid #58a6ff;border-radius:8px;padding:12px;"
@@ -485,7 +493,7 @@ def _bt_jev(self):
             "for(var x of DJ){\n"
             " if(f.bias&&x.bias!=f.bias)continue;\n"
             " if(f.scope&&x.scope!=f.scope)continue;\n"
-            " if(f.cmin!=null&&(x.conf<f.cmin||x.conf>=f.cmax))continue;\n"
+            " if(f.tier&&x.tier!=f.tier)continue;\n"
             " if(f.bucket!=null){if(11-x.h!=f.bucket)continue}\n"
             " else if(f.since){if(x.h>=f.since/2)continue}\n"
             " rows.push(x)}\n"
@@ -495,9 +503,10 @@ def _bt_jev(self):
             "margin-bottom:4px\">'+head+'</div>';\n"
             "for(var x of rows){var c=x.bias=='bull'?'#f85149':"
             "(x.bias=='bear'?'#3fb950':'#8b949e');\n"
+            " var tag=x.tier=='strong'?'<span style=\"color:#58a6ff\"> 强信号</span>':'';\n"
             " html+='<div style=\"margin:6px 0;font-size:13px\">"
-            "<span style=\"color:'+c+';font-weight:700\">'+x.bias_cn+' '"
-            "+x.conf+'%</span><span style=\"color:#58606a\"> · '+x.scope_cn"
+            "<span style=\"color:'+c+';font-weight:700\">'+x.bias_cn+tag"
+            "+'</span><span style=\"color:#58606a\"> · '+x.scope_cn"
             "+' · '+x.t+'</span> '+x.title+'</div>'}\n"
             "p.style.display='block';p.innerHTML=html;"
             "p.scrollIntoView({block:'nearest'})}\n"

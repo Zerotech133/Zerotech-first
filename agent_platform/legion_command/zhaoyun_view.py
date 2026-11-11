@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 
+import logging
 import datetime as dt
 import json
 import os
@@ -98,6 +99,7 @@ def _registry_display_name() -> str:
             if seat.get("agent_id") == "ZHAOYUN" and seat.get("display_name"):
                 return str(seat["display_name"])
     except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("swallowed exception at line 100")
         pass
     return str(IDENTITY.get("display_name") or "赵云·治理")
 

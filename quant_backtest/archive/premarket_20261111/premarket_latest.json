@@ -1,0 +1,3119 @@
+{
+ "ts": "2026-11-11T06:54:40+08:00",
+ "trade_date": "20261111",
+ "l1": {
+  "score": 37,
+  "rows": [
+   {
+    "name": "纳斯达克综合",
+    "pct": 2.74,
+    "date": "20261109"
+   },
+   {
+    "name": "标普500",
+    "pct": 2.35,
+    "date": "20261109"
+   },
+   {
+    "name": "道琼斯",
+    "pct": 2.15,
+    "date": "20261109"
+   },
+   {
+    "name": "英国富时",
+    "pct": 1.02,
+    "date": "20261109"
+   },
+   {
+    "name": "德国DAX",
+    "pct": 1.73,
+    "date": "20261109"
+   },
+   {
+    "name": "恒生指数",
+    "pct": 0.44,
+    "date": "20261110"
+   },
+   {
+    "name": "美元/离岸人民币",
+    "pct": 0.04,
+    "val": 7.1268,
+    "sim": true
+   },
+   {
+    "name": "BTC/USDT（风险偏好代理）",
+    "pct": -0.27,
+    "date": "20261109"
+   }
+  ],
+  "fx": {
+   "val": 7.1268,
+   "pct": 0.04,
+   "chg5": 0.15,
+   "source": "sim"
+  },
+  "btc": {
+   "pct": -0.27,
+   "close": 74649.0,
+   "date": "20261109"
+  },
+  "note": "商品(油/金/铜)缺权限 · 汇率为模拟源（不进分，人民币贬值利空进出口板块，仅供链路参考）· BTC 7×24 连续交易，为全球风险偏好代理（不进分）"
+ },
+ "l2": {
+  "macro": [
+   {
+    "name": "CPI 同比",
+    "val": 0.9,
+    "month": "202609"
+   },
+   {
+    "name": "PPI 同比",
+    "val": 5.0,
+    "month": "202609"
+   }
+  ],
+  "jev": null,
+  "news": []
+ },
+ "l3": {
+  "margin_yoy": 0.536,
+  "margin_yi": 22670,
+  "margin_date": "20261109",
+  "north_yi": 20,
+  "north_date": "20261110",
+  "shibor_on": 1.3233,
+  "shibor_chg": 0.042,
+  "score": 38,
+  "上证指数": {
+   "close": 3660.8,
+   "ma20": -0.7,
+   "ma60": -4.6
+  },
+  "创业板指": {
+   "close": 2458.6,
+   "ma20": -6.3,
+   "ma60": -21.3
+  },
+  "date": "20261110",
+  "amt_ma5": 17740,
+  "amt_ma20": 16447,
+  "vol_state": "缩量",
+  "vol_pct": -14.5,
+  "amt_yi": 15141,
+  "amt_pct": 1.4,
+  "margin": {
+   "date": "20261106",
+   "rzye_yi": 22367,
+   "rqye_yi": 284.1,
+   "chg5_yi": -473,
+   "chg5_pct": -2.07,
+   "chg_recent": [
+    14,
+    68,
+    -235
+   ]
+  }
+ },
+ "l4": [
+  {
+   "sector": "半导体",
+   "cn": "A股半导体/电子",
+   "avg": 5.61,
+   "n": 7,
+   "m": 7,
+   "asof": "2026-11-06",
+   "score": 100
+  },
+  {
+   "sector": "科技巨头",
+   "cn": "沪深300大盘科技",
+   "avg": -0.05,
+   "n": 5,
+   "m": 5,
+   "asof": "2026-11-06",
+   "score": -1
+  },
+  {
+   "sector": "AI软件",
+   "cn": "A股软件/计算机",
+   "avg": 0.47,
+   "n": 5,
+   "m": 5,
+   "asof": "2026-11-06",
+   "score": 8
+  },
+  {
+   "sector": "汽车新能源",
+   "cn": "新能源车产业链",
+   "avg": 2.4,
+   "n": 5,
+   "m": 5,
+   "asof": "2026-11-09",
+   "score": 43
+  },
+  {
+   "sector": "互联网中概",
+   "cn": "恒生科技/中概互联",
+   "avg": 0.1,
+   "n": 4,
+   "m": 4,
+   "asof": "2026-11-09",
+   "score": 2
+  }
+ ],
+ "l4f": {
+  "date": "20261110",
+  "total_yi": -102.3,
+  "n_ind": 110,
+  "top": [
+   {
+    "ind": "互联网",
+    "yi": 22.2,
+    "n": 81
+   },
+   {
+    "ind": "软件服务",
+    "yi": 20.3,
+    "n": 280
+   },
+   {
+    "ind": "汽车配件",
+    "yi": 16.1,
+    "n": 273
+   },
+   {
+    "ind": "元器件",
+    "yi": 16.1,
+    "n": 312
+   },
+   {
+    "ind": "银行",
+    "yi": 15.5,
+    "n": 42
+   }
+  ],
+  "bottom": [
+   {
+    "ind": "铝",
+    "yi": -22.8,
+    "n": 30
+   },
+   {
+    "ind": "化学制药",
+    "yi": -19.8,
+    "n": 149
+   },
+   {
+    "ind": "化工原料",
+    "yi": -15.6,
+    "n": 262
+   },
+   {
+    "ind": "电气设备",
+    "yi": -15.3,
+    "n": 348
+   },
+   {
+    "ind": "石油开采",
+    "yi": -13.8,
+    "n": 22
+   }
+  ]
+ },
+ "l5": {
+  "n": 2000,
+  "bull": 569,
+  "bear": 339,
+  "neu": 1092,
+  "score": 12,
+  "cn_env": {
+   "score": 36,
+   "safe": false,
+   "verdict": "偏冷（宽度 45%，20日中位 -7.1%）— 闸门收紧",
+   "breath": 45,
+   "med20": -7.1
+  },
+  "vix": {
+   "val": 17.7,
+   "pct": -0.94,
+   "chg5": 10.68,
+   "source": "sim"
+  },
+  "money": {
+   "date": "20261110",
+   "n_stock": 5570,
+   "up": 4271,
+   "dn": 1148,
+   "flat": 151,
+   "limit_up": 101,
+   "limit_dn": 1,
+   "ladder": [
+    {
+     "k": 7,
+     "n": 1,
+     "top": [
+      {
+       "code": "002578.SZ",
+       "name": "闽发铝业",
+       "pct": 9.98,
+       "amt_yi": 19.2
+      }
+     ]
+    },
+    {
+     "k": 3,
+     "n": 4,
+     "top": [
+      {
+       "code": "601188.SH",
+       "name": "龙江交通",
+       "pct": 10.02,
+       "amt_yi": 19.3
+      },
+      {
+       "code": "600327.SH",
+       "name": "大东方",
+       "pct": 10.0,
+       "amt_yi": 3.7
+      },
+      {
+       "code": "002310.SZ",
+       "name": "东方新能",
+       "pct": 10.2,
+       "amt_yi": 1.7
+      }
+     ]
+    },
+    {
+     "k": 2,
+     "n": 15,
+     "top": [
+      {
+       "code": "000530.SZ",
+       "name": "冰山冷热",
+       "pct": 10.03,
+       "amt_yi": 15.3
+      },
+      {
+       "code": "603703.SH",
+       "name": "盛洋科技",
+       "pct": 10.0,
+       "amt_yi": 14.4
+      },
+      {
+       "code": "600892.SH",
+       "name": "大晟文化",
+       "pct": 10.02,
+       "amt_yi": 10.0
+      }
+     ]
+    }
+   ],
+   "top": [
+    {
+     "code": "603893.SH",
+     "name": "瑞芯微",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 41.4,
+     "ind": null,
+     "mv": 986.4,
+     "cmv": 986.4,
+     "lhb": null,
+     "turn": 4.4,
+     "vr": 1.2,
+     "style": "实体"
+    },
+    {
+     "code": "002865.SZ",
+     "name": "钧达股份",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 25.0,
+     "ind": null,
+     "mv": 152.1,
+     "cmv": 112.0,
+     "lhb": null,
+     "turn": 23.6,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "300613.SZ",
+     "name": "富瀚微",
+     "streak": 1,
+     "pct": 20.01,
+     "amt_yi": 22.2,
+     "ind": null,
+     "mv": 186.4,
+     "cmv": 176.0,
+     "lhb": null,
+     "turn": 13.6,
+     "vr": 1.5,
+     "style": "实体"
+    },
+    {
+     "code": "603533.SH",
+     "name": "掌阅科技",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 20.4,
+     "ind": null,
+     "mv": 144.0,
+     "cmv": 144.0,
+     "lhb": null,
+     "turn": 14.5,
+     "vr": 0.8,
+     "style": "实体"
+    },
+    {
+     "code": "601188.SH",
+     "name": "龙江交通",
+     "streak": 3,
+     "pct": 10.02,
+     "amt_yi": 19.3,
+     "ind": null,
+     "mv": 60.2,
+     "cmv": 60.2,
+     "lhb": null,
+     "turn": 32.5,
+     "vr": 2.4,
+     "style": "T字"
+    }
+   ],
+   "lu_all": [
+    {
+     "code": "603893.SH",
+     "name": "瑞芯微",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 41.4,
+     "ind": null,
+     "mv": 986.4,
+     "cmv": 986.4,
+     "lhb": null,
+     "turn": 4.4,
+     "vr": 1.2,
+     "style": "实体"
+    },
+    {
+     "code": "002865.SZ",
+     "name": "钧达股份",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 25.0,
+     "ind": null,
+     "mv": 152.1,
+     "cmv": 112.0,
+     "lhb": null,
+     "turn": 23.6,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "300613.SZ",
+     "name": "富瀚微",
+     "streak": 1,
+     "pct": 20.01,
+     "amt_yi": 22.2,
+     "ind": null,
+     "mv": 186.4,
+     "cmv": 176.0,
+     "lhb": null,
+     "turn": 13.6,
+     "vr": 1.5,
+     "style": "实体"
+    },
+    {
+     "code": "603533.SH",
+     "name": "掌阅科技",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 20.4,
+     "ind": null,
+     "mv": 144.0,
+     "cmv": 144.0,
+     "lhb": null,
+     "turn": 14.5,
+     "vr": 0.8,
+     "style": "实体"
+    },
+    {
+     "code": "601188.SH",
+     "name": "龙江交通",
+     "streak": 3,
+     "pct": 10.02,
+     "amt_yi": 19.3,
+     "ind": null,
+     "mv": 60.2,
+     "cmv": 60.2,
+     "lhb": null,
+     "turn": 32.5,
+     "vr": 2.4,
+     "style": "T字"
+    },
+    {
+     "code": "002578.SZ",
+     "name": "闽发铝业",
+     "streak": 7,
+     "pct": 9.98,
+     "amt_yi": 19.2,
+     "ind": null,
+     "mv": 56.9,
+     "cmv": 52.2,
+     "lhb": null,
+     "turn": 38.9,
+     "vr": 4.7,
+     "style": "实体"
+    },
+    {
+     "code": "002432.SZ",
+     "name": "九安医疗",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 16.9,
+     "ind": null,
+     "mv": 268.6,
+     "cmv": 251.9,
+     "lhb": null,
+     "turn": 6.9,
+     "vr": 1.6,
+     "style": "实体"
+    },
+    {
+     "code": "000530.SZ",
+     "name": "冰山冷热",
+     "streak": 2,
+     "pct": 10.03,
+     "amt_yi": 15.3,
+     "ind": null,
+     "mv": 88.8,
+     "cmv": 63.2,
+     "lhb": null,
+     "turn": 24.5,
+     "vr": 0.8,
+     "style": "T字"
+    },
+    {
+     "code": "603703.SH",
+     "name": "盛洋科技",
+     "streak": 2,
+     "pct": 10.0,
+     "amt_yi": 14.4,
+     "ind": null,
+     "mv": 50.7,
+     "cmv": 50.7,
+     "lhb": null,
+     "turn": 29.2,
+     "vr": 2.0,
+     "style": "实体"
+    },
+    {
+     "code": "002048.SZ",
+     "name": "宁波华翔",
+     "streak": 1,
+     "pct": 10.02,
+     "amt_yi": 13.6,
+     "ind": null,
+     "mv": 169.4,
+     "cmv": 147.7,
+     "lhb": null,
+     "turn": 9.4,
+     "vr": 2.3,
+     "style": "实体"
+    },
+    {
+     "code": "000678.SZ",
+     "name": "襄阳轴承",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 13.0,
+     "ind": null,
+     "mv": 88.6,
+     "cmv": 88.6,
+     "lhb": null,
+     "turn": 15.3,
+     "vr": 0.5,
+     "style": "实体"
+    },
+    {
+     "code": "605488.SH",
+     "name": "福莱新材",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 12.8,
+     "ind": null,
+     "mv": 171.9,
+     "cmv": 170.8,
+     "lhb": null,
+     "turn": 7.6,
+     "vr": 0.7,
+     "style": "实体"
+    },
+    {
+     "code": "603466.SH",
+     "name": "风语筑",
+     "streak": 1,
+     "pct": 9.97,
+     "amt_yi": 12.7,
+     "ind": null,
+     "mv": 91.2,
+     "cmv": 91.2,
+     "lhb": null,
+     "turn": 14.4,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "603278.SH",
+     "name": "大业股份",
+     "streak": 1,
+     "pct": 9.98,
+     "amt_yi": 12.0,
+     "ind": null,
+     "mv": 51.6,
+     "cmv": 51.6,
+     "lhb": null,
+     "turn": 24.0,
+     "vr": 1.0,
+     "style": "实体"
+    },
+    {
+     "code": "300426.SZ",
+     "name": "华智数媒",
+     "streak": 1,
+     "pct": 19.98,
+     "amt_yi": 11.5,
+     "ind": null,
+     "mv": 51.6,
+     "cmv": 45.9,
+     "lhb": null,
+     "turn": 27.6,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "601595.SH",
+     "name": "上海电影",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 10.5,
+     "ind": null,
+     "mv": 190.7,
+     "cmv": 190.7,
+     "lhb": null,
+     "turn": 5.8,
+     "vr": 1.2,
+     "style": "实体"
+    },
+    {
+     "code": "600892.SH",
+     "name": "大晟文化",
+     "streak": 2,
+     "pct": 10.02,
+     "amt_yi": 10.0,
+     "ind": null,
+     "mv": 31.3,
+     "cmv": 31.3,
+     "lhb": null,
+     "turn": 34.2,
+     "vr": 1.7,
+     "style": "实体"
+    },
+    {
+     "code": "002045.SZ",
+     "name": "国光电器",
+     "streak": 1,
+     "pct": 10.03,
+     "amt_yi": 9.8,
+     "ind": null,
+     "mv": 64.1,
+     "cmv": 64.1,
+     "lhb": null,
+     "turn": 16.1,
+     "vr": 1.6,
+     "style": "实体"
+    },
+    {
+     "code": "002343.SZ",
+     "name": "慈文传媒",
+     "streak": 1,
+     "pct": 10.02,
+     "amt_yi": 9.5,
+     "ind": null,
+     "mv": 44.2,
+     "cmv": 44.2,
+     "lhb": null,
+     "turn": 21.9,
+     "vr": 0.6,
+     "style": "实体"
+    },
+    {
+     "code": "605577.SH",
+     "name": "龙版传媒",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 8.8,
+     "ind": null,
+     "mv": 76.7,
+     "cmv": 76.7,
+     "lhb": null,
+     "turn": 11.9,
+     "vr": 1.4,
+     "style": "实体"
+    },
+    {
+     "code": "603381.SH",
+     "name": "永臻股份",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 8.7,
+     "ind": null,
+     "mv": 51.9,
+     "cmv": 31.1,
+     "lhb": null,
+     "turn": 29.6,
+     "vr": 2.8,
+     "style": "实体"
+    },
+    {
+     "code": "603598.SH",
+     "name": "引力传媒",
+     "streak": 1,
+     "pct": 9.98,
+     "amt_yi": 8.4,
+     "ind": null,
+     "mv": 64.0,
+     "cmv": 64.0,
+     "lhb": null,
+     "turn": 13.8,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "603283.SH",
+     "name": "赛腾股份",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 8.2,
+     "ind": null,
+     "mv": 142.0,
+     "cmv": 142.0,
+     "lhb": null,
+     "turn": 6.0,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "300556.SZ",
+     "name": "丝路视觉",
+     "streak": 1,
+     "pct": 20.01,
+     "amt_yi": 8.2,
+     "ind": null,
+     "mv": 27.1,
+     "cmv": 24.3,
+     "lhb": null,
+     "turn": 36.4,
+     "vr": 2.3,
+     "style": "实体"
+    },
+    {
+     "code": "603286.SH",
+     "name": "日盈电子",
+     "streak": 2,
+     "pct": 10.01,
+     "amt_yi": 7.8,
+     "ind": null,
+     "mv": 71.9,
+     "cmv": 71.3,
+     "lhb": null,
+     "turn": 11.3,
+     "vr": 3.4,
+     "style": "实体"
+    },
+    {
+     "code": "001339.SZ",
+     "name": "智微智能",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 7.1,
+     "ind": null,
+     "mv": 207.3,
+     "cmv": 102.7,
+     "lhb": null,
+     "turn": 7.1,
+     "vr": 1.0,
+     "style": "实体"
+    },
+    {
+     "code": "002009.SZ",
+     "name": "天奇股份",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 6.5,
+     "ind": null,
+     "mv": 77.3,
+     "cmv": 68.1,
+     "lhb": null,
+     "turn": 9.8,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "001232.SZ",
+     "name": "嘉立创",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 6.4,
+     "ind": null,
+     "mv": 971.8,
+     "cmv": 76.9,
+     "lhb": null,
+     "turn": 8.6,
+     "vr": 1.2,
+     "style": "实体"
+    },
+    {
+     "code": "001308.SZ",
+     "name": "康冠科技",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 6.2,
+     "ind": null,
+     "mv": 170.3,
+     "cmv": 127.5,
+     "lhb": null,
+     "turn": 5.0,
+     "vr": 3.4,
+     "style": "实体"
+    },
+    {
+     "code": "600408.SH",
+     "name": "安泰集团",
+     "streak": 2,
+     "pct": 9.94,
+     "amt_yi": 6.1,
+     "ind": null,
+     "mv": 36.8,
+     "cmv": 36.8,
+     "lhb": null,
+     "turn": 16.9,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "600261.SH",
+     "name": "阳光照明",
+     "streak": 1,
+     "pct": 9.96,
+     "amt_yi": 6.1,
+     "ind": null,
+     "mv": 78.1,
+     "cmv": 78.1,
+     "lhb": null,
+     "turn": 7.9,
+     "vr": 0.4,
+     "style": "实体"
+    },
+    {
+     "code": "002376.SZ",
+     "name": "新北洋",
+     "streak": 1,
+     "pct": 9.96,
+     "amt_yi": 6.0,
+     "ind": null,
+     "mv": 62.7,
+     "cmv": 60.8,
+     "lhb": null,
+     "turn": 10.1,
+     "vr": 0.8,
+     "style": "实体"
+    },
+    {
+     "code": "300052.SZ",
+     "name": "中青宝",
+     "streak": 1,
+     "pct": 20.0,
+     "amt_yi": 5.9,
+     "ind": null,
+     "mv": 31.0,
+     "cmv": 31.0,
+     "lhb": null,
+     "turn": 20.3,
+     "vr": 4.7,
+     "style": "实体"
+    },
+    {
+     "code": "000810.SZ",
+     "name": "创维数字",
+     "streak": 1,
+     "pct": 9.96,
+     "amt_yi": 5.4,
+     "ind": null,
+     "mv": 139.6,
+     "cmv": 135.7,
+     "lhb": null,
+     "turn": 4.2,
+     "vr": 1.0,
+     "style": "实体"
+    },
+    {
+     "code": "600715.SH",
+     "name": "文投控股",
+     "streak": 2,
+     "pct": 10.04,
+     "amt_yi": 5.1,
+     "ind": null,
+     "mv": 115.7,
+     "cmv": 81.6,
+     "lhb": null,
+     "turn": 6.4,
+     "vr": 0.3,
+     "style": "实体"
+    },
+    {
+     "code": "300010.SZ",
+     "name": "ST豆神",
+     "streak": 1,
+     "pct": 4.99,
+     "amt_yi": 5.1,
+     "ind": null,
+     "mv": 82.7,
+     "cmv": 65.5,
+     "lhb": null,
+     "turn": 7.9,
+     "vr": 0.8,
+     "style": "实体"
+    },
+    {
+     "code": "002324.SZ",
+     "name": "普利特",
+     "streak": 1,
+     "pct": 9.95,
+     "amt_yi": 5.0,
+     "ind": null,
+     "mv": 100.7,
+     "cmv": 70.3,
+     "lhb": null,
+     "turn": 7.3,
+     "vr": 2.6,
+     "style": "实体"
+    },
+    {
+     "code": "002995.SZ",
+     "name": "天地在线",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 4.9,
+     "ind": null,
+     "mv": 36.6,
+     "cmv": 25.2,
+     "lhb": null,
+     "turn": 20.4,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "688611.SH",
+     "name": "杭州柯林",
+     "streak": 1,
+     "pct": 20.01,
+     "amt_yi": 4.4,
+     "ind": null,
+     "mv": 121.0,
+     "cmv": 121.0,
+     "lhb": null,
+     "turn": 3.8,
+     "vr": 3.4,
+     "style": "实体"
+    },
+    {
+     "code": "002931.SZ",
+     "name": "锋龙股份",
+     "streak": 2,
+     "pct": 10.01,
+     "amt_yi": 4.1,
+     "ind": null,
+     "mv": 105.7,
+     "cmv": 97.9,
+     "lhb": null,
+     "turn": 4.2,
+     "vr": 0.7,
+     "style": "实体"
+    },
+    {
+     "code": "603955.SH",
+     "name": "大千生态",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 4.1,
+     "ind": null,
+     "mv": 61.7,
+     "cmv": 51.2,
+     "lhb": null,
+     "turn": 8.1,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "001318.SZ",
+     "name": "阳光乳业",
+     "streak": 1,
+     "pct": 10.04,
+     "amt_yi": 4.0,
+     "ind": null,
+     "mv": 41.6,
+     "cmv": 41.6,
+     "lhb": null,
+     "turn": 9.9,
+     "vr": 0.8,
+     "style": "实体"
+    },
+    {
+     "code": "600778.SH",
+     "name": "友好集团",
+     "streak": 1,
+     "pct": 10.02,
+     "amt_yi": 3.9,
+     "ind": null,
+     "mv": 18.1,
+     "cmv": 18.1,
+     "lhb": null,
+     "turn": 22.2,
+     "vr": 2.8,
+     "style": "实体"
+    },
+    {
+     "code": "688781.SH",
+     "name": "视涯科技",
+     "streak": 1,
+     "pct": 20.0,
+     "amt_yi": 3.8,
+     "ind": null,
+     "mv": 561.6,
+     "cmv": 23.6,
+     "lhb": null,
+     "turn": 17.4,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "002708.SZ",
+     "name": "光洋股份",
+     "streak": 2,
+     "pct": 10.01,
+     "amt_yi": 3.8,
+     "ind": null,
+     "mv": 135.8,
+     "cmv": 123.3,
+     "lhb": null,
+     "turn": 3.1,
+     "vr": 0.2,
+     "style": "实体"
+    },
+    {
+     "code": "600609.SH",
+     "name": "金杯汽车",
+     "streak": 2,
+     "pct": 10.06,
+     "amt_yi": 3.8,
+     "ind": null,
+     "mv": 50.0,
+     "cmv": 50.0,
+     "lhb": null,
+     "turn": 7.9,
+     "vr": 3.3,
+     "style": "实体"
+    },
+    {
+     "code": "600327.SH",
+     "name": "大东方",
+     "streak": 3,
+     "pct": 10.0,
+     "amt_yi": 3.7,
+     "ind": null,
+     "mv": 52.6,
+     "cmv": 52.6,
+     "lhb": null,
+     "turn": 7.2,
+     "vr": 0.6,
+     "style": "实体"
+    },
+    {
+     "code": "600281.SH",
+     "name": "华阳新材",
+     "streak": 1,
+     "pct": 9.92,
+     "amt_yi": 3.6,
+     "ind": null,
+     "mv": 28.5,
+     "cmv": 28.5,
+     "lhb": null,
+     "turn": 13.1,
+     "vr": 1.0,
+     "style": "实体"
+    },
+    {
+     "code": "603058.SH",
+     "name": "永吉股份",
+     "streak": 1,
+     "pct": 10.05,
+     "amt_yi": 3.4,
+     "ind": null,
+     "mv": 35.4,
+     "cmv": 35.4,
+     "lhb": null,
+     "turn": 9.9,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "603706.SH",
+     "name": "东方环宇",
+     "streak": 2,
+     "pct": 10.01,
+     "amt_yi": 3.4,
+     "ind": null,
+     "mv": 42.0,
+     "cmv": 42.0,
+     "lhb": null,
+     "turn": 8.3,
+     "vr": 4.2,
+     "style": "实体"
+    },
+    {
+     "code": "002313.SZ",
+     "name": "日海智能",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 3.4,
+     "ind": null,
+     "mv": 34.6,
+     "cmv": 34.6,
+     "lhb": null,
+     "turn": 10.1,
+     "vr": 2.0,
+     "style": "实体"
+    },
+    {
+     "code": "002303.SZ",
+     "name": "美盈森",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 3.2,
+     "ind": null,
+     "mv": 72.4,
+     "cmv": 50.5,
+     "lhb": null,
+     "turn": 6.6,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "002347.SZ",
+     "name": "泰尔股份",
+     "streak": 2,
+     "pct": 10.0,
+     "amt_yi": 3.2,
+     "ind": null,
+     "mv": 38.9,
+     "cmv": 38.0,
+     "lhb": null,
+     "turn": 8.5,
+     "vr": 1.1,
+     "style": "T字"
+    },
+    {
+     "code": "603037.SH",
+     "name": "凯众股份",
+     "streak": 1,
+     "pct": 10.03,
+     "amt_yi": 3.2,
+     "ind": null,
+     "mv": 38.4,
+     "cmv": 38.2,
+     "lhb": null,
+     "turn": 8.5,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "000593.SZ",
+     "name": "德龙汇能",
+     "streak": 1,
+     "pct": 10.03,
+     "amt_yi": 3.1,
+     "ind": null,
+     "mv": 69.3,
+     "cmv": 69.1,
+     "lhb": null,
+     "turn": 4.6,
+     "vr": 1.5,
+     "style": "实体"
+    },
+    {
+     "code": "603809.SH",
+     "name": "豪能股份",
+     "streak": 1,
+     "pct": 10.02,
+     "amt_yi": 3.0,
+     "ind": null,
+     "mv": 87.9,
+     "cmv": 87.9,
+     "lhb": null,
+     "turn": 3.5,
+     "vr": 3.1,
+     "style": "实体"
+    },
+    {
+     "code": "603121.SH",
+     "name": "华培动力",
+     "streak": 2,
+     "pct": 10.02,
+     "amt_yi": 2.9,
+     "ind": null,
+     "mv": 44.7,
+     "cmv": 44.7,
+     "lhb": null,
+     "turn": 6.7,
+     "vr": 3.0,
+     "style": "实体"
+    },
+    {
+     "code": "002036.SZ",
+     "name": "联创电子",
+     "streak": 1,
+     "pct": 10.08,
+     "amt_yi": 2.9,
+     "ind": null,
+     "mv": 60.1,
+     "cmv": 59.9,
+     "lhb": null,
+     "turn": 5.0,
+     "vr": 2.2,
+     "style": "实体"
+    },
+    {
+     "code": "001379.SZ",
+     "name": "腾达科技",
+     "streak": 2,
+     "pct": 10.03,
+     "amt_yi": 2.9,
+     "ind": null,
+     "mv": 34.9,
+     "cmv": 11.7,
+     "lhb": null,
+     "turn": 26.2,
+     "vr": 6.4,
+     "style": "实体"
+    },
+    {
+     "code": "300264.SZ",
+     "name": "佳创视讯",
+     "streak": 1,
+     "pct": 20.07,
+     "amt_yi": 2.7,
+     "ind": null,
+     "mv": 28.4,
+     "cmv": 24.3,
+     "lhb": null,
+     "turn": 11.6,
+     "vr": 3.8,
+     "style": "实体"
+    },
+    {
+     "code": "002664.SZ",
+     "name": "信质集团",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 2.6,
+     "ind": null,
+     "mv": 62.0,
+     "cmv": 61.3,
+     "lhb": null,
+     "turn": 4.4,
+     "vr": 3.1,
+     "style": "实体"
+    },
+    {
+     "code": "002160.SZ",
+     "name": "常铝股份",
+     "streak": 1,
+     "pct": 9.89,
+     "amt_yi": 2.5,
+     "ind": null,
+     "mv": 41.3,
+     "cmv": 41.2,
+     "lhb": null,
+     "turn": 6.3,
+     "vr": 1.8,
+     "style": "实体"
+    },
+    {
+     "code": "002876.SZ",
+     "name": "三利谱",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 2.5,
+     "ind": null,
+     "mv": 53.5,
+     "cmv": 45.8,
+     "lhb": null,
+     "turn": 5.8,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "002631.SZ",
+     "name": "德尔未来",
+     "streak": 1,
+     "pct": 10.06,
+     "amt_yi": 2.5,
+     "ind": null,
+     "mv": 77.6,
+     "cmv": 77.3,
+     "lhb": null,
+     "turn": 3.3,
+     "vr": 1.0,
+     "style": "实体"
+    },
+    {
+     "code": "001314.SZ",
+     "name": "亿道信息",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 2.4,
+     "ind": null,
+     "mv": 60.8,
+     "cmv": 53.2,
+     "lhb": null,
+     "turn": 4.8,
+     "vr": 1.4,
+     "style": "实体"
+    },
+    {
+     "code": "605258.SH",
+     "name": "协和电子",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 2.4,
+     "ind": null,
+     "mv": 34.8,
+     "cmv": 34.8,
+     "lhb": null,
+     "turn": 7.0,
+     "vr": 0.7,
+     "style": "实体"
+    },
+    {
+     "code": "605598.SH",
+     "name": "上海港湾",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 2.4,
+     "ind": null,
+     "mv": 67.8,
+     "cmv": 67.8,
+     "lhb": null,
+     "turn": 3.6,
+     "vr": 0.7,
+     "style": "实体"
+    },
+    {
+     "code": "301314.SZ",
+     "name": "科瑞思",
+     "streak": 1,
+     "pct": 20.0,
+     "amt_yi": 2.2,
+     "ind": null,
+     "mv": 27.9,
+     "cmv": 15.2,
+     "lhb": null,
+     "turn": 15.8,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "605398.SH",
+     "name": "新炬网络",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 2.1,
+     "ind": null,
+     "mv": 42.0,
+     "cmv": 42.0,
+     "lhb": null,
+     "turn": 5.0,
+     "vr": 2.2,
+     "style": "实体"
+    },
+    {
+     "code": "600510.SH",
+     "name": "黑牡丹",
+     "streak": 1,
+     "pct": 9.97,
+     "amt_yi": 2.1,
+     "ind": null,
+     "mv": 84.2,
+     "cmv": 84.2,
+     "lhb": null,
+     "turn": 2.5,
+     "vr": 1.6,
+     "style": "实体"
+    },
+    {
+     "code": "300147.SZ",
+     "name": "*ST香雪",
+     "streak": 1,
+     "pct": 9.36,
+     "amt_yi": 2.0,
+     "ind": null,
+     "mv": 37.1,
+     "cmv": 36.9,
+     "lhb": null,
+     "turn": 5.4,
+     "vr": 1.8,
+     "style": "实体"
+    },
+    {
+     "code": "002905.SZ",
+     "name": "金逸影视",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 2.0,
+     "ind": null,
+     "mv": 35.1,
+     "cmv": 32.6,
+     "lhb": null,
+     "turn": 6.2,
+     "vr": 2.9,
+     "style": "实体"
+    },
+    {
+     "code": "002614.SZ",
+     "name": "奥佳华",
+     "streak": 1,
+     "pct": 9.96,
+     "amt_yi": 1.9,
+     "ind": null,
+     "mv": 47.5,
+     "cmv": 33.6,
+     "lhb": null,
+     "turn": 5.6,
+     "vr": 1.2,
+     "style": "实体"
+    },
+    {
+     "code": "603215.SH",
+     "name": "比依股份",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 1.9,
+     "ind": null,
+     "mv": 35.2,
+     "cmv": 35.2,
+     "lhb": null,
+     "turn": 5.5,
+     "vr": 3.4,
+     "style": "实体"
+    },
+    {
+     "code": "603536.SH",
+     "name": "惠发食品",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 1.9,
+     "ind": null,
+     "mv": 26.0,
+     "cmv": 26.0,
+     "lhb": null,
+     "turn": 7.7,
+     "vr": 0.9,
+     "style": "实体"
+    },
+    {
+     "code": "000782.SZ",
+     "name": "恒申新材",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 1.8,
+     "ind": null,
+     "mv": 54.5,
+     "cmv": 41.9,
+     "lhb": null,
+     "turn": 4.4,
+     "vr": 2.6,
+     "style": "实体"
+    },
+    {
+     "code": "002021.SZ",
+     "name": "中捷资源",
+     "streak": 1,
+     "pct": 10.23,
+     "amt_yi": 1.8,
+     "ind": null,
+     "mv": 28.3,
+     "cmv": 28.3,
+     "lhb": null,
+     "turn": 6.4,
+     "vr": 2.9,
+     "style": "实体"
+    },
+    {
+     "code": "600829.SH",
+     "name": "人民同泰",
+     "streak": 1,
+     "pct": 10.02,
+     "amt_yi": 1.8,
+     "ind": null,
+     "mv": 56.7,
+     "cmv": 56.7,
+     "lhb": null,
+     "turn": 3.2,
+     "vr": 1.4,
+     "style": "实体"
+    },
+    {
+     "code": "600793.SH",
+     "name": "宜宾纸业",
+     "streak": 1,
+     "pct": 10.04,
+     "amt_yi": 1.7,
+     "ind": null,
+     "mv": 27.2,
+     "cmv": 27.2,
+     "lhb": null,
+     "turn": 6.6,
+     "vr": 2.0,
+     "style": "实体"
+    },
+    {
+     "code": "002310.SZ",
+     "name": "东方新能",
+     "streak": 3,
+     "pct": 10.2,
+     "amt_yi": 1.7,
+     "ind": null,
+     "mv": 168.6,
+     "cmv": 123.6,
+     "lhb": null,
+     "turn": 1.4,
+     "vr": 0.9,
+     "style": "一字"
+    },
+    {
+     "code": "002981.SZ",
+     "name": "朝阳科技",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 1.7,
+     "ind": null,
+     "mv": 33.2,
+     "cmv": 29.5,
+     "lhb": null,
+     "turn": 5.9,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "002870.SZ",
+     "name": "香山股份",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 1.6,
+     "ind": null,
+     "mv": 60.9,
+     "cmv": 51.8,
+     "lhb": null,
+     "turn": 3.2,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "002238.SZ",
+     "name": "天威视讯",
+     "streak": 1,
+     "pct": 9.94,
+     "amt_yi": 1.5,
+     "ind": null,
+     "mv": 59.5,
+     "cmv": 59.5,
+     "lhb": null,
+     "turn": 2.6,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "002425.SZ",
+     "name": "凯撒文化",
+     "streak": 1,
+     "pct": 10.13,
+     "amt_yi": 1.5,
+     "ind": null,
+     "mv": 33.3,
+     "cmv": 32.0,
+     "lhb": null,
+     "turn": 4.7,
+     "vr": 0.5,
+     "style": "实体"
+    },
+    {
+     "code": "603679.SH",
+     "name": "华体科技",
+     "streak": 1,
+     "pct": 9.98,
+     "amt_yi": 1.5,
+     "ind": null,
+     "mv": 32.8,
+     "cmv": 32.8,
+     "lhb": null,
+     "turn": 4.8,
+     "vr": 1.5,
+     "style": "实体"
+    },
+    {
+     "code": "603666.SH",
+     "name": "亿嘉和",
+     "streak": 1,
+     "pct": 9.99,
+     "amt_yi": 1.3,
+     "ind": null,
+     "mv": 58.7,
+     "cmv": 58.7,
+     "lhb": null,
+     "turn": 2.3,
+     "vr": 0.9,
+     "style": "实体"
+    },
+    {
+     "code": "002535.SZ",
+     "name": "林州重机",
+     "streak": 1,
+     "pct": 10.16,
+     "amt_yi": 1.2,
+     "ind": null,
+     "mv": 22.6,
+     "cmv": 21.0,
+     "lhb": null,
+     "turn": 5.8,
+     "vr": 0.6,
+     "style": "实体"
+    },
+    {
+     "code": "002501.SZ",
+     "name": "*ST利源",
+     "streak": 1,
+     "pct": 10.09,
+     "amt_yi": 1.2,
+     "ind": null,
+     "mv": 42.6,
+     "cmv": 42.5,
+     "lhb": null,
+     "turn": 2.9,
+     "vr": 3.5,
+     "style": "实体"
+    },
+    {
+     "code": "001226.SZ",
+     "name": "拓山重工",
+     "streak": 2,
+     "pct": 10.0,
+     "amt_yi": 1.1,
+     "ind": null,
+     "mv": 31.4,
+     "cmv": 15.1,
+     "lhb": null,
+     "turn": 7.7,
+     "vr": 3.0,
+     "style": "实体"
+    },
+    {
+     "code": "603843.SH",
+     "name": "*ST正平",
+     "streak": 2,
+     "pct": 5.28,
+     "amt_yi": 1.0,
+     "ind": null,
+     "mv": 36.3,
+     "cmv": 36.3,
+     "lhb": null,
+     "turn": 2.8,
+     "vr": 1.6,
+     "style": "实体"
+    },
+    {
+     "code": "301255.SZ",
+     "name": "通力科技",
+     "streak": 1,
+     "pct": 19.99,
+     "amt_yi": 1.0,
+     "ind": null,
+     "mv": 33.4,
+     "cmv": 29.4,
+     "lhb": null,
+     "turn": 3.4,
+     "vr": 2.1,
+     "style": "实体"
+    },
+    {
+     "code": "603602.SH",
+     "name": "纵横通信",
+     "streak": 1,
+     "pct": 10.02,
+     "amt_yi": 0.9,
+     "ind": null,
+     "mv": 28.7,
+     "cmv": 28.7,
+     "lhb": null,
+     "turn": 3.1,
+     "vr": 1.3,
+     "style": "实体"
+    },
+    {
+     "code": "603595.SH",
+     "name": "ST东尼",
+     "streak": 1,
+     "pct": 7.29,
+     "amt_yi": 0.9,
+     "ind": null,
+     "mv": 67.9,
+     "cmv": 67.9,
+     "lhb": null,
+     "turn": 1.3,
+     "vr": 0.9,
+     "style": "实体"
+    },
+    {
+     "code": "002209.SZ",
+     "name": "达意隆",
+     "streak": 1,
+     "pct": 9.97,
+     "amt_yi": 0.9,
+     "ind": null,
+     "mv": 26.0,
+     "cmv": 20.1,
+     "lhb": null,
+     "turn": 4.5,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "605255.SH",
+     "name": "天普股份",
+     "streak": 1,
+     "pct": 10.0,
+     "amt_yi": 0.8,
+     "ind": null,
+     "mv": 74.3,
+     "cmv": 74.3,
+     "lhb": null,
+     "turn": 1.1,
+     "vr": 2.2,
+     "style": "实体"
+    },
+    {
+     "code": "002861.SZ",
+     "name": "瀛通通讯",
+     "streak": 1,
+     "pct": 9.97,
+     "amt_yi": 0.7,
+     "ind": null,
+     "mv": 24.2,
+     "cmv": 18.5,
+     "lhb": null,
+     "turn": 3.9,
+     "vr": 1.1,
+     "style": "实体"
+    },
+    {
+     "code": "603366.SH",
+     "name": "日出东方",
+     "streak": 3,
+     "pct": 10.01,
+     "amt_yi": 0.6,
+     "ind": null,
+     "mv": 88.5,
+     "cmv": 88.5,
+     "lhb": null,
+     "turn": 0.7,
+     "vr": 0.2,
+     "style": "一字"
+    },
+    {
+     "code": "000010.SZ",
+     "name": "*ST美丽",
+     "streak": 1,
+     "pct": 5.5,
+     "amt_yi": 0.5,
+     "ind": null,
+     "mv": 13.2,
+     "cmv": 10.9,
+     "lhb": null,
+     "turn": 4.4,
+     "vr": 1.8,
+     "style": "实体"
+    },
+    {
+     "code": "002102.SZ",
+     "name": "ST能特",
+     "streak": 1,
+     "pct": 7.92,
+     "amt_yi": 0.5,
+     "ind": null,
+     "mv": 62.6,
+     "cmv": 53.6,
+     "lhb": null,
+     "turn": 1.0,
+     "vr": 3.0,
+     "style": "实体"
+    },
+    {
+     "code": "600530.SH",
+     "name": "ST交昂",
+     "streak": 1,
+     "pct": 9.93,
+     "amt_yi": 0.3,
+     "ind": null,
+     "mv": 34.3,
+     "cmv": 34.3,
+     "lhb": null,
+     "turn": 0.9,
+     "vr": 1.9,
+     "style": "实体"
+    },
+    {
+     "code": "002623.SZ",
+     "name": "亚玛顿",
+     "streak": 1,
+     "pct": 10.01,
+     "amt_yi": 0.3,
+     "ind": null,
+     "mv": 40.9,
+     "cmv": 40.9,
+     "lhb": null,
+     "turn": 0.7,
+     "vr": 0.1,
+     "style": "一字"
+    }
+   ],
+   "ld_all": [
+    {
+     "code": "002246.SZ",
+     "name": "北化股份",
+     "pct": -9.94,
+     "amt_yi": 8.0,
+     "ind": null,
+     "mv": 106.9,
+     "cmv": 106.9,
+     "lhb": null,
+     "turn": 7.2,
+     "vr": 2.5
+    }
+   ],
+   "max_streak": 7,
+   "streak_name": "闽发铝业",
+   "cm20_share": 10.9,
+   "broke_n": 35,
+   "broke_rate": 25.7,
+   "broke_all": [
+    {
+     "code": "300133.SZ",
+     "name": "华策影视",
+     "pct": 16.39,
+     "amt_yi": 36.7,
+     "ind": null,
+     "mv": 211.7,
+     "cmv": 187.9,
+     "lhb": null,
+     "turn": 19.7,
+     "vr": 2.4
+    },
+    {
+     "code": "002565.SZ",
+     "name": "顺灏股份",
+     "pct": 7.12,
+     "amt_yi": 34.1,
+     "ind": null,
+     "mv": 119.7,
+     "cmv": 119.7,
+     "lhb": null,
+     "turn": 29.6,
+     "vr": 2.4
+    },
+    {
+     "code": "603920.SH",
+     "name": "世运电路",
+     "pct": 8.31,
+     "amt_yi": 21.2,
+     "ind": null,
+     "mv": 262.2,
+     "cmv": 262.2,
+     "lhb": null,
+     "turn": 8.1,
+     "vr": 2.6
+    },
+    {
+     "code": "605058.SH",
+     "name": "澳弘电子",
+     "pct": 8.72,
+     "amt_yi": 13.1,
+     "ind": null,
+     "mv": 75.6,
+     "cmv": 75.6,
+     "lhb": null,
+     "turn": 17.7,
+     "vr": 1.2
+    },
+    {
+     "code": "002889.SZ",
+     "name": "东方嘉盛",
+     "pct": 2.8,
+     "amt_yi": 12.7,
+     "ind": null,
+     "mv": 63.7,
+     "cmv": 42.3,
+     "lhb": null,
+     "turn": 29.0,
+     "vr": 3.5
+    },
+    {
+     "code": "600556.SH",
+     "name": "天下秀",
+     "pct": 7.04,
+     "amt_yi": 9.4,
+     "ind": null,
+     "mv": 93.5,
+     "cmv": 93.5,
+     "lhb": null,
+     "turn": 10.0,
+     "vr": 2.8
+    },
+    {
+     "code": "002703.SZ",
+     "name": "浙江世宝",
+     "pct": 7.04,
+     "amt_yi": 8.9,
+     "ind": null,
+     "mv": 123.9,
+     "cmv": 88.2,
+     "lhb": null,
+     "turn": 10.2,
+     "vr": 2.6
+    },
+    {
+     "code": "301591.SZ",
+     "name": "肯特股份",
+     "pct": 14.35,
+     "amt_yi": 8.7,
+     "ind": null,
+     "mv": 47.1,
+     "cmv": 19.4,
+     "lhb": null,
+     "turn": 45.1,
+     "vr": 2.1
+    },
+    {
+     "code": "002635.SZ",
+     "name": "安洁科技",
+     "pct": 8.05,
+     "amt_yi": 6.5,
+     "ind": null,
+     "mv": 99.2,
+     "cmv": 59.5,
+     "lhb": null,
+     "turn": 11.3,
+     "vr": 2.8
+    },
+    {
+     "code": "301252.SZ",
+     "name": "同星科技",
+     "pct": 12.06,
+     "amt_yi": 6.0,
+     "ind": null,
+     "mv": 64.1,
+     "cmv": 51.5,
+     "lhb": null,
+     "turn": 11.2,
+     "vr": 4.1
+    },
+    {
+     "code": "002864.SZ",
+     "name": "盘龙药业",
+     "pct": 4.95,
+     "amt_yi": 6.0,
+     "ind": null,
+     "mv": 31.9,
+     "cmv": 23.1,
+     "lhb": null,
+     "turn": 25.7,
+     "vr": 9.7
+    },
+    {
+     "code": "603978.SH",
+     "name": "深圳新星",
+     "pct": 5.79,
+     "amt_yi": 5.0,
+     "ind": null,
+     "mv": 45.1,
+     "cmv": 45.1,
+     "lhb": null,
+     "turn": 11.1,
+     "vr": 3.0
+    },
+    {
+     "code": "300885.SZ",
+     "name": "海昌新材",
+     "pct": 17.12,
+     "amt_yi": 4.9,
+     "ind": null,
+     "mv": 50.7,
+     "cmv": 34.2,
+     "lhb": null,
+     "turn": 14.5,
+     "vr": 5.3
+    },
+    {
+     "code": "688270.SH",
+     "name": "ST臻镭",
+     "pct": 2.43,
+     "amt_yi": 4.3,
+     "ind": null,
+     "mv": 174.3,
+     "cmv": 174.3,
+     "lhb": null,
+     "turn": 2.5,
+     "vr": 0.8
+    },
+    {
+     "code": "603303.SH",
+     "name": "得邦照明",
+     "pct": 6.82,
+     "amt_yi": 4.2,
+     "ind": null,
+     "mv": 134.5,
+     "cmv": 134.5,
+     "lhb": null,
+     "turn": 3.1,
+     "vr": 4.2
+    },
+    {
+     "code": "603418.SH",
+     "name": "友升股份",
+     "pct": 7.05,
+     "amt_yi": 3.7,
+     "ind": null,
+     "mv": 87.9,
+     "cmv": 40.1,
+     "lhb": null,
+     "turn": 9.3,
+     "vr": 3.4
+    },
+    {
+     "code": "002037.SZ",
+     "name": "保利联合",
+     "pct": 0.41,
+     "amt_yi": 3.3,
+     "ind": null,
+     "mv": 35.1,
+     "cmv": 35.1,
+     "lhb": null,
+     "turn": 9.0,
+     "vr": 8.7
+    },
+    {
+     "code": "002953.SZ",
+     "name": "日丰股份",
+     "pct": 6.85,
+     "amt_yi": 3.1,
+     "ind": null,
+     "mv": 49.1,
+     "cmv": 28.0,
+     "lhb": null,
+     "turn": 11.1,
+     "vr": 5.6
+    },
+    {
+     "code": "000541.SZ",
+     "name": "佛山照明",
+     "pct": 5.5,
+     "amt_yi": 2.6,
+     "ind": null,
+     "mv": 82.5,
+     "cmv": 66.1,
+     "lhb": null,
+     "turn": 4.0,
+     "vr": 3.1
+    },
+    {
+     "code": "605208.SH",
+     "name": "永茂泰",
+     "pct": 9.33,
+     "amt_yi": 1.9,
+     "ind": null,
+     "mv": 39.8,
+     "cmv": 39.8,
+     "lhb": null,
+     "turn": 4.9,
+     "vr": 2.2
+    },
+    {
+     "code": "600537.SH",
+     "name": "*ST亿晶",
+     "pct": 2.01,
+     "amt_yi": 1.8,
+     "ind": null,
+     "mv": 24.0,
+     "cmv": 24.0,
+     "lhb": null,
+     "turn": 7.7,
+     "vr": 1.2
+    },
+    {
+     "code": "605068.SH",
+     "name": "明新旭腾",
+     "pct": 6.18,
+     "amt_yi": 1.6,
+     "ind": null,
+     "mv": 29.8,
+     "cmv": 29.8,
+     "lhb": null,
+     "turn": 5.3,
+     "vr": 2.0
+    },
+    {
+     "code": "002323.SZ",
+     "name": "*ST雅博",
+     "pct": 1.68,
+     "amt_yi": 1.3,
+     "ind": null,
+     "mv": 25.7,
+     "cmv": 25.7,
+     "lhb": null,
+     "turn": 5.1,
+     "vr": 2.5
+    },
+    {
+     "code": "300290.SZ",
+     "name": "ST荣科",
+     "pct": 3.46,
+     "amt_yi": 1.1,
+     "ind": null,
+     "mv": 34.4,
+     "cmv": 34.4,
+     "lhb": null,
+     "turn": 3.3,
+     "vr": 0.9
+    },
+    {
+     "code": "000078.SZ",
+     "name": "ST海王",
+     "pct": 4.69,
+     "amt_yi": 1.0,
+     "ind": null,
+     "mv": 35.3,
+     "cmv": 35.2,
+     "lhb": null,
+     "turn": 2.8,
+     "vr": 2.0
+    },
+    {
+     "code": "600370.SH",
+     "name": "*ST三房",
+     "pct": -2.67,
+     "amt_yi": 0.6,
+     "ind": null,
+     "mv": 58.7,
+     "cmv": 58.7,
+     "lhb": null,
+     "turn": 0.9,
+     "vr": 2.7
+    },
+    {
+     "code": "600491.SH",
+     "name": "ST龙元",
+     "pct": 1.5,
+     "amt_yi": 0.5,
+     "ind": null,
+     "mv": 20.7,
+     "cmv": 20.7,
+     "lhb": null,
+     "turn": 2.3,
+     "vr": 1.1
+    },
+    {
+     "code": "000669.SZ",
+     "name": "ST金鸿",
+     "pct": 4.1,
+     "amt_yi": 0.5,
+     "ind": null,
+     "mv": 25.9,
+     "cmv": 25.9,
+     "lhb": null,
+     "turn": 2.1,
+     "vr": 2.0
+    },
+    {
+     "code": "300211.SZ",
+     "name": "*ST亿通",
+     "pct": 3.75,
+     "amt_yi": 0.4,
+     "ind": null,
+     "mv": 19.4,
+     "cmv": 19.0,
+     "lhb": null,
+     "turn": 2.3,
+     "vr": 0.9
+    },
+    {
+     "code": "002431.SZ",
+     "name": "ST棕榈",
+     "pct": 4.27,
+     "amt_yi": 0.4,
+     "ind": null,
+     "mv": 22.0,
+     "cmv": 22.0,
+     "lhb": null,
+     "turn": 1.7,
+     "vr": 1.9
+    },
+    {
+     "code": "000838.SZ",
+     "name": "*ST发展",
+     "pct": 2.07,
+     "amt_yi": 0.4,
+     "ind": null,
+     "mv": 16.3,
+     "cmv": 16.3,
+     "lhb": null,
+     "turn": 2.6,
+     "vr": 1.1
+    },
+    {
+     "code": "603557.SH",
+     "name": "*ST起步",
+     "pct": 4.72,
+     "amt_yi": 0.3,
+     "ind": null,
+     "mv": 20.7,
+     "cmv": 20.7,
+     "lhb": null,
+     "turn": 1.6,
+     "vr": 1.3
+    },
+    {
+     "code": "600180.SH",
+     "name": "*ST瑞茂",
+     "pct": 3.0,
+     "amt_yi": 0.2,
+     "ind": null,
+     "mv": 11.2,
+     "cmv": 11.2,
+     "lhb": null,
+     "turn": 2.1,
+     "vr": 0.8
+    },
+    {
+     "code": "600136.SH",
+     "name": "ST明诚",
+     "pct": 4.35,
+     "amt_yi": 0.2,
+     "ind": null,
+     "mv": 29.4,
+     "cmv": 28.0,
+     "lhb": null,
+     "turn": 0.9,
+     "vr": 1.6
+    },
+    {
+     "code": "603922.SH",
+     "name": "ST金鸿顺",
+     "pct": 4.45,
+     "amt_yi": 0.1,
+     "ind": null,
+     "mv": 18.1,
+     "cmv": 18.1,
+     "lhb": null,
+     "turn": 0.8,
+     "vr": 1.9
+    }
+   ],
+   "ylu_avg": 3.99,
+   "ylu_med": 3.63,
+   "promote_rate": 29.0,
+   "amt_yi": 15141,
+   "amt_pct": 1.4,
+   "th_lu": 88,
+   "th_br": 8,
+   "th_temp": 80,
+   "th_label": "亢奋"
+  },
+  "cb": {
+   "date": "20261110",
+   "eq_pct": 0.6,
+   "up_ratio": 81.9,
+   "amt_yi": 669,
+   "amt_vs_ma5": -5.2
+  }
+ },
+ "l6": {
+  "announcements": [
+   {
+    "code": "301370.SZ",
+    "name": "国科恒泰",
+    "title": "国科恒泰:关于累计诉讼、仲裁情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/301370/AN202611101831583997.html",
+    "cat": "bear"
+   },
+   {
+    "code": "300850.SZ",
+    "name": "新强联",
+    "title": "新强联:关于公司银行账户资金解除冻结的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/300850/AN202611101831584207.html",
+    "cat": "bear"
+   },
+   {
+    "code": "A26227.SZ",
+    "name": "法特迪",
+    "title": "发行人及中介机构关于第二轮审核问询函的回复意见(苏州法特迪科技股份有限公司)",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/A26227/AN202611101831581847.html",
+    "cat": "bear"
+   },
+   {
+    "code": "001389.SZ",
+    "name": "广合科技",
+    "title": "广合科技:关于终止实施2026年A股股票期权与限制性股票激励计划的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/001389/AN202611091831559110.html",
+    "cat": "bear"
+   },
+   {
+    "code": "603359.SH",
+    "name": "*ST东珠",
+    "title": "*ST东珠:东珠生态环保股份有限公司关于涉及诉讼、仲裁情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603359/AN202611091831548601.html",
+    "cat": "bear"
+   },
+   {
+    "code": "603117.SH",
+    "name": "万林物流",
+    "title": "万林物流:江苏万林现代物流股份有限公司关于诉讼进展的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603117/AN202611091831551130.html",
+    "cat": "bear"
+   },
+   {
+    "code": "000838.SZ",
+    "name": "*ST发展",
+    "title": "*ST发展:关于重大诉讼及累计诉讼、仲裁案件情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/000838/AN202611091831551454.html",
+    "cat": "bear"
+   },
+   {
+    "code": "600136.SH",
+    "name": "ST明诚",
+    "title": "ST明诚:公司关于公司涉及重大诉讼的进展公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/600136/AN202611091831551698.html",
+    "cat": "bear"
+   },
+   {
+    "code": "688727.SH",
+    "name": "恒坤新材",
+    "title": "恒坤新材:关于董事长、控股股东、实际控制人提议回购公司股份的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/688727/AN202611091831558045.html",
+    "cat": "bull"
+   },
+   {
+    "code": "600515.SH",
+    "name": "海南机场",
+    "title": "海南机场:海南机场设施股份有限公司关于回购股份事项前十大股东和前十大无限售条件股东持股情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/600515/AN202611091831548568.html",
+    "cat": "bull"
+   },
+   {
+    "code": "603186.SH",
+    "name": "华正新材",
+    "title": "华正新材:浙江华正新材料股份有限公司关于回购股份事项前十大股东和前十大无限售条件股东持股情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603186/AN202611091831548582.html",
+    "cat": "bull"
+   },
+   {
+    "code": "003015.SZ",
+    "name": "日久光电",
+    "title": "日久光电:关于回购股份事项前十名股东和前十名无限售条件股东持股情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/003015/AN202611091831551178.html",
+    "cat": "bull"
+   },
+   {
+    "code": "603556.SH",
+    "name": "海兴电力",
+    "title": "海兴电力:杭州海兴电力科技股份有限公司关于回购股份事项前十大股东和前十大无限售条件股东持股信息的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603556/AN202611091831551210.html",
+    "cat": "bull"
+   },
+   {
+    "code": "605100.SH",
+    "name": "华丰股份",
+    "title": "华丰股份:华丰动力股份有限公司关于以集中竞价交易方式回购股份的方案暨回购报告书",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/605100/AN202611091831551444.html",
+    "cat": "bull"
+   },
+   {
+    "code": "002821.SZ",
+    "name": "凯莱英",
+    "title": "凯莱英:关于取得金融机构股票回购专项贷款承诺函的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/002821/AN202611091831551514.html",
+    "cat": "bull"
+   },
+   {
+    "code": "603341.SH",
+    "name": "龙旗科技",
+    "title": "龙旗科技:关于公司实际控制人增持公司H股股份计划完成的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603341/AN202611091831551568.html",
+    "cat": "bull"
+   },
+   {
+    "code": "688120.SH",
+    "name": "华海清科",
+    "title": "华海清科:关于回购股份事项前十大股东和前十大无限售条件股东持股情况的公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/688120/AN202611091831551741.html",
+    "cat": "bull"
+   },
+   {
+    "code": "603979.SH",
+    "name": "金诚信",
+    "title": "金诚信:金诚信关于以集中竞价交易方式回购公司股份的进展公告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603979/AN202611091831551814.html",
+    "cat": "bull"
+   },
+   {
+    "code": "600009.SH",
+    "name": "上海机场",
+    "title": "上海机场:2026年10月投资者调研报告",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/600009/AN202611101831583001.html",
+    "cat": "neu"
+   },
+   {
+    "code": "603617.SH",
+    "name": "君禾股份",
+    "title": "君禾股份:_2026年11月10日投资者关系活动记录表",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/603617/AN202611101831583004.html",
+    "cat": "neu"
+   },
+   {
+    "code": "688045.SH",
+    "name": "必易微",
+    "title": "必易微:2026-003:深圳市必易微电子股份有限公司2026年11月2日-11月4日投资者关系活动记录表",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/688045/AN202611101831583013.html",
+    "cat": "neu"
+   },
+   {
+    "code": "600148.SH",
+    "name": "长春一东",
+    "title": "长春一东:投资者关系活动记录表20261110",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/600148/AN202611101831583016.html",
+    "cat": "neu"
+   },
+   {
+    "code": "605056.SH",
+    "name": "咸亨国际",
+    "title": "咸亨国际:投资者关系活动记录表(2026年11月06日)",
+    "date": "2026-11-10",
+    "url": "https://data.eastmoney.com/notices/detail/605056/AN202611101831583011.html",
+    "cat": "neu"
+   }
+  ],
+  "reports": [
+   {
+    "code": "920083.SZ",
+    "name": "功能性导热粉体国内领先，募投扩产+新品迭代打开成长空间",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "东吴证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831579483_1.pdf"
+   },
+   {
+    "code": "600573.SH",
+    "name": "布局中高端，团队改革引入增长活力",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "山西证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831580183_1.pdf"
+   },
+   {
+    "code": "600191.SH",
+    "name": "黄原胶产品结构升级，烘焙糖浆替代蔗糖有望放量",
+    "rating": "增持",
+    "cat": "buy",
+    "org": "山西证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831579399_1.pdf"
+   },
+   {
+    "code": "600030.SH",
+    "name": "中信证券2026年中报及三季报点评：手续费业务全面增长，资本实力持续夯实",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "太平洋",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831578683_1.pdf"
+   },
+   {
+    "code": "300852.SZ",
+    "name": "泰国工厂扭亏为盈，利润水平高速增长",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "中邮证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831578214_1.pdf"
+   },
+   {
+    "code": "002212.SZ",
+    "name": "Q3收入降幅收窄，AI安全商业化落地加速",
+    "rating": "增持",
+    "cat": "buy",
+    "org": "山西证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831580218_1.pdf"
+   },
+   {
+    "code": "688503.SH",
+    "name": "三季度盈利环比扭亏，新业务有序推进",
+    "rating": "增持",
+    "cat": "buy",
+    "org": "中银证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831578341_1.pdf"
+   },
+   {
+    "code": "688266.SH",
+    "name": "药品销售维持高增，核心在研进展顺利",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "中邮证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831578215_1.pdf"
+   },
+   {
+    "code": "605117.SH",
+    "name": "公司事件点评报告：储能需求延续增长，渠道与产品协同深化",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "华鑫证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831575389_1.pdf"
+   },
+   {
+    "code": "603861.SH",
+    "name": "公司事件点评报告：海外变压器订单拓展，供电方案布局深化",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "华鑫证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831575391_1.pdf"
+   },
+   {
+    "code": "603477.SH",
+    "name": "9月PSY逾31头，完全成本低于12元",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "华安证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831578099_1.pdf"
+   },
+   {
+    "code": "600900.SH",
+    "name": "来水偏枯拖累三季度业绩，三峡水库完成2026年度蓄水任务",
+    "rating": "增持",
+    "cat": "buy",
+    "org": "国信证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831570582_1.pdf"
+   },
+   {
+    "code": "920403.SZ",
+    "name": "北交所信息更新：康农玉8009表现优异，转基因品种矩阵持续完善，2026Q1-3",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "开源证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831569973_1.pdf"
+   },
+   {
+    "code": "920185.SZ",
+    "name": "北交所信息更新：2026Q1-3国内厂家储能电池出货+94.5%，储能钠电负极迈",
+    "rating": "增持",
+    "cat": "buy",
+    "org": "开源证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831570071_1.pdf"
+   },
+   {
+    "code": "688809.SH",
+    "name": "算力探针份额提升，存储进展顺利",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "中邮证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831573661_1.pdf"
+   },
+   {
+    "code": "688690.SH",
+    "name": "小核酸相关填料维持高增，盈利同比大幅改善",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "中邮证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831573662_1.pdf"
+   },
+   {
+    "code": "001289.SZ",
+    "name": "毛利率下行拖累盈利，简易自由现金流转正",
+    "rating": "增持",
+    "cat": "buy",
+    "org": "国信证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831570408_1.pdf"
+   },
+   {
+    "code": "600057.SH",
+    "name": "2026Q3经营更新：大宗货量稳步增长，造船在手订单增加，上游资源布局推进",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "东吴证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831565035_1.pdf"
+   },
+   {
+    "code": "301263.SZ",
+    "name": "CKBA多适应症稳步推进，Q3单季扭亏为盈",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "华安证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831568280_1.pdf"
+   },
+   {
+    "code": "002028.SZ",
+    "name": "海外业务占比有所提升，开关类、变压类业务保持较高增速",
+    "rating": "买入",
+    "cat": "buy",
+    "org": "华安证券",
+    "date": "2026-11-10",
+    "url": "https://pdf.dfcfw.com/pdf/H3_AP202611101831568231_1.pdf"
+   }
+  ],
+  "ann_stats": {
+   "total": 300,
+   "bull": 11,
+   "bear": 8,
+   "neu": 281
+  },
+  "rpt_stats": {
+   "total": 100,
+   "rated": 94,
+   "buy": 94,
+   "sell": 0,
+   "hold": 0
+  },
+  "unlock": []
+ },
+ "vals": {
+  "外围": 37,
+  "流动性": 38,
+  "政策": null,
+  "板块": 30,
+  "情绪": 12
+ },
+ "overall": 30,
+ "prob": 97,
+ "verdict": "偏多（开盘溢价概率较大）",
+ "alerts": [
+  "纳斯达克综合 隔夜 +2.74%",
+  "标普500 隔夜 +2.35%",
+  "道琼斯 隔夜 +2.15%",
+  "德国DAX 隔夜 +1.73%"
+ ],
+ "actions": {
+  "pool": {
+   "asof": "20261110",
+   "counts": {
+    "中枢": 983,
+    "三卖": 1514,
+    "中枢下": 711,
+    "背驰": 239,
+    "二买": 61,
+    "三买": 94,
+    "离开段": 283,
+    "一买": 35,
+    "三买待": 16
+   },
+   "buy_counts": {
+    "三买": 94,
+    "二买": 61,
+    "一买": 35,
+    "三买待": 16
+   },
+   "top3buy": [
+    {
+     "code": "600941.SH",
+     "name": "中国移动",
+     "score": 24.639041,
+     "pct": -0.014365,
+     "sig_type": "3买"
+    },
+    {
+     "code": "300864.SZ",
+     "name": "南大环境",
+     "score": 23.829384,
+     "pct": 0.04747,
+     "sig_type": "3买"
+    },
+    {
+     "code": "688237.SH",
+     "name": "超卓航科",
+     "score": 22.462391,
+     "pct": 0.013568,
+     "sig_type": "3买"
+    },
+    {
+     "code": "603976.SH",
+     "name": "正川股份",
+     "score": 22.079137,
+     "pct": -0.005873,
+     "sig_type": "3买"
+    },
+    {
+     "code": "300931.SZ",
+     "name": "通用电梯",
+     "score": 21.675237,
+     "pct": 0.030475,
+     "sig_type": "3买"
+    }
+   ]
+  },
+  "shadow": {
+   "date": "20261110",
+   "legs": [
+    {
+     "leg": "v3",
+     "cn": "现役 v3",
+     "f1": false,
+     "last_day": "20261110",
+     "ret_pct": -2.93,
+     "n_hold": 3,
+     "holdings": [
+      {
+       "code": "002372.SZ",
+       "pnl_pct": 0.7,
+       "wgt_pct": 9.1
+      },
+      {
+       "code": "601019.SH",
+       "pnl_pct": 14.18,
+       "wgt_pct": 10.06
+      },
+      {
+       "code": "601238.SH",
+       "pnl_pct": 1.63,
+       "wgt_pct": 0.7
+      }
+     ]
+    },
+    {
+     "leg": "d_legacy",
+     "cn": "旧方案对照",
+     "f1": false,
+     "last_day": "20261110",
+     "ret_pct": -2.09,
+     "n_hold": 4,
+     "holdings": [
+      {
+       "code": "002372.SZ",
+       "pnl_pct": 0.7,
+       "wgt_pct": 8.04
+      },
+      {
+       "code": "601238.SH",
+       "pnl_pct": 1.63,
+       "wgt_pct": 8.03
+      },
+      {
+       "code": "601500.SH",
+       "pnl_pct": -7.28,
+       "wgt_pct": 5.48
+      },
+      {
+       "code": "601801.SH",
+       "pnl_pct": 3.18,
+       "wgt_pct": 8.22
+      }
+     ]
+    },
+    {
+     "leg": "F1_v3_stop12",
+     "cn": "★F1 主腿候选",
+     "f1": true,
+     "last_day": "20261110",
+     "ret_pct": 3.62,
+     "n_hold": 3,
+     "holdings": [
+      {
+       "code": "002372.SZ",
+       "pnl_pct": 0.7,
+       "wgt_pct": 6.55
+      },
+      {
+       "code": "601019.SH",
+       "pnl_pct": 14.18,
+       "wgt_pct": 7.2
+      },
+      {
+       "code": "601238.SH",
+       "pnl_pct": 1.63,
+       "wgt_pct": 6.14
+      }
+     ]
+    },
+    {
+     "leg": "W1_c6_score_cap25_stop12",
+     "cn": "W1 组合观察",
+     "f1": false,
+     "last_day": "20261110",
+     "ret_pct": 11.18,
+     "n_hold": 3,
+     "holdings": [
+      {
+       "code": "002372.SZ",
+       "pnl_pct": 0.7,
+       "wgt_pct": 9.31
+      },
+      {
+       "code": "601019.SH",
+       "pnl_pct": 14.18,
+       "wgt_pct": 8.29
+      },
+      {
+       "code": "601238.SH",
+       "pnl_pct": 1.63,
+       "wgt_pct": 2.24
+      }
+     ]
+    },
+    {
+     "leg": "A3_slot_score",
+     "cn": "A3 评分定仓",
+     "f1": false,
+     "last_day": "20261110",
+     "ret_pct": 6.98,
+     "n_hold": 3,
+     "holdings": [
+      {
+       "code": "002372.SZ",
+       "pnl_pct": 0.7,
+       "wgt_pct": 8.61
+      },
+      {
+       "code": "601019.SH",
+       "pnl_pct": 14.18,
+       "wgt_pct": 10.76
+      },
+      {
+       "code": "601238.SH",
+       "pnl_pct": 1.63,
+       "wgt_pct": 0.51
+      }
+     ]
+    },
+    {
+     "leg": "D1_score_cap25",
+     "cn": "D1 定仓帽25%",
+     "f1": false,
+     "last_day": "20261110",
+     "ret_pct": 5.53,
+     "n_hold": 3,
+     "holdings": [
+      {
+       "code": "002372.SZ",
+       "pnl_pct": 0.7,
+       "wgt_pct": 9.26
+      },
+      {
+       "code": "601019.SH",
+       "pnl_pct": 14.18,
+       "wgt_pct": 10.1
+      },
+      {
+       "code": "601238.SH",
+       "pnl_pct": 1.63,
+       "wgt_pct": 0.51
+      }
+     ]
+    }
+   ]
+  },
+  "sector": {
+   "asof": 20261109,
+   "top": [
+    {
+     "name": "影视院线",
+     "stage": "三卖",
+     "pct": 0.006809,
+     "r5": 18.02,
+     "n_mem": 20
+    },
+    {
+     "name": "贵金属",
+     "stage": "中枢下",
+     "pct": 0.009118,
+     "r5": 13.76,
+     "n_mem": 14
+    },
+    {
+     "name": "文化传媒",
+     "stage": "三卖",
+     "pct": -0.006681,
+     "r5": 13.06,
+     "n_mem": 86
+    },
+    {
+     "name": "光伏设备",
+     "stage": "三卖",
+     "pct": -0.020465,
+     "r5": 11.41,
+     "n_mem": 74
+    },
+    {
+     "name": "HJT电池",
+     "stage": "三卖",
+     "pct": -0.005969,
+     "r5": 7.95,
+     "n_mem": 69
+    }
+   ]
+  }
+ },
+ "zen": {
+  "asof": 20261109,
+  "close": 3660.7917,
+  "stage": "中枢下 · 反抽",
+  "zg": 4025.7,
+  "zd": 3922.6,
+  "below": true,
+  "n_pivots": 4,
+  "pv_seq": [
+   {
+    "s_dt": 20240205,
+    "e_dt": 20241008,
+    "zg": 3090.1,
+    "zd": 2984.1,
+    "n_bi": 7
+   },
+   {
+    "s_dt": 20241008,
+    "e_dt": 20250826,
+    "zg": 3509.8,
+    "zd": 3227.4,
+    "n_bi": 16
+   },
+   {
+    "s_dt": 20250826,
+    "e_dt": 20251029,
+    "zg": 3888.6,
+    "zd": 3800.1,
+    "n_bi": 4
+   },
+   {
+    "s_dt": 20251029,
+    "e_dt": 20261023,
+    "zg": 4025.7,
+    "zd": 3922.6,
+    "n_bi": 17
+   }
+  ],
+  "rising": true,
+  "bi": {
+   "dir": 1,
+   "s_dt": 20261023,
+   "e_dt": 20261105,
+   "s_price": 3574.3,
+   "e_price": 3701.6
+  },
+  "bi_open": true,
+  "bi_gain": 3.56,
+  "dist_zd": -6.67,
+  "dist_zg": -9.06,
+  "sigs": [
+   {
+    "type": "1卖",
+    "dt": 20251113,
+    "bei": false,
+    "tbe": true,
+    "mbei": true
+   },
+   {
+    "type": "2卖",
+    "dt": 20251208,
+    "bei": false,
+    "tbe": false,
+    "mbei": false
+   },
+   {
+    "type": "1买",
+    "dt": 20251216,
+    "bei": false,
+    "tbe": false,
+    "mbei": false
+   },
+   {
+    "type": "2买",
+    "dt": 20260203,
+    "bei": false,
+    "tbe": false,
+    "mbei": false
+   },
+   {
+    "type": "3买",
+    "dt": 20260203,
+    "bei": true,
+    "tbe": false,
+    "mbei": false
+   }
+  ],
+  "levels": [
+   {
+    "label": "中枢上沿 zg（重新走强界）",
+    "v": 4025.7
+   },
+   {
+    "label": "中枢下沿 zd（回抽界/强弱分界）",
+    "v": 3922.6
+   },
+   {
+    "label": "当前笔起点（向上笔失效线）",
+    "v": 3574.3
+   }
+  ],
+  "paras": [
+   "日线级别：中枢逐级上移（2984–3090 → 3227–3510 → 3800–3889 → 3923–4026）。每个中枢都站上前一个的头顶，这是上涨走势的标准形态——缠师说，中枢是能量结构，中枢上移说明多头在这个级别上一直有新的能量接上来。",
+   "20261023 一笔自 3968 跌至 3574，击穿末中枢下沿 3923——向下离开成立，中枢上移的走势到此告一段落。跌破中枢，意味着这一级别上多头的能量已经用完，后面的走势要用新的中枢重新组织。",
+   "当前向上笔自 3574 反抽至 3702（+3.6%），现价 3661 距中枢下沿 3923 还有 6.7%——反抽未及中枢，笔未走完。走势终完美：这笔以什么方式结束，决定后面的事。止于 zd 之下再走向下笔，三卖结构确认、中枢下移展开；放量站回 zd 之上，则中枢扩展，由趋势转为更大级别的盘整。",
+   "近端信号留痕：最近的 3买 在 20260203（盘整背驰）。此后结构无新信号——没有买点就不动手，这是缠论的纪律；等结构给信号，而不是等情绪给勇气。",
+   "明日只看三处：zd 3923 的得失、笔起点 3574 的失效、zg 4026 的收复。位置比方向重要，边界比预测有用。"
+  ],
+  "n_bars": 689,
+  "win_start": "20240101",
+  "svg": "<svg width='560' height='170' style='margin-top:6px;display:block'><line x1='6' y1='41.7919' x2='6' y2='59.4568' stroke='#e35d5d' stroke-width='1'/><rect x='4.32556' y='42.0976' width='3.34889' height='10.0755' fill='#e35d5d'/><line x1='12.1573' y1='37.08' x2='12.1573' y2='46.7349' stroke='#e35d5d' stroke-width='1'/><rect x='10.4829' y='37.724' width='3.34889' height='7.73067' fill='#e35d5d'/><line x1='18.3146' y1='27.2857' x2='18.3146' y2='39.1883' stroke='#e35d5d' stroke-width='1'/><rect x='16.6402' y='33.8727' width='3.34889' height='4.62749' fill='#e35d5d'/><line x1='24.4719' y1='37.8776' x2='24.4719' y2='53.7673' stroke='#3aa76d' stroke-width='1'/><rect x='22.7975' y='46.3261' width='3.34889' height='5.37359' fill='#3aa76d'/><line x1='30.6292' y1='42.1022' x2='30.6292' y2='52.0515' stroke='#e35d5d' stroke-width='1'/><rect x='28.9548' y='48.5545' width='3.34889' height='2.62644' fill='#e35d5d'/><line x1='36.7865' y1='45.0494' x2='36.7865' y2='56.7123' stroke='#3aa76d' stroke-width='1'/><rect x='35.1121' y='45.236' width='3.34889' height='3.83163' fill='#3aa76d'/><line x1='42.9438' y1='51.7829' x2='42.9438' y2='63.9038' stroke='#3aa76d' stroke-width='1'/><rect x='41.2694' y='53.7077' width='3.34889' height='6.24359' fill='#3aa76d'/><line x1='49.1011' y1='54.4477' x2='49.1011' y2='64.7147' stroke='#3aa76d' stroke-width='1'/><rect x='47.4267' y='58.5489' width='3.34889' height='5.53263' fill='#3aa76d'/><line x1='55.2584' y1='49.2169' x2='55.2584' y2='70.9105' stroke='#e35d5d' stroke-width='1'/><rect x='53.584' y='50.06' width='3.34889' height='12.5987' fill='#e35d5d'/><line x1='61.4157' y1='41.8999' x2='61.4157' y2='58.7622' stroke='#3aa76d' stroke-width='1'/><rect x='59.7413' y='51.1378' width='3.34889' height='7.54886' fill='#3aa76d'/><line x1='67.573' y1='61.4838' x2='67.573' y2='79.0642' stroke='#3aa76d' stroke-width='1'/><rect x='65.8986' y='65.1178' width='3.34889' height='11.1453' fill='#3aa76d'/><line x1='73.7303' y1='64.8825' x2='73.7303' y2='85.7569' stroke='#e35d5d' stroke-width='1'/><rect x='72.0559' y='64.8825' width='3.34889' height='12.3451' fill='#e35d5d'/><line x1='79.8876' y1='61.7787' x2='79.8876' y2='69.8825' stroke='#3aa76d' stroke-width='1'/><rect x='78.2132' y='65.6079' width='3.34889' height='1.73884' fill='#3aa76d'/><line x1='86.0449' y1='70.5749' x2='86.0449' y2='86.1203' stroke='#3aa76d' stroke-width='1'/><rect x='84.3705' y='76.5646' width='3.34889' height='6.39503' fill='#3aa76d'/><line x1='92.2022' y1='85.7759' x2='92.2022' y2='112.245' stroke='#3aa76d' stroke-width='1'/><rect x='90.5278' y='86.6078' width='3.34889' height='21.587' fill='#3aa76d'/><line x1='98.3596' y1='93.79' x2='98.3596' y2='113.112' stroke='#e35d5d' stroke-width='1'/><rect x='96.6851' y='101.339' width='3.34889' height='0.985824' fill='#e35d5d'/><line x1='104.517' y1='86.7607' x2='104.517' y2='112.632' stroke='#e35d5d' stroke-width='1'/><rect x='102.842' y='86.8104' width='3.34889' height='11.1401' fill='#e35d5d'/><line x1='110.674' y1='82.528' x2='110.674' y2='92.0815' stroke='#e35d5d' stroke-width='1'/><rect x='109' y='86.2414' width='3.34889' height='5.84013' fill='#e35d5d'/><line x1='116.831' y1='83.7238' x2='116.831' y2='89.5122' stroke='#e35d5d' stroke-width='1'/><rect x='115.157' y='84.1622' width='3.34889' height='1.85443' fill='#e35d5d'/><line x1='122.989' y1='87.5203' x2='122.989' y2='98.7029' stroke='#3aa76d' stroke-width='1'/><rect x='121.314' y='89.1013' width='3.34889' height='8.41482' fill='#3aa76d'/><line x1='129.146' y1='88.103' x2='129.146' y2='101.944' stroke='#e35d5d' stroke-width='1'/><rect x='127.472' y='88.1168' width='3.34889' height='10.5291' fill='#e35d5d'/><line x1='135.303' y1='91.154' x2='135.303' y2='101.106' stroke='#3aa76d' stroke-width='1'/><rect x='133.629' y='95.6094' width='3.34889' height='2.09518' fill='#3aa76d'/><line x1='141.461' y1='90.7797' x2='141.461' y2='104.284' stroke='#e35d5d' stroke-width='1'/><rect x='139.786' y='94.4707' width='3.34889' height='1.10449' fill='#e35d5d'/><line x1='147.618' y1='92.1508' x2='147.618' y2='107.48' stroke='#3aa76d' stroke-width='1'/><rect x='145.944' y='97.9614' width='3.34889' height='1.58302' fill='#3aa76d'/><line x1='153.775' y1='90.4966' x2='153.775' y2='95.7714' stroke='#3aa76d' stroke-width='1'/><rect x='152.101' y='93.3895' width='3.34889' height='0.8' fill='#3aa76d'/><line x1='159.933' y1='94.6485' x2='159.933' y2='101.049' stroke='#3aa76d' stroke-width='1'/><rect x='158.258' y='97.8543' width='3.34889' height='0.8' fill='#3aa76d'/><line x1='166.09' y1='93.7301' x2='166.09' y2='100.647' stroke='#e35d5d' stroke-width='1'/><rect x='164.415' y='95.7904' width='3.34889' height='1.26214' fill='#e35d5d'/><line x1='172.247' y1='82.5362' x2='172.247' y2='97.3189' stroke='#e35d5d' stroke-width='1'/><rect x='170.573' y='83.8096' width='3.34889' height='13.5093' fill='#e35d5d'/><line x1='178.404' y1='78.7683' x2='178.404' y2='86.8304' stroke='#e35d5d' stroke-width='1'/><rect x='176.73' y='79.1315' width='3.34889' height='7.69892' fill='#e35d5d'/><line x1='184.562' y1='70.4716' x2='184.562' y2='82.2742' stroke='#e35d5d' stroke-width='1'/><rect x='182.887' y='70.6631' width='3.34889' height='9.29355' fill='#e35d5d'/><line x1='190.719' y1='64.7831' x2='190.719' y2='70.9644' stroke='#e35d5d' stroke-width='1'/><rect x='189.045' y='64.9962' width='3.34889' height='4.86052' fill='#e35d5d'/><line x1='196.876' y1='65.0394' x2='196.876' y2='72.6686' stroke='#3aa76d' stroke-width='1'/><rect x='195.202' y='68.3861' width='3.34889' height='3.54547' fill='#3aa76d'/><line x1='203.034' y1='68.4045' x2='203.034' y2='73.328' stroke='#e35d5d' stroke-width='1'/><rect x='201.359' y='69.2466' width='3.34889' height='2.8001' fill='#e35d5d'/><line x1='209.191' y1='64.5945' x2='209.191' y2='73.9483' stroke='#3aa76d' stroke-width='1'/><rect x='207.517' y='67.009' width='3.34889' height='6.44364' fill='#3aa76d'/><line x1='215.348' y1='72.2415' x2='215.348' y2='78.4161' stroke='#3aa76d' stroke-width='1'/><rect x='213.674' y='72.8003' width='3.34889' height='0.8' fill='#3aa76d'/><line x1='221.506' y1='61.3871' x2='221.506' y2='73.9842' stroke='#e35d5d' stroke-width='1'/><rect x='219.831' y='61.5691' width='3.34889' height='11.2135' fill='#e35d5d'/><line x1='227.663' y1='59.1092' x2='227.663' y2='67.3419' stroke='#e35d5d' stroke-width='1'/><rect x='225.988' y='59.9366' width='3.34889' height='2.30759' fill='#e35d5d'/><line x1='233.82' y1='66.1606' x2='233.82' y2='83.5644' stroke='#3aa76d' stroke-width='1'/><rect x='232.146' y='68.0843' width='3.34889' height='12.3126' fill='#3aa76d'/><line x1='239.978' y1='73.8588' x2='239.978' y2='81.7462' stroke='#3aa76d' stroke-width='1'/><rect x='238.303' y='77.669' width='3.34889' height='0.8' fill='#3aa76d'/><line x1='246.135' y1='76.6179' x2='246.135' y2='82.6664' stroke='#e35d5d' stroke-width='1'/><rect x='244.46' y='78.0965' width='3.34889' height='2.99334' fill='#e35d5d'/><line x1='252.292' y1='77.0217' x2='252.292' y2='88.7341' stroke='#3aa76d' stroke-width='1'/><rect x='250.618' y='78.6313' width='3.34889' height='4.41472' fill='#3aa76d'/><line x1='258.449' y1='80.0163' x2='258.449' y2='89.6921' stroke='#e35d5d' stroke-width='1'/><rect x='256.775' y='81.459' width='3.34889' height='5.56426' fill='#e35d5d'/><line x1='264.607' y1='73.5657' x2='264.607' y2='83.103' stroke='#e35d5d' stroke-width='1'/><rect x='262.932' y='76.5342' width='3.34889' height='6.56875' fill='#e35d5d'/><line x1='270.764' y1='66.823' x2='270.764' y2='77.2195' stroke='#e35d5d' stroke-width='1'/><rect x='269.09' y='67.1349' width='3.34889' height='9.53436' fill='#e35d5d'/><line x1='276.921' y1='64.2032' x2='276.921' y2='69.007' stroke='#e35d5d' stroke-width='1'/><rect x='275.247' y='68.0721' width='3.34889' height='0.8' fill='#e35d5d'/><line x1='283.079' y1='60.7914' x2='283.079' y2='73.551' stroke='#e35d5d' stroke-width='1'/><rect x='281.404' y='60.7914' width='3.34889' height='12.7537' fill='#e35d5d'/><line x1='289.236' y1='58.8971' x2='289.236' y2='62.889' stroke='#e35d5d' stroke-width='1'/><rect x='287.562' y='62.1593' width='3.34889' height='0.8' fill='#e35d5d'/><line x1='295.393' y1='65.1639' x2='295.393' y2='72.3245' stroke='#3aa76d' stroke-width='1'/><rect x='293.719' y='65.7489' width='3.34889' height='4.6263' fill='#3aa76d'/><line x1='301.551' y1='64.6722' x2='301.551' y2='72.7095' stroke='#3aa76d' stroke-width='1'/><rect x='299.876' y='67.9407' width='3.34889' height='2.28476' fill='#3aa76d'/><line x1='307.708' y1='62.0922' x2='307.708' y2='75.9586' stroke='#3aa76d' stroke-width='1'/><rect x='306.033' y='67.353' width='3.34889' height='5.42707' fill='#3aa76d'/><line x1='313.865' y1='68.8741' x2='313.865' y2='75.6875' stroke='#3aa76d' stroke-width='1'/><rect x='312.191' y='70.1355' width='3.34889' height='2.09339' fill='#3aa76d'/><line x1='320.022' y1='68.255' x2='320.022' y2='73.7183' stroke='#e35d5d' stroke-width='1'/><rect x='318.348' y='70.5535' width='3.34889' height='1.0676' fill='#e35d5d'/><line x1='326.18' y1='66.805' x2='326.18' y2='72.0646' stroke='#e35d5d' stroke-width='1'/><rect x='324.505' y='68.2156' width='3.34889' height='1.61851' fill='#e35d5d'/><line x1='332.337' y1='68.6961' x2='332.337' y2='73.371' stroke='#3aa76d' stroke-width='1'/><rect x='330.663' y='70.8642' width='3.34889' height='1.00106' fill='#3aa76d'/><line x1='338.494' y1='76.5767' x2='338.494' y2='89.4426' stroke='#3aa76d' stroke-width='1'/><rect x='336.82' y='76.8757' width='3.34889' height='4.86805' fill='#3aa76d'/><line x1='344.652' y1='80.1649' x2='344.652' y2='86.244' stroke='#e35d5d' stroke-width='1'/><rect x='342.977' y='82.3365' width='3.34889' height='3.90745' fill='#e35d5d'/><line x1='350.809' y1='80.9948' x2='350.809' y2='88.137' stroke='#3aa76d' stroke-width='1'/><rect x='349.135' y='83.5329' width='3.34889' height='3.29621' fill='#3aa76d'/><line x1='356.966' y1='80.3454' x2='356.966' y2='91.4295' stroke='#e35d5d' stroke-width='1'/><rect x='355.292' y='80.999' width='3.34889' height='6.37075' fill='#e35d5d'/><line x1='363.124' y1='79.4551' x2='363.124' y2='86.2716' stroke='#3aa76d' stroke-width='1'/><rect x='361.449' y='84.115' width='3.34889' height='0.8' fill='#3aa76d'/><line x1='369.281' y1='75.0094' x2='369.281' y2='81.6615' stroke='#e35d5d' stroke-width='1'/><rect x='367.606' y='76.6734' width='3.34889' height='4.24875' fill='#e35d5d'/><line x1='375.438' y1='68.3366' x2='375.438' y2='75.3383' stroke='#e35d5d' stroke-width='1'/><rect x='373.764' y='68.557' width='3.34889' height='6.32357' fill='#e35d5d'/><line x1='381.596' y1='64.7641' x2='381.596' y2='69.5152' stroke='#3aa76d' stroke-width='1'/><rect x='379.921' y='65.5907' width='3.34889' height='2.49226' fill='#3aa76d'/><line x1='387.753' y1='68.2121' x2='387.753' y2='71.8535' stroke='#3aa76d' stroke-width='1'/><rect x='386.078' y='68.2455' width='3.34889' height='3.16809' fill='#3aa76d'/><line x1='393.91' y1='72.6992' x2='393.91' y2='81.6876' stroke='#3aa76d' stroke-width='1'/><rect x='392.236' y='73.803' width='3.34889' height='7.88463' fill='#3aa76d'/><line x1='400.067' y1='83.814' x2='400.067' y2='99.1223' stroke='#3aa76d' stroke-width='1'/><rect x='398.393' y='83.814' width='3.34889' height='11.6913' fill='#3aa76d'/><line x1='406.225' y1='91.1912' x2='406.225' y2='98.2387' stroke='#e35d5d' stroke-width='1'/><rect x='404.55' y='94.0477' width='3.34889' height='3.051' fill='#e35d5d'/><line x1='412.382' y1='89.6165' x2='412.382' y2='93.4854' stroke='#e35d5d' stroke-width='1'/><rect x='410.708' y='91.5418' width='3.34889' height='0.8' fill='#e35d5d'/><line x1='418.539' y1='86.8635' x2='418.539' y2='101.533' stroke='#3aa76d' stroke-width='1'/><rect x='416.865' y='92.2283' width='3.34889' height='5.77716' fill='#3aa76d'/><line x1='424.697' y1='95.2731' x2='424.697' y2='110.333' stroke='#e35d5d' stroke-width='1'/><rect x='423.022' y='97.6028' width='3.34889' height='2.07026' fill='#e35d5d'/><line x1='430.854' y1='94.5247' x2='430.854' y2='102.467' stroke='#3aa76d' stroke-width='1'/><rect x='429.179' y='99.0566' width='3.34889' height='2.07762' fill='#3aa76d'/><line x1='437.011' y1='95.8288' x2='437.011' y2='113.024' stroke='#e35d5d' stroke-width='1'/><rect x='435.337' y='100.361' width='3.34889' height='8.54964' fill='#e35d5d'/><line x1='443.169' y1='98.0259' x2='443.169' y2='108.664' stroke='#3aa76d' stroke-width='1'/><rect x='441.494' y='102.545' width='3.34889' height='4.99414' fill='#3aa76d'/><line x1='449.326' y1='116.644' x2='449.326' y2='127.259' stroke='#3aa76d' stroke-width='1'/><rect x='447.651' y='119.603' width='3.34889' height='0.8' fill='#3aa76d'/><line x1='455.483' y1='111.051' x2='455.483' y2='125.879' stroke='#3aa76d' stroke-width='1'/><rect x='453.809' y='116.807' width='3.34889' height='1.60321' fill='#3aa76d'/><line x1='461.64' y1='112.539' x2='461.64' y2='123.53' stroke='#e35d5d' stroke-width='1'/><rect x='459.966' y='115.287' width='3.34889' height='7.85328' fill='#e35d5d'/><line x1='467.798' y1='113.334' x2='467.798' y2='121.363' stroke='#e35d5d' stroke-width='1'/><rect x='466.123' y='114.337' width='3.34889' height='3.61365' fill='#e35d5d'/><line x1='473.955' y1='112.691' x2='473.955' y2='121.218' stroke='#3aa76d' stroke-width='1'/><rect x='472.281' y='113.228' width='3.34889' height='5.87675' fill='#3aa76d'/><line x1='480.112' y1='118.796' x2='480.112' y2='132.583' stroke='#3aa76d' stroke-width='1'/><rect x='478.438' y='118.796' width='3.34889' height='12.046' fill='#3aa76d'/><line x1='486.27' y1='123.72' x2='486.27' y2='148.714' stroke='#e35d5d' stroke-width='1'/><rect x='484.595' y='123.917' width='3.34889' height='14.2777' fill='#e35d5d'/><line x1='492.427' y1='122.096' x2='492.427' y2='129.392' stroke='#e35d5d' stroke-width='1'/><rect x='490.753' y='122.414' width='3.34889' height='5.6583' fill='#e35d5d'/><line x1='498.584' y1='120.135' x2='498.584' y2='132.917' stroke='#3aa76d' stroke-width='1'/><rect x='496.91' y='122.218' width='3.34889' height='10.6993' fill='#3aa76d'/><line x1='504.742' y1='125.194' x2='504.742' y2='132.05' stroke='#e35d5d' stroke-width='1'/><rect x='503.067' y='125.839' width='3.34889' height='0.971058' fill='#e35d5d'/><line x1='510.899' y1='126.482' x2='510.899' y2='133.566' stroke='#3aa76d' stroke-width='1'/><rect x='509.224' y='126.841' width='3.34889' height='5.4072' fill='#3aa76d'/><line x1='517.056' y1='130.377' x2='517.056' y2='144.236' stroke='#3aa76d' stroke-width='1'/><rect x='515.382' y='142.019' width='3.34889' height='1.41446' fill='#3aa76d'/><line x1='523.213' y1='132.953' x2='523.213' y2='144.34' stroke='#e35d5d' stroke-width='1'/><rect x='521.539' y='135.109' width='3.34889' height='5.06164' fill='#e35d5d'/><line x1='529.371' y1='137.979' x2='529.371' y2='147.412' stroke='#3aa76d' stroke-width='1'/><rect x='527.696' y='137.979' width='3.34889' height='3.51711' fill='#3aa76d'/><line x1='535.528' y1='124.836' x2='535.528' y2='145.188' stroke='#e35d5d' stroke-width='1'/><rect x='533.854' y='124.836' width='3.34889' height='17.2386' fill='#e35d5d'/><line x1='541.685' y1='121.547' x2='541.685' y2='133.286' stroke='#e35d5d' stroke-width='1'/><rect x='540.011' y='124.038' width='3.34889' height='9.24814' fill='#e35d5d'/><line x1='547.843' y1='130.317' x2='547.843' y2='141.048' stroke='#e35d5d' stroke-width='1'/><rect x='546.168' y='132.73' width='3.34889' height='7.90196' fill='#e35d5d'/><line x1='554' y1='126.347' x2='554' y2='131.905' stroke='#e35d5d' stroke-width='1'/><rect x='552.326' y='130.252' width='3.34889' height='0.8' fill='#e35d5d'/><rect x='6' y='52.3824' width='480.27' height='22.005' fill='rgba(90,130,190,0.10)' stroke='#5a82be' stroke-width='0.8' stroke-dasharray='2,2'/><text x='488.27' y='50.3824' font-size='9' fill='#8fb0dd'>zg 4026</text><text x='488.27' y='84.3873' font-size='9' fill='#8fb0dd'>zd 3923</text><polyline points='6,20.4499 98.3596,113.112 289.236,58.8971 338.494,91.4295 381.596,64.7641 486.27,148.714 541.685,121.547' fill='none' stroke='#d8b45a' stroke-width='1.6'/><text x='6' y='10' font-size='9' fill='#7b8698'>4177</text><text x='6' y='168' font-size='9' fill='#7b8698'>3540</text></svg>"
+ },
+ "deep": {
+  "contrib": [
+   {
+    "name": "外围",
+    "score": 37,
+    "fact": "隔夜 纳斯达克+2.7% 标普50+2.4% 道琼斯+2.1%",
+    "pp": 15.2,
+    "note": "×0.41"
+   },
+   {
+    "name": "情绪",
+    "score": 12,
+    "fact": "赚钱效应快照 20261110",
+    "pp": 2.8,
+    "note": "×0.24"
+   },
+   {
+    "name": "流动性",
+    "score": 38,
+    "fact": "两市 15141 亿 · 缩量（vs5日均 -14.5%）",
+    "pp": 6.7,
+    "note": "×0.18"
+   },
+   {
+    "name": "政策",
+    "score": null,
+    "pp": null,
+    "fact": "近3天无已判政策新闻（层缺源，权重已归一）",
+    "note": "缺源"
+   },
+   {
+    "name": "板块",
+    "score": 30,
+    "fact": "5 个板块代理均值 30",
+    "pp": 5.3,
+    "note": "×0.18"
+   }
+  ],
+  "trail": {
+   "dates": [
+    "20261029",
+    "20261030",
+    "20261102",
+    "20261103",
+    "20261104",
+    "20261105",
+    "20261106",
+    "20261109",
+    "20261110",
+    "20261111"
+   ],
+   "overall": [
+    7,
+    6,
+    -18,
+    -11,
+    3,
+    19,
+    -4,
+    15,
+    29,
+    30
+   ],
+   "n_hist": 28,
+   "med10": 6,
+   "hi10": 29,
+   "lo10": -18,
+   "rank_pct": 100
+  },
+  "calib": {
+   "tiers": [
+    {
+     "label": "中档 5~25",
+     "n": 5,
+     "win": 20,
+     "avg_bp": -80
+    },
+    {
+     "label": "低档 <5",
+     "n": 14,
+     "win": 36,
+     "avg_bp": -21
+    }
+   ],
+   "current": null,
+   "n_hist": 28,
+   "max_overall": 29
+  }
+ }
+}

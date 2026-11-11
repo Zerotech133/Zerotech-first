@@ -18,7 +18,7 @@
 [CmdletBinding()]
 param(
     [string]$Repo = "C:\项目\老田的AI助手",
-    [string]$Python = "C:\项目\py312\python.exe",
+    [string]$Python = "C:\Program Files\Python311\python.exe",
     [string]$LogFile = "C:\Temp\governance_keepalive.log",
     [switch]$DryRun
 )
@@ -92,3 +92,4 @@ try {
     Write-KeepLog "ERROR start failed: $($_.Exception.Message)"
     exit 1
 }
+

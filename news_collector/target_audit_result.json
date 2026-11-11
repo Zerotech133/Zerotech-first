@@ -1,0 +1,4534 @@
+{
+ "generated_at": "2026-11-09T10:04:57",
+ "queue": [
+  {
+   "code": "301563.SZ",
+   "name": "云汉芯城",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "new",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920870.BJ",
+   "name": "恒进感应",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "new",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "605003.SH",
+   "name": "众望布艺",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301508.SZ",
+   "name": "中机认检",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002381.SZ",
+   "name": "双箭股份",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301515.SZ",
+   "name": "港通医疗",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301103.SZ",
+   "name": "何氏眼科",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301408.SZ",
+   "name": "华人健康",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "603214.SH",
+   "name": "爱婴室",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "688113.SH",
+   "name": "联测科技",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600743.SH",
+   "name": "华远控股",
+   "grade": "watch",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600930.SH",
+   "name": "华电新能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "688235.SH",
+   "name": "百济神州",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "000543.SZ",
+   "name": "皖能电力",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "000423.SZ",
+   "name": "东阿阿胶",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920091.BJ",
+   "name": "大鹏工业",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002901.SZ",
+   "name": "大博医疗",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "300251.SZ",
+   "name": "光线传媒",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "688165.SH",
+   "name": "埃夫特",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "601800.SH",
+   "name": "中国交建",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920885.BJ",
+   "name": "星辰科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301221.SZ",
+   "name": "光庭信息",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600422.SH",
+   "name": "昆药集团",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002294.SZ",
+   "name": "信立泰",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "605189.SH",
+   "name": "富春染织",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "001286.SZ",
+   "name": "陕西能源",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600055.SH",
+   "name": "万东医疗",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "300984.SZ",
+   "name": "金沃股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "688196.SH",
+   "name": "卓越新能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920237.BJ",
+   "name": "力佳科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "300486.SZ",
+   "name": "东杰智能",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301459.SZ",
+   "name": "丰茂股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920207.BJ",
+   "name": "众诚科技",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002766.SZ",
+   "name": "索菱股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "601916.SH",
+   "name": "浙商银行",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "300143.SZ",
+   "name": "盈康生命",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002791.SZ",
+   "name": "坚朗五金",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920522.BJ",
+   "name": "纳科诺尔",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "300712.SZ",
+   "name": "永福股份",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600661.SH",
+   "name": "昂立教育",
+   "grade": "watch",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920455.BJ",
+   "name": "汇隆活塞",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002420.SZ",
+   "name": "毅昌科技",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600851.SH",
+   "name": "海欣股份",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "001318.SZ",
+   "name": "阳光乳业",
+   "grade": "observe",
+   "type": "2买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600998.SH",
+   "name": "九州通",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "601607.SH",
+   "name": "上海医药",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002603.SZ",
+   "name": "以岭药业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002100.SZ",
+   "name": "天康生物",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301383.SZ",
+   "name": "天键股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "000858.SZ",
+   "name": "五粮液",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "688187.SH",
+   "name": "时代电气",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002044.SZ",
+   "name": "美年健康",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "688475.SH",
+   "name": "萤石网络",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "601000.SH",
+   "name": "唐山港",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "603288.SH",
+   "name": "海天味业",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600718.SH",
+   "name": "东软集团",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600699.SH",
+   "name": "均胜电子",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600050.SH",
+   "name": "中国联通",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "000999.SZ",
+   "name": "华润三九",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600085.SH",
+   "name": "同仁堂",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "603992.SH",
+   "name": "松霖科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "603348.SH",
+   "name": "文灿股份",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "002027.SZ",
+   "name": "分众传媒",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "600587.SH",
+   "name": "新华医疗",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "920690.BJ",
+   "name": "捷众科技",
+   "grade": "observe",
+   "type": "1买",
+   "stage": "running",
+   "origin": "chanlun_actionable"
+  },
+  {
+   "code": "301047.SZ",
+   "name": "义翘神州",
+   "grade": "multi_hit",
+   "type": "n_hit=3",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300171.SZ",
+   "name": "东富龙",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "301218.SZ",
+   "name": "华是科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "600892.SH",
+   "name": "大晟文化",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "688131.SH",
+   "name": "皓元医药",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "688137.SH",
+   "name": "近岸蛋白",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "301046.SZ",
+   "name": "能辉科技",
+   "grade": "multi_hit",
+   "type": "n_hit=3",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "000993.SZ",
+   "name": "闽东电力",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2+holding+holding"
+  },
+  {
+   "code": "001216.SZ",
+   "name": "华瓷股份",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "002029.SZ",
+   "name": "七匹狼",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "002093.SZ",
+   "name": "国脉科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "002827.SZ",
+   "name": "高争民爆",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300085.SZ",
+   "name": "银之杰",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300291.SZ",
+   "name": "百纳千成",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300426.SZ",
+   "name": "华智数媒",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300684.SZ",
+   "name": "中石科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300739.SZ",
+   "name": "明阳电路",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "300829.SZ",
+   "name": "金丹科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "301080.SZ",
+   "name": "百普赛斯",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "301132.SZ",
+   "name": "满坤科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "301262.SZ",
+   "name": "海看股份",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "301520.SZ",
+   "name": "万邦医药",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "600127.SH",
+   "name": "金健米业",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "600293.SH",
+   "name": "三峡新材",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "600371.SH",
+   "name": "万向德农",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "600641.SH",
+   "name": "先导基电",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "601086.SH",
+   "name": "国芳集团",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "601811.SH",
+   "name": "新华文轩",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "603236.SH",
+   "name": "移远通信",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "603268.SH",
+   "name": "松发股份",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "605058.SH",
+   "name": "澳弘电子",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "605577.SH",
+   "name": "龙版传媒",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "688004.SH",
+   "name": "博汇科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "688112.SH",
+   "name": "鼎阳科技",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "688185.SH",
+   "name": "康希诺",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "688315.SH",
+   "name": "诺禾致源",
+   "grade": "multi_hit",
+   "type": "n_hit=2",
+   "stage": "-",
+   "origin": "picks_nhit2"
+  },
+  {
+   "code": "600593.SH",
+   "name": "",
+   "grade": "holding",
+   "type": "double_knife",
+   "stage": "-",
+   "origin": "kstock_position+holding"
+  },
+  {
+   "code": "600887.SH",
+   "name": "",
+   "grade": "holding",
+   "type": "double_knife",
+   "stage": "-",
+   "origin": "kstock_position+holding"
+  },
+  {
+   "code": "300740.SZ",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position+holding"
+  },
+  {
+   "code": "600613.SH",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position+holding"
+  },
+  {
+   "code": "gb_pltr",
+   "name": "",
+   "grade": "holding",
+   "type": "qingping_us",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "gb_be",
+   "name": "",
+   "grade": "holding",
+   "type": "qingping_us",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "gb_panw",
+   "name": "",
+   "grade": "holding",
+   "type": "qingping_us",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "603188.SH",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "000011.SZ",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "gb_tsla",
+   "name": "",
+   "grade": "holding",
+   "type": "qingping_us",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "gb_mrvl",
+   "name": "",
+   "grade": "holding",
+   "type": "qingping_us",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "gb_tsm",
+   "name": "",
+   "grade": "holding",
+   "type": "qingping_us",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "03690.HK",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "01810.HK",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position"
+  },
+  {
+   "code": "01299.HK",
+   "name": "",
+   "grade": "holding",
+   "type": "ai_team",
+   "stage": "-",
+   "origin": "kstock_position"
+  }
+ ],
+ "dims": {
+  "行情日线": {
+   "status": "OK",
+   "kind": "hi",
+   "fresh": 107,
+   "stale": 0,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20261106",
+    "920870.BJ": "fresh:20261106",
+    "605003.SH": "fresh:20261106",
+    "301508.SZ": "fresh:20261106",
+    "002381.SZ": "fresh:20261106",
+    "301515.SZ": "fresh:20261106",
+    "301103.SZ": "fresh:20261106",
+    "301408.SZ": "fresh:20261106",
+    "603214.SH": "fresh:20261106",
+    "688113.SH": "fresh:20261106",
+    "600743.SH": "fresh:20261106",
+    "600930.SH": "fresh:20261106",
+    "688235.SH": "fresh:20261106",
+    "000543.SZ": "fresh:20261106",
+    "000423.SZ": "fresh:20261106",
+    "920091.BJ": "fresh:20261106",
+    "002901.SZ": "fresh:20261106",
+    "300251.SZ": "fresh:20261106",
+    "688165.SH": "fresh:20261106",
+    "601800.SH": "fresh:20261106",
+    "920885.BJ": "fresh:20261106",
+    "301221.SZ": "fresh:20261106",
+    "600422.SH": "fresh:20261106",
+    "002294.SZ": "fresh:20261106",
+    "605189.SH": "fresh:20261106",
+    "001286.SZ": "fresh:20261106",
+    "600055.SH": "fresh:20261106",
+    "300984.SZ": "fresh:20261106",
+    "688196.SH": "fresh:20261106",
+    "920237.BJ": "fresh:20261106",
+    "300486.SZ": "fresh:20261106",
+    "301459.SZ": "fresh:20261106",
+    "920207.BJ": "fresh:20261106",
+    "002766.SZ": "fresh:20261106",
+    "601916.SH": "fresh:20261106",
+    "300143.SZ": "fresh:20261106",
+    "002791.SZ": "fresh:20261106",
+    "920522.BJ": "fresh:20261106",
+    "300712.SZ": "fresh:20261106",
+    "600661.SH": "fresh:20261106",
+    "920455.BJ": "fresh:20261106",
+    "002420.SZ": "fresh:20261106",
+    "600851.SH": "fresh:20261106",
+    "001318.SZ": "fresh:20261106",
+    "600998.SH": "fresh:20261106",
+    "601607.SH": "fresh:20261106",
+    "002603.SZ": "fresh:20261106",
+    "002100.SZ": "fresh:20261106",
+    "301383.SZ": "fresh:20261106",
+    "000858.SZ": "fresh:20261106",
+    "688187.SH": "fresh:20261106",
+    "002044.SZ": "fresh:20261106",
+    "688475.SH": "fresh:20261106",
+    "601000.SH": "fresh:20261106",
+    "603288.SH": "fresh:20261106",
+    "600718.SH": "fresh:20261106",
+    "600699.SH": "fresh:20261106",
+    "600050.SH": "fresh:20261106",
+    "000999.SZ": "fresh:20261106",
+    "600085.SH": "fresh:20261106",
+    "603992.SH": "fresh:20261106",
+    "603348.SH": "fresh:20261106",
+    "002027.SZ": "fresh:20261106",
+    "600587.SH": "fresh:20261106",
+    "920690.BJ": "fresh:20261106",
+    "301047.SZ": "fresh:20261106",
+    "300171.SZ": "fresh:20261106",
+    "301218.SZ": "fresh:20261106",
+    "600892.SH": "fresh:20261106",
+    "688131.SH": "fresh:20261106",
+    "688137.SH": "fresh:20261106",
+    "301046.SZ": "fresh:20261106",
+    "000993.SZ": "fresh:20261106",
+    "001216.SZ": "fresh:20261106",
+    "002029.SZ": "fresh:20261106",
+    "002093.SZ": "fresh:20261106",
+    "002827.SZ": "fresh:20261106",
+    "300085.SZ": "fresh:20261106",
+    "300291.SZ": "fresh:20261106",
+    "300426.SZ": "fresh:20261106",
+    "300684.SZ": "fresh:20261106",
+    "300739.SZ": "fresh:20261106",
+    "300829.SZ": "fresh:20261106",
+    "301080.SZ": "fresh:20261106",
+    "301132.SZ": "fresh:20261106",
+    "301262.SZ": "fresh:20261106",
+    "301520.SZ": "fresh:20261106",
+    "600127.SH": "fresh:20261106",
+    "600293.SH": "fresh:20261106",
+    "600371.SH": "fresh:20261106",
+    "600641.SH": "fresh:20261106",
+    "601086.SH": "fresh:20261106",
+    "601811.SH": "fresh:20261106",
+    "603236.SH": "fresh:20261106",
+    "603268.SH": "fresh:20261106",
+    "605058.SH": "fresh:20261106",
+    "605577.SH": "fresh:20261106",
+    "688004.SH": "fresh:20261106",
+    "688112.SH": "fresh:20261106",
+    "688185.SH": "fresh:20261106",
+    "688315.SH": "fresh:20261106",
+    "600593.SH": "fresh:20261106",
+    "600887.SH": "fresh:20261106",
+    "300740.SZ": "fresh:20261106",
+    "600613.SH": "fresh:20261106",
+    "gb_pltr": "absent",
+    "gb_be": "absent",
+    "gb_panw": "absent",
+    "603188.SH": "fresh:20261106",
+    "000011.SZ": "fresh:20261106",
+    "gb_tsla": "absent",
+    "gb_mrvl": "absent",
+    "gb_tsm": "absent",
+    "03690.HK": "absent",
+    "01810.HK": "absent",
+    "01299.HK": "absent"
+   }
+  },
+  "每日指标": {
+   "status": "OK",
+   "kind": "hi",
+   "fresh": 107,
+   "stale": 0,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20261106",
+    "920870.BJ": "fresh:20261106",
+    "605003.SH": "fresh:20261106",
+    "301508.SZ": "fresh:20261106",
+    "002381.SZ": "fresh:20261106",
+    "301515.SZ": "fresh:20261106",
+    "301103.SZ": "fresh:20261106",
+    "301408.SZ": "fresh:20261106",
+    "603214.SH": "fresh:20261106",
+    "688113.SH": "fresh:20261106",
+    "600743.SH": "fresh:20261106",
+    "600930.SH": "fresh:20261106",
+    "688235.SH": "fresh:20261106",
+    "000543.SZ": "fresh:20261106",
+    "000423.SZ": "fresh:20261106",
+    "920091.BJ": "fresh:20261106",
+    "002901.SZ": "fresh:20261106",
+    "300251.SZ": "fresh:20261106",
+    "688165.SH": "fresh:20261106",
+    "601800.SH": "fresh:20261106",
+    "920885.BJ": "fresh:20261106",
+    "301221.SZ": "fresh:20261106",
+    "600422.SH": "fresh:20261106",
+    "002294.SZ": "fresh:20261106",
+    "605189.SH": "fresh:20261106",
+    "001286.SZ": "fresh:20261106",
+    "600055.SH": "fresh:20261106",
+    "300984.SZ": "fresh:20261106",
+    "688196.SH": "fresh:20261106",
+    "920237.BJ": "fresh:20261106",
+    "300486.SZ": "fresh:20261106",
+    "301459.SZ": "fresh:20261106",
+    "920207.BJ": "fresh:20261106",
+    "002766.SZ": "fresh:20261106",
+    "601916.SH": "fresh:20261106",
+    "300143.SZ": "fresh:20261106",
+    "002791.SZ": "fresh:20261106",
+    "920522.BJ": "fresh:20261106",
+    "300712.SZ": "fresh:20261106",
+    "600661.SH": "fresh:20261106",
+    "920455.BJ": "fresh:20261106",
+    "002420.SZ": "fresh:20261106",
+    "600851.SH": "fresh:20261106",
+    "001318.SZ": "fresh:20261106",
+    "600998.SH": "fresh:20261106",
+    "601607.SH": "fresh:20261106",
+    "002603.SZ": "fresh:20261106",
+    "002100.SZ": "fresh:20261106",
+    "301383.SZ": "fresh:20261106",
+    "000858.SZ": "fresh:20261106",
+    "688187.SH": "fresh:20261106",
+    "002044.SZ": "fresh:20261106",
+    "688475.SH": "fresh:20261106",
+    "601000.SH": "fresh:20261106",
+    "603288.SH": "fresh:20261106",
+    "600718.SH": "fresh:20261106",
+    "600699.SH": "fresh:20261106",
+    "600050.SH": "fresh:20261106",
+    "000999.SZ": "fresh:20261106",
+    "600085.SH": "fresh:20261106",
+    "603992.SH": "fresh:20261106",
+    "603348.SH": "fresh:20261106",
+    "002027.SZ": "fresh:20261106",
+    "600587.SH": "fresh:20261106",
+    "920690.BJ": "fresh:20261106",
+    "301047.SZ": "fresh:20261106",
+    "300171.SZ": "fresh:20261106",
+    "301218.SZ": "fresh:20261106",
+    "600892.SH": "fresh:20261106",
+    "688131.SH": "fresh:20261106",
+    "688137.SH": "fresh:20261106",
+    "301046.SZ": "fresh:20261106",
+    "000993.SZ": "fresh:20261106",
+    "001216.SZ": "fresh:20261106",
+    "002029.SZ": "fresh:20261106",
+    "002093.SZ": "fresh:20261106",
+    "002827.SZ": "fresh:20261106",
+    "300085.SZ": "fresh:20261106",
+    "300291.SZ": "fresh:20261106",
+    "300426.SZ": "fresh:20261106",
+    "300684.SZ": "fresh:20261106",
+    "300739.SZ": "fresh:20261106",
+    "300829.SZ": "fresh:20261106",
+    "301080.SZ": "fresh:20261106",
+    "301132.SZ": "fresh:20261106",
+    "301262.SZ": "fresh:20261106",
+    "301520.SZ": "fresh:20261106",
+    "600127.SH": "fresh:20261106",
+    "600293.SH": "fresh:20261106",
+    "600371.SH": "fresh:20261106",
+    "600641.SH": "fresh:20261106",
+    "601086.SH": "fresh:20261106",
+    "601811.SH": "fresh:20261106",
+    "603236.SH": "fresh:20261106",
+    "603268.SH": "fresh:20261106",
+    "605058.SH": "fresh:20261106",
+    "605577.SH": "fresh:20261106",
+    "688004.SH": "fresh:20261106",
+    "688112.SH": "fresh:20261106",
+    "688185.SH": "fresh:20261106",
+    "688315.SH": "fresh:20261106",
+    "600593.SH": "fresh:20261106",
+    "600887.SH": "fresh:20261106",
+    "300740.SZ": "fresh:20261106",
+    "600613.SH": "fresh:20261106",
+    "gb_pltr": "absent",
+    "gb_be": "absent",
+    "gb_panw": "absent",
+    "603188.SH": "fresh:20261106",
+    "000011.SZ": "fresh:20261106",
+    "gb_tsla": "absent",
+    "gb_mrvl": "absent",
+    "gb_tsm": "absent",
+    "03690.HK": "absent",
+    "01810.HK": "absent",
+    "01299.HK": "absent"
+   }
+  },
+  "资金流": {
+   "status": "OK",
+   "kind": "hi",
+   "fresh": 107,
+   "stale": 0,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20261106",
+    "920870.BJ": "fresh:20261106",
+    "605003.SH": "fresh:20261106",
+    "301508.SZ": "fresh:20261106",
+    "002381.SZ": "fresh:20261106",
+    "301515.SZ": "fresh:20261106",
+    "301103.SZ": "fresh:20261106",
+    "301408.SZ": "fresh:20261106",
+    "603214.SH": "fresh:20261106",
+    "688113.SH": "fresh:20261106",
+    "600743.SH": "fresh:20261106",
+    "600930.SH": "fresh:20261106",
+    "688235.SH": "fresh:20261106",
+    "000543.SZ": "fresh:20261106",
+    "000423.SZ": "fresh:20261106",
+    "920091.BJ": "fresh:20261106",
+    "002901.SZ": "fresh:20261106",
+    "300251.SZ": "fresh:20261106",
+    "688165.SH": "fresh:20261106",
+    "601800.SH": "fresh:20261106",
+    "920885.BJ": "fresh:20261106",
+    "301221.SZ": "fresh:20261106",
+    "600422.SH": "fresh:20261106",
+    "002294.SZ": "fresh:20261106",
+    "605189.SH": "fresh:20261106",
+    "001286.SZ": "fresh:20261106",
+    "600055.SH": "fresh:20261106",
+    "300984.SZ": "fresh:20261106",
+    "688196.SH": "fresh:20261106",
+    "920237.BJ": "fresh:20261106",
+    "300486.SZ": "fresh:20261106",
+    "301459.SZ": "fresh:20261106",
+    "920207.BJ": "fresh:20261106",
+    "002766.SZ": "fresh:20261106",
+    "601916.SH": "fresh:20261106",
+    "300143.SZ": "fresh:20261106",
+    "002791.SZ": "fresh:20261106",
+    "920522.BJ": "fresh:20261106",
+    "300712.SZ": "fresh:20261106",
+    "600661.SH": "fresh:20261106",
+    "920455.BJ": "fresh:20261106",
+    "002420.SZ": "fresh:20261106",
+    "600851.SH": "fresh:20261106",
+    "001318.SZ": "fresh:20261106",
+    "600998.SH": "fresh:20261106",
+    "601607.SH": "fresh:20261106",
+    "002603.SZ": "fresh:20261106",
+    "002100.SZ": "fresh:20261106",
+    "301383.SZ": "fresh:20261106",
+    "000858.SZ": "fresh:20261106",
+    "688187.SH": "fresh:20261106",
+    "002044.SZ": "fresh:20261106",
+    "688475.SH": "fresh:20261106",
+    "601000.SH": "fresh:20261106",
+    "603288.SH": "fresh:20261106",
+    "600718.SH": "fresh:20261106",
+    "600699.SH": "fresh:20261106",
+    "600050.SH": "fresh:20261106",
+    "000999.SZ": "fresh:20261106",
+    "600085.SH": "fresh:20261106",
+    "603992.SH": "fresh:20261106",
+    "603348.SH": "fresh:20261106",
+    "002027.SZ": "fresh:20261106",
+    "600587.SH": "fresh:20261106",
+    "920690.BJ": "fresh:20261106",
+    "301047.SZ": "fresh:20261106",
+    "300171.SZ": "fresh:20261106",
+    "301218.SZ": "fresh:20261106",
+    "600892.SH": "fresh:20261106",
+    "688131.SH": "fresh:20261106",
+    "688137.SH": "fresh:20261106",
+    "301046.SZ": "fresh:20261106",
+    "000993.SZ": "fresh:20261106",
+    "001216.SZ": "fresh:20261106",
+    "002029.SZ": "fresh:20261106",
+    "002093.SZ": "fresh:20261106",
+    "002827.SZ": "fresh:20261106",
+    "300085.SZ": "fresh:20261106",
+    "300291.SZ": "fresh:20261106",
+    "300426.SZ": "fresh:20261106",
+    "300684.SZ": "fresh:20261106",
+    "300739.SZ": "fresh:20261106",
+    "300829.SZ": "fresh:20261106",
+    "301080.SZ": "fresh:20261106",
+    "301132.SZ": "fresh:20261106",
+    "301262.SZ": "fresh:20261106",
+    "301520.SZ": "fresh:20261106",
+    "600127.SH": "fresh:20261106",
+    "600293.SH": "fresh:20261106",
+    "600371.SH": "fresh:20261106",
+    "600641.SH": "fresh:20261106",
+    "601086.SH": "fresh:20261106",
+    "601811.SH": "fresh:20261106",
+    "603236.SH": "fresh:20261106",
+    "603268.SH": "fresh:20261106",
+    "605058.SH": "fresh:20261106",
+    "605577.SH": "fresh:20261106",
+    "688004.SH": "fresh:20261106",
+    "688112.SH": "fresh:20261106",
+    "688185.SH": "fresh:20261106",
+    "688315.SH": "fresh:20261106",
+    "600593.SH": "fresh:20261106",
+    "600887.SH": "fresh:20261106",
+    "300740.SZ": "fresh:20261106",
+    "600613.SH": "fresh:20261106",
+    "gb_pltr": "absent",
+    "gb_be": "absent",
+    "gb_panw": "absent",
+    "603188.SH": "fresh:20261106",
+    "000011.SZ": "fresh:20261106",
+    "gb_tsla": "absent",
+    "gb_mrvl": "absent",
+    "gb_tsm": "absent",
+    "03690.HK": "absent",
+    "01810.HK": "absent",
+    "01299.HK": "absent"
+   }
+  },
+  "技术因子": {
+   "status": "OK",
+   "kind": "hi",
+   "fresh": 107,
+   "stale": 0,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20261105",
+    "920870.BJ": "fresh:20261105",
+    "605003.SH": "fresh:20261105",
+    "301508.SZ": "fresh:20261105",
+    "002381.SZ": "fresh:20261105",
+    "301515.SZ": "fresh:20261105",
+    "301103.SZ": "fresh:20261105",
+    "301408.SZ": "fresh:20261105",
+    "603214.SH": "fresh:20261105",
+    "688113.SH": "fresh:20261105",
+    "600743.SH": "fresh:20261105",
+    "600930.SH": "fresh:20261105",
+    "688235.SH": "fresh:20261105",
+    "000543.SZ": "fresh:20261105",
+    "000423.SZ": "fresh:20261105",
+    "920091.BJ": "fresh:20261105",
+    "002901.SZ": "fresh:20261105",
+    "300251.SZ": "fresh:20261105",
+    "688165.SH": "fresh:20261105",
+    "601800.SH": "fresh:20261105",
+    "920885.BJ": "fresh:20261105",
+    "301221.SZ": "fresh:20261105",
+    "600422.SH": "fresh:20261105",
+    "002294.SZ": "fresh:20261105",
+    "605189.SH": "fresh:20261105",
+    "001286.SZ": "fresh:20261105",
+    "600055.SH": "fresh:20261105",
+    "300984.SZ": "fresh:20261105",
+    "688196.SH": "fresh:20261105",
+    "920237.BJ": "fresh:20261105",
+    "300486.SZ": "fresh:20261105",
+    "301459.SZ": "fresh:20261105",
+    "920207.BJ": "fresh:20261105",
+    "002766.SZ": "fresh:20261105",
+    "601916.SH": "fresh:20261105",
+    "300143.SZ": "fresh:20261105",
+    "002791.SZ": "fresh:20261105",
+    "920522.BJ": "fresh:20261105",
+    "300712.SZ": "fresh:20261105",
+    "600661.SH": "fresh:20261105",
+    "920455.BJ": "fresh:20261105",
+    "002420.SZ": "fresh:20261105",
+    "600851.SH": "fresh:20261105",
+    "001318.SZ": "fresh:20261105",
+    "600998.SH": "fresh:20261105",
+    "601607.SH": "fresh:20261105",
+    "002603.SZ": "fresh:20261105",
+    "002100.SZ": "fresh:20261105",
+    "301383.SZ": "fresh:20261105",
+    "000858.SZ": "fresh:20261105",
+    "688187.SH": "fresh:20261105",
+    "002044.SZ": "fresh:20261105",
+    "688475.SH": "fresh:20261105",
+    "601000.SH": "fresh:20261105",
+    "603288.SH": "fresh:20261105",
+    "600718.SH": "fresh:20261105",
+    "600699.SH": "fresh:20261105",
+    "600050.SH": "fresh:20261105",
+    "000999.SZ": "fresh:20261105",
+    "600085.SH": "fresh:20261105",
+    "603992.SH": "fresh:20261105",
+    "603348.SH": "fresh:20261105",
+    "002027.SZ": "fresh:20261105",
+    "600587.SH": "fresh:20261105",
+    "920690.BJ": "fresh:20261105",
+    "301047.SZ": "fresh:20261105",
+    "300171.SZ": "fresh:20261105",
+    "301218.SZ": "fresh:20261105",
+    "600892.SH": "fresh:20261105",
+    "688131.SH": "fresh:20261105",
+    "688137.SH": "fresh:20261105",
+    "301046.SZ": "fresh:20261105",
+    "000993.SZ": "fresh:20261105",
+    "001216.SZ": "fresh:20261105",
+    "002029.SZ": "fresh:20261105",
+    "002093.SZ": "fresh:20261105",
+    "002827.SZ": "fresh:20261105",
+    "300085.SZ": "fresh:20261105",
+    "300291.SZ": "fresh:20261105",
+    "300426.SZ": "fresh:20261105",
+    "300684.SZ": "fresh:20261105",
+    "300739.SZ": "fresh:20261105",
+    "300829.SZ": "fresh:20261105",
+    "301080.SZ": "fresh:20261105",
+    "301132.SZ": "fresh:20261105",
+    "301262.SZ": "fresh:20261105",
+    "301520.SZ": "fresh:20261105",
+    "600127.SH": "fresh:20261105",
+    "600293.SH": "fresh:20261105",
+    "600371.SH": "fresh:20261105",
+    "600641.SH": "fresh:20261105",
+    "601086.SH": "fresh:20261105",
+    "601811.SH": "fresh:20261105",
+    "603236.SH": "fresh:20261105",
+    "603268.SH": "fresh:20261105",
+    "605058.SH": "fresh:20261105",
+    "605577.SH": "fresh:20261105",
+    "688004.SH": "fresh:20261105",
+    "688112.SH": "fresh:20261105",
+    "688185.SH": "fresh:20261105",
+    "688315.SH": "fresh:20261105",
+    "600593.SH": "fresh:20261105",
+    "600887.SH": "fresh:20261105",
+    "300740.SZ": "fresh:20261105",
+    "600613.SH": "fresh:20261105",
+    "gb_pltr": "absent",
+    "gb_be": "absent",
+    "gb_panw": "absent",
+    "603188.SH": "fresh:20261105",
+    "000011.SZ": "fresh:20261105",
+    "gb_tsla": "absent",
+    "gb_mrvl": "absent",
+    "gb_tsm": "absent",
+    "03690.HK": "absent",
+    "01810.HK": "absent",
+    "01299.HK": "absent"
+   }
+  },
+  "龙虎榜": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 52,
+   "stale": 37,
+   "absent": 27,
+   "per_code": {
+    "301563.SZ": "fresh:20261023",
+    "920870.BJ": "no_event",
+    "605003.SH": "fresh:20261029",
+    "301508.SZ": "stale:20241010",
+    "002381.SZ": "no_event",
+    "301515.SZ": "stale:20230815",
+    "301103.SZ": "no_event",
+    "301408.SZ": "stale:20260415",
+    "603214.SH": "stale:20250730",
+    "688113.SH": "stale:20240326",
+    "600743.SH": "fresh:20260928",
+    "600930.SH": "stale:20260325",
+    "688235.SH": "stale:20250902",
+    "000543.SZ": "no_event",
+    "000423.SZ": "stale:20250428",
+    "920091.BJ": "fresh:20261028",
+    "002901.SZ": "no_event",
+    "300251.SZ": "stale:20260224",
+    "688165.SH": "stale:20250228",
+    "601800.SH": "no_event",
+    "920885.BJ": "stale:20260710",
+    "301221.SZ": "stale:20240923",
+    "600422.SH": "stale:20260427",
+    "002294.SZ": "stale:20260703",
+    "605189.SH": "fresh:20261015",
+    "001286.SZ": "no_event",
+    "600055.SH": "no_event",
+    "300984.SZ": "stale:20241206",
+    "688196.SH": "fresh:20261008",
+    "920237.BJ": "fresh:20261009",
+    "300486.SZ": "stale:20260602",
+    "301459.SZ": "stale:20250521",
+    "920207.BJ": "fresh:20261026",
+    "002766.SZ": "stale:20260717",
+    "601916.SH": "no_event",
+    "300143.SZ": "stale:20240909",
+    "002791.SZ": "stale:20240517",
+    "920522.BJ": "no_event",
+    "300712.SZ": "stale:20241113",
+    "600661.SH": "fresh:20261022",
+    "920455.BJ": "stale:20260121",
+    "002420.SZ": "stale:20260128",
+    "600851.SH": "fresh:20261023",
+    "001318.SZ": "fresh:20261104",
+    "600998.SH": "no_event",
+    "601607.SH": "stale:20230830",
+    "002603.SZ": "stale:20250106",
+    "002100.SZ": "no_event",
+    "301383.SZ": "stale:20241220",
+    "000858.SZ": "stale:20260129",
+    "688187.SH": "stale:20260513",
+    "002044.SZ": "stale:20260116",
+    "688475.SH": "no_event",
+    "601000.SH": "stale:20230830",
+    "603288.SH": "stale:20231016",
+    "600718.SH": "stale:20250919",
+    "600699.SH": "fresh:20261008",
+    "600050.SH": "no_event",
+    "000999.SZ": "no_event",
+    "600085.SH": "no_event",
+    "603992.SH": "fresh:20261014",
+    "603348.SH": "fresh:20261019",
+    "002027.SZ": "stale:20250410",
+    "600587.SH": "stale:20230731",
+    "920690.BJ": "fresh:20261019",
+    "301047.SZ": "fresh:20260923",
+    "300171.SZ": "no_event",
+    "301218.SZ": "fresh:20261102",
+    "600892.SH": "fresh:20261106",
+    "688131.SH": "stale:20250530",
+    "688137.SH": "fresh:20261030",
+    "301046.SZ": "stale:20240125",
+    "000993.SZ": "fresh:20261026",
+    "001216.SZ": "fresh:20261028",
+    "002029.SZ": "fresh:20261104",
+    "002093.SZ": "fresh:20261027",
+    "002827.SZ": "fresh:20261106",
+    "300085.SZ": "fresh:20261104",
+    "300291.SZ": "fresh:20261028",
+    "300426.SZ": "fresh:20261103",
+    "300684.SZ": "fresh:20261008",
+    "300739.SZ": "fresh:20261103",
+    "300829.SZ": "fresh:20261012",
+    "301080.SZ": "fresh:20261103",
+    "301132.SZ": "fresh:20261030",
+    "301262.SZ": "fresh:20261103",
+    "301520.SZ": "fresh:20261105",
+    "600127.SH": "fresh:20261106",
+    "600293.SH": "fresh:20261103",
+    "600371.SH": "fresh:20261106",
+    "600641.SH": "fresh:20261106",
+    "601086.SH": "fresh:20261029",
+    "601811.SH": "fresh:20261022",
+    "603236.SH": "fresh:20261104",
+    "603268.SH": "fresh:20261105",
+    "605058.SH": "fresh:20261106",
+    "605577.SH": "fresh:20261105",
+    "688004.SH": "fresh:20261020",
+    "688112.SH": "fresh:20260921",
+    "688185.SH": "fresh:20260930",
+    "688315.SH": "fresh:20261028",
+    "600593.SH": "fresh:20261019",
+    "600887.SH": "no_event",
+    "300740.SZ": "stale:20260702",
+    "600613.SH": "fresh:20260902",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "fresh:20261019",
+    "000011.SZ": "fresh:20261022",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "龙虎榜机构": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 52,
+   "stale": 39,
+   "absent": 25,
+   "per_code": {
+    "301563.SZ": "fresh:20261023",
+    "920870.BJ": "stale:20250904",
+    "605003.SH": "fresh:20261029",
+    "301508.SZ": "stale:20241010",
+    "002381.SZ": "no_event",
+    "301515.SZ": "stale:20230815",
+    "301103.SZ": "no_event",
+    "301408.SZ": "stale:20260415",
+    "603214.SH": "stale:20250730",
+    "688113.SH": "stale:20240326",
+    "600743.SH": "fresh:20260928",
+    "600930.SH": "stale:20260325",
+    "688235.SH": "stale:20250902",
+    "000543.SZ": "no_event",
+    "000423.SZ": "stale:20250428",
+    "920091.BJ": "fresh:20261028",
+    "002901.SZ": "no_event",
+    "300251.SZ": "stale:20260224",
+    "688165.SH": "stale:20250228",
+    "601800.SH": "no_event",
+    "920885.BJ": "stale:20260710",
+    "301221.SZ": "stale:20240923",
+    "600422.SH": "stale:20260427",
+    "002294.SZ": "stale:20260703",
+    "605189.SH": "fresh:20261015",
+    "001286.SZ": "no_event",
+    "600055.SH": "no_event",
+    "300984.SZ": "stale:20241206",
+    "688196.SH": "fresh:20261008",
+    "920237.BJ": "fresh:20261009",
+    "300486.SZ": "stale:20260602",
+    "301459.SZ": "stale:20250521",
+    "920207.BJ": "fresh:20261026",
+    "002766.SZ": "stale:20260717",
+    "601916.SH": "no_event",
+    "300143.SZ": "stale:20240909",
+    "002791.SZ": "stale:20240517",
+    "920522.BJ": "stale:20241113",
+    "300712.SZ": "stale:20241113",
+    "600661.SH": "fresh:20261022",
+    "920455.BJ": "stale:20260121",
+    "002420.SZ": "stale:20260128",
+    "600851.SH": "fresh:20261023",
+    "001318.SZ": "fresh:20261104",
+    "600998.SH": "no_event",
+    "601607.SH": "stale:20230830",
+    "002603.SZ": "stale:20250106",
+    "002100.SZ": "no_event",
+    "301383.SZ": "stale:20241220",
+    "000858.SZ": "stale:20260129",
+    "688187.SH": "stale:20260513",
+    "002044.SZ": "stale:20260116",
+    "688475.SH": "no_event",
+    "601000.SH": "stale:20230830",
+    "603288.SH": "stale:20231016",
+    "600718.SH": "stale:20250919",
+    "600699.SH": "fresh:20261008",
+    "600050.SH": "no_event",
+    "000999.SZ": "no_event",
+    "600085.SH": "no_event",
+    "603992.SH": "fresh:20261014",
+    "603348.SH": "fresh:20261019",
+    "002027.SZ": "stale:20250410",
+    "600587.SH": "stale:20230731",
+    "920690.BJ": "fresh:20261019",
+    "301047.SZ": "fresh:20260923",
+    "300171.SZ": "no_event",
+    "301218.SZ": "fresh:20261102",
+    "600892.SH": "fresh:20261106",
+    "688131.SH": "stale:20250530",
+    "688137.SH": "fresh:20261030",
+    "301046.SZ": "stale:20240125",
+    "000993.SZ": "fresh:20261026",
+    "001216.SZ": "fresh:20261028",
+    "002029.SZ": "fresh:20261104",
+    "002093.SZ": "fresh:20261027",
+    "002827.SZ": "fresh:20261106",
+    "300085.SZ": "fresh:20261104",
+    "300291.SZ": "fresh:20261028",
+    "300426.SZ": "fresh:20261103",
+    "300684.SZ": "fresh:20261008",
+    "300739.SZ": "fresh:20261103",
+    "300829.SZ": "fresh:20261012",
+    "301080.SZ": "fresh:20261103",
+    "301132.SZ": "fresh:20261030",
+    "301262.SZ": "fresh:20261103",
+    "301520.SZ": "fresh:20261105",
+    "600127.SH": "fresh:20261106",
+    "600293.SH": "fresh:20261103",
+    "600371.SH": "fresh:20261106",
+    "600641.SH": "fresh:20261106",
+    "601086.SH": "fresh:20261029",
+    "601811.SH": "fresh:20261022",
+    "603236.SH": "fresh:20261104",
+    "603268.SH": "fresh:20261105",
+    "605058.SH": "fresh:20261106",
+    "605577.SH": "fresh:20261105",
+    "688004.SH": "fresh:20261020",
+    "688112.SH": "fresh:20260921",
+    "688185.SH": "fresh:20260930",
+    "688315.SH": "fresh:20261028",
+    "600593.SH": "fresh:20261019",
+    "600887.SH": "no_event",
+    "300740.SZ": "stale:20260702",
+    "600613.SH": "fresh:20260902",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "fresh:20261019",
+    "000011.SZ": "fresh:20261022",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "股东户数": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 72,
+   "stale": 35,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20261029",
+    "920870.BJ": "fresh:20260825",
+    "605003.SH": "stale:20240730",
+    "301508.SZ": "stale:20260331",
+    "002381.SZ": "fresh:20260827",
+    "301515.SZ": "fresh:20261104",
+    "301103.SZ": "stale:20250425",
+    "301408.SZ": "fresh:20261102",
+    "603214.SH": "fresh:20261102",
+    "688113.SH": "stale:20240430",
+    "600743.SH": "stale:20260511",
+    "600930.SH": "fresh:20260921",
+    "688235.SH": "stale:20260707",
+    "000543.SZ": "fresh:20260917",
+    "000423.SZ": "fresh:20261103",
+    "920091.BJ": "fresh:20260826",
+    "002901.SZ": "fresh:20260827",
+    "300251.SZ": "fresh:20260826",
+    "688165.SH": "stale:20240430",
+    "601800.SH": "stale:20260331",
+    "920885.BJ": "fresh:20260821",
+    "301221.SZ": "fresh:20261021",
+    "600422.SH": "fresh:20260822",
+    "002294.SZ": "fresh:20260916",
+    "605189.SH": "stale:20260331",
+    "001286.SZ": "fresh:20261029",
+    "600055.SH": "fresh:20260826",
+    "300984.SZ": "fresh:20260822",
+    "688196.SH": "fresh:20260826",
+    "920237.BJ": "fresh:20260825",
+    "300486.SZ": "fresh:20261022",
+    "301459.SZ": "fresh:20260928",
+    "920207.BJ": "stale:20260806",
+    "002766.SZ": "fresh:20260921",
+    "601916.SH": "stale:20260331",
+    "300143.SZ": "fresh:20261102",
+    "002791.SZ": "fresh:20261102",
+    "920522.BJ": "fresh:20260826",
+    "300712.SZ": "fresh:20260822",
+    "600661.SH": "fresh:20260815",
+    "920455.BJ": "fresh:20260828",
+    "002420.SZ": "fresh:20260822",
+    "600851.SH": "fresh:20260821",
+    "001318.SZ": "fresh:20261102",
+    "600998.SH": "stale:20240827",
+    "601607.SH": "stale:20260331",
+    "002603.SZ": "stale:20240828",
+    "002100.SZ": "fresh:20261102",
+    "301383.SZ": "stale:20251216",
+    "000858.SZ": "fresh:20261010",
+    "688187.SH": "fresh:20260916",
+    "002044.SZ": "stale:20250417",
+    "688475.SH": "stale:20260725",
+    "601000.SH": "fresh:20260827",
+    "603288.SH": "fresh:20260827",
+    "600718.SH": "stale:20241026",
+    "600699.SH": "fresh:20260826",
+    "600050.SH": "stale:20260320",
+    "000999.SZ": "fresh:20260917",
+    "600085.SH": "stale:20260331",
+    "603992.SH": "stale:20260331",
+    "603348.SH": "stale:20260316",
+    "002027.SZ": "stale:20260629",
+    "600587.SH": "stale:20240430",
+    "920690.BJ": "fresh:20260825",
+    "301047.SZ": "fresh:20260901",
+    "300171.SZ": "fresh:20260828",
+    "301218.SZ": "fresh:20261028",
+    "600892.SH": "stale:20240425",
+    "688131.SH": "stale:20260521",
+    "688137.SH": "fresh:20260828",
+    "301046.SZ": "fresh:20260828",
+    "000993.SZ": "fresh:20260901",
+    "001216.SZ": "fresh:20260826",
+    "002029.SZ": "fresh:20260827",
+    "002093.SZ": "fresh:20260827",
+    "002827.SZ": "fresh:20261102",
+    "300085.SZ": "fresh:20261103",
+    "300291.SZ": "fresh:20261103",
+    "300426.SZ": "fresh:20261029",
+    "300684.SZ": "stale:20240425",
+    "300739.SZ": "fresh:20260826",
+    "300829.SZ": "stale:20250421",
+    "301080.SZ": "stale:20250421",
+    "301132.SZ": "fresh:20260826",
+    "301262.SZ": "fresh:20261027",
+    "301520.SZ": "fresh:20261021",
+    "600127.SH": "stale:20250329",
+    "600293.SH": "fresh:20260822",
+    "600371.SH": "fresh:20260812",
+    "600641.SH": "stale:20260801",
+    "601086.SH": "fresh:20261102",
+    "601811.SH": "stale:20260327",
+    "603236.SH": "fresh:20260813",
+    "603268.SH": "fresh:20261028",
+    "605058.SH": "fresh:20260828",
+    "605577.SH": "fresh:20260826",
+    "688004.SH": "fresh:20260824",
+    "688112.SH": "fresh:20260818",
+    "688185.SH": "fresh:20260828",
+    "688315.SH": "fresh:20260826",
+    "600593.SH": "stale:20250425",
+    "600887.SH": "fresh:20260827",
+    "300740.SZ": "fresh:20261028",
+    "600613.SH": "stale:20250426",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "stale:20240430",
+    "000011.SZ": "fresh:20260829",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "股东增减持": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 17,
+   "stale": 71,
+   "absent": 28,
+   "per_code": {
+    "301563.SZ": "no_event",
+    "920870.BJ": "no_event",
+    "605003.SH": "no_event",
+    "301508.SZ": "no_event",
+    "002381.SZ": "stale:20200311",
+    "301515.SZ": "no_event",
+    "301103.SZ": "stale:20260507",
+    "301408.SZ": "stale:20260430",
+    "603214.SH": "stale:20250829",
+    "688113.SH": "stale:20260807",
+    "600743.SH": "stale:20260210",
+    "600930.SH": "no_event",
+    "688235.SH": "no_event",
+    "000543.SZ": "stale:20250917",
+    "000423.SZ": "stale:20250509",
+    "920091.BJ": "no_event",
+    "002901.SZ": "stale:20251217",
+    "300251.SZ": "stale:20260810",
+    "688165.SH": "fresh:20261027",
+    "601800.SH": "no_event",
+    "920885.BJ": "stale:20250125",
+    "301221.SZ": "fresh:20260903",
+    "600422.SH": "stale:20260515",
+    "002294.SZ": "stale:20260304",
+    "605189.SH": "stale:20251106",
+    "001286.SZ": "stale:20250607",
+    "600055.SH": "stale:20250628",
+    "300984.SZ": "stale:20250113",
+    "688196.SH": "stale:20260410",
+    "920237.BJ": "fresh:20260902",
+    "300486.SZ": "stale:20250623",
+    "301459.SZ": "no_event",
+    "920207.BJ": "stale:20260116",
+    "002766.SZ": "stale:20250809",
+    "601916.SH": "fresh:20260812",
+    "300143.SZ": "stale:20241111",
+    "002791.SZ": "stale:20260327",
+    "920522.BJ": "stale:20260711",
+    "300712.SZ": "stale:20260413",
+    "600661.SH": "fresh:20261104",
+    "920455.BJ": "stale:20260721",
+    "002420.SZ": "stale:20240402",
+    "600851.SH": "no_event",
+    "001318.SZ": "stale:20260128",
+    "600998.SH": "fresh:20261030",
+    "601607.SH": "fresh:20261105",
+    "002603.SZ": "stale:20200319",
+    "002100.SZ": "stale:20250521",
+    "301383.SZ": "stale:20250328",
+    "000858.SZ": "fresh:20261030",
+    "688187.SH": "stale:20241228",
+    "002044.SZ": "fresh:20261022",
+    "688475.SH": "stale:20260311",
+    "601000.SH": "stale:20260205",
+    "603288.SH": "stale:20231230",
+    "600718.SH": "stale:20260507",
+    "600699.SH": "stale:20260613",
+    "600050.SH": "stale:20260130",
+    "000999.SZ": "no_event",
+    "600085.SH": "stale:20201204",
+    "603992.SH": "stale:20260625",
+    "603348.SH": "no_event",
+    "002027.SZ": "fresh:20261030",
+    "600587.SH": "stale:20260526",
+    "920690.BJ": "no_event",
+    "301047.SZ": "stale:20250725",
+    "300171.SZ": "stale:20240205",
+    "301218.SZ": "stale:20260415",
+    "600892.SH": "fresh:20261103",
+    "688131.SH": "stale:20260723",
+    "688137.SH": "stale:20260304",
+    "301046.SZ": "stale:20260714",
+    "000993.SZ": "stale:20260214",
+    "001216.SZ": "fresh:20261105",
+    "002029.SZ": "stale:20240207",
+    "002093.SZ": "stale:20250731",
+    "002827.SZ": "stale:20250726",
+    "300085.SZ": "stale:20250626",
+    "300291.SZ": "stale:20260725",
+    "300426.SZ": "stale:20250218",
+    "300684.SZ": "stale:20251223",
+    "300739.SZ": "stale:20250221",
+    "300829.SZ": "fresh:20260924",
+    "301080.SZ": "stale:20251206",
+    "301132.SZ": "no_event",
+    "301262.SZ": "fresh:20261009",
+    "301520.SZ": "no_event",
+    "600127.SH": "stale:20260528",
+    "600293.SH": "stale:20250523",
+    "600371.SH": "stale:20260421",
+    "600641.SH": "fresh:20261104",
+    "601086.SH": "stale:20260530",
+    "601811.SH": "no_event",
+    "603236.SH": "stale:20241108",
+    "603268.SH": "stale:20230704",
+    "605058.SH": "no_event",
+    "605577.SH": "stale:20231028",
+    "688004.SH": "stale:20250822",
+    "688112.SH": "no_event",
+    "688185.SH": "stale:20220308",
+    "688315.SH": "stale:20250716",
+    "600593.SH": "stale:20220526",
+    "600887.SH": "fresh:20261103",
+    "300740.SZ": "stale:20230801",
+    "600613.SH": "fresh:20260821",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "stale:20211230",
+    "000011.SZ": "stale:20201204",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "十大流通股东": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 103,
+   "stale": 4,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20260819",
+    "920870.BJ": "fresh:20260825",
+    "605003.SH": "fresh:20260819",
+    "301508.SZ": "fresh:20260825",
+    "002381.SZ": "fresh:20260827",
+    "301515.SZ": "fresh:20260828",
+    "301103.SZ": "fresh:20260828",
+    "301408.SZ": "fresh:20260828",
+    "603214.SH": "fresh:20260825",
+    "688113.SH": "fresh:20260828",
+    "600743.SH": "fresh:20260831",
+    "600930.SH": "fresh:20260827",
+    "688235.SH": "fresh:20260827",
+    "000543.SZ": "fresh:20260829",
+    "000423.SZ": "fresh:20260821",
+    "920091.BJ": "fresh:20260826",
+    "002901.SZ": "fresh:20260827",
+    "300251.SZ": "fresh:20260826",
+    "688165.SH": "fresh:20260827",
+    "601800.SH": "fresh:20260828",
+    "920885.BJ": "fresh:20260821",
+    "301221.SZ": "fresh:20260820",
+    "600422.SH": "fresh:20260822",
+    "002294.SZ": "fresh:20260825",
+    "605189.SH": "fresh:20260828",
+    "001286.SZ": "fresh:20260821",
+    "600055.SH": "fresh:20260826",
+    "300984.SZ": "fresh:20260822",
+    "688196.SH": "fresh:20260826",
+    "920237.BJ": "fresh:20260825",
+    "300486.SZ": "fresh:20260826",
+    "301459.SZ": "fresh:20260829",
+    "920207.BJ": "stale:20260806",
+    "002766.SZ": "fresh:20260822",
+    "601916.SH": "fresh:20260827",
+    "300143.SZ": "fresh:20260814",
+    "002791.SZ": "fresh:20260829",
+    "920522.BJ": "fresh:20260826",
+    "300712.SZ": "fresh:20260822",
+    "600661.SH": "fresh:20260815",
+    "920455.BJ": "fresh:20260828",
+    "002420.SZ": "fresh:20260822",
+    "600851.SH": "fresh:20260821",
+    "001318.SZ": "fresh:20260822",
+    "600998.SH": "fresh:20260825",
+    "601607.SH": "fresh:20260828",
+    "002603.SZ": "fresh:20260829",
+    "002100.SZ": "fresh:20260827",
+    "301383.SZ": "fresh:20260825",
+    "000858.SZ": "fresh:20260829",
+    "688187.SH": "fresh:20260820",
+    "002044.SZ": "fresh:20260831",
+    "688475.SH": "stale:20260725",
+    "601000.SH": "fresh:20260827",
+    "603288.SH": "fresh:20260827",
+    "600718.SH": "fresh:20260829",
+    "600699.SH": "fresh:20260826",
+    "600050.SH": "fresh:20260819",
+    "000999.SZ": "fresh:20260822",
+    "600085.SH": "fresh:20260831",
+    "603992.SH": "fresh:20260827",
+    "603348.SH": "fresh:20260821",
+    "002027.SZ": "fresh:20260819",
+    "600587.SH": "fresh:20260829",
+    "920690.BJ": "fresh:20260825",
+    "301047.SZ": "fresh:20260826",
+    "300171.SZ": "fresh:20260828",
+    "301218.SZ": "fresh:20260827",
+    "600892.SH": "fresh:20260827",
+    "688131.SH": "fresh:20260827",
+    "688137.SH": "fresh:20260828",
+    "301046.SZ": "fresh:20260828",
+    "000993.SZ": "fresh:20260821",
+    "001216.SZ": "fresh:20260826",
+    "002029.SZ": "fresh:20260827",
+    "002093.SZ": "fresh:20260827",
+    "002827.SZ": "fresh:20260814",
+    "300085.SZ": "fresh:20260829",
+    "300291.SZ": "fresh:20260829",
+    "300426.SZ": "stale:20260810",
+    "300684.SZ": "fresh:20260825",
+    "300739.SZ": "fresh:20260826",
+    "300829.SZ": "fresh:20260825",
+    "301080.SZ": "fresh:20260829",
+    "301132.SZ": "fresh:20260826",
+    "301262.SZ": "fresh:20260827",
+    "301520.SZ": "fresh:20260829",
+    "600127.SH": "fresh:20260829",
+    "600293.SH": "fresh:20260822",
+    "600371.SH": "fresh:20260812",
+    "600641.SH": "stale:20260801",
+    "601086.SH": "fresh:20260826",
+    "601811.SH": "fresh:20260827",
+    "603236.SH": "fresh:20260813",
+    "603268.SH": "fresh:20260825",
+    "605058.SH": "fresh:20260828",
+    "605577.SH": "fresh:20260826",
+    "688004.SH": "fresh:20260824",
+    "688112.SH": "fresh:20260818",
+    "688185.SH": "fresh:20260828",
+    "688315.SH": "fresh:20260826",
+    "600593.SH": "fresh:20260831",
+    "600887.SH": "fresh:20260827",
+    "300740.SZ": "fresh:20260829",
+    "600613.SH": "fresh:20260829",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "fresh:20260831",
+    "000011.SZ": "fresh:20260829",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "限售解禁": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 2,
+   "stale": 76,
+   "absent": 38,
+   "per_code": {
+    "301563.SZ": "stale:20260330",
+    "920870.BJ": "stale:20230719",
+    "605003.SH": "stale:20230915",
+    "301508.SZ": "stale:20241202",
+    "002381.SZ": "no_event",
+    "301515.SZ": "stale:20250127",
+    "301103.SZ": "no_event",
+    "301408.SZ": "stale:20260302",
+    "603214.SH": "stale:20210330",
+    "688113.SH": "stale:20230508",
+    "600743.SH": "no_event",
+    "600930.SH": "stale:20260116",
+    "688235.SH": "stale:20221215",
+    "000543.SZ": "stale:20220719",
+    "000423.SZ": "no_event",
+    "920091.BJ": "stale:20260323",
+    "002901.SZ": "stale:20220914",
+    "300251.SZ": "no_event",
+    "688165.SH": "stale:20230717",
+    "601800.SH": "stale:20260409",
+    "920885.BJ": "fresh:20261026",
+    "301221.SZ": "stale:20250623",
+    "600422.SH": "stale:20201222",
+    "002294.SZ": "no_event",
+    "605189.SH": "no_event",
+    "001286.SZ": "stale:20260410",
+    "600055.SH": "stale:20250325",
+    "300984.SZ": "no_event",
+    "688196.SH": "stale:20230522",
+    "920237.BJ": "stale:20260312",
+    "300486.SZ": "stale:20211105",
+    "301459.SZ": "no_event",
+    "920207.BJ": "stale:20260306",
+    "002766.SZ": "stale:20260407",
+    "601916.SH": "stale:20221128",
+    "300143.SZ": "stale:20230731",
+    "002791.SZ": "stale:20260310",
+    "920522.BJ": "stale:20250723",
+    "300712.SZ": "stale:20201102",
+    "600661.SH": "stale:20200623",
+    "920455.BJ": "stale:20260605",
+    "002420.SZ": "stale:20260529",
+    "600851.SH": "no_event",
+    "001318.SZ": "stale:20250610",
+    "600998.SH": "stale:20201127",
+    "601607.SH": "stale:20250408",
+    "002603.SZ": "no_event",
+    "002100.SZ": "no_event",
+    "301383.SZ": "stale:20250627",
+    "000858.SZ": "stale:20210604",
+    "688187.SH": "stale:20240909",
+    "002044.SZ": "stale:20201118",
+    "688475.SH": "stale:20251229",
+    "601000.SH": "no_event",
+    "603288.SH": "no_event",
+    "600718.SH": "stale:20220811",
+    "600699.SH": "stale:20210506",
+    "600050.SH": "stale:20260402",
+    "000999.SZ": "stale:20250829",
+    "600085.SH": "no_event",
+    "603992.SH": "stale:20251124",
+    "603348.SH": "stale:20250113",
+    "002027.SZ": "no_event",
+    "600587.SH": "stale:20260224",
+    "920690.BJ": "stale:20250630",
+    "301047.SZ": "stale:20240816",
+    "300171.SZ": "stale:20230713",
+    "301218.SZ": "stale:20250307",
+    "600892.SH": "stale:20221025",
+    "688131.SH": "stale:20250804",
+    "688137.SH": "stale:20260330",
+    "301046.SZ": "stale:20240819",
+    "000993.SZ": "stale:20210208",
+    "001216.SZ": "stale:20241021",
+    "002029.SZ": "no_event",
+    "002093.SZ": "stale:20200106",
+    "002827.SZ": "no_event",
+    "300085.SZ": "no_event",
+    "300291.SZ": "stale:20230620",
+    "300426.SZ": "stale:20200304",
+    "300684.SZ": "stale:20210111",
+    "300739.SZ": "fresh:20261023",
+    "300829.SZ": "stale:20230424",
+    "301080.SZ": "stale:20241018",
+    "301132.SZ": "stale:20250811",
+    "301262.SZ": "no_event",
+    "301520.SZ": "stale:20250325",
+    "600127.SH": "no_event",
+    "600293.SH": "no_event",
+    "600371.SH": "no_event",
+    "600641.SH": "no_event",
+    "601086.SH": "stale:20200929",
+    "601811.SH": "no_event",
+    "603236.SH": "stale:20210930",
+    "603268.SH": "stale:20260224",
+    "605058.SH": "no_event",
+    "605577.SH": "stale:20240930",
+    "688004.SH": "stale:20230612",
+    "688112.SH": "stale:20241202",
+    "688185.SH": "stale:20230814",
+    "688315.SH": "stale:20240424",
+    "600593.SH": "no_event",
+    "600887.SH": "stale:20241025",
+    "300740.SZ": "stale:20221118",
+    "600613.SH": "no_event",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "no_event",
+    "000011.SZ": "stale:20200430",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "回购": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 14,
+   "stale": 47,
+   "absent": 55,
+   "per_code": {
+    "301563.SZ": "no_event",
+    "920870.BJ": "no_event",
+    "605003.SH": "no_event",
+    "301508.SZ": "no_event",
+    "002381.SZ": "no_event",
+    "301515.SZ": "stale:20250507",
+    "301103.SZ": "stale:20240620",
+    "301408.SZ": "no_event",
+    "603214.SH": "fresh:20261104",
+    "688113.SH": "stale:20260401",
+    "600743.SH": "no_event",
+    "600930.SH": "no_event",
+    "688235.SH": "no_event",
+    "000543.SZ": "no_event",
+    "000423.SZ": "fresh:20261024",
+    "920091.BJ": "no_event",
+    "002901.SZ": "fresh:20261103",
+    "300251.SZ": "stale:20221014",
+    "688165.SH": "no_event",
+    "601800.SH": "stale:20260529",
+    "920885.BJ": "stale:20250529",
+    "301221.SZ": "no_event",
+    "600422.SH": "stale:20240927",
+    "002294.SZ": "fresh:20261009",
+    "605189.SH": "stale:20250507",
+    "001286.SZ": "no_event",
+    "600055.SH": "stale:20260701",
+    "300984.SZ": "stale:20241008",
+    "688196.SH": "no_event",
+    "920237.BJ": "stale:20230307",
+    "300486.SZ": "no_event",
+    "301459.SZ": "no_event",
+    "920207.BJ": "stale:20250627",
+    "002766.SZ": "stale:20260611",
+    "601916.SH": "no_event",
+    "300143.SZ": "fresh:20261102",
+    "002791.SZ": "stale:20250222",
+    "920522.BJ": "stale:20250425",
+    "300712.SZ": "stale:20250225",
+    "600661.SH": "stale:20240424",
+    "920455.BJ": "no_event",
+    "002420.SZ": "fresh:20260904",
+    "600851.SH": "no_event",
+    "001318.SZ": "no_event",
+    "600998.SH": "stale:20241105",
+    "601607.SH": "no_event",
+    "002603.SZ": "no_event",
+    "002100.SZ": "no_event",
+    "301383.SZ": "fresh:20261026",
+    "000858.SZ": "fresh:20261104",
+    "688187.SH": "no_event",
+    "002044.SZ": "stale:20200826",
+    "688475.SH": "no_event",
+    "601000.SH": "no_event",
+    "603288.SH": "fresh:20261106",
+    "600718.SH": "stale:20260729",
+    "600699.SH": "stale:20250731",
+    "600050.SH": "stale:20260526",
+    "000999.SZ": "stale:20251108",
+    "600085.SH": "no_event",
+    "603992.SH": "stale:20260203",
+    "603348.SH": "stale:20230516",
+    "002027.SZ": "stale:20221017",
+    "600587.SH": "stale:20251230",
+    "920690.BJ": "no_event",
+    "301047.SZ": "stale:20241010",
+    "300171.SZ": "stale:20240802",
+    "301218.SZ": "no_event",
+    "600892.SH": "no_event",
+    "688131.SH": "stale:20250704",
+    "688137.SH": "stale:20260415",
+    "301046.SZ": "stale:20260616",
+    "000993.SZ": "no_event",
+    "001216.SZ": "no_event",
+    "002029.SZ": "stale:20250604",
+    "002093.SZ": "stale:20240302",
+    "002827.SZ": "fresh:20261104",
+    "300085.SZ": "no_event",
+    "300291.SZ": "stale:20211228",
+    "300426.SZ": "stale:20250731",
+    "300684.SZ": "fresh:20261102",
+    "300739.SZ": "fresh:20261014",
+    "300829.SZ": "stale:20250807",
+    "301080.SZ": "stale:20260804",
+    "301132.SZ": "fresh:20261103",
+    "301262.SZ": "no_event",
+    "301520.SZ": "stale:20250507",
+    "600127.SH": "no_event",
+    "600293.SH": "no_event",
+    "600371.SH": "no_event",
+    "600641.SH": "stale:20240521",
+    "601086.SH": "stale:20240802",
+    "601811.SH": "no_event",
+    "603236.SH": "stale:20240327",
+    "603268.SH": "no_event",
+    "605058.SH": "no_event",
+    "605577.SH": "no_event",
+    "688004.SH": "stale:20251010",
+    "688112.SH": "no_event",
+    "688185.SH": "stale:20221203",
+    "688315.SH": "stale:20240803",
+    "600593.SH": "stale:20260610",
+    "600887.SH": "fresh:20261103",
+    "300740.SZ": "stale:20250508",
+    "600613.SH": "no_event",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "no_event",
+    "000011.SZ": "no_event",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "股权质押": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 43,
+   "stale": 26,
+   "absent": 47,
+   "per_code": {
+    "301563.SZ": "no_event",
+    "920870.BJ": "no_event",
+    "605003.SH": "no_event",
+    "301508.SZ": "no_event",
+    "002381.SZ": "stale:20240329",
+    "301515.SZ": "stale:20240726",
+    "301103.SZ": "stale:20241220",
+    "301408.SZ": "fresh:20261030",
+    "603214.SH": "stale:20241213",
+    "688113.SH": "no_event",
+    "600743.SH": "fresh:20261030",
+    "600930.SH": "no_event",
+    "688235.SH": "no_event",
+    "000543.SZ": "fresh:20261030",
+    "000423.SZ": "fresh:20261030",
+    "920091.BJ": "no_event",
+    "002901.SZ": "no_event",
+    "300251.SZ": "fresh:20261030",
+    "688165.SH": "no_event",
+    "601800.SH": "stale:20250930",
+    "920885.BJ": "no_event",
+    "301221.SZ": "fresh:20261030",
+    "600422.SH": "stale:20200522",
+    "002294.SZ": "fresh:20261030",
+    "605189.SH": "stale:20260605",
+    "001286.SZ": "no_event",
+    "600055.SH": "stale:20241115",
+    "300984.SZ": "fresh:20261030",
+    "688196.SH": "no_event",
+    "920237.BJ": "no_event",
+    "300486.SZ": "fresh:20261030",
+    "301459.SZ": "no_event",
+    "920207.BJ": "no_event",
+    "002766.SZ": "fresh:20261030",
+    "601916.SH": "fresh:20261030",
+    "300143.SZ": "stale:20231027",
+    "002791.SZ": "fresh:20261030",
+    "920522.BJ": "no_event",
+    "300712.SZ": "fresh:20261030",
+    "600661.SH": "fresh:20261030",
+    "920455.BJ": "no_event",
+    "002420.SZ": "no_event",
+    "600851.SH": "stale:20210409",
+    "001318.SZ": "no_event",
+    "600998.SH": "fresh:20261030",
+    "601607.SH": "stale:20200828",
+    "002603.SZ": "fresh:20261030",
+    "002100.SZ": "stale:20250912",
+    "301383.SZ": "fresh:20261030",
+    "000858.SZ": "fresh:20261030",
+    "688187.SH": "no_event",
+    "002044.SZ": "fresh:20261030",
+    "688475.SH": "no_event",
+    "601000.SH": "fresh:20261030",
+    "603288.SH": "fresh:20261030",
+    "600718.SH": "fresh:20261030",
+    "600699.SH": "stale:20250711",
+    "600050.SH": "stale:20250321",
+    "000999.SZ": "stale:20251010",
+    "600085.SH": "stale:20210115",
+    "603992.SH": "fresh:20260821",
+    "603348.SH": "stale:20201016",
+    "002027.SZ": "fresh:20261030",
+    "600587.SH": "no_event",
+    "920690.BJ": "no_event",
+    "301047.SZ": "fresh:20261030",
+    "300171.SZ": "no_event",
+    "301218.SZ": "fresh:20261030",
+    "600892.SH": "fresh:20261030",
+    "688131.SH": "stale:20220715",
+    "688137.SH": "no_event",
+    "301046.SZ": "stale:20251010",
+    "000993.SZ": "no_event",
+    "001216.SZ": "fresh:20261030",
+    "002029.SZ": "fresh:20261030",
+    "002093.SZ": "fresh:20260821",
+    "002827.SZ": "stale:20210115",
+    "300085.SZ": "stale:20260717",
+    "300291.SZ": "fresh:20261030",
+    "300426.SZ": "fresh:20261030",
+    "300684.SZ": "stale:20240322",
+    "300739.SZ": "fresh:20261030",
+    "300829.SZ": "fresh:20261030",
+    "301080.SZ": "stale:20230317",
+    "301132.SZ": "no_event",
+    "301262.SZ": "no_event",
+    "301520.SZ": "no_event",
+    "600127.SH": "no_event",
+    "600293.SH": "fresh:20261030",
+    "600371.SH": "no_event",
+    "600641.SH": "fresh:20261030",
+    "601086.SH": "fresh:20261030",
+    "601811.SH": "no_event",
+    "603236.SH": "fresh:20261030",
+    "603268.SH": "fresh:20261030",
+    "605058.SH": "no_event",
+    "605577.SH": "no_event",
+    "688004.SH": "no_event",
+    "688112.SH": "no_event",
+    "688185.SH": "stale:20210813",
+    "688315.SH": "no_event",
+    "600593.SH": "fresh:20261030",
+    "600887.SH": "fresh:20261030",
+    "300740.SZ": "fresh:20261030",
+    "600613.SH": "fresh:20261030",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "stale:20241018",
+    "000011.SZ": "stale:20200814",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "融资融券": {
+   "status": "OK",
+   "kind": "hi",
+   "fresh": 83,
+   "stale": 0,
+   "absent": 33,
+   "per_code": {
+    "301563.SZ": "fresh:20261105",
+    "920870.BJ": "fresh:20261105",
+    "605003.SH": "absent",
+    "301508.SZ": "fresh:20261105",
+    "002381.SZ": "absent",
+    "301515.SZ": "fresh:20261105",
+    "301103.SZ": "fresh:20261105",
+    "301408.SZ": "fresh:20261105",
+    "603214.SH": "absent",
+    "688113.SH": "fresh:20261105",
+    "600743.SH": "fresh:20261105",
+    "600930.SH": "fresh:20261105",
+    "688235.SH": "fresh:20261105",
+    "000543.SZ": "fresh:20261105",
+    "000423.SZ": "fresh:20261105",
+    "920091.BJ": "fresh:20261105",
+    "002901.SZ": "fresh:20261105",
+    "300251.SZ": "fresh:20261105",
+    "688165.SH": "fresh:20261105",
+    "601800.SH": "fresh:20261105",
+    "920885.BJ": "fresh:20261105",
+    "301221.SZ": "fresh:20261105",
+    "600422.SH": "fresh:20261105",
+    "002294.SZ": "fresh:20261105",
+    "605189.SH": "absent",
+    "001286.SZ": "fresh:20261105",
+    "600055.SH": "fresh:20261105",
+    "300984.SZ": "fresh:20261105",
+    "688196.SH": "fresh:20261105",
+    "920237.BJ": "fresh:20261105",
+    "300486.SZ": "absent",
+    "301459.SZ": "fresh:20261105",
+    "920207.BJ": "fresh:20261105",
+    "002766.SZ": "absent",
+    "601916.SH": "fresh:20261105",
+    "300143.SZ": "fresh:20261105",
+    "002791.SZ": "fresh:20261105",
+    "920522.BJ": "fresh:20261105",
+    "300712.SZ": "fresh:20261105",
+    "600661.SH": "fresh:20261105",
+    "920455.BJ": "fresh:20261105",
+    "002420.SZ": "absent",
+    "600851.SH": "fresh:20261105",
+    "001318.SZ": "absent",
+    "600998.SH": "fresh:20261105",
+    "601607.SH": "fresh:20261105",
+    "002603.SZ": "fresh:20261105",
+    "002100.SZ": "fresh:20261105",
+    "301383.SZ": "fresh:20261105",
+    "000858.SZ": "fresh:20261105",
+    "688187.SH": "fresh:20261105",
+    "002044.SZ": "fresh:20261105",
+    "688475.SH": "fresh:20261105",
+    "601000.SH": "fresh:20261105",
+    "603288.SH": "fresh:20261105",
+    "600718.SH": "fresh:20261105",
+    "600699.SH": "fresh:20261105",
+    "600050.SH": "fresh:20261105",
+    "000999.SZ": "fresh:20261105",
+    "600085.SH": "fresh:20261105",
+    "603992.SH": "absent",
+    "603348.SH": "fresh:20261105",
+    "002027.SZ": "fresh:20261105",
+    "600587.SH": "fresh:20261105",
+    "920690.BJ": "fresh:20261105",
+    "301047.SZ": "fresh:20261105",
+    "300171.SZ": "fresh:20261105",
+    "301218.SZ": "fresh:20261105",
+    "600892.SH": "absent",
+    "688131.SH": "fresh:20261105",
+    "688137.SH": "fresh:20261105",
+    "301046.SZ": "fresh:20261105",
+    "000993.SZ": "fresh:20261105",
+    "001216.SZ": "absent",
+    "002029.SZ": "fresh:20261105",
+    "002093.SZ": "fresh:20261105",
+    "002827.SZ": "absent",
+    "300085.SZ": "fresh:20261105",
+    "300291.SZ": "absent",
+    "300426.SZ": "absent",
+    "300684.SZ": "fresh:20261105",
+    "300739.SZ": "fresh:20261105",
+    "300829.SZ": "absent",
+    "301080.SZ": "fresh:20261105",
+    "301132.SZ": "fresh:20261105",
+    "301262.SZ": "fresh:20261105",
+    "301520.SZ": "fresh:20261105",
+    "600127.SH": "fresh:20261105",
+    "600293.SH": "fresh:20261105",
+    "600371.SH": "absent",
+    "600641.SH": "fresh:20261105",
+    "601086.SH": "absent",
+    "601811.SH": "absent",
+    "603236.SH": "fresh:20261105",
+    "603268.SH": "fresh:20261105",
+    "605058.SH": "absent",
+    "605577.SH": "absent",
+    "688004.SH": "fresh:20261105",
+    "688112.SH": "fresh:20261105",
+    "688185.SH": "fresh:20261105",
+    "688315.SH": "fresh:20261105",
+    "600593.SH": "absent",
+    "600887.SH": "fresh:20261105",
+    "300740.SZ": "fresh:20261105",
+    "600613.SH": "absent",
+    "gb_pltr": "absent",
+    "gb_be": "absent",
+    "gb_panw": "absent",
+    "603188.SH": "absent",
+    "000011.SZ": "absent",
+    "gb_tsla": "absent",
+    "gb_mrvl": "absent",
+    "gb_tsm": "absent",
+    "03690.HK": "absent",
+    "01810.HK": "absent",
+    "01299.HK": "absent"
+   }
+  },
+  "业绩预告": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 1,
+   "stale": 98,
+   "absent": 17,
+   "per_code": {
+    "301563.SZ": "stale:20260706",
+    "920870.BJ": "no_event",
+    "605003.SH": "stale:20250114",
+    "301508.SZ": "stale:20231110",
+    "002381.SZ": "stale:20260715",
+    "301515.SZ": "stale:20260129",
+    "301103.SZ": "stale:20260127",
+    "301408.SZ": "stale:20230210",
+    "603214.SH": "stale:20221018",
+    "688113.SH": "stale:20210323",
+    "600743.SH": "stale:20260715",
+    "600930.SH": "stale:20250627",
+    "688235.SH": "stale:20260507",
+    "000543.SZ": "stale:20250123",
+    "000423.SZ": "stale:20241010",
+    "920091.BJ": "fresh:20260826",
+    "002901.SZ": "stale:20260127",
+    "300251.SZ": "stale:20260129",
+    "688165.SH": "stale:20260127",
+    "601800.SH": "no_event",
+    "920885.BJ": "stale:20260130",
+    "301221.SZ": "stale:20260128",
+    "600422.SH": "stale:20260715",
+    "002294.SZ": "stale:20220329",
+    "605189.SH": "stale:20260714",
+    "001286.SZ": "stale:20230321",
+    "600055.SH": "stale:20200703",
+    "300984.SZ": "stale:20260115",
+    "688196.SH": "stale:20250116",
+    "920237.BJ": "stale:20250123",
+    "300486.SZ": "stale:20260129",
+    "301459.SZ": "stale:20250114",
+    "920207.BJ": "stale:20260130",
+    "002766.SZ": "stale:20260708",
+    "601916.SH": "no_event",
+    "300143.SZ": "stale:20240126",
+    "002791.SZ": "stale:20260715",
+    "920522.BJ": "stale:20260130",
+    "300712.SZ": "stale:20230131",
+    "600661.SH": "stale:20260714",
+    "920455.BJ": "stale:20240724",
+    "002420.SZ": "stale:20260122",
+    "600851.SH": "no_event",
+    "001318.SZ": "stale:20220519",
+    "600998.SH": "stale:20201027",
+    "601607.SH": "stale:20250710",
+    "002603.SZ": "stale:20260123",
+    "002100.SZ": "stale:20260715",
+    "301383.SZ": "stale:20260121",
+    "000858.SZ": "stale:20260715",
+    "688187.SH": "stale:20240718",
+    "002044.SZ": "stale:20260715",
+    "688475.SH": "stale:20240118",
+    "601000.SH": "no_event",
+    "603288.SH": "no_event",
+    "600718.SH": "stale:20260715",
+    "600699.SH": "stale:20260127",
+    "600050.SH": "stale:20200123",
+    "000999.SZ": "stale:20240125",
+    "600085.SH": "stale:20240131",
+    "603992.SH": "stale:20260707",
+    "603348.SH": "stale:20260715",
+    "002027.SZ": "stale:20240130",
+    "600587.SH": "stale:20210430",
+    "920690.BJ": "stale:20260129",
+    "301047.SZ": "stale:20250124",
+    "300171.SZ": "stale:20250124",
+    "301218.SZ": "stale:20260130",
+    "600892.SH": "stale:20260715",
+    "688131.SH": "stale:20210520",
+    "688137.SH": "stale:20240131",
+    "301046.SZ": "stale:20260129",
+    "000993.SZ": "stale:20260715",
+    "001216.SZ": "stale:20220714",
+    "002029.SZ": "stale:20260715",
+    "002093.SZ": "stale:20260709",
+    "002827.SZ": "stale:20260708",
+    "300085.SZ": "stale:20260122",
+    "300291.SZ": "stale:20250124",
+    "300426.SZ": "stale:20260126",
+    "300684.SZ": "stale:20260120",
+    "300739.SZ": "stale:20260129",
+    "300829.SZ": "stale:20260129",
+    "301080.SZ": "stale:20260129",
+    "301132.SZ": "stale:20250721",
+    "301262.SZ": "stale:20240724",
+    "301520.SZ": "stale:20230905",
+    "600127.SH": "stale:20260715",
+    "600293.SH": "stale:20260715",
+    "600371.SH": "stale:20230113",
+    "600641.SH": "stale:20260715",
+    "601086.SH": "stale:20260715",
+    "601811.SH": "no_event",
+    "603236.SH": "stale:20250711",
+    "603268.SH": "stale:20260708",
+    "605058.SH": "stale:20210413",
+    "605577.SH": "stale:20231013",
+    "688004.SH": "stale:20260127",
+    "688112.SH": "stale:20230407",
+    "688185.SH": "stale:20260128",
+    "688315.SH": "stale:20210309",
+    "600593.SH": "stale:20260715",
+    "600887.SH": "no_event",
+    "300740.SZ": "stale:20250124",
+    "600613.SH": "stale:20200430",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "stale:20240711",
+    "000011.SZ": "stale:20260715",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "分红": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 0,
+   "stale": 106,
+   "absent": 10,
+   "per_code": {
+    "301563.SZ": "no_event",
+    "920870.BJ": "stale:20260630",
+    "605003.SH": "stale:20260630",
+    "301508.SZ": "stale:20260630",
+    "002381.SZ": "stale:20260630",
+    "301515.SZ": "stale:20260630",
+    "301103.SZ": "stale:20260630",
+    "301408.SZ": "stale:20260630",
+    "603214.SH": "stale:20260630",
+    "688113.SH": "stale:20260630",
+    "600743.SH": "stale:20260630",
+    "600930.SH": "stale:20260630",
+    "688235.SH": "stale:20260630",
+    "000543.SZ": "stale:20260630",
+    "000423.SZ": "stale:20260630",
+    "920091.BJ": "stale:20260630",
+    "002901.SZ": "stale:20260630",
+    "300251.SZ": "stale:20260630",
+    "688165.SH": "stale:20260630",
+    "601800.SH": "stale:20260630",
+    "920885.BJ": "stale:20260630",
+    "301221.SZ": "stale:20260630",
+    "600422.SH": "stale:20260630",
+    "002294.SZ": "stale:20260630",
+    "605189.SH": "stale:20260630",
+    "001286.SZ": "stale:20260630",
+    "600055.SH": "stale:20260630",
+    "300984.SZ": "stale:20260630",
+    "688196.SH": "stale:20260630",
+    "920237.BJ": "stale:20260630",
+    "300486.SZ": "stale:20260630",
+    "301459.SZ": "stale:20260630",
+    "920207.BJ": "stale:20260630",
+    "002766.SZ": "stale:20260630",
+    "601916.SH": "stale:20260630",
+    "300143.SZ": "stale:20260630",
+    "002791.SZ": "stale:20260630",
+    "920522.BJ": "stale:20260630",
+    "300712.SZ": "stale:20260630",
+    "600661.SH": "stale:20260630",
+    "920455.BJ": "stale:20260630",
+    "002420.SZ": "stale:20260630",
+    "600851.SH": "stale:20260630",
+    "001318.SZ": "stale:20260630",
+    "600998.SH": "stale:20260630",
+    "601607.SH": "stale:20260630",
+    "002603.SZ": "stale:20260630",
+    "002100.SZ": "stale:20260630",
+    "301383.SZ": "stale:20260630",
+    "000858.SZ": "stale:20260630",
+    "688187.SH": "stale:20260630",
+    "002044.SZ": "stale:20260630",
+    "688475.SH": "stale:20260630",
+    "601000.SH": "stale:20260630",
+    "603288.SH": "stale:20260630",
+    "600718.SH": "stale:20260630",
+    "600699.SH": "stale:20260630",
+    "600050.SH": "stale:20260630",
+    "000999.SZ": "stale:20260630",
+    "600085.SH": "stale:20260630",
+    "603992.SH": "stale:20260630",
+    "603348.SH": "stale:20260630",
+    "002027.SZ": "stale:20260630",
+    "600587.SH": "stale:20260630",
+    "920690.BJ": "stale:20260630",
+    "301047.SZ": "stale:20260630",
+    "300171.SZ": "stale:20260630",
+    "301218.SZ": "stale:20260630",
+    "600892.SH": "stale:20260630",
+    "688131.SH": "stale:20260630",
+    "688137.SH": "stale:20260630",
+    "301046.SZ": "stale:20260630",
+    "000993.SZ": "stale:20260630",
+    "001216.SZ": "stale:20260630",
+    "002029.SZ": "stale:20260630",
+    "002093.SZ": "stale:20260630",
+    "002827.SZ": "stale:20260630",
+    "300085.SZ": "stale:20260630",
+    "300291.SZ": "stale:20260630",
+    "300426.SZ": "stale:20260630",
+    "300684.SZ": "stale:20260630",
+    "300739.SZ": "stale:20260630",
+    "300829.SZ": "stale:20260630",
+    "301080.SZ": "stale:20260630",
+    "301132.SZ": "stale:20260630",
+    "301262.SZ": "stale:20260630",
+    "301520.SZ": "stale:20260630",
+    "600127.SH": "stale:20260630",
+    "600293.SH": "stale:20260630",
+    "600371.SH": "stale:20260630",
+    "600641.SH": "stale:20260630",
+    "601086.SH": "stale:20260630",
+    "601811.SH": "stale:20260630",
+    "603236.SH": "stale:20260630",
+    "603268.SH": "stale:20260630",
+    "605058.SH": "stale:20260630",
+    "605577.SH": "stale:20260630",
+    "688004.SH": "stale:20260630",
+    "688112.SH": "stale:20260630",
+    "688185.SH": "stale:20260630",
+    "688315.SH": "stale:20260630",
+    "600593.SH": "stale:20260630",
+    "600887.SH": "stale:20260630",
+    "300740.SZ": "stale:20260630",
+    "600613.SH": "stale:20260630",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "stale:20260630",
+    "000011.SZ": "stale:20260630",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "公告文本": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 107,
+   "stale": 0,
+   "absent": 9,
+   "per_code": {
+    "301563.SZ": "fresh:20261105",
+    "920870.BJ": "fresh:20261028",
+    "605003.SH": "fresh:20261106",
+    "301508.SZ": "fresh:20261027",
+    "002381.SZ": "fresh:20261027",
+    "301515.SZ": "fresh:20261029",
+    "301103.SZ": "fresh:20261106",
+    "301408.SZ": "fresh:20261105",
+    "603214.SH": "fresh:20261104",
+    "688113.SH": "fresh:20261030",
+    "600743.SH": "fresh:20261029",
+    "600930.SH": "fresh:20261105",
+    "688235.SH": "fresh:20261106",
+    "000543.SZ": "fresh:20261104",
+    "000423.SZ": "fresh:20261025",
+    "920091.BJ": "fresh:20261028",
+    "002901.SZ": "fresh:20261103",
+    "300251.SZ": "fresh:20261027",
+    "688165.SH": "fresh:20261031",
+    "601800.SH": "fresh:20261031",
+    "920885.BJ": "fresh:20261027",
+    "301221.SZ": "fresh:20261022",
+    "600422.SH": "fresh:20261024",
+    "002294.SZ": "fresh:20261103",
+    "605189.SH": "fresh:20261030",
+    "001286.SZ": "fresh:20261029",
+    "600055.SH": "fresh:20261031",
+    "300984.SZ": "fresh:20261027",
+    "688196.SH": "fresh:20261031",
+    "920237.BJ": "fresh:20261023",
+    "300486.SZ": "fresh:20261030",
+    "301459.SZ": "fresh:20261106",
+    "920207.BJ": "fresh:20261028",
+    "002766.SZ": "fresh:20261026",
+    "601916.SH": "fresh:20261031",
+    "300143.SZ": "fresh:20261102",
+    "002791.SZ": "fresh:20261106",
+    "920522.BJ": "fresh:20261030",
+    "300712.SZ": "fresh:20261102",
+    "600661.SH": "fresh:20261105",
+    "920455.BJ": "fresh:20261028",
+    "002420.SZ": "fresh:20261030",
+    "600851.SH": "fresh:20261106",
+    "001318.SZ": "fresh:20261028",
+    "600998.SH": "fresh:20261103",
+    "601607.SH": "fresh:20261105",
+    "002603.SZ": "fresh:20261106",
+    "002100.SZ": "fresh:20261028",
+    "301383.SZ": "fresh:20261026",
+    "000858.SZ": "fresh:20261104",
+    "688187.SH": "fresh:20261103",
+    "002044.SZ": "fresh:20261106",
+    "688475.SH": "fresh:20261017",
+    "601000.SH": "fresh:20261030",
+    "603288.SH": "fresh:20261106",
+    "600718.SH": "fresh:20261030",
+    "600699.SH": "fresh:20261106",
+    "600050.SH": "fresh:20261030",
+    "000999.SZ": "fresh:20261025",
+    "600085.SH": "fresh:20261103",
+    "603992.SH": "fresh:20261031",
+    "603348.SH": "fresh:20261029",
+    "002027.SZ": "fresh:20261028",
+    "600587.SH": "fresh:20261031",
+    "920690.BJ": "fresh:20261104",
+    "301047.SZ": "fresh:20261027",
+    "300171.SZ": "fresh:20261030",
+    "301218.SZ": "fresh:20261103",
+    "600892.SH": "fresh:20261105",
+    "688131.SH": "fresh:20261031",
+    "688137.SH": "fresh:20261102",
+    "301046.SZ": "fresh:20261104",
+    "000993.SZ": "fresh:20261027",
+    "001216.SZ": "fresh:20261105",
+    "002029.SZ": "fresh:20261103",
+    "002093.SZ": "fresh:20261029",
+    "002827.SZ": "fresh:20261104",
+    "300085.SZ": "fresh:20261105",
+    "300291.SZ": "fresh:20261029",
+    "300426.SZ": "fresh:20261103",
+    "300684.SZ": "fresh:20261102",
+    "300739.SZ": "fresh:20261103",
+    "300829.SZ": "fresh:20261027",
+    "301080.SZ": "fresh:20261102",
+    "301132.SZ": "fresh:20261106",
+    "301262.SZ": "fresh:20261027",
+    "301520.SZ": "fresh:20261030",
+    "600127.SH": "fresh:20261103",
+    "600293.SH": "fresh:20261104",
+    "600371.SH": "fresh:20261028",
+    "600641.SH": "fresh:20261104",
+    "601086.SH": "fresh:20261105",
+    "601811.SH": "fresh:20261104",
+    "603236.SH": "fresh:20261105",
+    "603268.SH": "fresh:20261029",
+    "605058.SH": "fresh:20261106",
+    "605577.SH": "fresh:20261105",
+    "688004.SH": "fresh:20261102",
+    "688112.SH": "fresh:20261103",
+    "688185.SH": "fresh:20261104",
+    "688315.SH": "fresh:20261106",
+    "600593.SH": "fresh:20261103",
+    "600887.SH": "fresh:20261103",
+    "300740.SZ": "fresh:20261030",
+    "600613.SH": "fresh:20261105",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "fresh:20261105",
+    "000011.SZ": "fresh:20261030",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "机构调研": {
+   "status": "SKIPPED",
+   "note": "表缺列/缺文件"
+  },
+  "涨跌停(THS)": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 46,
+   "stale": 40,
+   "absent": 30,
+   "per_code": {
+    "301563.SZ": "stale:20260602",
+    "920870.BJ": "no_event",
+    "605003.SH": "fresh:20261015",
+    "301508.SZ": "stale:20241010",
+    "002381.SZ": "stale:20241216",
+    "301515.SZ": "stale:20260108",
+    "301103.SZ": "no_event",
+    "301408.SZ": "stale:20260415",
+    "603214.SH": "stale:20250410",
+    "688113.SH": "stale:20240208",
+    "600743.SH": "fresh:20260923",
+    "600930.SH": "no_event",
+    "688235.SH": "no_event",
+    "000543.SZ": "stale:20251027",
+    "000423.SZ": "no_event",
+    "920091.BJ": "no_event",
+    "002901.SZ": "stale:20250807",
+    "300251.SZ": "stale:20260210",
+    "688165.SH": "stale:20250224",
+    "601800.SH": "stale:20250722",
+    "920885.BJ": "no_event",
+    "301221.SZ": "stale:20241008",
+    "600422.SH": "stale:20250211",
+    "002294.SZ": "stale:20260703",
+    "605189.SH": "fresh:20261102",
+    "001286.SZ": "no_event",
+    "600055.SH": "no_event",
+    "300984.SZ": "stale:20250305",
+    "688196.SH": "fresh:20261008",
+    "920237.BJ": "no_event",
+    "300486.SZ": "stale:20260602",
+    "301459.SZ": "stale:20250519",
+    "920207.BJ": "no_event",
+    "002766.SZ": "fresh:20260814",
+    "601916.SH": "no_event",
+    "300143.SZ": "stale:20240909",
+    "002791.SZ": "stale:20260729",
+    "920522.BJ": "no_event",
+    "300712.SZ": "stale:20241113",
+    "600661.SH": "fresh:20261020",
+    "920455.BJ": "no_event",
+    "002420.SZ": "stale:20260623",
+    "600851.SH": "fresh:20261012",
+    "001318.SZ": "fresh:20261103",
+    "600998.SH": "stale:20240207",
+    "601607.SH": "no_event",
+    "002603.SZ": "stale:20250106",
+    "002100.SZ": "stale:20250911",
+    "301383.SZ": "stale:20241220",
+    "000858.SZ": "stale:20260129",
+    "688187.SH": "stale:20260513",
+    "002044.SZ": "stale:20260810",
+    "688475.SH": "no_event",
+    "601000.SH": "no_event",
+    "603288.SH": "no_event",
+    "600718.SH": "stale:20250919",
+    "600699.SH": "fresh:20261104",
+    "600050.SH": "stale:20250221",
+    "000999.SZ": "stale:20240930",
+    "600085.SH": "stale:20240930",
+    "603992.SH": "fresh:20261028",
+    "603348.SH": "fresh:20261019",
+    "002027.SZ": "stale:20250410",
+    "600587.SH": "fresh:20260921",
+    "920690.BJ": "no_event",
+    "301047.SZ": "stale:20260807",
+    "300171.SZ": "no_event",
+    "301218.SZ": "fresh:20261102",
+    "600892.SH": "fresh:20261104",
+    "688131.SH": "stale:20241008",
+    "688137.SH": "fresh:20261028",
+    "301046.SZ": "stale:20240125",
+    "000993.SZ": "fresh:20260916",
+    "001216.SZ": "fresh:20261102",
+    "002029.SZ": "fresh:20261103",
+    "002093.SZ": "fresh:20261027",
+    "002827.SZ": "fresh:20261104",
+    "300085.SZ": "fresh:20261102",
+    "300291.SZ": "fresh:20261028",
+    "300426.SZ": "fresh:20261102",
+    "300684.SZ": "fresh:20260818",
+    "300739.SZ": "stale:20241217",
+    "300829.SZ": "fresh:20261012",
+    "301080.SZ": "fresh:20261028",
+    "301132.SZ": "fresh:20261030",
+    "301262.SZ": "fresh:20261102",
+    "301520.SZ": "fresh:20261030",
+    "600127.SH": "fresh:20261009",
+    "600293.SH": "fresh:20261103",
+    "600371.SH": "fresh:20261106",
+    "600641.SH": "fresh:20261105",
+    "601086.SH": "fresh:20261102",
+    "601811.SH": "fresh:20261015",
+    "603236.SH": "fresh:20261021",
+    "603268.SH": "stale:20260805",
+    "605058.SH": "fresh:20261030",
+    "605577.SH": "fresh:20261104",
+    "688004.SH": "fresh:20261020",
+    "688112.SH": "fresh:20260921",
+    "688185.SH": "fresh:20260930",
+    "688315.SH": "fresh:20260921",
+    "600593.SH": "fresh:20260921",
+    "600887.SH": "no_event",
+    "300740.SZ": "stale:20260702",
+    "600613.SH": "fresh:20260921",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "fresh:20261019",
+    "000011.SZ": "fresh:20260930",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "开盘啦题材": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 0,
+   "stale": 0,
+   "absent": 116,
+   "per_code": {
+    "301563.SZ": "no_event",
+    "920870.BJ": "no_event",
+    "605003.SH": "no_event",
+    "301508.SZ": "no_event",
+    "002381.SZ": "no_event",
+    "301515.SZ": "no_event",
+    "301103.SZ": "no_event",
+    "301408.SZ": "no_event",
+    "603214.SH": "no_event",
+    "688113.SH": "no_event",
+    "600743.SH": "no_event",
+    "600930.SH": "no_event",
+    "688235.SH": "no_event",
+    "000543.SZ": "no_event",
+    "000423.SZ": "no_event",
+    "920091.BJ": "no_event",
+    "002901.SZ": "no_event",
+    "300251.SZ": "no_event",
+    "688165.SH": "no_event",
+    "601800.SH": "no_event",
+    "920885.BJ": "no_event",
+    "301221.SZ": "no_event",
+    "600422.SH": "no_event",
+    "002294.SZ": "no_event",
+    "605189.SH": "no_event",
+    "001286.SZ": "no_event",
+    "600055.SH": "no_event",
+    "300984.SZ": "no_event",
+    "688196.SH": "no_event",
+    "920237.BJ": "no_event",
+    "300486.SZ": "no_event",
+    "301459.SZ": "no_event",
+    "920207.BJ": "no_event",
+    "002766.SZ": "no_event",
+    "601916.SH": "no_event",
+    "300143.SZ": "no_event",
+    "002791.SZ": "no_event",
+    "920522.BJ": "no_event",
+    "300712.SZ": "no_event",
+    "600661.SH": "no_event",
+    "920455.BJ": "no_event",
+    "002420.SZ": "no_event",
+    "600851.SH": "no_event",
+    "001318.SZ": "no_event",
+    "600998.SH": "no_event",
+    "601607.SH": "no_event",
+    "002603.SZ": "no_event",
+    "002100.SZ": "no_event",
+    "301383.SZ": "no_event",
+    "000858.SZ": "no_event",
+    "688187.SH": "no_event",
+    "002044.SZ": "no_event",
+    "688475.SH": "no_event",
+    "601000.SH": "no_event",
+    "603288.SH": "no_event",
+    "600718.SH": "no_event",
+    "600699.SH": "no_event",
+    "600050.SH": "no_event",
+    "000999.SZ": "no_event",
+    "600085.SH": "no_event",
+    "603992.SH": "no_event",
+    "603348.SH": "no_event",
+    "002027.SZ": "no_event",
+    "600587.SH": "no_event",
+    "920690.BJ": "no_event",
+    "301047.SZ": "no_event",
+    "300171.SZ": "no_event",
+    "301218.SZ": "no_event",
+    "600892.SH": "no_event",
+    "688131.SH": "no_event",
+    "688137.SH": "no_event",
+    "301046.SZ": "no_event",
+    "000993.SZ": "no_event",
+    "001216.SZ": "no_event",
+    "002029.SZ": "no_event",
+    "002093.SZ": "no_event",
+    "002827.SZ": "no_event",
+    "300085.SZ": "no_event",
+    "300291.SZ": "no_event",
+    "300426.SZ": "no_event",
+    "300684.SZ": "no_event",
+    "300739.SZ": "no_event",
+    "300829.SZ": "no_event",
+    "301080.SZ": "no_event",
+    "301132.SZ": "no_event",
+    "301262.SZ": "no_event",
+    "301520.SZ": "no_event",
+    "600127.SH": "no_event",
+    "600293.SH": "no_event",
+    "600371.SH": "no_event",
+    "600641.SH": "no_event",
+    "601086.SH": "no_event",
+    "601811.SH": "no_event",
+    "603236.SH": "no_event",
+    "603268.SH": "no_event",
+    "605058.SH": "no_event",
+    "605577.SH": "no_event",
+    "688004.SH": "no_event",
+    "688112.SH": "no_event",
+    "688185.SH": "no_event",
+    "688315.SH": "no_event",
+    "600593.SH": "no_event",
+    "600887.SH": "no_event",
+    "300740.SZ": "no_event",
+    "600613.SH": "no_event",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "no_event",
+    "000011.SZ": "no_event",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  },
+  "财报日历": {
+   "status": "OK",
+   "kind": "evt",
+   "fresh": 104,
+   "stale": 0,
+   "absent": 12,
+   "per_code": {
+    "301563.SZ": "fresh:20260930",
+    "920870.BJ": "fresh:20260930",
+    "605003.SH": "fresh:20260930",
+    "301508.SZ": "fresh:20260930",
+    "002381.SZ": "fresh:20260930",
+    "301515.SZ": "fresh:20260930",
+    "301103.SZ": "fresh:20260930",
+    "301408.SZ": "fresh:20260930",
+    "603214.SH": "fresh:20260930",
+    "688113.SH": "fresh:20260930",
+    "600743.SH": "fresh:20260930",
+    "600930.SH": "fresh:20260930",
+    "688235.SH": "fresh:20260930",
+    "000543.SZ": "fresh:20260930",
+    "000423.SZ": "fresh:20260930",
+    "920091.BJ": "fresh:20260930",
+    "002901.SZ": "fresh:20260930",
+    "300251.SZ": "fresh:20260930",
+    "688165.SH": "fresh:20260930",
+    "601800.SH": "fresh:20260930",
+    "920885.BJ": "fresh:20260930",
+    "301221.SZ": "fresh:20260930",
+    "600422.SH": "fresh:20260930",
+    "002294.SZ": "fresh:20260930",
+    "605189.SH": "fresh:20260930",
+    "001286.SZ": "fresh:20260930",
+    "600055.SH": "fresh:20260930",
+    "300984.SZ": "fresh:20260930",
+    "688196.SH": "fresh:20260930",
+    "920237.BJ": "fresh:20260930",
+    "300486.SZ": "fresh:20260930",
+    "301459.SZ": "fresh:20260930",
+    "920207.BJ": "fresh:20260930",
+    "002766.SZ": "fresh:20260930",
+    "601916.SH": "fresh:20260930",
+    "300143.SZ": "fresh:20260930",
+    "002791.SZ": "fresh:20260930",
+    "920522.BJ": "fresh:20260930",
+    "300712.SZ": "fresh:20260930",
+    "600661.SH": "fresh:20260930",
+    "920455.BJ": "fresh:20260930",
+    "002420.SZ": "fresh:20260930",
+    "600851.SH": "fresh:20260930",
+    "001318.SZ": "fresh:20260930",
+    "600998.SH": "fresh:20260930",
+    "601607.SH": "fresh:20260930",
+    "002603.SZ": "fresh:20260930",
+    "002100.SZ": "fresh:20260930",
+    "301383.SZ": "fresh:20260930",
+    "000858.SZ": "fresh:20260930",
+    "688187.SH": "fresh:20260930",
+    "002044.SZ": "fresh:20260930",
+    "688475.SH": "fresh:20260930",
+    "601000.SH": "fresh:20260930",
+    "603288.SH": "fresh:20260930",
+    "600718.SH": "fresh:20260930",
+    "600699.SH": "fresh:20260930",
+    "600050.SH": "fresh:20260930",
+    "000999.SZ": "no_event",
+    "600085.SH": "fresh:20260930",
+    "603992.SH": "fresh:20260930",
+    "603348.SH": "fresh:20260930",
+    "002027.SZ": "fresh:20260930",
+    "600587.SH": "no_event",
+    "920690.BJ": "fresh:20260930",
+    "301047.SZ": "fresh:20260930",
+    "300171.SZ": "fresh:20260930",
+    "301218.SZ": "fresh:20260930",
+    "600892.SH": "fresh:20260930",
+    "688131.SH": "fresh:20260930",
+    "688137.SH": "fresh:20260930",
+    "301046.SZ": "fresh:20260930",
+    "000993.SZ": "fresh:20260930",
+    "001216.SZ": "fresh:20260930",
+    "002029.SZ": "fresh:20260930",
+    "002093.SZ": "fresh:20260930",
+    "002827.SZ": "fresh:20260930",
+    "300085.SZ": "fresh:20260930",
+    "300291.SZ": "fresh:20260930",
+    "300426.SZ": "fresh:20260930",
+    "300684.SZ": "fresh:20260930",
+    "300739.SZ": "fresh:20260930",
+    "300829.SZ": "fresh:20260930",
+    "301080.SZ": "fresh:20260930",
+    "301132.SZ": "fresh:20260930",
+    "301262.SZ": "fresh:20260930",
+    "301520.SZ": "fresh:20260930",
+    "600127.SH": "fresh:20260930",
+    "600293.SH": "fresh:20260930",
+    "600371.SH": "fresh:20260930",
+    "600641.SH": "fresh:20260930",
+    "601086.SH": "fresh:20260930",
+    "601811.SH": "fresh:20260930",
+    "603236.SH": "fresh:20260930",
+    "603268.SH": "fresh:20260930",
+    "605058.SH": "fresh:20260930",
+    "605577.SH": "fresh:20260930",
+    "688004.SH": "fresh:20260930",
+    "688112.SH": "fresh:20260930",
+    "688185.SH": "fresh:20260930",
+    "688315.SH": "fresh:20260930",
+    "600593.SH": "no_event",
+    "600887.SH": "fresh:20260930",
+    "300740.SZ": "fresh:20260930",
+    "600613.SH": "fresh:20260930",
+    "gb_pltr": "no_event",
+    "gb_be": "no_event",
+    "gb_panw": "no_event",
+    "603188.SH": "fresh:20260930",
+    "000011.SZ": "fresh:20260930",
+    "gb_tsla": "no_event",
+    "gb_mrvl": "no_event",
+    "gb_tsm": "no_event",
+    "03690.HK": "no_event",
+    "01810.HK": "no_event",
+    "01299.HK": "no_event"
+   }
+  }
+ },
+ "news_dims": {
+  "新闻舆情": {
+   "云汉芯城": [
+    22,
+    "2026-11-05"
+   ],
+   "恒进感应": [
+    1,
+    "2026-10-25"
+   ],
+   "众望布艺": [
+    3,
+    "2026-11-06"
+   ],
+   "中机认检": [
+    4,
+    "2026-10-27"
+   ],
+   "双箭股份": [
+    2,
+    "2026-10-26"
+   ],
+   "港通医疗": [
+    0,
+    ""
+   ],
+   "何氏眼科": [
+    2,
+    "2026-10-28"
+   ],
+   "华人健康": [
+    1,
+    "2026-11-05"
+   ],
+   "爱婴室": [
+    6,
+    "2026-11-04"
+   ],
+   "联测科技": [
+    1,
+    "2026-10-30"
+   ],
+   "华远控股": [
+    1,
+    "2026-10-26"
+   ],
+   "华电新能": [
+    14,
+    "2026-11-05"
+   ],
+   "百济神州": [
+    37,
+    "2026-11-08"
+   ],
+   "皖能电力": [
+    4,
+    "2026-10-29"
+   ],
+   "东阿阿胶": [
+    19,
+    "2026-10-25"
+   ],
+   "大鹏工业": [
+    2,
+    "2026-10-26"
+   ],
+   "大博医疗": [
+    10,
+    "2026-10-26"
+   ],
+   "光线传媒": [
+    7,
+    "2026-10-28"
+   ],
+   "埃夫特": [
+    0,
+    ""
+   ],
+   "中国交建": [
+    7,
+    "2026-10-29"
+   ],
+   "星辰科技": [
+    0,
+    ""
+   ],
+   "光庭信息": [
+    7,
+    "2026-10-22"
+   ],
+   "昆药集团": [
+    1,
+    "2026-10-19"
+   ],
+   "信立泰": [
+    7,
+    "2026-10-27"
+   ],
+   "富春染织": [
+    16,
+    "2026-11-02"
+   ],
+   "陕西能源": [
+    5,
+    "2026-10-28"
+   ],
+   "万东医疗": [
+    9,
+    "2026-11-07"
+   ],
+   "金沃股份": [
+    4,
+    "2026-10-27"
+   ],
+   "卓越新能": [
+    3,
+    "2026-10-31"
+   ],
+   "力佳科技": [
+    1,
+    "2026-10-24"
+   ],
+   "东杰智能": [
+    10,
+    "2026-10-29"
+   ],
+   "丰茂股份": [
+    1,
+    "2026-11-06"
+   ],
+   "众诚科技": [
+    3,
+    "2026-11-05"
+   ],
+   "索菱股份": [
+    1,
+    "2026-10-26"
+   ],
+   "浙商银行": [
+    7,
+    "2026-11-05"
+   ],
+   "盈康生命": [
+    4,
+    "2026-10-27"
+   ],
+   "坚朗五金": [
+    9,
+    "2026-10-21"
+   ],
+   "纳科诺尔": [
+    18,
+    "2026-11-05"
+   ],
+   "永福股份": [
+    4,
+    "2026-10-20"
+   ],
+   "昂立教育": [
+    15,
+    "2026-11-05"
+   ],
+   "汇隆活塞": [
+    2,
+    "2026-10-22"
+   ],
+   "毅昌科技": [
+    2,
+    "2026-10-24"
+   ],
+   "海欣股份": [
+    11,
+    "2026-11-06"
+   ],
+   "阳光乳业": [
+    24,
+    "2026-11-04"
+   ],
+   "九州通": [
+    11,
+    "2026-11-03"
+   ],
+   "上海医药": [
+    9,
+    "2026-11-05"
+   ],
+   "以岭药业": [
+    10,
+    "2026-11-06"
+   ],
+   "天康生物": [
+    6,
+    "2026-11-01"
+   ],
+   "天键股份": [
+    13,
+    "2026-11-02"
+   ],
+   "五粮液": [
+    38,
+    "2026-11-08"
+   ],
+   "时代电气": [
+    5,
+    "2026-11-02"
+   ],
+   "美年健康": [
+    17,
+    "2026-11-07"
+   ],
+   "萤石网络": [
+    13,
+    "2026-11-07"
+   ],
+   "唐山港": [
+    7,
+    "2026-10-30"
+   ],
+   "海天味业": [
+    15,
+    "2026-11-05"
+   ],
+   "东软集团": [
+    10,
+    "2026-10-30"
+   ],
+   "均胜电子": [
+    18,
+    "2026-11-06"
+   ],
+   "中国联通": [
+    23,
+    "2026-11-04"
+   ],
+   "华润三九": [
+    2,
+    "2026-10-23"
+   ],
+   "同仁堂": [
+    6,
+    "2026-11-02"
+   ],
+   "松霖科技": [
+    12,
+    "2026-10-31"
+   ],
+   "文灿股份": [
+    2,
+    "2026-10-28"
+   ],
+   "分众传媒": [
+    15,
+    "2026-10-30"
+   ],
+   "新华医疗": [
+    6,
+    "2026-10-31"
+   ],
+   "捷众科技": [
+    1,
+    "2026-11-04"
+   ],
+   "义翘神州": [
+    7,
+    "2026-11-03"
+   ],
+   "东富龙": [
+    1,
+    "2026-10-12"
+   ],
+   "华是科技": [
+    6,
+    "2026-11-04"
+   ],
+   "大晟文化": [
+    28,
+    "2026-11-05"
+   ],
+   "皓元医药": [
+    17,
+    "2026-11-05"
+   ],
+   "近岸蛋白": [
+    25,
+    "2026-11-04"
+   ],
+   "能辉科技": [
+    4,
+    "2026-10-27"
+   ],
+   "闽东电力": [
+    9,
+    "2026-11-06"
+   ],
+   "华瓷股份": [
+    29,
+    "2026-11-05"
+   ],
+   "七匹狼": [
+    11,
+    "2026-11-03"
+   ],
+   "国脉科技": [
+    7,
+    "2026-10-29"
+   ],
+   "高争民爆": [
+    33,
+    "2026-11-06"
+   ],
+   "银之杰": [
+    8,
+    "2026-11-05"
+   ],
+   "百纳千成": [
+    16,
+    "2026-11-05"
+   ],
+   "华智数媒": [
+    18,
+    "2026-11-04"
+   ],
+   "中石科技": [
+    4,
+    "2026-11-06"
+   ],
+   "明阳电路": [
+    10,
+    "2026-11-05"
+   ],
+   "金丹科技": [
+    10,
+    "2026-10-30"
+   ],
+   "百普赛斯": [
+    8,
+    "2026-11-04"
+   ],
+   "满坤科技": [
+    28,
+    "2026-11-06"
+   ],
+   "海看股份": [
+    7,
+    "2026-11-03"
+   ],
+   "万邦医药": [
+    17,
+    "2026-11-04"
+   ],
+   "金健米业": [
+    25,
+    "2026-11-06"
+   ],
+   "三峡新材": [
+    33,
+    "2026-11-04"
+   ],
+   "万向德农": [
+    21,
+    "2026-11-06"
+   ],
+   "先导基电": [
+    22,
+    "2026-11-06"
+   ],
+   "国芳集团": [
+    12,
+    "2026-11-05"
+   ],
+   "新华文轩": [
+    19,
+    "2026-11-04"
+   ],
+   "移远通信": [
+    26,
+    "2026-11-07"
+   ],
+   "松发股份": [
+    5,
+    "2026-11-07"
+   ],
+   "澳弘电子": [
+    58,
+    "2026-11-06"
+   ],
+   "龙版传媒": [
+    26,
+    "2026-11-05"
+   ],
+   "博汇科技": [
+    12,
+    "2026-11-05"
+   ],
+   "鼎阳科技": [
+    10,
+    "2026-11-07"
+   ],
+   "康希诺": [
+    13,
+    "2026-11-05"
+   ],
+   "诺禾致源": [
+    9,
+    "2026-11-06"
+   ]
+  },
+  "公告流": {
+   "云汉芯城": [
+    10,
+    "2026-11-05"
+   ],
+   "恒进感应": [
+    0,
+    ""
+   ],
+   "众望布艺": [
+    2,
+    "2026-11-06"
+   ],
+   "中机认检": [
+    1,
+    "2026-10-27"
+   ],
+   "双箭股份": [
+    1,
+    "2026-10-13"
+   ],
+   "港通医疗": [
+    0,
+    ""
+   ],
+   "何氏眼科": [
+    2,
+    "2026-10-28"
+   ],
+   "华人健康": [
+    0,
+    ""
+   ],
+   "爱婴室": [
+    2,
+    "2026-11-04"
+   ],
+   "联测科技": [
+    0,
+    ""
+   ],
+   "华远控股": [
+    0,
+    ""
+   ],
+   "华电新能": [
+    6,
+    "2026-11-05"
+   ],
+   "百济神州": [
+    3,
+    "2026-11-06"
+   ],
+   "皖能电力": [
+    2,
+    "2026-10-22"
+   ],
+   "东阿阿胶": [
+    12,
+    "2026-10-24"
+   ],
+   "大鹏工业": [
+    1,
+    "2026-10-26"
+   ],
+   "大博医疗": [
+    6,
+    "2026-10-26"
+   ],
+   "光线传媒": [
+    1,
+    "2026-10-27"
+   ],
+   "埃夫特": [
+    0,
+    ""
+   ],
+   "中国交建": [
+    2,
+    "2026-10-24"
+   ],
+   "星辰科技": [
+    0,
+    ""
+   ],
+   "光庭信息": [
+    2,
+    "2026-10-22"
+   ],
+   "昆药集团": [
+    0,
+    ""
+   ],
+   "信立泰": [
+    2,
+    "2026-10-27"
+   ],
+   "富春染织": [
+    6,
+    "2026-10-30"
+   ],
+   "陕西能源": [
+    1,
+    "2026-10-16"
+   ],
+   "万东医疗": [
+    6,
+    "2026-11-07"
+   ],
+   "金沃股份": [
+    3,
+    "2026-10-27"
+   ],
+   "卓越新能": [
+    1,
+    "2026-10-31"
+   ],
+   "力佳科技": [
+    0,
+    ""
+   ],
+   "东杰智能": [
+    6,
+    "2026-10-29"
+   ],
+   "丰茂股份": [
+    1,
+    "2026-11-06"
+   ],
+   "众诚科技": [
+    0,
+    ""
+   ],
+   "索菱股份": [
+    1,
+    "2026-10-26"
+   ],
+   "浙商银行": [
+    2,
+    "2026-11-05"
+   ],
+   "盈康生命": [
+    4,
+    "2026-10-27"
+   ],
+   "坚朗五金": [
+    8,
+    "2026-10-21"
+   ],
+   "纳科诺尔": [
+    0,
+    ""
+   ],
+   "永福股份": [
+    1,
+    "2026-10-20"
+   ],
+   "昂立教育": [
+    5,
+    "2026-11-05"
+   ],
+   "汇隆活塞": [
+    2,
+    "2026-10-22"
+   ],
+   "毅昌科技": [
+    1,
+    "2026-10-24"
+   ],
+   "海欣股份": [
+    6,
+    "2026-11-06"
+   ],
+   "阳光乳业": [
+    4,
+    "2026-10-28"
+   ],
+   "九州通": [
+    7,
+    "2026-11-03"
+   ],
+   "上海医药": [
+    5,
+    "2026-11-05"
+   ],
+   "以岭药业": [
+    4,
+    "2026-11-06"
+   ],
+   "天康生物": [
+    3,
+    "2026-10-28"
+   ],
+   "天键股份": [
+    11,
+    "2026-10-26"
+   ],
+   "五粮液": [
+    4,
+    "2026-11-04"
+   ],
+   "时代电气": [
+    2,
+    "2026-10-31"
+   ],
+   "美年健康": [
+    10,
+    "2026-11-07"
+   ],
+   "萤石网络": [
+    11,
+    "2026-11-07"
+   ],
+   "唐山港": [
+    3,
+    "2026-10-30"
+   ],
+   "海天味业": [
+    9,
+    "2026-11-05"
+   ],
+   "东软集团": [
+    8,
+    "2026-10-30"
+   ],
+   "均胜电子": [
+    4,
+    "2026-11-06"
+   ],
+   "中国联通": [
+    2,
+    "2026-10-30"
+   ],
+   "华润三九": [
+    0,
+    ""
+   ],
+   "同仁堂": [
+    3,
+    "2026-10-17"
+   ],
+   "松霖科技": [
+    7,
+    "2026-10-31"
+   ],
+   "文灿股份": [
+    0,
+    ""
+   ],
+   "分众传媒": [
+    2,
+    "2026-10-12"
+   ],
+   "新华医疗": [
+    5,
+    "2026-10-31"
+   ],
+   "捷众科技": [
+    0,
+    ""
+   ],
+   "义翘神州": [
+    0,
+    ""
+   ],
+   "东富龙": [
+    0,
+    ""
+   ],
+   "华是科技": [
+    0,
+    ""
+   ],
+   "大晟文化": [
+    6,
+    "2026-11-05"
+   ],
+   "皓元医药": [
+    3,
+    "2026-11-05"
+   ],
+   "近岸蛋白": [
+    3,
+    "2026-10-16"
+   ],
+   "能辉科技": [
+    0,
+    ""
+   ],
+   "闽东电力": [
+    1,
+    "2026-10-13"
+   ],
+   "华瓷股份": [
+    6,
+    "2026-11-05"
+   ],
+   "七匹狼": [
+    1,
+    "2026-11-03"
+   ],
+   "国脉科技": [
+    4,
+    "2026-10-29"
+   ],
+   "高争民爆": [
+    15,
+    "2026-11-04"
+   ],
+   "银之杰": [
+    1,
+    "2026-11-05"
+   ],
+   "百纳千成": [
+    1,
+    "2026-10-29"
+   ],
+   "华智数媒": [
+    2,
+    "2026-10-26"
+   ],
+   "中石科技": [
+    0,
+    ""
+   ],
+   "明阳电路": [
+    0,
+    ""
+   ],
+   "金丹科技": [
+    6,
+    "2026-10-27"
+   ],
+   "百普赛斯": [
+    0,
+    ""
+   ],
+   "满坤科技": [
+    1,
+    "2026-10-15"
+   ],
+   "海看股份": [
+    0,
+    ""
+   ],
+   "万邦医药": [
+    1,
+    "2026-10-14"
+   ],
+   "金健米业": [
+    7,
+    "2026-11-06"
+   ],
+   "三峡新材": [
+    24,
+    "2026-11-04"
+   ],
+   "万向德农": [
+    5,
+    "2026-10-28"
+   ],
+   "先导基电": [
+    6,
+    "2026-11-04"
+   ],
+   "国芳集团": [
+    2,
+    "2026-11-05"
+   ],
+   "新华文轩": [
+    10,
+    "2026-11-04"
+   ],
+   "移远通信": [
+    13,
+    "2026-11-07"
+   ],
+   "松发股份": [
+    0,
+    ""
+   ],
+   "澳弘电子": [
+    25,
+    "2026-11-06"
+   ],
+   "龙版传媒": [
+    5,
+    "2026-11-05"
+   ],
+   "博汇科技": [
+    2,
+    "2026-10-23"
+   ],
+   "鼎阳科技": [
+    9,
+    "2026-11-07"
+   ],
+   "康希诺": [
+    4,
+    "2026-11-04"
+   ],
+   "诺禾致源": [
+    2,
+    "2026-10-29"
+   ]
+  },
+  "研报流": {
+   "云汉芯城": [
+    0,
+    ""
+   ],
+   "恒进感应": [
+    0,
+    ""
+   ],
+   "众望布艺": [
+    0,
+    ""
+   ],
+   "中机认检": [
+    0,
+    ""
+   ],
+   "双箭股份": [
+    0,
+    ""
+   ],
+   "港通医疗": [
+    0,
+    ""
+   ],
+   "何氏眼科": [
+    0,
+    ""
+   ],
+   "华人健康": [
+    0,
+    ""
+   ],
+   "爱婴室": [
+    0,
+    ""
+   ],
+   "联测科技": [
+    0,
+    ""
+   ],
+   "华远控股": [
+    0,
+    ""
+   ],
+   "华电新能": [
+    0,
+    ""
+   ],
+   "百济神州": [
+    0,
+    ""
+   ],
+   "皖能电力": [
+    0,
+    ""
+   ],
+   "东阿阿胶": [
+    0,
+    ""
+   ],
+   "大鹏工业": [
+    0,
+    ""
+   ],
+   "大博医疗": [
+    0,
+    ""
+   ],
+   "光线传媒": [
+    0,
+    ""
+   ],
+   "埃夫特": [
+    0,
+    ""
+   ],
+   "中国交建": [
+    0,
+    ""
+   ],
+   "星辰科技": [
+    0,
+    ""
+   ],
+   "光庭信息": [
+    0,
+    ""
+   ],
+   "昆药集团": [
+    0,
+    ""
+   ],
+   "信立泰": [
+    0,
+    ""
+   ],
+   "富春染织": [
+    0,
+    ""
+   ],
+   "陕西能源": [
+    0,
+    ""
+   ],
+   "万东医疗": [
+    0,
+    ""
+   ],
+   "金沃股份": [
+    0,
+    ""
+   ],
+   "卓越新能": [
+    0,
+    ""
+   ],
+   "力佳科技": [
+    0,
+    ""
+   ],
+   "东杰智能": [
+    0,
+    ""
+   ],
+   "丰茂股份": [
+    0,
+    ""
+   ],
+   "众诚科技": [
+    0,
+    ""
+   ],
+   "索菱股份": [
+    0,
+    ""
+   ],
+   "浙商银行": [
+    0,
+    ""
+   ],
+   "盈康生命": [
+    0,
+    ""
+   ],
+   "坚朗五金": [
+    0,
+    ""
+   ],
+   "纳科诺尔": [
+    0,
+    ""
+   ],
+   "永福股份": [
+    0,
+    ""
+   ],
+   "昂立教育": [
+    0,
+    ""
+   ],
+   "汇隆活塞": [
+    0,
+    ""
+   ],
+   "毅昌科技": [
+    0,
+    ""
+   ],
+   "海欣股份": [
+    0,
+    ""
+   ],
+   "阳光乳业": [
+    0,
+    ""
+   ],
+   "九州通": [
+    0,
+    ""
+   ],
+   "上海医药": [
+    0,
+    ""
+   ],
+   "以岭药业": [
+    0,
+    ""
+   ],
+   "天康生物": [
+    1,
+    "2026-11-01"
+   ],
+   "天键股份": [
+    0,
+    ""
+   ],
+   "五粮液": [
+    0,
+    ""
+   ],
+   "时代电气": [
+    0,
+    ""
+   ],
+   "美年健康": [
+    0,
+    ""
+   ],
+   "萤石网络": [
+    0,
+    ""
+   ],
+   "唐山港": [
+    0,
+    ""
+   ],
+   "海天味业": [
+    1,
+    "2026-11-02"
+   ],
+   "东软集团": [
+    0,
+    ""
+   ],
+   "均胜电子": [
+    0,
+    ""
+   ],
+   "中国联通": [
+    0,
+    ""
+   ],
+   "华润三九": [
+    0,
+    ""
+   ],
+   "同仁堂": [
+    0,
+    ""
+   ],
+   "松霖科技": [
+    0,
+    ""
+   ],
+   "文灿股份": [
+    0,
+    ""
+   ],
+   "分众传媒": [
+    0,
+    ""
+   ],
+   "新华医疗": [
+    0,
+    ""
+   ],
+   "捷众科技": [
+    0,
+    ""
+   ],
+   "义翘神州": [
+    0,
+    ""
+   ],
+   "东富龙": [
+    0,
+    ""
+   ],
+   "华是科技": [
+    0,
+    ""
+   ],
+   "大晟文化": [
+    0,
+    ""
+   ],
+   "皓元医药": [
+    0,
+    ""
+   ],
+   "近岸蛋白": [
+    0,
+    ""
+   ],
+   "能辉科技": [
+    0,
+    ""
+   ],
+   "闽东电力": [
+    0,
+    ""
+   ],
+   "华瓷股份": [
+    0,
+    ""
+   ],
+   "七匹狼": [
+    0,
+    ""
+   ],
+   "国脉科技": [
+    0,
+    ""
+   ],
+   "高争民爆": [
+    0,
+    ""
+   ],
+   "银之杰": [
+    0,
+    ""
+   ],
+   "百纳千成": [
+    0,
+    ""
+   ],
+   "华智数媒": [
+    0,
+    ""
+   ],
+   "中石科技": [
+    0,
+    ""
+   ],
+   "明阳电路": [
+    0,
+    ""
+   ],
+   "金丹科技": [
+    0,
+    ""
+   ],
+   "百普赛斯": [
+    0,
+    ""
+   ],
+   "满坤科技": [
+    0,
+    ""
+   ],
+   "海看股份": [
+    0,
+    ""
+   ],
+   "万邦医药": [
+    0,
+    ""
+   ],
+   "金健米业": [
+    0,
+    ""
+   ],
+   "三峡新材": [
+    0,
+    ""
+   ],
+   "万向德农": [
+    0,
+    ""
+   ],
+   "先导基电": [
+    0,
+    ""
+   ],
+   "国芳集团": [
+    0,
+    ""
+   ],
+   "新华文轩": [
+    0,
+    ""
+   ],
+   "移远通信": [
+    0,
+    ""
+   ],
+   "松发股份": [
+    0,
+    ""
+   ],
+   "澳弘电子": [
+    0,
+    ""
+   ],
+   "龙版传媒": [
+    0,
+    ""
+   ],
+   "博汇科技": [
+    0,
+    ""
+   ],
+   "鼎阳科技": [
+    0,
+    ""
+   ],
+   "康希诺": [
+    0,
+    ""
+   ],
+   "诺禾致源": [
+    0,
+    ""
+   ]
+  }
+ }
+}

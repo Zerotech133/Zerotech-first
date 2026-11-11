@@ -7,7 +7,7 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $log = Join-Path $logDir ('run-' + (Get-Date -Format 'yyyy-MM-dd') + '.log')
 function Log([string]$m) { Add-Content -Path $log -Value ('[' + $stamp + '] ' + $m) -Encoding UTF8 }
 
-$py = 'C:\项目\py312\python.exe'
+$py = 'C:\Program Files\Python311\python.exe'
 $vault = 'C:\项目\老田的AI助手\tools\secrets\vault.py'
 $restic = 'C:\Users\t\dw_ops\restic.exe'
 $receipt = 'C:\项目\老田的AI助手\tools\restic\restic_receipt.py'
@@ -98,3 +98,4 @@ if ($finalRc -ne 0) {
 $env:RESTIC_PASSWORD = ''
 Log ('DONE final_rc=' + $finalRc)
 exit $finalRc
+

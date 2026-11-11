@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>策略工作室 · 零界</title>
+<link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>零界 <small>· 个股分析</small></div>
+  <nav class="tabs">
+    <a href="1_sa_workbench.html">工作台</a>
+    <a href="2_nl_screener.html">条件选股</a>
+    <a class="active" href="#">策略工作室</a>
+    <a href="4_backtest_report.html">回测报告</a>
+    <a href="#">报告库</a>
+  </nav>
+  <div class="top-right">
+    <span class="pill"><span class="dot"></span>数据 2026-11-02 · T+1</span>
+    <a class="btn sm" href="#">💬 Hermes 对话</a>
+  </div>
+</div>
+
+<main>
+  <div class="crumbs"><a href="#">零界</a> / 个股分析 / 策略工作室</div>
+  <div class="row" style="align-items:flex-start">
+    <div>
+      <h1>策略工作室</h1>
+      <p class="sub" style="margin-bottom:0">把你的研究想法写成可核对的策略规格（筛选 → 排序 → 调仓 → 成本），先校验、再回测。策略归你所有，平台不背书、不代客交易。</p>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn primary" onclick="toast('已新建草稿策略')">＋ 新建策略</button>
+  </div>
+
+  <div class="steps" style="margin-top:16px">
+    <div class="s done"><span class="n">✓</span> 1 · 描述需求</div>
+    <div class="s active"><span class="n">2</span> 2 · 生成规格</div>
+    <div class="s"><span class="n">3</span> 3 · 校验</div>
+    <div class="s"><span class="n">4</span> 4 · 回测</div>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start">
+    <!-- 左：策略列表 -->
+    <div>
+      <section class="card">
+        <h2><span>我的策略</span><span class="hint">3 个 · 1 个运行中</span></h2>
+        <div class="card hover" style="margin-bottom:10px;cursor:pointer;border-color:rgba(88,166,255,.45)">
+          <div class="row"><b>低估值高成长月轮动</b><span class="badge ok">已校验</span><span class="spacer"></span><span class="small muted">v3</span></div>
+          <div class="small muted" style="margin-top:4px">月频调仓 · 20 只 · 双边 20bp · 基准 沪深300</div>
+          <div class="small muted" style="margin-top:2px">上次回测 2026-11-02 21:34 · 年化 9.8%</div>
+        </div>
+        <div class="card hover" style="margin-bottom:10px;cursor:pointer">
+          <div class="row"><b>质量趋势 · 周频观察</b><span class="badge blue">回测中</span><span class="spacer"></span><span class="small muted">v1</span></div>
+          <div class="small muted" style="margin-top:4px">周频调仓 · 30 只 · 单票上限 10% · 基准 中证500</div>
+          <div class="small muted" style="margin-top:2px">job 运行中 02:41 · 预计 4 分钟</div>
+        </div>
+        <div class="card hover" style="margin-bottom:10px;cursor:pointer">
+          <div class="row"><b>事件驱动观察池（研究）</b><span class="badge">草稿</span><span class="spacer"></span><span class="small muted">v0</span></div>
+          <div class="small muted" style="margin-top:4px">事件筛选 · 观察池 · 不自动交易</div>
+          <div class="small muted" style="margin-top:2px">未回测</div>
+        </div>
+        <div class="notice info" style="margin-bottom:0"><span>📌</span><div>策略版本化保存：每次修改生成新版本，回测结果与版本绑定，可对比、可复现。</div></div>
+      </section>
+
+      <section class="card">
+        <h2><span>校验规则</span><span class="hint">运行回测前自动检查</span></h2>
+        <table>
+          <tbody>
+            <tr><td class="muted" style="width:96px">字段白名单</td><td class="small">筛选/排序字段必须在数据仓字段目录内</td></tr>
+            <tr><td class="muted">PIT 可用</td><td class="small">财报按 ann_date 截止；宇宙/行业按 as-of</td></tr>
+            <tr><td class="muted">未来函数</td><td class="small">禁止使用 T 日之后数据；信号与成交时序校验</td></tr>
+            <tr><td class="muted">可交易性</td><td class="small">停牌/ST/涨跌停/流动性约束内置</td></tr>
+            <tr><td class="muted">成本与容量</td><td class="small">默认双边 20bp；换手与容量提示</td></tr>
+          </tbody>
+        </table>
+        <div class="notice warn" style="margin:10px 0 0"><span>⚠️</span><div>校验通过 ≠ 策略有效；回测仅作研究，不构成投资建议。</div></div>
+      </section>
+    </div>
+
+    <!-- 右：向导 -->
+    <div>
+      <section class="card">
+        <h2><span>① 用一句话描述</span><span class="hint">自然语言 → 规格草案</span></h2>
+        <textarea class="textarea" rows="3">每月从 A 股非 ST 中筛 PS 历史分位低于 60%、净利润同比大于 20% 的股票，按质量分排序取前 20 只，等权持有 20 个交易日，双边成本 20bp，基准用沪深300。</textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="btn primary" onclick="toast('已生成规格草案：8 个字段已识别')">生成规格</button>
+          <button class="btn" onclick="toast('已切换到表单模式')">改用表单</button>
+          <span class="spacer"></span><span class="small muted">模型：本地 · schema 校验</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span>② 策略规格（可编辑）</span><span class="badge blue">StrategySpec v1</span></h2>
+        <textarea class="textarea mono" rows="16" spellcheck="false">{
+  "name": "低估值高成长月轮动",
+  "universe": "A_SHARE_NON_ST",
+  "filters": [
+    {"field": "ps_pct_hist", "op": "<=", "value": 60},
+    {"field": "net_profit_yoy", "op": ">=", "value": 0.2}
+  ],
+  "rank_by": [{"field": "score_quality", "order": "desc"}],
+  "top_n": 20,
+  "rebalance": "monthly",
+  "hold_days": 20,
+  "cost_bps": 20,
+  "benchmark": "000300.SH",
+  "period": {"start": "2019-01-01", "end": "2026-10-31"},
+  "risk": {"max_position": 0.1, "industry_cap": 3},
+  "engine": "monthly_factor"
+}</textarea>
+        <div class="row small" style="margin-top:10px">
+          <span class="badge ok">字段合法</span><span class="badge ok">PIT 可用</span><span class="badge ok">无未来函数</span><span class="badge warn">成本未含滑点</span>
+          <span class="spacer"></span><button class="btn sm" onclick="toast('已保存 v4（草稿）')">保存版本</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span>③ 校验与回测</span><span class="hint">校验通过后才能运行</span></h2>
+        <div class="grid grid-2">
+          <div>
+            <div class="small muted">回测区间</div>
+            <input class="input" value="2019-01-01 ~ 2026-10-31">
+          </div>
+          <div>
+            <div class="small muted">样本外设置</div>
+            <select class="select"><option>最近 24 个月作为 OOS</option><option>最后 30% 时间</option><option>不划分</option></select>
+          </div>
+          <div>
+            <div class="small muted">基准</div>
+            <select class="select"><option>沪深300 (000300.SH)</option><option>中证500</option><option>全 A 等权</option></select>
+          </div>
+          <div>
+            <div class="small muted">成本</div>
+            <select class="select"><option>双边 20bp（默认）</option><option>双边 30bp</option><option>自定义</option></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" onclick="toast('回测任务已提交（job_id: bt-20261103-001）')">运行回测</button>
+          <button class="btn" onclick="toast('已保存为模板')">另存为模板</button>
+          <span class="spacer"></span>
+          <span class="small muted">预计 2-4 分钟 · 结果可下载</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span>回测历史</span><span class="hint">版本绑定 · 可复现</span></h2>
+        <table>
+          <thead><tr><th>job</th><th>版本</th><th class="num">年化</th><th class="num">超额</th><th class="num">回撤</th><th>状态</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="mono">bt-20261102-021</td><td>v3</td><td class="num up">+9.8%</td><td class="num up">+3.1%</td><td class="num dn">-18.2%</td><td><span class="badge ok">完成</span></td><td><a href="4_backtest_report.html">报告</a></td></tr>
+            <tr><td class="mono">bt-20261101-014</td><td>v2</td><td class="num up">+8.4%</td><td class="num up">+2.4%</td><td class="num dn">-20.1%</td><td><span class="badge ok">完成</span></td><td><a href="4_backtest_report.html">报告</a></td></tr>
+            <tr><td class="mono">bt-20261103-004</td><td>v1</td><td class="num muted">—</td><td class="num muted">—</td><td class="num muted">—</td><td><span class="badge blue">运行中</span></td><td class="muted">02:41</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <span>策略归用户所有 · 平台不背书 · 不代客交易</span>
+    <span>回测数据：本地数据仓 · PIT 口径</span>
+    <span>历史回测不代表未来 · 不构成投资建议</span>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600);}
+</script>
+</body>
+</html>

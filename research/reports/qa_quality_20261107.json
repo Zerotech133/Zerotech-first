@@ -1,0 +1,357 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-07T18:20:32+08:00",
+ "date": "2026-11-07",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 3.0,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.4166,
+  "avg_elapsed_seconds": 13.195,
+  "avg_completeness_score": 5.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-07】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 6,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.4167,
+  "avg_elapsed_seconds": 12.4925,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-07"
+ },
+ "history_entries": 6,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-05",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.125,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_6076398cc7",
+     "q2_f93ae02b9d"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-06",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.2,
+    "avg_elapsed_seconds": 21.9,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_ef78939178",
+     "q2_87eff8d7a3"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-07",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 3.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 13.195,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_0d7db24320",
+     "q2_4f34cbb059"
+    ],
+    "alerts": []
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 6,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.4167,
+   "avg_elapsed_seconds": 12.4925,
+   "window": 7,
+   "date_from": "2026-11-02",
+   "date_to": "2026-11-07"
+  },
+  "updated_at": "2026-11-07T18:20:32+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_0d7db24320",
+   "category": "影响如何",
+   "theme": "宏观/策略/贸易",
+   "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 19.08,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": true,
+     "first_units": 0,
+     "second_units": 3,
+     "improved": true,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "1a53227f2949",
+     "3e820b610ef7",
+     "3b570c6a6239"
+    ],
+    "citation_invalid": [],
+    "citation_total": 3,
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.3333,
+    "distinct_cited_units": 3,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%（[1a53227f2949] p.2）。\n【事实】巴西是中国禽肉产品的最大供应国，2026 年 8 月当月其向中国出口额占中国总进口额的比重接近 55%（[3e820b610ef7] p.2）。\n【推断】\n【推断】中国畜禽肉产品贸易呈现显著的净进口状态，主要依赖巴西等海外供应国满足国内需求（依据：[3b570c6a6239] p.2、[3e820b610ef7] p.2）。",
+   "answer_length": 252,
+   "citations": [
+    {
+     "unit_id": "1a53227f2949",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。 重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。"
+    },
+    {
+     "unit_id": "3e820b610ef7",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "巴西是中国禽肉产品的最大供应国，2026 年 8 月当月其向中国出口额占中国总进口额的比重接近 55%。 区域...巴西 1073.3（百万美元），份额 54.5%；注：排名前 10 地区按照进口额大小由上向下排列。"
+    },
+    {
+     "unit_id": "3b570c6a6239",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2026 年 8 月，中国畜禽肉产品进出口总额为 2261.1 百万美元，其中进口额（1968.4 百万美元）远高于出口额（292.6 百万美元），呈现显著的净进口状态。 2026 年 8 月，中国畜禽肉产品进出口 2261.1 百万美元...其中，出口 292.6 百万美元...进口 1968.4 百万美元；当月净出口-1675.8 百万美元。"
+    }
+   ],
+   "citation_count": 3,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 3,
+   "support_rate": 1.0,
+   "inference_ratio": 0.3333,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_4f34cbb059",
+   "category": "竞争格局",
+   "theme": "消费/医药",
+   "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 7.31,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 3,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "664a0d2d2756",
+     "f6f270fd280d",
+     "be26712cd7ea"
+    ],
+    "citation_invalid": [],
+    "citation_total": 3,
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 3,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】应聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业（[664a0d2d2756] p.5）。\n【事实】通过试点项目评估障碍并识别监管瓶颈，以强化东盟电子商务生态系统（[f6f270fd280d] p.5）。\n【推断】\n【推断】本土生态系统的进入壁垒主要体现为区域规模化面临的监管或运营瓶颈（依据：[664a0d2d2756] p.5、[f6f270fd280d] p.5）。\n【推断】差异化优势在于通过同伴交流推广最佳实践，增强商业支持组织作为中小微企业代言人的能力（依据：[be26712cd7ea] p.5）。",
+   "answer_length": 289,
+   "citations": [
+    {
+     "unit_id": "664a0d2d2756",
+     "book": "rp_AP202610021830105410",
+     "chapter": "5.",
+     "page": 5,
+     "text": "应聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并评估其区域规模化面临的监管或运营瓶颈。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并为其在区域内拓展服务提供支持。"
+    },
+    {
+     "unit_id": "f6f270fd280d",
+     "book": "rp_AP202609301830015407",
+     "chapter": "5.",
+     "page": 5,
+     "text": "应支持本土电商平台、科技、物流和支付服务提供商，通过试点项目评估障碍并识别监管瓶颈，以强化东盟电子商务生态系统。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并为其在区域内拓展服务提供支持。"
+    },
+    {
+     "unit_id": "be26712cd7ea",
+     "book": "rp_AP202610021830105410",
+     "chapter": "5.",
+     "page": 5,
+     "text": "应通过同伴交流推广东盟和欧盟 BSO 的最佳实践，增强 BSO 在倡导、市场洞察和数字贸易工具方面的能力，使其成为中小微企业的代言人。 优先行动 3：提升东盟 BSO 在跨境电子商务方面的能力，并推广东盟和欧盟 BSO 的最佳实践。通过同伴间就支持中小微企业方面的倡导、市场洞察和数字贸易工具进行交流，增强 BSO 的能力。BSO 将作为东盟中小微企业的代言人..."
+    }
+   ],
+   "citation_count": 3,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 3,
+   "support_rate": 1.0,
+   "inference_ratio": 0.5,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261107.json",
+ "elapsed_seconds": 26.61,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Continue'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = 'utf-8'
 $repo = 'C:\aios'
-$py = 'C:\项目\py312\python.exe'
+$py = 'C:\Program Files\Python311\python.exe'
 $log = 'C:\Temp\zero_learning_pipeline.log'
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -22,3 +22,4 @@ $rc2 = $LASTEXITCODE
 if ($rc1 -ne 0) { exit $rc1 }
 if ($rcc -ne 0) { exit $rcc }
 exit $rc2
+

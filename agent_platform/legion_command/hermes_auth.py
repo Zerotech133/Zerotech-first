@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import logging
 import json
 import os
 import threading
@@ -40,6 +41,7 @@ def _load_safe_urlopen():
                 spec.loader.exec_module(mod)
                 return mod.safe_urlopen
             except Exception:
+                logging.getLogger(__name__).debug("swallowed exception at line 42")
                 continue
     return urllib.request.urlopen
 

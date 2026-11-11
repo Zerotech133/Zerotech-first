@@ -74,7 +74,8 @@
 </main>
 <script>
 (function () {
-  var API = '/api/monitor/guard/summary?loglines=40';
+  // 本机只读预览端点（免登录；limit_except GET 限死只读）——K-ORG-20261107-GUARDDECK
+  var API = '/api/preview/guard/summary?loglines=40';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -172,7 +173,7 @@
     }).then(render).catch(function (e) {
       var el = document.getElementById('err');
       el.style.display = 'block';
-      el.textContent = '加载失败：' + e.message + '（若 401 请先登录）';
+      el.textContent = '加载失败：' + e.message + '（正式端点 /api/monitor/guard/* 需登录；本页用免登录只读预览端点）';
     });
   }
 

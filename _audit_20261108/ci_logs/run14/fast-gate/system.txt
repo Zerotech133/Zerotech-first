@@ -1,0 +1,8 @@
+2026-11-08T06:32:42.9830000Z Evaluating fast-gate.if
+2026-11-08T06:32:42.9830000Z Evaluating: success()
+2026-11-08T06:32:42.9830000Z Result: true
+2026-11-08T06:32:42.9830000Z Requested labels: windows-latest
+2026-11-08T06:32:42.9830000Z Job defined at: Zerotech133/Zerotech-first/.github/workflows/quality-gate.yml@refs/heads/main
+2026-11-08T06:32:42.9830000Z Waiting for a runner to pick up this job...
+2026-11-08T06:32:42.9860000Z Job is about to start running on the hosted runner: GitHub Actions 1000000013
+2026-11-08T06:32:42.9850000Z Job is waiting for a hosted runner to come online.

@@ -81,14 +81,19 @@ def _isolated_functions(tmp_path, monkeypatch, rows=None):
         "os": os, "NC_FP": str(namechange_path),
     })
     monkeypatch.setitem(sys.modules, "market_scan", SimpleNamespace(hist_st_set=hist_st_set))
+    buy_filters = {"3": {"3买"}}
     calc = _function_from_source("backtest_engine_v2.py", "calc_chanlun_signals_market", {
         "os": os,
         "json": json,
         "BASE": str(tmp_path),
         "cal_idx_all": ["20260105", "20260110", "20260113"],
-        "BUY_FILTERS": {"3": {"3买"}},
+        "BUY_FILTERS": buy_filters,
         "BUY_FILTER_LABEL": {"3": "仅三买"},
         "SELL_TYPES": {"1卖", "2卖", "3卖"},
+        # 2026-11-10 A4 收口：buy_filter 改经 _resolve_buy_filter 强解析
+        # （禁止静默回落）。夹具缺它 → NameError，hist_st 分支从未被测到
+        # （2026-11-11 修复）。测试只用合法值 "3"，永不触发 ValueError。
+        "_resolve_buy_filter": buy_filters.get,
     })
     return hist_st_set, calc, accessed
 

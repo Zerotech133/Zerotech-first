@@ -64,7 +64,10 @@ MODEL_PROFILES = {
         "num_predict": 400,
         "timeout": 300,
         "temperature": 0.4,
-        "num_ctx": 16384,
+        # 2026-11-11 16384->32768: server default raised same day (4-place
+        # sync; watch agent_platform/engine/llm.py was the missed 5th place,
+        # each request reloaded runner back to 16384). Keep equal to server.
+        "num_ctx": 32768,
     },
     "qwen3.5:4b": {
         "num_predict": 400,
@@ -369,12 +372,15 @@ class GLMCloudLLM:
         try:
             from pathlib import Path
 
+            import os as _os
             # engine/llm.py 的 parents[2] = 项目根（与 a0_agent 的 parent.parent 同点）
-            p = Path(__file__).resolve().parents[2] / "portal" / "audit_ai_config.json"
-            if p.exists():
-                zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
-                if zk:
-                    return zk
+            for p in (Path(_os.environ.get("AUDIT_AI_CONFIG_PATH")
+                           or r"C:\项目\_vault\secrets\portal_audit_ai_config.json"),
+                      Path(__file__).resolve().parents[2] / "portal" / "audit_ai_config.json"):
+                if p.exists():
+                    zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
+                    if zk:
+                        return zk
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/llm.py", exc)
         import os

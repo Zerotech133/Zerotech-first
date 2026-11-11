@@ -87,7 +87,15 @@
   },
   "enabled": true,
   "health": {},
-  "note": "老田 2026-11-01 override 田丰归口登记"
+  "note": "老田 2026-11-01 override 田丰归口登记",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "不在TDX对照范围",
+   "vs_tdx": "TDX 无音视频流采集对应能力",
+   "action": "keep"
+  }
  },
  "xueqiu": {
   "source_id": "xueqiu",
@@ -177,7 +185,16 @@
   },
   "enabled": true,
   "health": {},
-  "note": "老田 2026-11-01 override 田丰归口登记"
+  "note": "老田 2026-11-01 override 田丰归口登记",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "盲区独有",
+   "vs_tdx": "TDX 181 表零社交语料（无论坛/社区/散户情绪数据）",
+   "action": "continue",
+   "note": "2026-11-08 cookie 收割+breach 修复属盲区自采，方向正确；B1-b 切 xq_pump 继续推进"
+  }
  },
  "guba": {
   "source_id": "guba",
@@ -267,7 +284,16 @@
   },
   "enabled": true,
   "health": {},
-  "note": "老田 2026-11-01 override 田丰归口登记"
+  "note": "老田 2026-11-01 override 田丰归口登记",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "盲区独有",
+   "vs_tdx": "TDX 零社交语料；游资明细(ts_hm)是龙虎榜口径≠散户讨论",
+   "action": "continue",
+   "note": "no_marker 病灶修复继续"
+  }
  },
  "news": {
   "source_id": "news",
@@ -359,7 +385,76 @@
    "consecutive_failures": 0,
    "last_success_at": "2026-11-03T19:46:53Z"
   },
-  "note": "老田 2026-11-01 override 田丰归口登记"
+  "note": "老田 2026-11-01 override 田丰归口登记",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "混合",
+   "sub_sources": {
+    "sina": {
+     "verdict": "TDX重复",
+     "vs_tdx": "ts_news 250万快讯覆盖",
+     "action": "degraded_backup",
+     "implemented": true
+    },
+    "eastmoney": {
+     "verdict": "TDX重复",
+     "vs_tdx": "ts_news + stock_news 33万",
+     "action": "degraded_backup",
+     "implemented": true
+    },
+    "wallstreetcn": {
+     "verdict": "盲区独有",
+     "vs_tdx": "TDX 新闻为快讯/标题级，无深度财经",
+     "action": "keep"
+    },
+    "announcement": {
+     "verdict": "TDX重复",
+     "vs_tdx": "stock_notice 14.5万行(至当日)",
+     "action": "keep_degrade_candidate",
+     "note": "已重复但未获降级批准，保持现役"
+    },
+    "chinanews": {
+     "verdict": "盲区独有",
+     "vs_tdx": "无对应表",
+     "action": "keep"
+    },
+    "world": {
+     "verdict": "盲区独有",
+     "vs_tdx": "TDX 无国际宏观资讯",
+     "action": "keep"
+    },
+    "xd_notice": {
+     "verdict": "盲区独有",
+     "vs_tdx": "无",
+     "action": "keep"
+    },
+    "report": {
+     "verdict": "TDX重复",
+     "vs_tdx": "stock_report 14.9万行",
+     "action": "keep_degrade_candidate",
+     "note": "已重复但未获降级批准，保持现役"
+    },
+    "xd_news": {
+     "verdict": "盲区独有",
+     "vs_tdx": "无",
+     "action": "keep"
+    },
+    "survey": {
+     "verdict": "盲区独有",
+     "vs_tdx": "无调研表",
+     "action": "keep"
+    },
+    "govpolicy": {
+     "verdict": "盲区独有",
+     "vs_tdx": "无政策表",
+     "action": "keep_weakest_link",
+     "note": "存量仅25条近枯竭，盲区内最弱环节待加固"
+    }
+   },
+   "news_cols": "微博/雪球热帖已在 xueqiu/guba 源覆盖，news 子源不含社交"
+  }
  },
  "youtube_envelope": {
   "source_id": "youtube_envelope",
@@ -448,7 +543,15 @@
   },
   "enabled": true,
   "health": {},
-  "note": "老田 2026-11-01 override 田丰归口登记"
+  "note": "老田 2026-11-01 override 田丰归口登记",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "不在TDX对照范围",
+   "vs_tdx": "原型参考适配器（真语料走知识库路线 S3-04）",
+   "action": "keep_prototype"
+  }
  },
  "youtube_corpus": {
   "source_id": "youtube_corpus",
@@ -538,7 +641,15 @@
   },
   "enabled": true,
   "health": {},
-  "note": "P1.5 老田定性纳入开源情报；评/点/赞字段俱全；只读不反写知识库"
+  "note": "P1.5 老田定性纳入开源情报；评/点/赞字段俱全；只读不反写知识库",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "不在TDX对照范围",
+   "vs_tdx": "知识库路线语料，非行情/资讯对照面",
+   "action": "keep"
+  }
  },
  "pdf_methodology": {
   "source_id": "pdf_methodology",
@@ -627,7 +738,15 @@
   },
   "enabled": true,
   "health": {},
-  "note": "P1.5 老田定性纳入开源情报；100 研报+方法论书+笔记，11,200 蒸馏单元"
+  "note": "P1.5 老田定性纳入开源情报；100 研报+方法论书+笔记，11,200 蒸馏单元",
+  "sourcing_disposition": {
+   "receipt": "C9A-CX-001",
+   "ruled_by": "乙(老田)",
+   "ruled_at": "2026-11-08T21:06:00+08:00",
+   "verdict": "不在TDX对照范围",
+   "vs_tdx": "方法论文档资产，非采集源",
+   "action": "keep"
+  }
  },
  "_governance": {
   "owner": "intel(军情司·INTEL0)",
@@ -638,6 +757,7 @@
   "supersedes": [
    "agent_platform/data/intel/sources.json"
   ],
-  "registered_at": "2026-11-08"
+  "registered_at": "2026-11-08",
+  "sourcing_disposition_receipt": "C9A-CX-001 (2026-11-08, 各源 sourcing_disposition 字段)"
  }
 }
