@@ -111,6 +111,10 @@ REGISTRY = {
     # 2026-10-26 老田批准 Scope A 隔离验收后入册（K-QUANT-20261026-OSLEG-8795PREP），
     # 按需语义同 8796：strict 只防抢占、不因闲置判负。
     8795: "军团网关(gateway/serve.py)",
+    # 2026-11-11 K-ORG-20261111-PORT8793：8793 实测 `python -X utf8 -u -m qengine.api --port 8793`
+    # （老田独立项目「千机」qengine，非平台栈，仅 127.0.0.1）。按 8123/5050/15048 第三方先例入册，
+    # 避免评审门 strict 把「他线在听端口」误判为平台未登记服务；strict 只防抢占，不因离线判负。
+    8793: "qengine 千机 API(独立项目,非平台栈,127.0.0.1)",
     8791: "图谱数据看板(kg_data_dashboard.py)",
     8898: "res-downloader 自用工具(uvicorn)",
     18899: "res-downloader 自用工具(uvicorn)",
