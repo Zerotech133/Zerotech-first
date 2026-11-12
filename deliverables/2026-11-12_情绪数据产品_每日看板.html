@@ -82,7 +82,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
     </div>
     <div class="meta">
       <div>任务 <b>ZB-DATA-SENT-20261112-T01</b></div>
-      <div>生成 <b>2026-11-12 05:54:02</b></div>
+      <div>生成 <b>2026-11-12 18:01:05</b></div>
       <div>数据源 <b>看板状态 JSON</b></div>
     </div>
   </div>
@@ -99,16 +99,16 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
 
   <div class="grid">
     
-        <article class="sign-card warn">
-          <div class="sign-top"><span class="sign-icon">…</span><span class="pill warn">已送达·待签收</span></div>
+        <article class="sign-card bad">
+          <div class="sign-top"><span class="sign-icon">!</span><span class="pill bad">逾期</span></div>
           <h3>马岱</h3>
           <div class="role">数据仓主办</div>
           <div class="due">截止 <b>11-12 18:00</b> · 今天</div>
           <div class="ev">任务单 ZB-DATA-SENT-20261112-T01；MSG-20261112052759-463970</div>
           <div class="note">经 DATA1 席位送达；hr 下暂无马岱独立席位</div>
         </article>
-        <article class="sign-card warn">
-          <div class="sign-top"><span class="sign-icon">…</span><span class="pill warn">已送达·待签收</span></div>
+        <article class="sign-card bad">
+          <div class="sign-top"><span class="sign-icon">!</span><span class="pill bad">逾期</span></div>
           <h3>张松</h3>
           <div class="role">DATA1 / Owner</div>
           <div class="due">截止 <b>11-12 18:00</b> · 今天</div>
@@ -138,11 +138,11 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
     <table>
       <thead><tr><th>#</th><th>里程碑</th><th>截止</th><th>状态</th><th>验收证据</th></tr></thead>
       <tbody>
-        <tr class="row-info">
+        <tr class="row-bad">
           <td class="num">01</td>
           <td><div class="m-title">签收：马岱 / 张松</div><div class="m-owner">马岱 / 张松 · 闸门</div></td>
           <td class="m-date">11-12 18:00<div class="m-left">今天</div></td>
-          <td><span class="pill info">进行中</span></td>
+          <td><span class="pill bad">阻塞</span></td>
           <td class="m-ev">签收回复 + 契约 §13 确认</td>
         </tr>
         <tr class="row-muted">
@@ -199,7 +199,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
 
   <div class="two">
     <div class="panel"><h2>阻断项 / 边界</h2><ul class="blockers"><li class="block-high"><span>签收未完成：马岱、张松均未签收，禁止建表。</span></li><li class="block-medium"><span>e互动当前无生产者：权重 0.10 但 sentiment_card.py 无采集；允许空，不补 0 行。</span></li><li class="block-medium"><span>个股/来源历史无法回填：只能从 2026-11-12 起 forward-only；市场级最多回填 60 天。</span></li><li class="block-low"><span>马岱无独立 hr 席位：任务经 DATA1 送达，标题/正文明确主办。</span></li></ul></div>
-    <div class="panel"><h2>最近动作</h2><ul class="notes"><li><time>2026-11-12 05:46</time><span>执行跟踪表建立并提交：e549f28d6；五个检查点已设。</span></li><li><time>2026-11-12 05:36</time><span>张松签收请求送达 DATA1：MSG-20261112053642-2b3b14。</span></li><li><time>2026-11-12 05:28</time><span>三份文书 + 回执提交：136359878 / 7e2506e45。</span></li></ul></div>
+    <div class="panel"><h2>最近动作</h2><ul class="notes"><li><time>2026-11-12 18:00</time><span>18:00 签收未完成：马岱/张松无回复，已向 A0 报告（MSG-20261112180041-87b8fc），不建表。</span></li><li><time>2026-11-12 17:30</time><span>签收检查：马岱/张松消息仍为 inbox，无回复；未伪造签收，未进入建表</span></li><li><time>2026-11-12 05:46</time><span>执行跟踪表建立并提交：e549f28d6；五个检查点已设。</span></li><li><time>2026-11-12 05:36</time><span>张松签收请求送达 DATA1：MSG-20261112053642-2b3b14。</span></li><li><time>2026-11-12 05:28</time><span>三份文书 + 回执提交：136359878 / 7e2506e45。</span></li></ul></div>
   </div>
 
   <div class="footer">

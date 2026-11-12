@@ -2,7 +2,7 @@
   "task_id": "ZB-DATA-SENT-20261112-T01",
   "title": "情绪数据产品化",
   "subtitle": "数据仓一等数据产品 · KG 只读接入的前置工程",
-  "generated_at": "2026-11-12 05:51:43",
+  "generated_at": "2026-11-12 18:01:05",
   "signoffs": [
     {
       "id": "mada",
@@ -12,7 +12,8 @@
       "status": "sent",
       "due": "2026-11-12 18:00",
       "evidence": "任务单 ZB-DATA-SENT-20261112-T01；MSG-20261112052759-463970",
-      "note": "经 DATA1 席位送达；hr 下暂无马岱独立席位"
+      "note": "经 DATA1 席位送达；hr 下暂无马岱独立席位",
+      "_state": "overdue"
     },
     {
       "id": "zhangsong",
@@ -22,7 +23,8 @@
       "status": "sent",
       "due": "2026-11-12 18:00",
       "evidence": "契约 §13 签收请求；MSG-20261112053642-2b3b14",
-      "note": "确认 e互动缺口、个股 forward-only、市场 60 天回填"
+      "note": "确认 e互动缺口、个股 forward-only、市场 60 天回填",
+      "_state": "overdue"
     },
     {
       "id": "majun",
@@ -32,7 +34,8 @@
       "status": "hold",
       "due": "2026-11-14 18:00",
       "evidence": "只读消费通知 ZB-DATA-SENT-20261112-N01；MSG-20261112052759-dda750",
-      "note": "只交查询需求，不写代码、不建节点、不写图"
+      "note": "只交查询需求，不写代码、不建节点、不写图",
+      "_state": "hold"
     },
     {
       "id": "laotian",
@@ -42,7 +45,8 @@
       "status": "pending",
       "due": "2026-11-18 18:00",
       "evidence": "发布闸门：验收回执齐备后提交批准",
-      "note": "不代替批准；发布前必须显式确认"
+      "note": "不代替批准；发布前必须显式确认",
+      "_state": "pending"
     }
   ],
   "milestones": [
@@ -51,9 +55,10 @@
       "date": "2026-11-12 18:00",
       "title": "签收：马岱 / 张松",
       "owner": "马岱 / 张松",
-      "status": "in_progress",
+      "status": "blocked",
       "gate": true,
-      "evidence": "签收回复 + 契约 §13 确认"
+      "evidence": "签收回复 + 契约 §13 确认",
+      "_state": "blocked"
     },
     {
       "id": "m2",
@@ -62,7 +67,8 @@
       "owner": "马岱",
       "status": "pending",
       "gate": true,
-      "evidence": "DDL、dry-run 日志、manifest 样例行"
+      "evidence": "DDL、dry-run 日志、manifest 样例行",
+      "_state": "pending"
     },
     {
       "id": "m3",
@@ -71,7 +77,8 @@
       "owner": "马钧",
       "status": "pending",
       "gate": false,
-      "evidence": "一页查询需求 + 查询草案；不写代码"
+      "evidence": "一页查询需求 + 查询草案；不写代码",
+      "_state": "pending"
     },
     {
       "id": "m4",
@@ -80,7 +87,8 @@
       "owner": "马岱",
       "status": "pending",
       "gate": true,
-      "evidence": "回填 manifest、行数、覆盖率、异常清单"
+      "evidence": "回填 manifest、行数、覆盖率、异常清单",
+      "_state": "pending"
     },
     {
       "id": "m5",
@@ -89,7 +97,8 @@
       "owner": "张松 / 陈群",
       "status": "pending",
       "gate": true,
-      "evidence": "验收记录 + 质量查询结果"
+      "evidence": "验收记录 + 质量查询结果",
+      "_state": "pending"
     },
     {
       "id": "m6",
@@ -98,7 +107,8 @@
       "owner": "马岱 / 张松",
       "status": "pending",
       "gate": true,
-      "evidence": "发布回执、catalog 登记、回滚点"
+      "evidence": "发布回执、catalog 登记、回滚点",
+      "_state": "pending"
     },
     {
       "id": "m7",
@@ -107,7 +117,8 @@
       "owner": "老田",
       "status": "pending",
       "gate": true,
-      "evidence": "显式批准记录"
+      "evidence": "显式批准记录",
+      "_state": "pending"
     },
     {
       "id": "m8",
@@ -116,7 +127,8 @@
       "owner": "马钧 / 张松",
       "status": "blocked",
       "gate": false,
-      "evidence": "数据仓 v1 发布回执之后"
+      "evidence": "数据仓 v1 发布回执之后",
+      "_state": "blocked"
     }
   ],
   "blockers": [
@@ -149,6 +161,14 @@
     {
       "at": "2026-11-12 05:46",
       "text": "执行跟踪表建立并提交：e549f28d6；五个检查点已设。"
+    },
+    {
+      "at": "2026-11-12 17:30",
+      "text": "签收检查：马岱/张松消息仍为 inbox，无回复；未伪造签收，未进入建表"
+    },
+    {
+      "at": "2026-11-12 18:00",
+      "text": "18:00 签收未完成：马岱/张松无回复，已向 A0 报告（MSG-20261112180041-87b8fc），不建表。"
     }
   ]
 }
