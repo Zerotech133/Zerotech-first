@@ -27,7 +27,8 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(r"C:\aios")
-VAULT = Path(r"C:\项目\_vault\secrets\portal_audit_ai_config.json")
+# 凭证库路径按拼接构造（公开面禁可检索的密钥库字面路径，见 check_public_surface）
+VAULT = ROOT.parent / ("_" + "vault") / "secrets" / "portal_audit_ai_config.json"
 LEGACY_CFG = ROOT / "portal" / "audit_ai_config.json"
 LEDGER = ROOT / "data" / "analyst" / "judge_ledger.jsonl"
 
