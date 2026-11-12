@@ -264,3 +264,61 @@ def test_real_snapshot_if_present():
         for z in s["seats"]:
             if z["group"] == "persona":
                 assert z["display"].startswith("PSN_")
+
+
+# ── 9. 判例 #40 自检：文档/代码不得出现 persona 原名 ────────
+def test_no_persona_name_outside_anonymizer():
+    """判例 #40 说「写例子等于再泄漏一次」，所以它对判例库自己同样有效。
+
+    2026-11-13 首次跑这条检查时，13 处命中全在**文档与注释**里（计划、口径定义、
+    jev_chain 注释、jev_seat docstring）——渲染层做对了，文字层漏了。
+    这条测试就是那次漏检的机器化：谁再往文档里写真实称号，门禁直接红。
+
+    名单从真实快照动态取，不硬编码（硬编码等于把名字写进测试，同样是泄漏）。
+    """
+    import glob
+
+    days = S.snapshot_days()
+    if not days:
+        pytest.skip("本地无 hm_detail 快照，无法取得 persona 名单")
+
+    names = set()
+    for d in days:
+        path = os.path.join(S.SEAT_DIR, "%s.jsonl" % S._d8(d))
+        if not os.path.exists(path):
+            continue
+        for line in io.open(path, encoding="utf-8"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:  # noqa: BLE001
+                continue
+            n = str(rec.get("hm_name") or "").strip()
+            if n and S.classify(n)[1] == "persona":
+                names.add(n)
+    if not names:
+        pytest.skip("快照里没有 persona 类称号")
+
+    # 只扫会入仓的文字面：文档、渲染层、采集层、门禁自身
+    patterns = ["docs/*.md", "*.md", "portal/*.py", "portal/tests/*.py",
+                "tools/*.py", "config/*.json"]
+    files = []
+    for p in patterns:
+        files.extend(glob.glob(os.path.join(ROOT, p)))
+
+    hits = []
+    for f in files:
+        try:
+            txt = io.open(f, encoding="utf-8").read()
+        except Exception:  # noqa: BLE001
+            continue
+        for n in names:
+            if len(n) >= 2 and n in txt:
+                hits.append(os.path.basename(f))
+                break
+
+    assert not hits, (
+        "判例 #40 违规：以下文件出现自然人称号原名（按 %d 个真实称号回扫），"
+        "改成脱标识表述：%r" % (len(names), sorted(set(hits))))
