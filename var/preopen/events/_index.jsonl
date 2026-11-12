@@ -1,0 +1,1 @@
+{"event_id": "EV-HF-20261111", "data_day": "20261111", "verdict": "warn", "n_surprise": 1, "n_cand": 2, "patterns": ["FALLBACK_MASK", "SAMPLE_TOO_SMALL"], "signed": false}

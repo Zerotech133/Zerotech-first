@@ -1,0 +1,83 @@
+{
+ "event_id": "EV-HF-20261111",
+ "date": "20261112",
+ "data_day": "20261111",
+ "scene": "盘前：数据校对 → 选票 → 简报",
+ "expect": {
+  "verdict": "ok",
+  "warns_max": 0,
+  "data_day_eq_latest": true,
+  "pool_lag_days_max": 1
+ },
+ "actual": {
+  "verdict": "warn",
+  "warns": [
+   "龙虎榜：缺 20261111，相关能力降级",
+   "自算比官方多 2 只涨停（首日新股/边界情形），报告里已单列"
+  ],
+  "problems": [],
+  "rc": 1,
+  "picks_n": 15,
+  "pool_n": 82,
+  "pkg_asof": 20261110
+ },
+ "obs": {
+  "repeated_warns": [],
+  "verdict_flip": false,
+  "fallbacks": 1,
+  "data_day_stale": false,
+  "pool_lag_days": 1,
+  "small_sample_batches": 3
+ },
+ "verdict": "warn",
+ "surprise": [
+  "本地缺当日数据，靠脚本当场补拉才继续"
+ ],
+ "action": "出报告",
+ "candidates": [
+  {
+   "pattern": "FALLBACK_MASK",
+   "kind": "event",
+   "cue": "本地缺当日数据，脚本当场从源端补拉后继续",
+   "lesson": "补拉成功不等于链路正常。它证明的是「源端有数据」，恰恰反证了「本地采集漏了」。若把补拉当成功，采集缺口会被永久掩盖 —— 必须把 source_fallback 计数进采集健康度，而不是当容错亮点。",
+   "confidence": 0.45,
+   "domain": "stock_screen",
+   "status": "candidate"
+  },
+  {
+   "pattern": "SAMPLE_TOO_SMALL",
+   "kind": "state",
+   "cue": "台账批次样本不足却已给出超额数字",
+   "lesson": "样本 <10 只、跟踪 <5 日的超额，方向性都不稳，只能记数不能解读。报告里给出数字又不加样本标记，等于把噪声当业绩。",
+   "confidence": 0.3,
+   "domain": "stock_screen",
+   "status": "candidate"
+  }
+ ],
+ "candidates_all_empty": false,
+ "note": "",
+ "written_at": "2026-11-12T08:45:23",
+ "amended": [],
+ "signed_by": null,
+ "written_by": "houfeng/preopen",
+ "drift": [
+  {
+   "id": "POOL_SYSTEMATIC",
+   "severity": "low",
+   "title": "池「auto」3/4 个批次超额为负（倾向，未全同向）",
+   "evidence": "各期超额：-0.46%、-0.45%、-0.86%、+0.27%；样本量 79、39、58、82",
+   "so_what": "3/4 期同向，方向有倾向但未全同向，只能算疑似。单期正负是噪声，多期一致才有信息；同向为负时值得按策略问题查，而不是当波动放过。",
+   "next": "按 precheck 规范立假设单（先估信息上限，上限不足即弃），不要直接调参。"
+  },
+  {
+   "id": "POOL_INCOMPARABLE",
+   "severity": "medium",
+   "title": "两个池样本量相差 22 倍，超额却被并排展示",
+   "evidence": "池「auto」均 64 只、均超额 -0.37%；池「main」均 3 只、均超额 +6.60%",
+   "so_what": "64 只的池与 3 只的池比平均超额，比的是方差不是能力。小样本池的单只权重极大，一票涨 10% 就能把均值拉正，读者会误读成「小池更准」。",
+   "next": "两池不要并排给均值，改给「各自相对同规模随机组合的超额」；或直接标注「样本不足，不可比」并只在同池内做时间序列比较。"
+  }
+ ],
+ "first_written_at": "2026-11-12T08:41:45",
+ "rerun_n": 3
+}
