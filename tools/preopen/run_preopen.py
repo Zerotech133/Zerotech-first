@@ -49,6 +49,28 @@ DELIV = r"C:\项目\deliverables"
 # 这里只读、不写 —— 落痕必须独立于业务代码，业务死掉也照样有。
 LAUNCH = r"C:\Temp\preopen_launch.jsonl"
 
+# 精排口径版本。必须与 zerobound-kg/factor_proto 下两处保持一致：
+#   _preopen_pick15_v2_adj.py 产物里的 chain_policy_v
+#   fg_daily_chain.py 里的 REFINE_POLICY_V
+# 改动任何会改变名单的口径（过滤规则、复权、打分）三处一起 +1，否则旧产物
+# 会被当成当前口径复用。tools/tests/test_preopen_gate_fixes.py 会断言这一点。
+# 本轮（11-12 夜）修的是校对与运行器，没有改 rate() 的过滤/复权/打分，
+# 所以版本号与底层同为 3。曾误写成 4，会让所有合法产物被复用校验永久阻断。
+POLICY_V = 3
+
+
+def reuse_rejection(pv: dict, day: str, policy_v: int = POLICY_V) -> str | None:
+    """复用选票前的阻断判定：返回 None 才可复用。
+
+    抽成纯函数是为了能单测 —— 11-12 08:27 的事故就是「只看文件存在」，
+    而修复如果只写在 main() 的分支里，改回去也没人会发现。
+    """
+    if pv.get("data_day") != day:
+        return "产物数据日 %s 与目标日 %s 不符" % (pv.get("data_day"), day)
+    if pv.get("chain_policy_v") != policy_v:
+        return "产物口径 v%s 与当前 v%s 不符" % (pv.get("chain_policy_v"), policy_v)
+    return None
+
 sys.path.insert(0, HERE)
 import audit_preopen as audit  # noqa: E402
 
@@ -192,6 +214,19 @@ def main() -> int:
     reused = bool(a.skip_pick and os.path.exists(pick_json))
     if reused:
         pv0 = pick_provenance(pick_json)
+        # 复用前必须证明「这份票属于今天、且属于当前口径」。只看文件存在
+        # 就复用，是 11-12 08:27 那次事故的根因：拿 11-11 的 json 出了一份
+        # 抬头写 11-12 的报告，外观与当天新算完全一致。溯源要能阻断，
+        # 不能只是打印一行让人自己看。
+        reason = reuse_rejection(pv0, day)
+        if reason:
+            print("\n阻断：复用的选票不可用 —— %s" % reason)
+            print("      请去掉 --skip-pick 重算，不要拿旧票出今天的报告。")
+            out["steps"].append({"step": "pick", "error": "stale_reuse",
+                                 "reason": reason})
+            out["rc"] = 3
+            _dump(out, a.json_out)
+            return 3
         print("\n[2/5] 选票 → 复用 %s（未重算）" % os.path.basename(pick_json))
         print("      这份票算于 %s（来源 %s）"
               % (pv0.get("picker_run_at"), pv0.get("picker_run_at_source")))
@@ -221,6 +256,25 @@ def main() -> int:
     # 老产物没有 picker_run_at，退回 mtime 并标 source=mtime —— 不标就等于冒充。
     pvp = pick_provenance(pick_json)
     out["pick_provenance"] = dict(pvp, reused=reused)
+
+    # 校对与选票对龙虎榜是两套视角：校对本读本地分片，选票会向源端补拉。
+    # 11-12 回执因此出现过「能力降级」与「V1b 实际生效」并存的假告警。
+    # 以选票产物的判定为准改写校对结论，免得报告把已解决的问题再报一遍。
+    try:
+        _tl = (json.load(io.open(pick_json, encoding="utf-8"))
+               .get("toplist_filter") or {})
+    except (ValueError, OSError):
+        _tl = {}
+    if _tl.get("status") == "OK":
+        if any("龙虎榜" in w for w in out["audit"]["warns"]):
+            out["audit"]["warns"] = [w for w in out["audit"]["warns"]
+                                     if "龙虎榜" not in w]
+            out["audit"]["warns"].append(
+                "龙虎榜：本地分片缺目标日，选票阶段已源端补拉，V1b 生效（来源 %s）"
+                % (_tl.get("source") or "未标"))
+    elif _tl.get("status") not in (None, "OK"):
+        out["audit"]["warns"].append(
+            "龙虎榜：选票产物判定 %s，上榜过滤未生效" % _tl.get("status"))
     print("      选票溯源：picker_run_at=%s（%s）reused=%s"
           % (pvp.get("picker_run_at"), pvp.get("picker_run_at_source"), reused))
 

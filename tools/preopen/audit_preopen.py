@@ -93,6 +93,36 @@ def max_date(sub: str, date_col: str) -> tuple[str | None, int]:
     return gmax, len(files)
 
 
+def shard_diagnostics(sub: str, date_col: str, target: str,
+                      cal: list[str], lookback: int = 4) -> dict:
+    """区分「上游给空」「本地漏跑」「正常未到」三种 0 行情形。
+
+    0 行分片不是「该源停更」的证据：上游正常返回空时分照亮样落盘，而本地
+    漏跑是连分片都没有。把两者压成「停在 X 日」，补数方向和报告措辞会一起
+    错。只在分片名里带日期时才有能力判；带不了就不猜，返回空诊断。
+    """
+    days = [d for d in cal if d <= target][-lookback:]
+    files = shards(sub)
+    dated = [f for f in files if any(d in os.path.basename(f) for d in days)]
+    if not dated:
+        return {"empty_days": [], "absent_days": []}
+    empty, absent = [], []
+    for d in days:
+        cand = [f for f in dated if d in os.path.basename(f)]
+        if not cand:
+            absent.append(d)
+            continue
+        for f in cand:
+            try:
+                if len(pd.read_parquet(f, columns=[date_col])):
+                    break
+            except Exception:
+                continue
+        else:
+            empty.append(d)
+    return {"empty_days": empty, "absent_days": absent}
+
+
 def load_day(sub: str, day: str, cols: list[str] | None = None) -> pd.DataFrame:
     """取某一天的全部行（跨分片）。"""
     frames = []
@@ -170,6 +200,51 @@ def limit_counts(df: pd.DataFrame) -> dict:
     up = up[~up.ts_code.isin(newl)]
     return {"up": int(len(up)), "dn": int(len(dn)), "new_listing": len(newl),
             "up_codes": sorted(up.ts_code), "dn_codes": sorted(dn.ts_code)}
+
+
+def limit_cross_check(target: str, cmp_day: str, lag_days, fu: dict,
+                      off: pd.DataFrame) -> tuple[dict, list[str]]:
+    """涨跌停自算 vs 交易所名单的纯判定（不碰 IO，便于行为单测）。
+
+    两个易错点封在这里：
+      · 官方表 0 行 = 上游给空/未落盘，不等于「官方确认没有涨停」；
+      · 官方表是 T+1 源，最新日常落后目标日，落后时只是历史比对，
+        口径差异不能算成当日问题（11-12 判例：落后 2 日、自算独有 2 只）。
+    """
+    is_target_day = (cmp_day == target)
+    mine_up = set(fu["up_codes"])
+    cc = {"day": cmp_day, "is_target_day": is_target_day,
+          "lag_days": lag_days, "mine_up": fu["up"], "mine_dn": fu["dn"]}
+    warns: list[str] = []
+    if off.empty:
+        cc.update({"official_empty": True, "official_up": None,
+                   "official_only": None, "mine_only": None, "official_dn": None,
+                   "note": "官方名单 0 行（上游给空或未落盘），跳过差异比对"})
+        warns.append(
+            "涨跌停官方名单 %s 为 0 行，本日不做交叉验证；情绪数字用自算口径，"
+            "名单剔除另用独立的封板口径，两者不可互相印证" % cmp_day)
+        return cc, warns
+
+    if "limit" in off.columns:
+        off_up = set(off[off["limit"] == "U"].ts_code)
+        off_dn = set(off[off["limit"] == "D"].ts_code)
+    else:
+        off_up, off_dn = set(off.ts_code), set()
+    cc.update({"official_up": len(off_up),
+               "official_only": len(off_up - mine_up),
+               "mine_only": len(mine_up - off_up),
+               "official_dn": len(off_dn)})
+    if not is_target_day:
+        cc["note"] = ("官方名单落后目标日 %s 个交易日，此为历史比对，"
+                      "差异只作口径记录，不计入当日告警" % lag_days)
+    else:
+        if off_up - mine_up:
+            warns.append("涨跌停自算漏判 %d 只（官方涨停未被自算抓到），情绪数字可能偏低"
+                         % len(off_up - mine_up))
+        if mine_up - off_up:
+            warns.append("自算比官方多 %d 只涨停（首日新股/边界情形），报告里已单列"
+                         % len(mine_up - off_up))
+    return cc, warns
 
 
 # ---------------------------------------------------------------------------
@@ -264,10 +339,24 @@ def audit(target: str | None = None) -> dict:
             if lag is not None and lag <= allowed:
                 item["state"] = "pending"
                 item["note"] = "按频率属正常未到（允许落后 %d 个交易日）" % allowed
-            elif sp["role"] == "soft":
+            elif sp["role"] in ("soft", "t_plus_1"):
+                # 2026-11-12：t_plus_1 落后超过 1 天原先落到 else，与 must
+                # 同判 problem —— 一个只用于报告情绪数字的辅助源，把整条
+                # 盘前链路卡成不出报告。角色分类的全部意义就是让「降级」
+                # 与「阻断」分开，这里必须显式列出两种角色，不能靠 else 兜底。
                 item["state"] = "warn"
-                item["note"] = "缺目标日，能力降级（脚本可自愈补拉）"
-                res["warns"].append("%s：缺 %s，相关能力降级" % (sp["name"], target))
+                item["note"] = "缺目标日，能力降级（该源不参与选票，报告按未接上处理）"
+                diag = shard_diagnostics(sp["path"], sp["date_col"], target, cal)
+                item["empty_days"] = diag["empty_days"]
+                item["absent_days"] = diag["absent_days"]
+                detail = ""
+                if diag["empty_days"]:
+                    detail += "；上游给空（有分片但 0 行）%s" % ",".join(diag["empty_days"])
+                if diag["absent_days"]:
+                    detail += "；本地漏跑（无分片）%s" % ",".join(diag["absent_days"])
+                res["warns"].append(
+                    "%s：最新可用 %s，距目标日 %s 个交易日；不参与选票，"
+                    "相关报告数字按未接上处理%s" % (sp["name"], mx, lag, detail))
             else:
                 item["state"] = "missed"
                 item["note"] = "该到没到"
@@ -280,32 +369,21 @@ def audit(target: str | None = None) -> dict:
     res["structure"] = st
     res["problems"].extend(probs)
 
-    # C. 涨跌停自算 + 与官方交叉验证（官方表最新日，两边都有才能比）
+    # C. 涨跌停自算 + 与官方交叉验证
+    # 两套口径各管一件事：limit_counts() 按「收盘触板」统计当日情绪；
+    # 选票 rate() 按「封板且涨幅超 9%」剔除次日开盘不可买的票。数字本就不必相等。
+    # 判定逻辑抽到 limit_cross_check()（纯函数），这里只负责取数。
     df = load_day("tdx/ts_daily", target)
     res["limit"] = limit_counts(df)
     off_max, _ = max_date("tushare/limit_list_d", "trade_date")
     if off_max:
         cmp_day = off_max
+        lag_days = 0 if cmp_day == target else trading_lag(cmp_day, target, cal)
         fu = limit_counts(load_day("tdx/ts_daily", cmp_day))
-        mine_up = set(fu["up_codes"])
-        mine_dn = set(fu["dn_codes"])
         off = pd.read_parquet(os.path.join(TS, "limit_list_d", "d_%s.parquet" % cmp_day))
-        if "limit" in off.columns:
-            off_up = set(off[off["limit"] == "U"].ts_code)
-            off_dn = set(off[off["limit"] == "D"].ts_code)
-        else:
-            off_up, off_dn = set(off.ts_code), set()
-        res["limit"]["cross_check"] = {
-            "day": cmp_day, "official_up": len(off_up), "mine_up": fu["up"],
-            "official_only": len(off_up - mine_up), "mine_only": len(mine_up - off_up),
-            "official_dn": len(off_dn), "mine_dn": fu["dn"],
-        }
-        if off_up - mine_up:
-            res["warns"].append("涨跌停自算漏判 %d 只（官方涨停未被自算抓到），情绪数字可能偏低"
-                                % len(off_up - mine_up))
-        if mine_up - off_up:
-            res["warns"].append("自算比官方多 %d 只涨停（首日新股/边界情形），报告里已单列"
-                                % len(mine_up - off_up))
+        cc, cc_warns = limit_cross_check(target, cmp_day, lag_days, fu, off)
+        res["limit"]["cross_check"] = cc
+        res["warns"].extend(cc_warns)
 
     # D. 共识池推送包
     pkg_root = r"C:\项目\zerobound-kg\factor_proto\strategy_center_inbox"
@@ -353,11 +431,23 @@ def render(res: dict) -> str:
                  % (st.get("bad_high", 0) + st.get("bad_low", 0), st.get("pct_extreme", 0),
                     st.get("pct_min"), st.get("pct_max"), st.get("zero_vol", 0),
                     st.get("pre_close_gap", "-")))
+        L.append("  口径：涨停家数按「收盘价触及涨停价」自算，用于情绪；名单剔除另按"
+                 "「封板且涨幅超 9%」判定，两者用途不同，数字不必相等。")
     cc = (res.get("limit") or {}).get("cross_check")
     if cc:
-        L.append("  交叉验证（%s）：官方涨停 %d，自算 %d，官方独有 %d，自算独有 %d"
-                 % (cc["day"], cc["official_up"], cc["mine_up"],
-                    cc["official_only"], cc["mine_only"]))
+        if cc.get("official_empty"):
+            L.append("  交叉验证（%s%s）：官方名单 0 行，跳过比对；自算涨停 %d 仅用于情绪判断"
+                     % (cc["day"], "" if cc.get("is_target_day") else "，历史日",
+                        cc["mine_up"]))
+        elif not cc.get("is_target_day", True):
+            L.append("  交叉验证（历史日 %s，距目标日 %s 个交易日）：官方涨停 %d，自算 %d，"
+                     "官方独有 %d，自算独有 %d；差异只作口径记录，不算当日问题"
+                     % (cc["day"], cc.get("lag_days"), cc["official_up"],
+                        cc["mine_up"], cc["official_only"], cc["mine_only"]))
+        else:
+            L.append("  交叉验证（%s）：官方涨停 %d，自算 %d，官方独有 %d，自算独有 %d"
+                     % (cc["day"], cc["official_up"], cc["mine_up"],
+                        cc["official_only"], cc["mine_only"]))
     if res.get("consensus"):
         c = res["consensus"]
         L.append("共识池：%s 包 asof=%s，%d 只" % (c["pkg"], c["asof"], c["n"]))

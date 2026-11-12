@@ -7,7 +7,8 @@
 券商盘前晨报的骨架是「结论先行 → 市场回顾 → 配置建议 → 个股 → 风险提示 → 免责」，
 且每个数字都带参照物。本文件按这个骨架组织，但多两块券商没有、我们有的：
 
-  · 筛选路径可追溯（82 → 79 → 15，每一层剔了谁、为什么）
+  · 筛选路径可追溯（共识池 → 剔除昨日涨停与龙虎榜 → 参与打分 → 入选 15，
+    每一层剔了谁、为什么；各层数字一律由产物现算，注释里不写死示例值）
   · 信号台账的真实超额（历史批次跑下来到底赚没赚，不吹）
 
 ## 数据纪律
@@ -153,17 +154,26 @@ def collect(day: str) -> dict:
         sc = pd.read_parquet(SECTOR)
         sc["trade_date"] = sc.trade_date.astype(str)
         cur = sc[sc.trade_date == day].sort_values("ret", ascending=False)
-        d["sector"] = {
-            "n": int(len(cur)),
-            "top": [{"name": r.sector_name, "ret": round(float(r.ret), 2),
-                     "up_ratio": round(float(r.up_ratio) * 100, 0)}
-                    for r in cur.head(5).itertuples()],
-            "bottom": [{"name": r.sector_name, "ret": round(float(r.ret), 2),
-                        "up_ratio": round(float(r.up_ratio) * 100, 0)}
-                       for r in cur.tail(3).itertuples()],
-            "up_n": int((cur.ret > 0).sum()),
-            "note": "等权口径，非市值加权，只用于行业间强弱，不与申万官方指数比绝对水平",
-        }
+        if not len(cur):
+            # 文件在、目标日没有 = 上游没产出。旧代码照样塞一个空 dict，
+            # derive() 里 s["top"][0] 直接 IndexError，整份报告不出（11-12 判例）。
+            # 非必需数据块只能让本节降级，不能干掉整份报告。
+            d["sector_missing"] = (
+                "行业强弱数据最新只到 %s，未接上数据日 %s；本节略过"
+                "（上游未产出，不是本地漏跑，也不是架构停更）"
+                % (str(sc["trade_date"].max()) if len(sc) else "无任何数据", day))
+        else:
+            d["sector"] = {
+                "n": int(len(cur)),
+                "top": [{"name": r.sector_name, "ret": round(float(r.ret), 2),
+                         "up_ratio": round(float(r.up_ratio) * 100, 0)}
+                        for r in cur.head(5).itertuples()],
+                "bottom": [{"name": r.sector_name, "ret": round(float(r.ret), 2),
+                            "up_ratio": round(float(r.up_ratio) * 100, 0)}
+                           for r in cur.tail(3).itertuples()],
+                "up_n": int((cur.ret > 0).sum()),
+                "note": "等权口径，非市值加权，只用于行业间强弱，不与申万官方指数比绝对水平",
+            }
 
     # 精选名单
     fp = PICK_JSON.format(day=day)
@@ -176,6 +186,9 @@ def collect(day: str) -> dict:
             "toplist": pk.get("toplist_filter") or {},
             "score_mode": pk.get("score_mode"),
             "refine_date": pk.get("refine_date"),
+            # 抽屉里要展示动量名次（0~1 的池内百分位）。打分表在 full_rated，
+            # 只给 r10（原始 10 日动量）会与「按名次计分」的文案自相矛盾。
+            "full_rated": pk.get("full_rated") or [],
         }
     else:
         d["picks"] = []
@@ -238,7 +251,7 @@ def derive(d: dict) -> dict:
             "**量能**：全市场成交 %s，较前一日 %s%%（%s）。"
             % (wan(amt), "%+.1f" % delta, wan(prev_amt)))
 
-    if d.get("sector"):
+    if d.get("sector") and d["sector"]["top"] and d["sector"]["bottom"]:
         s = d["sector"]
         t = s["top"][0]
         out["points"].append(
@@ -246,6 +259,8 @@ def derive(d: dict) -> dict:
             "最弱 %s（%+.2f%%）。"
             % (s["n"], s["up_n"], t["name"], t["ret"], t["up_ratio"],
                s["bottom"][0]["name"], s["bottom"][0]["ret"]))
+    elif d.get("sector_missing"):
+        out["points"].append("**行业**：%s" % d["sector_missing"])
 
     picks = d.get("picks") or []
     if picks:
@@ -514,7 +529,7 @@ def render(d: dict) -> str:
              "接力意愿强，情绪处于扩散阶段。" if lianban >= 25 else
              ("接力一般，情绪偏存量博弈。" if lianban >= 12 else
               "接力弱，涨停股次日普遍承压，谨防高位标的。")))
-    if d.get("sector"):
+    if d.get("sector") and d["sector"]["top"] and d["sector"]["bottom"]:
         s = d["sector"]
         A("<table style=\"margin-top:14px\"><thead><tr><th>行业（申万一级）</th>"
           "<th>涨跌幅</th><th>成分上涨占比</th></tr></thead><tbody>")
@@ -532,6 +547,9 @@ def render(d: dict) -> str:
         A("<div class=\"card\">行业涨跌幅为 <b>成分股等权均值</b>，不是市值加权，"
           "与申万官方指数存在系统性差异（等权偏小盘）。此处只用于判断"
           "<b>行业之间谁强谁弱</b>与上涨广度，不与官方指数比绝对水平。</div>")
+    else:
+        A("<div class=\"card warn\">%s</div>"
+          % esc(d.get("sector_missing") or "行业强弱数据未接上本次数据日，本节略过。"))
     A("</section>")
 
     # 三、今日名单
@@ -559,24 +577,38 @@ def render(d: dict) -> str:
         A("</tbody></table>")
 
         # 打分构成（券商不给，我们给，可复核）
+        # 权重与「本票取值」必须分开：旧版把四个因子取值排在「四项加权」后面，
+        # 读者会当成权重；且文案说动量按名次计，展示的却是原始 10 日动量。
+        rank_map = {x.get("ts_code"): x.get("mom_rank")
+                    for x in ((d.get("picks_meta") or {}).get("full_rated") or [])}
         A("<div style=\"margin-top:12px\">")
         for i, r in enumerate(picks, 1):
+            rk = rank_map.get(r.get("ts_code"))
             A("<details><summary>%d. %s · 评分拆解</summary><div class=\"body\">"
               % (i, esc(r.get("name"))))
-            A("评分由四项加权：量能健康 <b>%.2f</b>、当日收涨确认 <b>%.2f</b>、"
-              "均线趋势 <b>%s</b>、动量位置 <b>%.2f</b>（动量以池内排序名次计）。"
+            A("评分权重（固定，全池一致）：量能健康 <b>0.45</b>、收涨确认 <b>0.35</b>、"
+              "动量名次 <b>0.10</b>、均线趋势 <b>0.10</b>（取值 0/1/2 折半计入）；"
+              "流动性 <b>0.00</b>，等于不参与打分。")
+            A("<div style=\"margin-top:6px\">本票取值：量能健康 <b>%.2f</b>、"
+              "收涨确认 <b>%.2f</b>、均线趋势 <b>%s</b>、动量名次 <b>%s</b>"
+              "（池内百分位，0 最低、1 最高）。</div>"
               % (float(r.get("vol_h") or 0), float(r.get("confirm") or 0),
-                 esc(r.get("trend")), float(r.get("r10") or 0)))
+                 esc(r.get("trend")),
+                 ("%.3f" % float(rk)) if rk is not None else "未记录"))
             A("<div class=\"kv2\">")
-            A("<span>量比 <b>%.2f</b></span>" % float(r.get("vr") or 0))
+            A("<span>量能倍数 <b>%.2f</b></span>" % float(r.get("vr") or 0))
             A("<span>后复权10日动量 <b>%+.2f%%</b></span>" % float(r.get("r10") or 0))
             A("<span>不复权对照 <b>%+.2f%%</b></span>" % float(r.get("r10_raw") or 0))
             A("<span>除权扭曲 <b>%.2f pp</b></span>" % abs(float(r.get("adj_div") or 0)))
-            A("</div></div></details>")
+            A("</div>")
+            A("<div style=\"margin-top:6px;color:#666\">量能倍数 = 当日成交量 ÷ 前 20 日均量，"
+              "不是分时口径的「量比」；落在 0.8~2.5 记满分，超出按相邻档折半。</div>")
+            A("</div></details>")
         A("</div>")
         A("<div class=\"card info\">评分只用于<b>同池内排序</b>，不是收益预测。"
           "权重按日频横截面分层实测调整过（量能健康与收涨确认为正贡献，"
-          "流动性无区分度已剔除），但样本期有限，仍需以台账实际超额为准。</div>")
+          "流动性分层实测无区分度、权重置 0），但样本期有限，"
+          "仍需以台账实际超额为准。</div>")
     else:
         A("<div class=\"card warn\">本日未找到精选产物（%s）。"
           "缺产物不等于没有信号，是筛选环节没跑通 —— 需先补跑再出简报。</div>"
@@ -598,8 +630,9 @@ def render(d: dict) -> str:
         A("<div class=\"f\"><b>%d</b><span>入选</span></div>" % len(picks))
         A("</div>")
         if ex:
-            A("<div class=\"card\">昨日涨停剔除：<b>%s</b>。理由是次日开盘追价不可控，"
-              "不是不看好。</div>" % esc("、".join(ex)))
+            A("<div class=\"card\">昨日涨停剔除：<b>%s</b>。判据是当日封板（最高价等于收盘价）"
+              "且涨幅超 9%%，与首页按收盘价触板统计的涨停家数不是同一个口径；"
+              "理由是次日开盘追价不可控，不是不看好。</div>" % esc("、".join(ex)))
         if tl.get("dropped"):
             names = "、".join("%s %s" % (x.get("ts_code"), x.get("name")) for x in tl["dropped"])
             A("<div class=\"card\">龙虎榜剔除：<b>%s</b>。口径为 T 日或 T-1 日上榜即剔，"
@@ -660,14 +693,29 @@ def render(d: dict) -> str:
              stt.get("pre_close_gap", "-")))
     cc = (au.get("limit") or {}).get("cross_check")
     if cc:
-        miss = cc["official_only"]
-        A("<div class=\"card\">涨跌停自算与交易所名单交叉验证（%s）：官方 %d 家，"
-          "自算 %d 家，%s自算独有 %d 家（新股/边界）。%s</div>"
-          % (cc["day"], cc["official_up"], cc["mine_up"],
-             "官方独有 <b>%d</b> 家（自算漏判），" % miss if miss else "官方涨停<b>无一遗漏</b>，",
-             cc["mine_only"],
-             "自算<b>未漏判</b>官方涨停，可用于盘前情绪判断。"
-             if miss == 0 else "自算存在漏判，情绪数字仅供参考。"))
+        lag_txt = ("%s" % cc["lag_days"]) if cc.get("lag_days") is not None else "若干"
+        if cc.get("official_empty"):
+            A("<div class=\"card\">交易所涨跌停名单 %s 当日为 <b>0 行</b>"
+              "（上游给空或尚未落盘），本日不做交叉比对；"
+              "首页涨停家数按自算口径，只用于判断情绪。</div>" % esc(cc["day"]))
+        elif not cc.get("is_target_day", True):
+            A("<div class=\"card\">涨跌停交叉验证用的是<b>历史日 %s</b>"
+              "（距本次数据日 %s 个交易日）：交易所名单 %d 家，自算 %d 家，"
+              "自算独有 %d 家。这是口径核对，<b>不是当日问题</b>，不影响今天的名单。</div>"
+              % (esc(cc["day"]), esc(lag_txt), cc["official_up"],
+                 cc["mine_up"], cc["mine_only"]))
+        else:
+            miss = cc["official_only"]
+            A("<div class=\"card\">涨跌停自算与交易所名单交叉验证（%s）：官方 %d 家，"
+              "自算 %d 家，%s自算独有 %d 家（新股/边界）。%s</div>"
+              % (cc["day"], cc["official_up"], cc["mine_up"],
+                 "官方独有 <b>%d</b> 家（自算漏判），" % miss if miss else "官方涨停<b>无一遗漏</b>，",
+                 cc["mine_only"],
+                 "自算<b>未漏判</b>官方涨停，可用于盘前情绪判断。"
+                 if miss == 0 else "自算存在漏判，情绪数字仅供参考。"))
+        A("<div class=\"card info\">两个涨停口径各管一件事：首页「涨停家数」按收盘价触板自算，"
+          "用来看情绪；筛选路径里剔除的「昨日涨停」按封板且涨幅超 9% 判定，"
+          "用来避开次日开盘追价。数字不必相等。</div>")
     if au.get("verdict") == "warn":
         A("<div class=\"card warn\">本次体检有 %d 项告警，照实列出：<br>%s</div>"
           % (len(au.get("warns") or []),

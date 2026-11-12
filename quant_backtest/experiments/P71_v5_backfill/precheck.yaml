@@ -1,0 +1,96 @@
+# P71 v5 打分权重（参数层第 7 组）—— 事后回填的预判单
+#
+# 用途：给 11-12 那次「把权重从 legacy 改成 v5」补一张预判单。
+# 与 P69_backfill 同一性质：回填只为留痕与验证预判规则，
+# **不代表事后测得的数值在事前就能预知**。
+# v5 的定位在源码注释里写得很清楚：是「止血」，不是「提效」——
+# 验收目标 = 验证段合成超额回到约 0，不指望转正。
+# 那么按预判规则，它在开跑前就该被判「劝退」：连 0 都覆盖不了成本。
+
+meta:
+  exp_id: P71_v5_backfill
+  layer: 参数层 - 选股规则与阈值（合成打分权重 legacy -> v5）
+  hypothesis: 把权重集中到分层实测有效的因子上，可让合成打分的验证段超额由负回到 0 以上
+  created: '2026-11-12'
+  status: backfilled
+  verdict: abandon
+
+cap:
+  method: spread
+  upper_bound_pct: -0.30
+  cost_pct: 0.30
+  basis: >-
+    factor_score_audit.py 的 OOS 329 日 / 5058 只 / 五分组分层结果，
+    以及 factor_v5_verify.py 对 v5 的验收目标（验证段合成超额约 0）。
+    最强单因子 vol_h 的 20 日 Q5-Q1 为 +0.815%（t=+5.18），
+    confirm +0.645%（t=+2.70），trend +0.176%（t=+0.62，近零），
+    mom_rank -0.139%（t=-0.39，倒 U 型），liq -0.074%（t=-0.22）。
+    legacy 合成实测 -0.197%（5 日全期）/ -2.265%（验证段 t=-2.99）。
+  inputs:
+    quantiles: 5
+    holding_days: 5
+    spread_gross_pct: 0.0
+    cost_note: 双边佣金+印花+冲击 0.30pct（A股日频选股口径，与 P69 同一档）
+  note: >-
+    这里取 spread_gross_pct = 0.0，不是「没测」，而是 v5 自己声明的天花板：
+    验收目标就是「验证段回到约 0」。用 0 作上限是保守且可复核的。
+    最强单因子的 +0.815% 是 20 日口径、且是单因子多空，与本实验的
+    5 日合成打分不可直接相减；合成只会稀释，不会放大。
+    净上限 = 0.0 - 0.30 = -0.30pct <= 放弃线 0 → 劝退。
+
+abandon:
+  threshold_pct: 0.0
+  rationale: >-
+    净上限 <= 0 就弃。v5 的意义是把 legacy 的确定性伤害止住，
+    不是产生 alpha；这一层信息再怎么调权重也变不成覆盖成本的钱。
+    与六次参数层实验的结论一致。
+
+falsify:
+  if_true:
+    - v5 合成打分在 5 日口径下 Q1→Q5 单调，|rho| >= 0.8，且 Q5-Q1 >= 0.30pct（覆盖成本）
+    - 验证段合成超额 >= +0.30pct（20 日口径），且 t >= 2.0，与 IS 同号
+    - 把权重从 vol_h 0.45 挪到 mom_rank 后，5 日 spread 下降 >= 0.20pct（证明权重确实来自分层证据）
+  if_false:
+    - 合成超额只回到约 0（止血成功但无 alpha），或 Q5-Q1 < 0.30pct
+    - 分档倒 U / 反向，或验证段 t < 2.0
+  monotonicity_rho_min: 0.8
+  t_min: 2.0
+  is_oos_sign_agree: true
+  sample_note: OOS 至少 300 个交易日、每档成组 >= 30 只
+  observed: >-
+    实测：v5 验收目标是「验证段回到约 0」，未达 +0.30pct；
+    11-12 盘后复盘 15 只名单 score~收益 rho = -0.083（开盘口径）/ -0.145（昨收口径），
+    Top1-5 -2.50%（胜率 0%）、Top11-15 -0.52%（胜率 60%），评分排序反向。
+    结论：判否，符合 if_false 第一条。注意单日样本不构成独立证据，
+    只作为 drift 挂进事件账。
+
+attempts:
+  family: 参数层 - 选股规则与阈值（同一段样本上反复调同一批旋钮）
+  total_trials: 7
+  same_sample: true
+  correction:
+    applied: false
+    method: none
+    note: >-
+      P63 地板 / P64 提权 / P64 阈值 / P66 仓位 / P68 排除项 / P69 质量因子
+      共 6 组，v5 权重是第 7 组。全部用同一段 202509-202609 样本、同一个 beta。
+      未做多重检验折扣，按单次 5% 显著计族错误率上界约 30%（1-0.95^7）。
+      这行留着不改：它本身就是「七张单子撑不起一条知识线」的证据。
+      唯一通过预判的是 GATE_backfill（换的是「何时不交易」，不是同族）。
+
+cost_sensitivity:
+  mode: derived
+  grid_pct: [0.20, 0.30, 0.50]
+  note: >-
+    由 cap.inputs.spread_gross_pct = 0.0 自动减三档成本：
+    0.20 档 -0.200 / 0.30 档 -0.300 / 0.50 档 -0.500，三档全负、不翻转。
+    即结论对成本假设不敏感：止血口径在任何合理成本下都覆盖不了。
+
+selfcheck:
+  reference: P69_backfill 净上限 -0.041pct（毛 spread 0.259 减 0.30 成本）与 GATE_backfill +0.371pct
+  tolerance_pct: 5
+  note: >-
+    同一族的 P69 用真实财务因子实测也是负净上限，本单更负；
+    而唯一为正的 GATE 换的是交易时点（两组对照），不是同族参数。
+    三者同向支持「alpha 在时点不在选股」。若本单算出正上限，
+    先怀疑是不是把 20 日单因子 spread 当成 5 日合成 spread 用了。

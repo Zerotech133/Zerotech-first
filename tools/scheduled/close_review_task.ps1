@@ -102,7 +102,22 @@ if ($rc -eq 2 -or $rc -eq 3) {
 }
 
 if ($rc -eq 0 -or $rc -eq 1) {
-    Write-Launch 'end' @{ rc = $rc; ts_rc = 0; stage = 'done'
+    # 复盘出结果后，把「评分排序」观测挂到信号日的既有事件上。
+    # 失败不阻断主流程（报告已经出了），但必须落日志与 launch 落痕：
+    # 「观测没攒上」与「今天没有观测」是两件事，不能都写成 DONE。
+    $aRc = -1
+    $attach = Join-Path $root 'tools\review\attach_close_review.py'
+    if (Test-Path $attach) {
+        $aArgv = @('-X', 'utf8', $attach)
+        if ($Date) { $aArgv += @('--exec-day', $Date) }
+        $aOut = & $py @aArgv 2>&1
+        $aRc = $global:LASTEXITCODE
+        $aOut | Out-File $Log -Append -Encoding utf8
+        Write-Log "attach_close_review rc=$aRc"
+    } else {
+        Write-Log "attach_close_review.py missing - 观测未挂（不是没有观测）"
+    }
+    Write-Launch 'end' @{ rc = $rc; ts_rc = 0; stage = 'done'; attach_rc = $aRc
                           dur_sec = [int](((Get-Date) - $T0).TotalSeconds) }
     exit 0
 }
