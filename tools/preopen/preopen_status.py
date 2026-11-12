@@ -236,6 +236,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="盘前四态体检：启动 / 算票 / 简报 / 复盘")
     ap.add_argument("--date", default=None, help="执行日 YYYYMMDD，缺省今天")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
+    ap.add_argument("--assume-review", action="store_true",
+                    help="内部用：调用方自己正在产出复盘（close_review 会传）。"
+                         "手跑别加 —— 那会把「复盘缺失」误报成 OK")
     a = ap.parse_args()
 
     day = a.date or datetime.now().strftime("%Y%m%d")
@@ -263,6 +266,9 @@ def main() -> int:
     started = launch["found"]
     picked = pick["exists"] and (pick["n_codes"] or 0) > 0
     reported = report["exists"]
+    # close_review 在**写盘之前**调本工具取链路状态，那时复盘文件自然还不存在。
+    # 用 --assume-review 把这一步当成已发生，否则每天的复盘产物都会自述 NO_REVIEW。
+    reviewed = rev["exists"] or a.assume_review
     if not started and logm["n_start_line"]:
         # 日志有 start 行、落痕却没有 → 当天跑的是「还没有落痕的那个版本」。
         # 这与「压根没启动」是两件事，混成一个结论会让人去查错方向。
@@ -273,7 +279,7 @@ def main() -> int:
         verdict, code = "STARTED_NO_PICK", 5
     elif not reported:
         verdict, code = "PICK_NO_REPORT", 6
-    elif not rev["exists"] and review_due:
+    elif not reviewed and review_due:
         verdict, code = "NO_REVIEW", 8
     else:
         verdict, code = "OK", 0
@@ -283,7 +289,8 @@ def main() -> int:
                           "log_marks": logm, "paths": {k: v for k, v in paths.items()
                                                        if k != "basket_meta"},
                           "pick": pick, "report": report,
-                          "review": rev, "review_due": review_due},
+                          "review": rev, "review_due": review_due,
+                          "review_assumed": bool(a.assume_review and not rev["exists"])},
                          ensure_ascii=False, indent=1))
         return code
 
@@ -348,6 +355,9 @@ def main() -> int:
         if rev["source_changed"]:
             print("           ⚠ 该日行情证据与上次留存不一致（同日重跑换了数据源？），"
                   "两次数字不可直接比较")
+    elif a.assume_review:
+        print("[4] 复盘  ✔ 本份正在生成（调用方传了 --assume-review，"
+              "产物落盘后即为存在）")
     elif review_due:
         print("[4] 复盘  ✘ 无 close_review_%s.json —— 盘前走通了，但收盘结果没被记录"
               % day)

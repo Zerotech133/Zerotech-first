@@ -39,6 +39,7 @@ import io
 import json
 import os
 import statistics as st
+import subprocess
 import sys
 import time
 import urllib.request
@@ -56,6 +57,9 @@ LEDGER_DIR = os.path.join(ROOT, "var", "preopen", "close_review")
 LEDGER = os.path.join(LEDGER_DIR, "ledger.jsonl")
 QUOTE_DIR = os.path.join(LEDGER_DIR, "quotes")   # 当日行情原始输入（证据，非缓存）
 TARGET_DAYS = 40          # 攒够这么多个交易日，这条链路才谈得上「被评价过」
+PY = r"C:\Program Files\Python311\python.exe"    # 计划任务所用的同一个解释器
+STATUS = os.path.join(PREOPEN, "preopen_status.py")
+SINA_RETRY = 3            # 单批最多试几次（同源重试，不涉及「两源冲突信谁」）
 
 # 「科技硬件」的归类口径写死在代码里，不每天各算各的。
 # 存在的意义：2026-11-12 提出「53% 集中在该板块要不要中性化」，而当时的判断
@@ -132,12 +136,35 @@ def quotes_local(exec_day: str, codes: list[str]) -> dict:
     return out
 
 
-def _fetch_sina(batch: list[str]) -> dict:
+def _fetch_sina(batch: list[str], tries: int = SINA_RETRY) -> dict:
+    """单批行情，失败重试。
+
+    sina 偶发挂起或返回空体是常态，一次失败就让整份复盘不出（rc=2）代价太大。
+    这里只做同源重试 —— 不引入第二个数据源，因为「两源不一致时信谁」是口径
+    决定，不是可靠性问题，得单独定。
+    """
     url = "https://hq.sinajs.cn/list=" + ",".join(batch)
     req = urllib.request.Request(url, headers={
         "Referer": "https://finance.sina.com.cn", "User-Agent": "Mozilla/5.0"})
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    raw = op.open(req, timeout=20).read().decode("gbk", "ignore")
+    last = None
+    raw = None
+    ok = False
+    for i in range(max(1, tries)):
+        try:
+            raw = op.open(req, timeout=20).read().decode("gbk", "ignore")
+            if "var hq_str_" in raw:
+                ok = True
+                break
+            # 有响应但无行情：sina 偶尔回空体或错误页。这不算成功，要继续重试 ——
+            # 否则 raw 非空会让下面的抛出条件失效，把「取不到」伪装成「取到 0 只」。
+            last = RuntimeError("响应无可解析行情（%d 字节）" % len(raw))
+        except Exception as e:          # noqa: BLE001 - 网络层异常种类多，统一重试
+            last = e
+        if i + 1 < tries:
+            time.sleep(1.0 * (i + 1))    # 1s / 2s 退避，别做无休止重试
+    if not ok:
+        raise last if last else RuntimeError("行情请求失败（重试 %d 次）" % tries)
     out = {}
     for line in raw.splitlines():
         line = line.strip()
@@ -162,8 +189,8 @@ def quotes_sina(keys: list[str]) -> dict:
         try:
             out.update(_fetch_sina(keys[i:i + 30]))
         except Exception as e:
-            die("[FATAL] 行情取不到（%s: %s）—— 今天这份复盘没有数据基础，"
-                "不出报告比出一份没数的报告强" % (type(e).__name__, e))
+            die("[FATAL] 行情取不到（%s: %s，已重试 %d 次）—— 今天这份复盘没有数据基础，"
+                "不出报告比出一份没数的报告强" % (type(e).__name__, e, SINA_RETRY))
         time.sleep(0.35)
     return out
 
@@ -329,6 +356,38 @@ def ledger_digest(exec_day: str) -> dict:
             "includes_today": exec_day in recs}
 
 
+def chain_state(exec_day: str) -> dict:
+    """把四态体检结果嵌进复盘产物。
+
+    复盘是这条链路的最后一环。如果链路状态只在手跑 preopen_status 时才看得见，
+    那又回到「不知道跑没跑」的老毛病 —— 让每天的复盘产物自己带着它，
+    翻一份文件就知道今天走到哪一步、哪一步是空的。
+
+    用子进程而不是 import：status 是个 CLI 工具，import 会把它和本脚本的
+    sys.path / 模块级副作用缠在一起；子进程还能吃掉它的崩溃（返回 error 字段
+    而不是让整份复盘跟着挂）。
+    """
+    try:
+        r = subprocess.run([PY, "-X", "utf8", STATUS, "--date", exec_day,
+                            "--json", "--assume-review"],
+                           capture_output=True, text=True, timeout=120, cwd=PREOPEN)
+        d = json.loads(r.stdout or "{}")
+        if not d.get("verdict"):
+            return {"error": "status 无 verdict", "rc": r.returncode,
+                    "stderr": (r.stderr or "")[-300:]}
+        la, pk, rp = (d.get("launch") or {}), (d.get("pick") or {}), (d.get("report") or {})
+        return {"verdict": d["verdict"], "status_rc": r.returncode,
+                "started": bool(la.get("found")), "n_start": la.get("n_start"),
+                "first_started_at": la.get("first_started_at"),
+                "picked": bool(pk.get("exists")), "n_codes": pk.get("n_codes"),
+                "reused": pk.get("reused"), "picker_run_at": pk.get("picker_run_at"),
+                "pick_source": (d.get("paths") or {}).get("pick_source"),
+                "reported": bool(rp.get("exists")),
+                "review_assumed": d.get("review_assumed", False)}
+    except Exception as e:      # noqa: BLE001 - 体检失败不该拖垮复盘本身
+        return {"error": "%s: %s" % (type(e).__name__, e)}
+
+
 def append_ledger(rec: dict) -> None:
     """台账每天一行，同日重跑就地覆盖。
 
@@ -394,8 +453,13 @@ def _f(x, fmt="%+.2f%%"):
     return "-" if x is None else fmt % x
 
 
+def _hms(ts) -> str:
+    return (str(ts) or "")[11:19] or "-"
+
+
 def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
-              rows: list[dict], dg: dict, qsrc: str, expo: dict, ev: dict) -> str:
+              rows: list[dict], dg: dict, qsrc: str, expo: dict, ev: dict,
+              chain: dict) -> str:
     ex_o2c = (top_s["o2c_mean"] - pool_s["o2c_mean"]
               if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None else None)
     L = []
@@ -501,6 +565,29 @@ def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
         A("> 样本已达 %s，日均与胜率具备参考性；但与记账口径（40 日/T+1 开盘/双边成本）"
           "仍不是同一件事，不要把这里的数字当净收益。" % dg["progress"])
     A("")
+    A("## 七、当天链路（四态）")
+    A("")
+    if chain.get("error"):
+        A("体检没跑成：`%s` —— 复盘本身不受影响，但链路状态未知。" % chain["error"])
+    else:
+        A("| 环节 | 状态 | 证据 |")
+        A("|---|---|---|")
+        A("| 启动 | %s | 落痕 %s 次%s |"
+          % ("✔" if chain.get("started") else "✘", chain.get("n_start") or 0,
+             "，首 %s" % _hms(chain["first_started_at"])
+             if chain.get("first_started_at") else ""))
+        A("| 算票 | %s | %s 只，算于 %s（%s） |"
+          % ("✔" if chain.get("picked") else "✘", chain.get("n_codes") or 0,
+             chain.get("picker_run_at") or "-",
+             "复用" if chain.get("reused") is True
+             else "重算" if chain.get("reused") is False else "来源未记"))
+        A("| 简报 | %s | preopen_report_%s.html |"
+          % ("✔" if chain.get("reported") else "✘", b["exec_day"]))
+        A("| 复盘 | ✔ | 本文件 |")
+        A("")
+        A("判定：`%s`。这一列的价值在于**失败也能被看见** —— 链路断在哪一环，"
+          "不用再翻落痕和日志去拼。" % chain.get("verdict"))
+    A("")
     A("---")
     A("生成 %s · close_review · 数据基准 %s"
       % (datetime.now().strftime("%Y-%m-%d %H:%M"), b["exec_day"]))
@@ -553,6 +640,10 @@ def main() -> int:
 
     expo = industry_exposure(rows)
 
+    # 链路状态必须在写盘之前取：写完再取，[4] 复盘 这一项是自指的
+    # （判它存在要读这个文件，而这个文件正在生成）。--assume-review 破环。
+    chain = chain_state(exec_day)
+
     rec = {"schema": "close_review/v1", "exec_day": exec_day,
            "data_day": b.get("data_day"), "quote_source": qsrc,
            "picker_run_at": b.get("picker_run_at"), "reused": b.get("reused"),
@@ -563,7 +654,7 @@ def main() -> int:
                           if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None
                           else None),
            "win_o2c": top_s["win_o2c"], "rows": rows,
-           "exposure": expo, "evidence": ev,
+           "exposure": expo, "evidence": ev, "chain_state": chain,
            "index": idx, "written_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
     # 先入账、再算摘要、最后渲染。
@@ -577,7 +668,7 @@ def main() -> int:
                         "evidence", "written_at")})
 
     dg = ledger_digest(exec_day)
-    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, expo, ev)
+    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, expo, ev, chain)
 
     md_path = os.path.join(DELIV, "close_review_%s.md" % exec_day)
     js_path = os.path.join(DELIV, "close_review_%s.json" % exec_day)
@@ -591,6 +682,14 @@ def main() -> int:
                 else top_s["o2c_mean"] - pool_s["o2c_mean"])))
     print("累计 %s 日（目标 %d），日均超额 %s" % (dg["progress"], dg["target"],
                                           _f(dg["mean_excess"])))
+    if chain.get("error"):
+        print("[WARN] 链路体检没跑成：%s（复盘本身已出）" % chain["error"])
+    else:
+        print("链路 %s | 启动 %s | 算票 %s | 简报 %s | 复盘 本份"
+              % (chain.get("verdict"),
+                 ("✔%d次" % (chain.get("n_start") or 0)) if chain.get("started") else "✘",
+                 ("✔%s只" % (chain.get("n_codes") or 0)) if chain.get("picked") else "✘",
+                 "✔" if chain.get("reported") else "✘"))
     print("WROTE %s" % md_path)
     print("WROTE %s" % js_path)
     return 0
