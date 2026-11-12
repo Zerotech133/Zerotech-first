@@ -293,7 +293,21 @@ def _sqlite_asof(tbl, dcol):
 
 
 def _sqlite_shrink(tbl, dcol, day):
-    """按日聚合行数，判「日期在走但行数塌了」。口径与 parquet 版一致。"""
+    """按日聚合行数，判「日期在走但行数塌了」。口径与 parquet 版一致。
+
+    盘中误报防护（2026-11-12 实证）：asof 是【今天】且现在还没到 19:00 时，
+    上游仍在往当天写数据，行数塌是正常盘中态 —— tdx_sync 白天补拉后
+    stock_news 11-12 只有 126 行（前日全天 631），被判 shrink。
+    19:10 的夜间体检不受影响；只有白天手工跑才会碰到这条路。
+    """
+    try:
+        import datetime as _dt
+        n = _dt.datetime.now()
+        today = n.strftime("%Y%m%d")
+        if day == today and (n.hour, n.minute) < (19, 0):
+            return None          # 当天还没写完，判不得
+    except Exception:
+        pass
     try:
         uri = "file:%s?mode=ro" % SQLITE_DB.replace("\\", "/")
         c = sqlite3.connect(uri, uri=True, timeout=5)
@@ -303,17 +317,18 @@ def _sqlite_shrink(tbl, dcol, day):
         c.close()
     except Exception:
         return None
-    vals = {_norm(d): int(n) for d, n in rows if _norm(d)}
+    vals = {_norm(d): int(cnt) for d, cnt in rows if _norm(d)}
     if len(vals) < 5:
         return None
     import statistics
     med = statistics.median(vals.values())
     if med < 10 or day not in vals:
         return None
-    n = vals[day]
-    return {"day": day, "rows": n, "median": int(med),
-            "ratio": round(n / med, 3), "shrunk": n / med < 0.5,
+    cnt = vals[day]
+    return {"day": day, "rows": cnt, "median": int(med),
+            "ratio": round(cnt / med, 3), "shrunk": cnt / med < 0.5,
             "backend": "sqlite"}
+
 
 
 # ── 上游探针 ─────────────────────────────────────────────

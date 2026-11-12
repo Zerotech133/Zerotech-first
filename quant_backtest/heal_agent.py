@@ -74,9 +74,9 @@ ALLOWED = {
 #     而全量重拉要面对上游 7765 万行（本地只有 60 万），数小时起步，
 #     远超本任务 PT2H 上限。必须单独排程，不能在夜间自愈里顺手做。
 MANUAL_TABLES = {
-    "stock_news": "SQLite 无主键，全量重拉 = 整表复制（需修体检器读法，不是补数据）",
-    "stock_notice": "SQLite 无主键，全量重拉 = 整表复制（需修体检器读法，不是补数据）",
-    "stock_report": "SQLite 无主键，全量重拉 = 整表复制（需修体检器读法，不是补数据）",
+    "stock_news": "SQLite 表由 TdxSync_C_低频 每晚增量；唯一索引已补(11-12)，无需 heal 补",
+    "stock_notice": "SQLite 表由 TdxSync_C_低频 每晚增量；唯一索引已补(11-12)，无需 heal 补",
+    "stock_report": "SQLite 表由 TdxSync_C_低频 每晚增量；唯一索引已补(11-12)，无需 heal 补",
     "ts_rt_min": "专用同步只补最新本地日；全量 7765万行数小时，超 PT2H，须单独排程",
 }
 

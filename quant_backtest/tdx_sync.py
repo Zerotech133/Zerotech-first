@@ -50,6 +50,15 @@ RETRY_DELAYS = (2, 8)  # 重试间隔秒（T-I4：2s/8s 退避，覆盖 DNS
 # rookie DNS 故障窗口内 3 次重试全灭）
 SLEEP = 0.15  # 请求间隔（保护远端）
 SQLITE_TABLES = {"stock_notice", "stock_news", "stock_report"}
+# 信息三表的去重键：表无主键，INSERT OR IGNORE 需要唯一索引才生效。
+# 2026-11-12 实锤：没有唯一索引时 IGNORE 不去重，每次增量（start_date=最新日
+# 重翻）把重叠行整份重复插入 —— stock_news 42 万行里 78% 是重复（同 url 出现
+# 124 次），stock_notice 35%，stock_report 1.2%。键选 url/pdf_url：实测稳定非空。
+SQLITE_UNIQUE = {
+    "stock_news": "url",
+    "stock_notice": "url",
+    "stock_report": "pdf_url",
+}
 # ts_rt_min 4752 万行单独开关，默认跳过
 SKIP_DEFAULT = {
     "ts_rt_min",
@@ -588,6 +597,14 @@ def sync_sqlite_table(tbl, meta, m):
             )
             conn.execute("CREATE INDEX IF NOT EXISTS ix_%s ON %s(ts_code)" % (tbl, tbl))
             st["created"] = True
+        # 唯一索引（幂等）：老库没有就补建。INSERT OR IGNORE 的 IGNORE
+        # 只对唯一约束生效，没有它每次增量都会把重叠日整份重复插入。
+        ukey = SQLITE_UNIQUE.get(tbl)
+        if ukey and ukey in cols:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_%s_%s ON %s(%s)"
+                % (tbl, ukey, tbl, ukey)
+            )
         conn.executemany(
             "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (tbl, ",".join(cols), ph),
             [tuple(str(v) for v in r) for r in rows],
