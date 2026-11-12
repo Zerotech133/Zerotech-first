@@ -27,6 +27,15 @@
   "fallbacks": 1,
   "data_day_stale": false,
   "pool_lag_days": 1,
+  "param_drift": null,
+  "score_mode": "v5",
+  "score_weights": {
+   "mom_rank": 0.1,
+   "trend": 0.1,
+   "vol_h": 0.45,
+   "liq": 0.0,
+   "confirm": 0.35
+  },
   "small_sample_batches": 3
  },
  "verdict": "warn",
@@ -56,7 +65,7 @@
  ],
  "candidates_all_empty": false,
  "note": "",
- "written_at": "2026-11-12T08:45:23",
+ "written_at": "2026-11-12T09:08:53",
  "amended": [],
  "signed_by": null,
  "written_by": "houfeng/preopen",
@@ -79,5 +88,5 @@
   }
  ],
  "first_written_at": "2026-11-12T08:41:45",
- "rerun_n": 3
+ "rerun_n": 6
 }

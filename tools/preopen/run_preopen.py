@@ -14,6 +14,8 @@
      读 2 的产物 + 台账，产出可转发的自包含 HTML。
   4. 记账 + 长建议  tools/preopen/event_log.py / evolve.py
      把今天这件事写进事件账（含意外与候选教训），并检查是否已够格立假设。
+  5. 进化台账  evolve.py --digest
+     出一份人能读的台账：今天观察到什么、累计到哪、还差多少够格。
      第 4 步不影响 rc —— 记账失败不该让今天的报告作废，但要在日志里留痕。
 
 退出码：0 全绿 / 1 出了东西但有告警 / 2 阻断（未出报告）
@@ -85,7 +87,7 @@ def main() -> int:
     au = audit.audit(day)
     out["audit"] = {"verdict": au["verdict"], "problems": au["problems"],
                     "warns": au["warns"]}
-    print("\n[1/4] 数据校对 → %s" % au["verdict"])
+    print("\n[1/5] 数据校对 → %s" % au["verdict"])
     for p in au["problems"]:
         print("      × %s" % p)
     for w in au["warns"]:
@@ -100,7 +102,7 @@ def main() -> int:
     # ── 2. 选票 ─────────────────────────────────────────────────────────
     pick_json = os.path.join(DELIV, "preopen_pick15_v2_adj_check_%s.json" % day)
     if a.skip_pick and os.path.exists(pick_json):
-        print("\n[2/4] 选票 → 跳过（复用 %s）" % os.path.basename(pick_json))
+        print("\n[2/5] 选票 → 跳过（复用 %s）" % os.path.basename(pick_json))
         out["steps"].append({"step": "pick", "skipped": True})
     else:
         pkg = latest_pkg()
@@ -110,7 +112,7 @@ def main() -> int:
             out["rc"] = 3
             _dump(out, a.json_out)
             return 3
-        print("\n[2/4] 选票 → pkg=%s asof=%s" % (pkg, day))
+        print("\n[2/5] 选票 → pkg=%s asof=%s" % (pkg, day))
         rc, log = run([PY, "-X", "utf8", PICK, "--pkg", pkg, "--asof", day], cwd=PICK_DIR)
         tail = "\n".join(log.strip().splitlines()[-6:])
         print("      rc=%d\n%s" % (rc, "\n".join("      " + l for l in tail.splitlines())))
@@ -121,7 +123,7 @@ def main() -> int:
             return 3
 
     # ── 3. 报告 ─────────────────────────────────────────────────────────
-    print("\n[3/4] 简报 →")
+    print("\n[3/5] 简报 →")
     rc, log = run([PY, "-X", "utf8", os.path.join(HERE, "build_preopen_report.py"),
                    "--date", day])
     print("      " + log.strip().splitlines()[-1] if log.strip() else "      (无输出)")
@@ -135,7 +137,7 @@ def main() -> int:
     # 事件化必须读本次运行产物，所以先落一次盘再调 —— 否则 event_log
     # 读到的是上一次的结果，记的就不是今天这件事。
     _dump(out, a.json_out)
-    print("\n[4/4] 记账 →")
+    print("\n[4/5] 记账 →")
     rc_e, log_e = run([PY, "-X", "utf8", os.path.join(HERE, "event_log.py"),
                        "--from-run", "--run-json", a.json_out])
     tail_e = "\n".join(log_e.strip().splitlines()[:8])
@@ -148,6 +150,25 @@ def main() -> int:
     print("\n".join("      " + l for l in tail_p.splitlines()) if tail_p
           else "      (无输出)")
     out["steps"].append({"step": "evolve", "rc": rc_p, "out": tail_p})
+
+    # ── 5. 进化台账（给人看的那一面）──────────────────────────────────
+    # 前四步都是给机器和报告用的。这一步是唯一一个"给老田翻一眼"的产物：
+    # 今天观察到什么、累计到哪了、还差多少才够格提建议。
+    # 失败不影响主流程 —— 台账是输出，不是关卡。
+    print("\n[5/5] 进化台账 →")
+    # 文件名用执行日，不用数据日 —— 老田早上翻的是「今天这份台账」，
+    # 写成 11-11 会让他以为是昨天那份（报告顶栏同一个坑，已经踩过一次）。
+    cal = audit.trade_cal()
+    later = [x for x in cal if x > day]
+    exec_day = later[0] if later else day
+    md_out = os.path.join(DELIV, "preopen_evolve_%s.md" % exec_day)
+    html_out = os.path.join(DELIV, "preopen_evolve_%s.html" % exec_day)
+    rc_d, log_d = run([PY, "-X", "utf8", os.path.join(HERE, "evolve.py"),
+                       "--digest", "--md-out", md_out, "--html-out", html_out])
+    tail_d = "\n".join(log_d.strip().splitlines()[-2:]) if log_d.strip() else "(无输出)"
+    print("\n".join("      " + l for l in tail_d.splitlines()))
+    out["steps"].append({"step": "digest", "rc": rc_d,
+                         "md": md_out, "html": html_out, "out": tail_d})
 
     _dump(out, a.json_out)
     print("\n完成：rc=%d（0 全绿 / 1 有告警 / 2 阻断 / 3 脚本失败）" % out["rc"])
