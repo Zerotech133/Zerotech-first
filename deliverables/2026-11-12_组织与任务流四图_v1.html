@@ -1,0 +1,1039 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>零界 · 组织架构 / 任务承接 / 数据交互 / 验收协议（四图）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#020617; --panel:#0b1220; --line:#1e293b; --txt:#e2e8f0; --sub:#94a3b8; --dim:#64748b;
+    --cyan:#22d3ee; --em:#34d399; --vi:#a78bfa; --am:#fbbf24; --ro:#fb7185; --or:#fb923c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:13px;line-height:1.55;
+    background-image:linear-gradient(rgba(30,41,59,.25) 1px,transparent 1px),linear-gradient(90deg,rgba(30,41,59,.25) 1px,transparent 1px);
+    background-size:40px 40px;}
+  .wrap{max-width:1320px;margin:0 auto;padding:28px 20px 60px}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:6px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--em);box-shadow:0 0 10px var(--em);animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.5px}
+  .sub{color:var(--sub);font-size:12px;margin:2px 0 22px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--sub);background:rgba(15,23,42,.7)}
+  .chip b{color:var(--txt)}
+  .chip.cy{border-color:rgba(34,211,238,.45);color:#a5f3fc}
+  .chip.em{border-color:rgba(52,211,153,.45);color:#a7f3d0}
+  .chip.am{border-color:rgba(251,191,36,.45);color:#fde68a}
+  .chip.ro{border-color:rgba(251,113,133,.45);color:#fecdd3}
+  .section{margin:34px 0 8px}
+  .section h2{font-size:15px;margin:0 0 3px;color:#f1f5f9;display:flex;align-items:center;gap:10px}
+  .section h2 .idx{font-size:11px;color:var(--bg);background:var(--cyan);padding:2px 7px;border-radius:5px}
+  .section p.note{color:var(--dim);font-size:11.5px;margin:2px 0 12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;overflow:hidden}
+  svg{display:block;width:100%;height:auto}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+  .cc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .cc h3{margin:0 0 8px;font-size:12.5px;display:flex;align-items:center;gap:8px;color:#f1f5f9}
+  .cc h3 i{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .cc ul{margin:0;padding-left:16px;color:var(--sub);font-size:11.5px}
+  .cc li{margin:4px 0}
+  .cc b{color:var(--txt);font-weight:500}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:11.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+  th{background:rgba(15,23,42,.9);color:#cbd5e1;font-weight:500;font-size:11px;letter-spacing:.3px}
+  td{color:var(--sub)}
+  td b{color:var(--txt);font-weight:500}
+  .ro{color:#fda4af} .am{color:#fde68a} .em{color:#a7f3d0} .cy{color:#a5f3fc} .vi{color:#ddd6fe}
+  footer{margin-top:34px;color:var(--dim);font-size:11px;border-top:1px solid var(--line);padding-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .tag{font-size:9px;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--dim)}
+  .tag.ro{border-color:rgba(251,113,133,.5);color:#fda4af}
+  .tag.am{border-color:rgba(251,191,36,.5);color:#fde68a}
+  .tag.em{border-color:rgba(52,211,153,.5);color:#a7f3d0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="dot"></div>
+  <h1>零界 · 组织与协作四图</h1>
+  <span class="tag">生成于 2026-11-12 · 数据源 org.json / tasks.jsonl / 11-12 四份只读审计</span>
+</header>
+<div class="sub">一页回答四个问题：<b>组织怎么编</b> · <b>数据怎么流</b> · <b>谁给谁什么任务</b> · <b>凭什么承接与验收</b>。图中所有数字为 2026-11-12 实测，不是设计值。</div>
+<div class="chips">
+  <span class="chip cy">编制 <b>81</b> 席 / 去重 <b>73</b> 人</span>
+  <span class="chip am">在册静默 <b>69</b> / 73</span>
+  <span class="chip ro">任务账本 doing <b>36</b> · open <b>27</b> · done <b>2</b></span>
+  <span class="chip ro">inbox <b>197</b> / processed <b>3</b></span>
+  <span class="chip em">真实闭环账本 <b>3</b> / 16</span>
+  <span class="chip am">8734 入口 <b>黑链</b></span>
+</div>
+
+<!-- ============================ 图 1 组织架构 ============================ -->
+<div class="section">
+  <h2><span class="idx">图 1</span> 组织架构：人 → 指挥部 → 17 部门 → 81 席</h2>
+  <p class="note">真源：agent_platform/registry/org.json（host=GenOS，report_to=human，chief=田丰/A0）。红色虚线=编外/状态异常；琥珀=矩阵项目部门；灰色=已并入。</p>
+  <div class="card">
+  <svg viewBox="0 0 1240 860" role="img" aria-label="组织架构图">
+    <defs>
+      <pattern id="g1" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+      <marker id="arrC" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#22d3ee"/></marker>
+      <marker id="arrE" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#34d399"/></marker>
+      <marker id="arrA" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fbbf24"/></marker>
+      <marker id="arrR" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fb7185"/></marker>
+    </defs>
+    <rect x="0" y="0" width="1240" height="860" fill="url(#g1)"/>
+
+    <!-- human -->
+    <rect x="505" y="18" width="230" height="62" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.6"/>
+    <text x="620" y="40" fill="#e2e8f0" font-size="13" font-weight="700" text-anchor="middle">老田（human）</text>
+    <text x="620" y="58" fill="#94a3b8" font-size="9.5" text-anchor="middle">组织唯一上级 · report_to=human</text>
+    <text x="620" y="71" fill="#64748b" font-size="8" text-anchor="middle">单人最终裁决 / 签批 / 冻结令</text>
+    <line x1="620" y1="80" x2="620" y2="108" stroke="#22d3ee" stroke-width="1.4" marker-end="url(#arrC)"/>
+    <text x="632" y="99" fill="#67e8f9" font-size="8.5">全员向其汇报</text>
+
+    <!-- command HQ -->
+    <rect x="150" y="112" width="940" height="132" rx="12" fill="rgba(120,53,15,0.10)" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="7,4"/>
+    <text x="166" y="131" fill="#fde68a" font-size="10" font-weight="700">指挥部 command_hq · effective 2026-11-04</text>
+    <text x="1074" y="131" fill="#78716c" font-size="8" text-anchor="end">5 席 · 会议已停摆 9 天（末 11-03）</text>
+
+    <!-- 5 seats -->
+    <g>
+      <rect x="175" y="142" width="164" height="52" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.4"/>
+      <text x="185" y="160" fill="#e2e8f0" font-size="11.5" font-weight="700">A0 · 田丰</text>
+      <text x="185" y="176" fill="#94a3b8" font-size="8.5">幕府参谋长 / chief</text>
+      <text x="185" y="188" fill="#64748b" font-size="8">glm-5.3 · 派单 26 单</text>
+    </g>
+    <g>
+      <rect x="355" y="142" width="164" height="52" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.4" stroke-dasharray="4,3"/>
+      <text x="365" y="160" fill="#e2e8f0" font-size="11.5" font-weight="700">ZHAOYUN · 赵云</text>
+      <text x="365" y="176" fill="#94a3b8" font-size="8.5">治理官</text>
+      <text x="365" y="188" fill="#fda4af" font-size="8">⚠ 编外：在 hq 不在 departments</text>
+    </g>
+    <g>
+      <rect x="535" y="142" width="164" height="52" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.4"/>
+      <text x="545" y="160" fill="#e2e8f0" font-size="11.5" font-weight="700">AI1 · 诸葛亮</text>
+      <text x="545" y="176" fill="#94a3b8" font-size="8.5">军师（反向军师/方法论）</text>
+      <text x="545" y="188" fill="#64748b" font-size="8">研究院 · 11 月 0 记录</text>
+    </g>
+    <g>
+      <rect x="715" y="142" width="164" height="52" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.4"/>
+      <text x="725" y="160" fill="#e2e8f0" font-size="11.5" font-weight="700">GUANYU · 关羽</text>
+      <text x="725" y="176" fill="#94a3b8" font-size="8.5">整治官（代码审计/技术债）</text>
+      <text x="725" y="188" fill="#64748b" font-size="8">研究院 · 11 月 0 记录</text>
+    </g>
+    <g>
+      <rect x="895" y="142" width="164" height="52" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.4"/>
+      <text x="905" y="160" fill="#e2e8f0" font-size="11.5" font-weight="700">HUANGZHONG · 黄忠</text>
+      <text x="905" y="176" fill="#94a3b8" font-size="8.5">验收官 / HZ E3</text>
+      <text x="905" y="188" fill="#64748b" font-size="8">observe 模式 · 不阻断</text>
+    </g>
+    <line x1="620" y1="108" x2="257" y2="140" stroke="#34d399" stroke-width="1.1" marker-end="url(#arrE)" opacity="0.8"/>
+    <line x1="620" y1="108" x2="977" y2="140" stroke="#34d399" stroke-width="1.1" marker-end="url(#arrE)" opacity="0.8"/>
+    <text x="166" y="232" fill="#6ee7b7" font-size="7.5">分工：统筹决策（A0）· 治理（ZHAOYUN）· 反向军师（AI1）· 整治（GUANYU）· 验收（HUANGZHONG）</text>
+
+    <!-- line to departments -->
+    <line x1="620" y1="244" x2="620" y2="272" stroke="#fbbf24" stroke-width="1.4" marker-end="url(#arrA)"/>
+    <text x="632" y="262" fill="#fde68a" font-size="8.5">17 部门 · 81 编制 / 73 去重 · 8 席跨部门兼职</text>
+
+    <!-- department boxes -->
+    <!-- row 1 y=280 -->
+    <g>
+      <rect x="30" y="280" width="280" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <rect x="30" y="280" width="5" height="96" rx="2" fill="#34d399"/>
+      <text x="46" y="302" fill="#e2e8f0" font-size="12" font-weight="700">量化交易部</text>
+      <text x="46" y="317" fill="#64748b" font-size="8.5">invest · lead D1 · 13 席</text>
+      <text x="46" y="333" fill="#94a3b8" font-size="8">T1 T2 N1 F1 D1 ST1 WA1 QS1 TR1 WA2</text>
+      <text x="46" y="345" fill="#94a3b8" font-size="8">WA3 TR2 TR3</text>
+      <text x="46" y="364" fill="#34d399" font-size="7.5">交易日 09:10-15:10 · 13 席中 T 有 1,755 条 trace</text>
+    </g>
+    <g>
+      <rect x="330" y="280" width="280" height="96" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <rect x="330" y="280" width="5" height="96" rx="2" fill="#22d3ee"/>
+      <text x="346" y="302" fill="#e2e8f0" font-size="12" font-weight="700">研发部</text>
+      <text x="346" y="317" fill="#64748b" font-size="8.5">dev · lead ARCH1 · 11 席</text>
+      <text x="346" y="333" fill="#94a3b8" font-size="8">DEV1 DEV6 DEV7 DEV2 DEV3 DEV4 DEV5 DEV8</text>
+      <text x="346" y="345" fill="#94a3b8" font-size="8">ARCH1 OPS1 DOC1</text>
+      <text x="346" y="364" fill="#67e8f9" font-size="7.5">工单主战场 · 11 席近 30 天仅 W 11/11（末 11-08）</text>
+    </g>
+    <g>
+      <rect x="630" y="280" width="280" height="96" rx="6" fill="#0f172a" stroke="#64748b" stroke-width="1.2"/>
+      <rect x="630" y="280" width="5" height="96" rx="2" fill="#64748b"/>
+      <text x="646" y="302" fill="#94a3b8" font-size="12" font-weight="700">交易部</text>
+      <text x="646" y="317" fill="#64748b" font-size="8.5">trading · status=merged_into_invest</text>
+      <text x="646" y="336" fill="#94a3b8" font-size="8">0 席 · 已并入量化交易部（D1 管）</text>
+      <text x="646" y="352" fill="#fda4af" font-size="7.5">⚠ 但 tasks DEPTS 白名单里没有 trading</text>
+      <text x="646" y="364" fill="#64748b" font-size="7.5">→ trading/invest 工单覆盖 = 0</text>
+    </g>
+    <g>
+      <rect x="930" y="280" width="280" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <rect x="930" y="280" width="5" height="96" rx="2" fill="#34d399"/>
+      <text x="946" y="302" fill="#e2e8f0" font-size="12" font-weight="700">数据智能部</text>
+      <text x="946" y="317" fill="#64748b" font-size="8.5">data · lead DATA1 · 5 席</text>
+      <text x="946" y="333" fill="#94a3b8" font-size="8">DATA1 FACTOR1 DATA2 DATA3 MADAI1</text>
+      <text x="946" y="352" fill="#94a3b8" font-size="8">仅 DATA1 接单 14（末 11-05）· 其余静默</text>
+    </g>
+
+    <!-- row 2 y=392 -->
+    <g>
+      <rect x="30" y="392" width="280" height="96" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <rect x="30" y="392" width="5" height="96" rx="2" fill="#22d3ee"/>
+      <text x="46" y="414" fill="#e2e8f0" font-size="12" font-weight="700">产品管理部</text>
+      <text x="46" y="429" fill="#64748b" font-size="8.5">product · lead PM1 · 3 席</text>
+      <text x="46" y="445" fill="#94a3b8" font-size="8">PM1 DSGN1 DSGN2</text>
+      <text x="46" y="464" fill="#67e8f9" font-size="7.5">PM1 仅 1 单（10-13）· 其余 0</text>
+    </g>
+    <g>
+      <rect x="330" y="392" width="280" height="96" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.3"/>
+      <rect x="330" y="392" width="5" height="96" rx="2" fill="#fb7185"/>
+      <text x="346" y="414" fill="#e2e8f0" font-size="12" font-weight="700">质量工程部</text>
+      <text x="346" y="429" fill="#64748b" font-size="8.5">quality · lead QA1 · 4 席</text>
+      <text x="346" y="445" fill="#94a3b8" font-size="8">QA1 QA2 SEC1 SEC2</text>
+      <text x="346" y="464" fill="#fda4af" font-size="7.5">QA1 仅 3 单（10-23）· 门禁不靠人靠脚本</text>
+    </g>
+    <g>
+      <rect x="630" y="392" width="280" height="96" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="5,3"/>
+      <rect x="630" y="392" width="5" height="96" rx="2" fill="#fbbf24"/>
+      <text x="646" y="414" fill="#e2e8f0" font-size="12" font-weight="700">🅰 回测开发部</text>
+      <text x="646" y="429" fill="#64748b" font-size="8.5">proj_backtest · lead DEV3 · 3 席</text>
+      <text x="646" y="445" fill="#94a3b8" font-size="8">DEV3 DEV4 QA1（跨部门兼职）</text>
+      <text x="646" y="464" fill="#fde68a" font-size="7.5">矩阵项目部门 · 交付完 archived 归建</text>
+    </g>
+    <g>
+      <rect x="930" y="392" width="280" height="96" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="5,3"/>
+      <rect x="930" y="392" width="5" height="96" rx="2" fill="#fbbf24"/>
+      <text x="946" y="414" fill="#e2e8f0" font-size="12" font-weight="700">🅱 数据治理部</text>
+      <text x="946" y="429" fill="#64748b" font-size="8.5">proj_data · lead DATA1 · 2 席</text>
+      <text x="946" y="445" fill="#94a3b8" font-size="8">DATA1 DEV1</text>
+      <text x="946" y="464" fill="#fde68a" font-size="7.5">status=frozen_pending_merge</text>
+    </g>
+
+    <!-- row 3 y=504 -->
+    <g>
+      <rect x="30" y="504" width="280" height="96" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="5,3"/>
+      <rect x="30" y="504" width="5" height="96" rx="2" fill="#fbbf24"/>
+      <text x="46" y="526" fill="#e2e8f0" font-size="12" font-weight="700">🅲 下版本设计推理部</text>
+      <text x="46" y="541" fill="#64748b" font-size="8.5">proj_next · lead PM1（跨部门）· 3 席</text>
+      <text x="46" y="557" fill="#94a3b8" font-size="8">PM1 ARCH1 DEV2</text>
+      <text x="46" y="576" fill="#fde68a" font-size="7.5">矩阵项目部门 · 交付完归建</text>
+    </g>
+    <g>
+      <rect x="330" y="504" width="280" height="96" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <rect x="330" y="504" width="5" height="96" rx="2" fill="#22d3ee"/>
+      <text x="346" y="526" fill="#e2e8f0" font-size="12" font-weight="700">市场部 / 合规法务部</text>
+      <text x="346" y="541" fill="#64748b" font-size="8.5">marketing · legal · 各 1 席</text>
+      <text x="346" y="557" fill="#94a3b8" font-size="8">MKT1 / LEG1</text>
+      <text x="346" y="576" fill="#fda4af" font-size="7.5">两条线全员 0 单（K-ORG-024 27 满编）</text>
+    </g>
+    <g>
+      <rect x="630" y="504" width="280" height="96" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.3"/>
+      <rect x="630" y="504" width="5" height="96" rx="2" fill="#a78bfa"/>
+      <text x="646" y="526" fill="#e2e8f0" font-size="12" font-weight="700">运行体部</text>
+      <text x="646" y="541" fill="#64748b" font-size="8.5">ops_runtime · lead A0A · 7 席</text>
+      <text x="646" y="557" fill="#94a3b8" font-size="8">JEV_GATE JEV_REVIEW JEV_QD LARK_CARDS</text>
+      <text x="646" y="569" fill="#94a3b8" font-size="8">COWBRIDGE HERMES_UI WATCH_TOWER</text>
+      <text x="646" y="588" fill="#c4b5fd" font-size="7.5">7/7 静默 · 但 JEV 四进程在跑（9101-9104）</text>
+    </g>
+    <g>
+      <rect x="930" y="504" width="280" height="96" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <rect x="930" y="504" width="5" height="96" rx="2" fill="#22d3ee"/>
+      <text x="946" y="526" fill="#e2e8f0" font-size="12" font-weight="700">研究院</text>
+      <text x="946" y="541" fill="#64748b" font-size="8.5">academy · lead ACAD1 · 9 席</text>
+      <text x="946" y="557" fill="#94a3b8" font-size="8">ACAD1 STRAT1 BACK1 COMM1 INTEL1</text>
+      <text x="946" y="569" fill="#94a3b8" font-size="8">AI1 GUANYU PROD1 HUANGZHONG</text>
+      <text x="946" y="588" fill="#fda4af" font-size="7.5">8/9 静默；AI1/GUANYU/HUANGZHONG 11 月 0</text>
+    </g>
+
+    <!-- row 4 y=616 -->
+    <g>
+      <rect x="30" y="616" width="280" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <rect x="30" y="616" width="5" height="96" rx="2" fill="#34d399"/>
+      <text x="46" y="638" fill="#e2e8f0" font-size="12" font-weight="700">情报部</text>
+      <text x="46" y="653" fill="#64748b" font-size="8.5">intel · lead INTEL0 · 11 席</text>
+      <text x="46" y="669" fill="#94a3b8" font-size="8">XQ1 TDX1 BEACON1 INTEL0 MANCHONG1</text>
+      <text x="46" y="681" fill="#94a3b8" font-size="8">KGMAP1 WORDC1 LINEAGE1 OSINT1 ANALYST1 MAJUN1</text>
+      <text x="46" y="700" fill="#fda4af" font-size="7.5">10/11 静默 · intel_inbox 25 条只 accept 无下游</text>
+    </g>
+    <g>
+      <rect x="330" y="616" width="280" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <rect x="330" y="616" width="5" height="96" rx="2" fill="#34d399"/>
+      <text x="346" y="638" fill="#e2e8f0" font-size="12" font-weight="700">通信与客户服务部</text>
+      <text x="346" y="653" fill="#64748b" font-size="8.5">comm · lead LUSU1 · 2 席</text>
+      <text x="346" y="669" fill="#94a3b8" font-size="8">LUSU1 DENGZHI1</text>
+      <text x="346" y="688" fill="#94a3b8" font-size="7.5">飞书 18 模块在跑 · inbox 仅 1 条 feishu_comm</text>
+    </g>
+    <g>
+      <rect x="630" y="616" width="280" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <rect x="630" y="616" width="5" height="96" rx="2" fill="#34d399"/>
+      <text x="646" y="638" fill="#e2e8f0" font-size="12" font-weight="700">直属参谋长线</text>
+      <text x="646" y="653" fill="#64748b" font-size="8.5">chief_line · lead A0 · 3 席</text>
+      <text x="646" y="669" fill="#94a3b8" font-size="8">OPT1 A0 A0A</text>
+      <text x="646" y="688" fill="#6ee7b7" font-size="7.5">A0A 兼运行体部主官 · OPT1 调度</text>
+    </g>
+    <g>
+      <rect x="930" y="616" width="280" height="96" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.3"/>
+      <rect x="930" y="616" width="5" height="96" rx="2" fill="#fb7185"/>
+      <text x="946" y="638" fill="#e2e8f0" font-size="12" font-weight="700">风控部</text>
+      <text x="946" y="653" fill="#64748b" font-size="8.5">risk · lead R3 · 3 席</text>
+      <text x="946" y="669" fill="#94a3b8" font-size="8">R1 R2 R3</text>
+      <text x="946" y="688" fill="#fda4af" font-size="7.5">全员 0 单 · RiskGuard 影子运行（19:10）</text>
+    </g>
+
+    <!-- row 5: risk facts + legend -->
+    <g>
+      <rect x="30" y="728" width="280" height="112" rx="6" fill="rgba(136,19,55,0.18)" stroke="#fb7185" stroke-width="1.2"/>
+      <text x="46" y="750" fill="#fecdd3" font-size="11" font-weight="700">组织运行实况（11-12 09:49 普查）</text>
+      <text x="46" y="769" fill="#e2e8f0" font-size="9">编制 81 · 去重 73 · 在册 73 · 未在册 24</text>
+      <text x="46" y="785" fill="#e2e8f0" font-size="9">静默 69 / 73（0.711）· 30 天零产出 43</text>
+      <text x="46" y="801" fill="#e2e8f0" font-size="9">干活中 0 · 有单未动 12 · 在岗待命 16</text>
+      <text x="46" y="817" fill="#fda4af" font-size="9">影子 5：ANALYST1 / MADAI1 / MAJUN1 / ZHAOYUN / STRAT2</text>
+      <text x="46" y="833" fill="#64748b" font-size="7.5">未在册 24 中含 DSH-Lead 904 单（占 .worktrees 2,239 单 60.3%）</text>
+    </g>
+    <g>
+      <rect x="330" y="728" width="580" height="112" rx="6" fill="#0b1220" stroke="#1e293b" stroke-width="1"/>
+      <text x="346" y="748" fill="#cbd5e1" font-size="10.5" font-weight="700">读图要点</text>
+      <text x="346" y="766" fill="#94a3b8" font-size="8.5">① 编制≠运行：81 席里 69 席 30 天无产出，真正在跑的主线只有量化 T 线 + 研发工单 + 门户/采集脚本。</text>
+      <text x="346" y="782" fill="#94a3b8" font-size="8.5">② 指挥链断点：ZHAOYUN 在指挥部却不在部门树（org_audit 盲区，持 532 单）；会议 11-03 后停摆。</text>
+      <text x="346" y="798" fill="#94a3b8" font-size="8.5">③ 部门 lead 多为兼职/首席挂名；trading 已并入 invest，但工单白名单未更新 → trading 单量 0。</text>
+      <text x="346" y="814" fill="#94a3b8" font-size="8.5">④ 数据源：org.json（编制）· agent_census（运行）· tasks.jsonl（工单）· 11-12 四份独立审计。</text>
+      <text x="346" y="830" fill="#64748b" font-size="8">图例：<tspan fill="#34d399">绿</tspan>=职能常设 · <tspan fill="#fbbf24">琥珀</tspan>=矩阵项目 · <tspan fill="#fb7185">红</tspan>=异常/空转 · <tspan fill="#64748b">灰</tspan>=已并入/停用</text>
+    </g>
+    <g>
+      <rect x="930" y="728" width="280" height="112" rx="6" fill="#0b1220" stroke="#1e293b" stroke-width="1"/>
+      <text x="946" y="748" fill="#cbd5e1" font-size="10.5" font-weight="700">四类「谁」</text>
+      <text x="946" y="767" fill="#a5f3fc" font-size="8.5">人：老田（唯一上级/签批）</text>
+      <text x="946" y="783" fill="#a7f3d0" font-size="8.5">指挥部：A0 收口派单，AI1 方法论，GUANYU 整治，HUANGZHONG 验收</text>
+      <text x="946" y="799" fill="#ddd6fe" font-size="8.5">部门席位：73 个 agent 身份（hr/ 71 席技能包）</text>
+      <text x="946" y="815" fill="#fde68a" font-size="8.5">系统：看门狗/计划任务/门户（占 38/66 工单）</text>
+      <text x="946" y="831" fill="#64748b" font-size="7.5">职责边界：人拍板，A0 编排，席位执行，系统记账</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============================ 图 2 任务下达与承接 ============================ -->
+<div class="section">
+  <h2><span class="idx">图 2</span> 任务怎么下、谁接、怎么交付：四条真实链路</h2>
+  <p class="note">现状：任务账本 66 行（doing 36 / open 27 / done 2 / cancelled 1），opened_by=watchdog 38、A0 26；<b>assigned_agent 全部 null</b>——「承接」目前靠会话/worktree，不靠任务账本字段。</p>
+  <div class="card">
+  <svg viewBox="0 0 1240 960" role="img" aria-label="任务下达与承接链路">
+    <defs>
+      <pattern id="g2" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+      <marker id="a2e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#34d399"/></marker>
+      <marker id="a2c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#22d3ee"/></marker>
+      <marker id="a2a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fbbf24"/></marker>
+      <marker id="a2r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fb7185"/></marker>
+      <marker id="a2v" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#a78bfa"/></marker>
+    </defs>
+    <rect x="0" y="0" width="1240" height="960" fill="url(#g2)"/>
+
+    <!-- column headers -->
+    <g font-size="9.5" font-weight="700" text-anchor="middle">
+      <rect x="30" y="24" width="210" height="34" rx="5" fill="rgba(8,51,68,.5)" stroke="#22d3ee"/><text x="135" y="46" fill="#a5f3fc">① 下达（谁发起）</text>
+      <rect x="270" y="24" width="210" height="34" rx="5" fill="rgba(8,51,68,.35)" stroke="#22d3ee"/><text x="375" y="46" fill="#a5f3fc">② 入口 / 通道</text>
+      <rect x="510" y="24" width="210" height="34" rx="5" fill="rgba(6,78,59,.4)" stroke="#34d399"/><text x="615" y="46" fill="#a7f3d0">③ 承接（谁接 / 怎么认领）</text>
+      <rect x="750" y="24" width="210" height="34" rx="5" fill="rgba(6,78,59,.35)" stroke="#34d399"/><text x="855" y="46" fill="#a7f3d0">④ 执行 → 交付</text>
+      <rect x="990" y="24" width="210" height="34" rx="5" fill="rgba(76,29,149,.4)" stroke="#a78bfa"/><text x="1095" y="46" fill="#ddd6fe">⑤ 验收 / 关闭</text>
+    </g>
+
+    <!-- lane 1 战略指令流 -->
+    <text x="30" y="96" fill="#22d3ee" font-size="10" font-weight="700">L1 · 战略/指令流（人 → 指挥部 → 席位）</text>
+    <g font-size="8.5">
+      <rect x="30" y="108" width="210" height="88" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <text x="40" y="128" fill="#a5f3fc" font-size="9.5" font-weight="700">老田（human）</text>
+      <text x="40" y="144" fill="#94a3b8">战略方向 / 拍板 / 冻结令</text>
+      <text x="40" y="158" fill="#94a3b8">→ 口头/文档/飞书</text>
+      <text x="40" y="182" fill="#64748b">最终裁决权；不直接写代码</text>
+
+      <rect x="270" y="108" width="210" height="88" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <text x="280" y="128" fill="#a5f3fc" font-size="9.5" font-weight="700">指挥部（5 席）</text>
+      <text x="280" y="144" fill="#94a3b8">A0 收口 → 会议纪要 / 决议</text>
+      <text x="280" y="158" fill="#94a3b8">AI1 方法论 / GUANYU 审计</text>
+      <text x="280" y="180" fill="#fda4af">⚠ 会议停摆 9 天（末 11-03）</text>
+
+      <rect x="510" y="108" width="210" height="88" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="520" y="128" fill="#a7f3d0" font-size="9.5" font-weight="700">A0 / A0A 派单</text>
+      <text x="520" y="144" fill="#94a3b8">devtask new / 任务账本 / 席位指令</text>
+      <text x="520" y="158" fill="#94a3b8">opened_by=A0 共 26 单</text>
+      <text x="520" y="180" fill="#6ee7b7">承接方式：指定席位（人工指派）</text>
+
+      <rect x="750" y="108" width="210" height="88" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="760" y="128" fill="#a7f3d0" font-size="9.5" font-weight="700">席位执行</text>
+      <text x="760" y="144" fill="#94a3b8">agent 会话 / 工具 / 并行子代理</text>
+      <text x="760" y="158" fill="#94a3b8">产出：文档 / 决策 / 回执</text>
+      <text x="760" y="180" fill="#94a3b8">A0A/OPT1 负责调度与汇总</text>
+
+      <rect x="990" y="108" width="210" height="88" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.3"/>
+      <text x="1000" y="128" fill="#ddd6fe" font-size="9.5" font-weight="700">老田签批 / A0 回执</text>
+      <text x="1000" y="144" fill="#94a3b8">签批件 → 归档</text>
+      <text x="1000" y="158" fill="#94a3b8">STATUS-A/B 留痕</text>
+      <text x="1000" y="180" fill="#c4b5fd">人工验收（无门禁）</text>
+    </g>
+    <g stroke="#22d3ee" stroke-width="1.1">
+      <line x1="240" y1="152" x2="264" y2="152" marker-end="url(#a2c)"/>
+      <line x1="480" y1="152" x2="504" y2="152" marker-end="url(#a2c)"/>
+      <line x1="720" y1="152" x2="744" y2="152" marker-end="url(#a2c)"/>
+      <line x1="960" y1="152" x2="984" y2="152" marker-end="url(#a2c)"/>
+    </g>
+
+    <!-- lane 2 工单流 -->
+    <text x="30" y="240" fill="#34d399" font-size="10" font-weight="700">L2 · 工单流（当前唯一「有分支→有门禁→有合并」的闭环）</text>
+    <g font-size="8.5">
+      <rect x="30" y="252" width="210" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="40" y="272" fill="#a7f3d0" font-size="9.5" font-weight="700">需求提出</text>
+      <text x="40" y="288" fill="#94a3b8">老田 / A0 / 会话自行发起</text>
+      <text x="40" y="302" fill="#94a3b8">或看门狗代开（38 单）</text>
+      <text x="40" y="322" fill="#64748b">必须落成 TID，不接受口头单</text>
+
+      <rect x="270" y="252" width="210" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="280" y="272" fill="#a7f3d0" font-size="9.5" font-weight="700">devtask new</text>
+      <text x="280" y="288" fill="#94a3b8">TID + worktree + 分支 task/&lt;TID&gt;</text>
+      <text x="280" y="302" fill="#94a3b8">tasks.jsonl open / 快照</text>
+      <text x="280" y="322" fill="#fde68a">39 成功 / 28 失败（worktree 上限 80）</text>
+
+      <rect x="510" y="252" width="210" height="96" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.3" stroke-dasharray="5,3"/>
+      <text x="520" y="272" fill="#fecdd3" font-size="9.5" font-weight="700">席位认领</text>
+      <text x="520" y="288" fill="#94a3b8">assigned_agent 字段</text>
+      <text x="520" y="302" fill="#fda4af">实测 66/66 = null</text>
+      <text x="520" y="322" fill="#94a3b8">实际承接=谁开 worktree 谁做</text>
+
+      <rect x="750" y="252" width="210" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="760" y="272" fill="#a7f3d0" font-size="9.5" font-weight="700">执行 → 交付</text>
+      <text x="760" y="288" fill="#94a3b8">commit + deliverables/ + evidence</text>
+      <text x="760" y="302" fill="#94a3b8">回执 / gate rc / 日志</text>
+      <text x="760" y="322" fill="#64748b">交付物 must be 可复核路径</text>
+
+      <rect x="990" y="252" width="210" height="96" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.3"/>
+      <text x="1000" y="272" fill="#ddd6fe" font-size="9.5" font-weight="700">门禁 → 合并 → done</text>
+      <text x="1000" y="288" fill="#94a3b8">评审 9 项 → fast 9 套件</text>
+      <text x="1000" y="302" fill="#94a3b8">PIN/H5 → kernel ADR → 合并窗</text>
+      <text x="1000" y="322" fill="#c4b5fd">成功回收 worktree = 真正完成</text>
+    </g>
+    <g stroke="#34d399" stroke-width="1.1">
+      <line x1="240" y1="300" x2="264" y2="300" marker-end="url(#a2e)"/>
+      <line x1="480" y1="300" x2="504" y2="300" marker-end="url(#a2e)"/>
+      <line x1="720" y1="300" x2="744" y2="300" marker-end="url(#a2e)"/>
+      <line x1="960" y1="300" x2="984" y2="300" marker-end="url(#a2e)"/>
+    </g>
+    <text x="525" y="366" fill="#fda4af" font-size="8">⚠ 断点：工单账本与工作区双账本（.worktrees/tasks.json 2,239 单 vs engine 66 单）</text>
+
+    <!-- lane 3 告警流 -->
+    <text x="30" y="398" fill="#fbbf24" font-size="10" font-weight="700">L3 · 告警流（系统 → A0 → 席位；当前最真实的自动承接）</text>
+    <g font-size="8.5">
+      <rect x="30" y="410" width="210" height="96" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.3"/>
+      <text x="40" y="430" fill="#fde68a" font-size="9.5" font-weight="700">看门狗 / 计划任务</text>
+      <text x="40" y="446" fill="#94a3b8">执行失败 / 超时 / 404 状态</text>
+      <text x="40" y="460" fill="#94a3b8">P0 直接开单（不等人）</text>
+      <text x="40" y="480" fill="#64748b">38/66 工单来自 watchdog</text>
+
+      <rect x="270" y="410" width="210" height="96" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.3"/>
+      <text x="280" y="430" fill="#fde68a" font-size="9.5" font-weight="700">tasks.jsonl</text>
+      <text x="280" y="446" fill="#94a3b8">open(P0直入doing) → history</text>
+      <text x="280" y="460" fill="#94a3b8">severity P0 / due / closure_note</text>
+      <text x="280" y="480" fill="#64748b">append-only 快照，可审计</text>
+
+      <rect x="510" y="410" width="210" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="520" y="430" fill="#a7f3d0" font-size="9.5" font-weight="700">A0 转派</text>
+      <text x="520" y="446" fill="#94a3b8">A0 开单 26 / 转派到部门</text>
+      <text x="520" y="460" fill="#94a3b8">但 assigned_agent 仍 null</text>
+      <text x="520" y="480" fill="#fda4af">⚠ A0 open 单 11-02 后归零</text>
+
+      <rect x="750" y="410" width="210" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.3"/>
+      <text x="760" y="430" fill="#a7f3d0" font-size="9.5" font-weight="700">席位修复</text>
+      <text x="760" y="446" fill="#94a3b8">会话执行 / 计划任务重跑</text>
+      <text x="760" y="460" fill="#94a3b8">证据：日志 + gate rc</text>
+      <text x="760" y="480" fill="#64748b">无 evidence 记录 = 未完成</text>
+
+      <rect x="990" y="410" width="210" height="96" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.3"/>
+      <text x="1000" y="430" fill="#ddd6fe" font-size="9.5" font-weight="700">closure_note → done</text>
+      <text x="1000" y="446" fill="#94a3b8">done 仅 2 / cancelled 1</text>
+      <text x="1000" y="460" fill="#94a3b8">失败/返修 → review 顺延</text>
+      <text x="1000" y="480" fill="#c4b5fd">关闭即写闭包理由（强约束）</text>
+    </g>
+    <g stroke="#fbbf24" stroke-width="1.1">
+      <line x1="240" y1="458" x2="264" y2="458" marker-end="url(#a2a)"/>
+      <line x1="480" y1="458" x2="504" y2="458" marker-end="url(#a2a)"/>
+      <line x1="720" y1="458" x2="744" y2="458" marker-end="url(#a2a)"/>
+      <line x1="960" y1="458" x2="984" y2="458" marker-end="url(#a2a)"/>
+    </g>
+
+    <!-- lane 4 客户流 -->
+    <text x="30" y="556" fill="#fb7185" font-size="10" font-weight="700">L4 · 客户/消息流（设计上应闭环，当前断在「承接」）</text>
+    <g font-size="8.5">
+      <rect x="30" y="568" width="210" height="96" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <text x="40" y="588" fill="#a5f3fc" font-size="9.5" font-weight="700">飞书客户 / 群消息</text>
+      <text x="40" y="604" fill="#94a3b8">客户请求 / 语音 / 卡片按钮</text>
+      <text x="40" y="618" fill="#94a3b8">三 bot：零界·指令/通知/问答</text>
+      <text x="40" y="638" fill="#64748b">推送直发（feishu_push）</text>
+
+      <rect x="270" y="568" width="210" height="96" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.3"/>
+      <text x="280" y="588" fill="#a5f3fc" font-size="9.5" font-weight="700">comm_dispatch → inbox_gateway</text>
+      <text x="280" y="604" fill="#94a3b8">写 bridge_inbox/inbox/&lt;lg-id&gt;.json</text>
+      <text x="280" y="618" fill="#94a3b8">source=feishu_comm（仅 1 条）</text>
+      <text x="280" y="638" fill="#94a3b8">其余 116 hq-daily / 11 notify</text>
+
+      <rect x="510" y="568" width="210" height="96" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="520" y="588" fill="#fecdd3" font-size="9.5" font-weight="700">✗ 承接断点</text>
+      <text x="520" y="604" fill="#fecdd3">inbox 197 / processed 3</text>
+      <text x="520" y="618" fill="#94a3b8">最老 10-21；无消费者常驻</text>
+      <text x="520" y="638" fill="#94a3b8">osleg_consumer 未上计划任务</text>
+
+      <rect x="750" y="568" width="210" height="96" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="5,3"/>
+      <text x="760" y="588" fill="#fde68a" font-size="9.5" font-weight="700">应接：osleg_consumer 常驻</text>
+      <text x="760" y="604" fill="#94a3b8">kind → 席位路由（需先定义）</text>
+      <text x="760" y="618" fill="#94a3b8">→ consume(msg_id, answered_by)</text>
+      <text x="760" y="638" fill="#94a3b8">→ processed + 回执</text>
+
+      <rect x="990" y="568" width="210" height="96" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.2" stroke-dasharray="5,3"/>
+      <text x="1000" y="588" fill="#fecdd3" font-size="9.5" font-weight="700">回执 / 外发（双断）</text>
+      <text x="1000" y="604" fill="#94a3b8">outbox.webhook 未配置</text>
+      <text x="1000" y="618" fill="#94a3b8">必返 webhook_not_configured</text>
+      <text x="1000" y="638" fill="#94a3b8">业务线直发绕开账本</text>
+    </g>
+    <g stroke="#fb7185" stroke-width="1.1">
+      <line x1="240" y1="616" x2="264" y2="616" marker-end="url(#a2r)"/>
+      <line x1="480" y1="616" x2="504" y2="616" marker-end="url(#a2r)"/>
+      <line x1="720" y1="616" x2="744" y2="616" marker-end="url(#a2a)"/>
+      <line x1="960" y1="616" x2="984" y2="616" marker-end="url(#a2r)"/>
+    </g>
+
+    <!-- 承接三方式 -->
+    <g>
+      <rect x="30" y="700" width="370" height="118" rx="8" fill="rgba(6,78,59,.25)" stroke="#34d399" stroke-width="1.1"/>
+      <text x="46" y="722" fill="#a7f3d0" font-size="10.5" font-weight="700">承接方式 A · 自动承接（目前只有这一条真跑）</text>
+      <text x="46" y="740" fill="#94a3b8" font-size="8.5">触发：看门狗发现计划任务失败 / P0 告警</text>
+      <text x="46" y="756" fill="#94a3b8" font-size="8.5">记录：tasks.jsonl open(P0直入doing) + history</text>
+      <text x="46" y="772" fill="#94a3b8" font-size="8.5">失败形态：无人认领 → 长期 doing（36/66 停留）</text>
+      <text x="46" y="792" fill="#6ee7b7" font-size="8.5">修复：A0 转派时写 assigned_agent + owner 席位</text>
+      <text x="46" y="806" fill="#64748b" font-size="7.5">责任人：watchdog（开单）→ A0（分拣）→ 部门 lead（接收）</text>
+    </g>
+    <g>
+      <rect x="435" y="700" width="370" height="118" rx="8" fill="rgba(8,51,68,.35)" stroke="#22d3ee" stroke-width="1.1"/>
+      <text x="451" y="722" fill="#a5f3fc" font-size="10.5" font-weight="700">承接方式 B · 派单承接（人 → 席位）</text>
+      <text x="451" y="740" fill="#94a3b8" font-size="8.5">触发：老田/A0 在会话或飞书下达</text>
+      <text x="451" y="756" fill="#94a3b8" font-size="8.5">记录：devtask new → tasks.jsonl（dept=dev/strategy）</text>
+      <text x="451" y="772" fill="#94a3b8" font-size="8.5">失败形态：口头派单无 TID → 不可追踪</text>
+      <text x="451" y="792" fill="#67e8f9" font-size="8.5">修复：所有派单强制走 devtask new（写 TID）</text>
+      <text x="451" y="806" fill="#64748b" font-size="7.5">责任人：A0 收口 → 部门 lead → 席位技能包 hr/&lt;SEAT&gt;</text>
+    </g>
+    <g>
+      <rect x="840" y="700" width="370" height="118" rx="8" fill="rgba(120,53,15,.25)" stroke="#fbbf24" stroke-width="1.1"/>
+      <text x="856" y="722" fill="#fde68a" font-size="10.5" font-weight="700">承接方式 C · 认领承接（agent 自取）</text>
+      <text x="856" y="740" fill="#94a3b8" font-size="8.5">触发：会话/子代理自行创建 worktree</text>
+      <text x="856" y="756" fill="#94a3b8" font-size="8.5">记录：worktree + 分支 + 会话心跳</text>
+      <text x="856" y="772" fill="#94a3b8" font-size="8.5">失败形态：DSH-Lead 等未在册身份 904 单（60.3%）</text>
+      <text x="856" y="792" fill="#fde68a" font-size="8.5">修复：认领即写 assigned_agent + org 登记</text>
+      <text x="856" y="806" fill="#64748b" font-size="7.5">责任人：agent 自己 → org_audit 校验 → 未在册阻断</text>
+    </g>
+
+    <!-- bottom legend -->
+    <g>
+      <rect x="30" y="846" width="1180" height="94" rx="8" fill="#0b1220" stroke="#1e293b"/>
+      <text x="46" y="868" fill="#cbd5e1" font-size="10.5" font-weight="700">读图要点（承接链路）</text>
+      <text x="46" y="886" fill="#94a3b8" font-size="8.5">① 任务有四种来源，但只有 L2 工单流真正走「分支 + 门禁 + 合并」；L1 战略指令靠文档/会议，L3 告警靠看门狗，L4 客户流断在承接。</text>
+      <text x="46" y="902" fill="#94a3b8" font-size="8.5">② 承接的本质是「谁建 worktree 谁执行」，tasks.jsonl 的 assigned_agent/assigned_dept 只是标签；写不写标签直接决定事后能否追责。</text>
+      <text x="46" y="918" fill="#94a3b8" font-size="8.5">③ 三条最短修复：派单必写 TID+assigned_agent；inbox 上消费进程；未在册身份（DSH-Lead/unknown-agent）禁止接单。</text>
+      <text x="46" y="932" fill="#64748b" font-size="7.5">图例：青=人/指令流 · 绿=真实闭环 · 琥珀=告警/自动 · 红=断点/影子 · 紫=验收/归档</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============================ 图 3 数据交互 ============================ -->
+<div class="section">
+  <h2><span class="idx">图 3</span> 数据与账本交互：谁写、谁读、哪里断了</h2>
+  <p class="note">底座 16 个账本载体，只有 tasks / memory / observability 形成「写→读→人」闭环；evidence 停 10-17、approvals 停 10-30；业务线维护 2 套影子证据、3 套审批账。</p>
+  <div class="card">
+  <svg viewBox="0 0 1240 930" role="img" aria-label="数据与账本交互图">
+    <defs>
+      <pattern id="g3" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+      <marker id="a3e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#34d399"/></marker>
+      <marker id="a3v" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#a78bfa"/></marker>
+      <marker id="a3a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fbbf24"/></marker>
+      <marker id="a3r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fb7185"/></marker>
+      <marker id="a3c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#22d3ee"/></marker>
+    </defs>
+    <rect x="0" y="0" width="1240" height="930" fill="url(#g3)"/>
+
+    <text x="30" y="34" fill="#a5f3fc" font-size="10.5" font-weight="700">业务线（左 · 生产者/消费者）</text>
+    <text x="1210" y="34" fill="#c4b5fd" font-size="10.5" font-weight="700" text-anchor="end">运行体线（右 · 服务 / 影子）</text>
+
+    <!-- business boxes left -->
+    <g font-size="8.5">
+      <rect x="30" y="52" width="300" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="42" y="72" fill="#a7f3d0" font-size="10" font-weight="700">量化线（13 席 · 主力）</text>
+      <text x="42" y="88" fill="#94a3b8">quant_backtest / analysis / k_stock</text>
+      <text x="42" y="102" fill="#94a3b8">schedule：preopen 08:10 · watch 09:10 · bt 16:00</text>
+      <text x="42" y="116" fill="#6ee7b7">✓ memory grants（chanlun_learn:218）· ✓ feedback_flow（bt2:36）</text>
+      <text x="42" y="132" fill="#fda4af">✗ 影子 EvidenceStore ×2（watch_dispatch / intel）</text>
+
+      <rect x="30" y="164" width="300" height="88" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.2"/>
+      <text x="42" y="184" fill="#fecdd3" font-size="10" font-weight="700">采集线（未接）</text>
+      <text x="42" y="200" fill="#94a3b8">news_collector / intel_collector / osint_video</text>
+      <text x="42" y="214" fill="#94a3b8">news.db 190MB · observations.db 1.18MB · 21 源</text>
+      <text x="42" y="230" fill="#fda4af">✗ 0 处底座 API；obs_bridge 只落自建库；osint_video 停 11-05</text>
+
+      <rect x="30" y="268" width="300" height="96" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="42" y="288" fill="#a7f3d0" font-size="10" font-weight="700">门户（8734/8091/8097）</text>
+      <text x="42" y="304" fill="#94a3b8">读：tasks / approvals / evidence / inbox</text>
+      <text x="42" y="318" fill="#94a3b8">写：comm_dispatch→inbox（feishu_comm 1 条）</text>
+      <text x="42" y="334" fill="#6ee7b7">✓ feedback_flow（tune_gate:272）</text>
+      <text x="42" y="350" fill="#fda4af">✗ 三套审批账：engine / jsonl / L2</text>
+
+      <rect x="30" y="380" width="300" height="88" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="42" y="400" fill="#a7f3d0" font-size="10" font-weight="700">通信客户（飞书 18 模块）</text>
+      <text x="42" y="416" fill="#94a3b8">tune_gate / feishu_bot_ws / feishu_push</text>
+      <text x="42" y="430" fill="#94a3b8">写 inbox 1 条 · feedback_flow 真接</text>
+      <text x="42" y="446" fill="#fda4af">✗ outbox 0 调用（webhook 未配置）→ 推送直发双轨</text>
+
+      <rect x="30" y="484" width="300" height="88" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="42" y="504" fill="#a7f3d0" font-size="10" font-weight="700">内容 / 商业</text>
+      <text x="42" y="520" fill="#94a3b8">gzh / morning_brief / commercial</text>
+      <text x="42" y="534" fill="#94a3b8">样板：gzh_wiring:212→239→309（仅 CLI 调）</text>
+      <text x="42" y="550" fill="#fda4af">✗ 产线恒写 draft：18 / 23 / 0 published</text>
+    </g>
+
+    <!-- center ledger boundary -->
+    <rect x="380" y="52" width="480" height="620" rx="12" fill="rgba(76,29,149,.10)" stroke="#a78bfa" stroke-width="1.3" stroke-dasharray="7,4"/>
+    <text x="620" y="76" fill="#ddd6fe" font-size="11" font-weight="700" text-anchor="middle">A 底座 · agent_platform</text>
+    <text x="620" y="92" fill="#8b7fd4" font-size="8.5" text-anchor="middle">16 个账本载体 / 只有 3 个闭环</text>
+
+    <!-- ledger carriers 3x4 -->
+    <g font-size="8">
+      <!-- row1 y=110 -->
+      <rect x="396" y="110" width="140" height="62" rx="5" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="404" y="128" fill="#a7f3d0" font-size="9.5" font-weight="700">tasks</text>
+      <text x="404" y="143" fill="#94a3b8">66 单 · doing36/open27</text>
+      <text x="404" y="156" fill="#6ee7b7">写 watchdog38/A0 26</text>
+      <text x="404" y="167" fill="#94a3b8">读 门户/看板</text>
+
+      <rect x="546" y="110" width="140" height="62" rx="5" fill="#0f172a" stroke="#fbbf24" stroke-width="1.2"/>
+      <text x="554" y="128" fill="#fde68a" font-size="9.5" font-weight="700">approvals</text>
+      <text x="554" y="143" fill="#94a3b8">40 行全 approved</text>
+      <text x="554" y="156" fill="#fda4af">停 10-29（26 天）</text>
+      <text x="554" y="167" fill="#94a3b8">另两账在 portal</text>
+
+      <rect x="696" y="110" width="140" height="62" rx="5" fill="#0f172a" stroke="#fbbf24" stroke-width="1.2"/>
+      <text x="704" y="128" fill="#fde68a" font-size="9.5" font-weight="700">evidence</text>
+      <text x="704" y="143" fill="#94a3b8">96 行 · 全 10-17</text>
+      <text x="704" y="156" fill="#fda4af">停写 26 天</text>
+      <text x="704" y="167" fill="#94a3b8">3 处在读</text>
+
+      <!-- row2 y=190 -->
+      <rect x="396" y="190" width="140" height="62" rx="5" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="404" y="208" fill="#a7f3d0" font-size="9.5" font-weight="700">memory</text>
+      <text x="404" y="223" fill="#94a3b8">A0 529 行末 11-12</text>
+      <text x="404" y="236" fill="#6ee7b7">写 A0 + 量化</text>
+      <text x="404" y="247" fill="#94a3b8">读 门户投影</text>
+
+      <rect x="546" y="190" width="140" height="62" rx="5" fill="#0f172a" stroke="#64748b" stroke-width="1.1" stroke-dasharray="4,3"/>
+      <text x="554" y="208" fill="#cbd5e1" font-size="9.5" font-weight="700">experience</text>
+      <text x="554" y="223" fill="#94a3b8">12 行 · 末 10-26</text>
+      <text x="554" y="236" fill="#fda4af">停滞</text>
+      <text x="554" y="247" fill="#94a3b8">门户只读投影</text>
+
+      <rect x="696" y="190" width="140" height="62" rx="5" fill="#0f172a" stroke="#64748b" stroke-width="1.1" stroke-dasharray="4,3"/>
+      <text x="704" y="208" fill="#cbd5e1" font-size="9.5" font-weight="700">decision_policy</text>
+      <text x="704" y="223" fill="#94a3b8">写: run_shadow:861</text>
+      <text x="704" y="236" fill="#94a3b8">读: 门户决策卡</text>
+      <text x="704" y="247" fill="#fda4af">业务线自建规则</text>
+
+      <!-- row3 y=270 -->
+      <rect x="396" y="270" width="140" height="62" rx="5" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="404" y="288" fill="#a7f3d0" font-size="9.5" font-weight="700">feedback_flow</text>
+      <text x="404" y="303" fill="#94a3b8">27 行末 10-18</text>
+      <text x="404" y="316" fill="#fda4af">停写（旧）</text>
+      <text x="404" y="327" fill="#94a3b8">读 调优闸</text>
+
+      <rect x="546" y="270" width="140" height="62" rx="5" fill="#0f172a" stroke="#fb7185" stroke-width="1.2"/>
+      <text x="554" y="288" fill="#fecdd3" font-size="9.5" font-weight="700">inbox_gateway</text>
+      <text x="554" y="303" fill="#94a3b8">197 inbox / 4 processed</text>
+      <text x="554" y="316" fill="#fda4af">只写不消费</text>
+      <text x="554" y="327" fill="#94a3b8">8796/门户/飞书写</text>
+
+      <rect x="696" y="270" width="140" height="62" rx="5" fill="#0f172a" stroke="#fbbf24" stroke-width="1.2"/>
+      <text x="704" y="288" fill="#fde68a" font-size="9.5" font-weight="700">outbox</text>
+      <text x="704" y="303" fill="#94a3b8">16 行 · 9 delivered</text>
+      <text x="704" y="316" fill="#fda4af">webhook 未配置</text>
+      <text x="704" y="327" fill="#94a3b8">仅 8796 调用</text>
+
+      <!-- row4 y=350 -->
+      <rect x="396" y="350" width="140" height="62" rx="5" fill="#0f172a" stroke="#64748b" stroke-width="1.1" stroke-dasharray="4,3"/>
+      <text x="404" y="368" fill="#cbd5e1" font-size="9.5" font-weight="700">intel_inbox</text>
+      <text x="404" y="383" fill="#94a3b8">25 条全 accept</text>
+      <text x="404" y="396" fill="#fda4af">零下游消费者</text>
+      <text x="404" y="407" fill="#94a3b8">仅 manchong_brief_</text>
+
+      <rect x="546" y="350" width="140" height="62" rx="5" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="554" y="368" fill="#a7f3d0" font-size="9.5" font-weight="700">team_exec</text>
+      <text x="554" y="383" fill="#94a3b8">278 摘要末 11-11</text>
+      <text x="554" y="396" fill="#6ee7b7">60+ run</text>
+      <text x="554" y="407" fill="#94a3b8">A0 编排使用</text>
+
+      <rect x="696" y="350" width="140" height="62" rx="5" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="704" y="368" fill="#a7f3d0" font-size="9.5" font-weight="700">observability</text>
+      <text x="704" y="383" fill="#94a3b8">3,156 spans 末 11-12</text>
+      <text x="704" y="396" fill="#6ee7b7">唯一实时闭环之一</text>
+      <text x="704" y="407" fill="#94a3b8">5 schedules（2 报错）</text>
+
+      <!-- row5: other carriers -->
+      <rect x="396" y="430" width="440" height="62" rx="5" fill="#0f172a" stroke="#64748b" stroke-width="1.1" stroke-dasharray="4,3"/>
+      <text x="404" y="448" fill="#cbd5e1" font-size="9.5" font-weight="700">org / identity / skills / compositions / checkpoints.db / evidence_raw ...</text>
+      <text x="404" y="464" fill="#94a3b8">org 活跃（mtime 11-12）· identity 5.2KB · 7 个影子组合只读 · checkpoints 3.5MB</text>
+      <text x="404" y="480" fill="#fda4af">治理内核「文档级」：idempotency 零接线、signature_guard legacy 放行</text>
+    </g>
+
+    <!-- runtime boxes right -->
+    <g font-size="8.5">
+      <rect x="890" y="52" width="320" height="72" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="902" y="72" fill="#a7f3d0" font-size="9.5" font-weight="700">8796 legion_command（真写）</text>
+      <text x="902" y="88" fill="#94a3b8">2,925 行 / 80+ 路由；写 inbox/outbox；读 memory</text>
+      <text x="902" y="104" fill="#fda4af">✗ 无 tasks/approvals/evidence；/api/credentials/set 无审批</text>
+
+      <rect x="890" y="136" width="320" height="72" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="902" y="156" fill="#a7f3d0" font-size="9.5" font-weight="700">8795 gateway（半接）</text>
+      <text x="902" y="172" fill="#94a3b8">OSLINK：只投 inbox；HTTP API 默认关</text>
+      <text x="902" y="188" fill="#94a3b8">消费侧未常驻 → 积压</text>
+
+      <rect x="890" y="220" width="320" height="72" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.2" stroke-dasharray="5,3"/>
+      <text x="902" y="240" fill="#fecdd3" font-size="9.5" font-weight="700">JEV 9101-9104（未接）</text>
+      <text x="902" y="256" fill="#94a3b8">零 agent_platform import；直连 PG</text>
+      <text x="902" y="272" fill="#fda4af">自有 43.7MB jev_audit.db · 在底座外</text>
+
+      <rect x="890" y="304" width="320" height="72" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.2" stroke-dasharray="5,3"/>
+      <text x="902" y="324" fill="#fecdd3" font-size="9.5" font-weight="700">HERMES_UI 8787 / COWBRIDGE（影子）</text>
+      <text x="902" y="340" fill="#94a3b8">0 处底座调用；CowBridge 无进程</text>
+      <text x="902" y="356" fill="#fda4af">自建 evidence / 确认账</text>
+
+      <rect x="890" y="388" width="320" height="72" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.2"/>
+      <text x="902" y="408" fill="#ddd6fe" font-size="9.5" font-weight="700">黄忠 HZ E3（验收，影子）</text>
+      <text x="902" y="424" fill="#94a3b8">observe 不阻断；产物落 work/huangzhong</text>
+      <text x="902" y="440" fill="#c4b5fd">9 条 KPI 5/6 · 基线已转绿</text>
+
+      <rect x="890" y="472" width="320" height="72" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="902" y="492" fill="#a7f3d0" font-size="9.5" font-weight="700">计划任务 / 看门狗</text>
+      <text x="902" y="508" fill="#94a3b8">38/66 工单由 watchdog 代开</text>
+      <text x="902" y="524" fill="#94a3b8">schedules 5 条（2 条 8093 HTTP 400）</text>
+
+      <rect x="890" y="556" width="320" height="72" rx="6" fill="#0f172a" stroke="#64748b" stroke-width="1.1"/>
+      <text x="902" y="576" fill="#cbd5e1" font-size="9.5" font-weight="700">8103 legion_ide / 8093 legacy（影子）</text>
+      <text x="902" y="592" fill="#94a3b8">8103 自建 _vault evidence；8093 第二套工单面</text>
+      <text x="902" y="608" fill="#fda4af">.worktrees/tasks.json 2,239 单（60% 未在册）</text>
+    </g>
+
+    <!-- arrows business -> center -->
+    <g stroke-width="1">
+      <!-- quant -->
+      <line x1="330" y1="100" x2="392" y2="205" stroke="#34d399" marker-end="url(#a3e)"/>
+      <line x1="330" y1="110" x2="392" y2="288" stroke="#34d399" marker-end="url(#a3e)"/>
+      <text x="330" y="92" fill="#6ee7b7" font-size="7">memory/feedback</text>
+      <!-- collect -->
+      <line x1="330" y1="210" x2="392" y2="290" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+      <text x="330" y="200" fill="#fda4af" font-size="7">0 接点</text>
+      <!-- portal -->
+      <line x1="330" y1="300" x2="392" y2="150" stroke="#34d399" marker-end="url(#a3e)"/>
+      <line x1="330" y1="322" x2="392" y2="300" stroke="#34d399" marker-end="url(#a3e)"/>
+      <line x1="330" y1="336" x2="392" y2="380" stroke="#34d399" marker-end="url(#a3e)"/>
+      <line x1="330" y1="356" x2="392" y2="240" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+      <text x="330" y="372" fill="#fda4af" font-size="7">3 账本</text>
+      <!-- comm -->
+      <line x1="330" y1="420" x2="392" y2="310" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+      <text x="330" y="410" fill="#fda4af" font-size="7">outbox 0</text>
+      <!-- content -->
+      <line x1="330" y1="520" x2="392" y2="250" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+      <text x="330" y="510" fill="#fda4af" font-size="7">接线无调用</text>
+    </g>
+    <!-- arrows center -> runtime -->
+    <g stroke-width="1">
+      <line x1="860" y1="196" x2="886" y2="160" stroke="#34d399" marker-end="url(#a3e)"/>
+      <line x1="860" y1="290" x2="886" y2="240" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+      <line x1="860" y1="330" x2="886" y2="340" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+      <line x1="860" y1="380" x2="886" y2="410" stroke="#fb7185" stroke-dasharray="4,3" marker-end="url(#a3r)"/>
+    </g>
+
+    <!-- bottom external + 8734 chain -->
+    <g font-size="8.5">
+      <rect x="30" y="640" width="300" height="70" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="42" y="660" fill="#a5f3fc" font-size="9.5" font-weight="700">老田（human）</text>
+      <text x="42" y="676" fill="#94a3b8">拍板 / 签批 / 冻结令</text>
+      <text x="42" y="692" fill="#94a3b8">不直接读写账本，只经会话与签批件</text>
+
+      <rect x="30" y="726" width="300" height="82" rx="6" fill="rgba(136,19,55,.25)" stroke="#fb7185" stroke-width="1.5"/>
+      <text x="42" y="746" fill="#fecdd3" font-size="10" font-weight="700">✗ 8734 入口黑链</text>
+      <text x="42" y="762" fill="#fda4af">portproxy 8734 → 8080（无监听）</text>
+      <text x="42" y="776" fill="#fda4af">Docker Desktop 未起（com.docker.service Stopped）</text>
+      <text x="42" y="792" fill="#94a3b8">8091 本身 /api/health=200；全站仍不可达</text>
+
+      <rect x="380" y="640" width="480" height="82" rx="6" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+      <text x="396" y="660" fill="#cbd5e1" font-size="10" font-weight="700">读图要点（数据流）</text>
+      <text x="396" y="676" fill="#94a3b8" font-size="8.5">✓ 绿=真实读写闭环（门户→tasks/approvals/evidence；8796→inbox/outbox/memory；量化→memory/feedback）</text>
+      <text x="396" y="692" fill="#94a3b8" font-size="8.5">⚠ 琥珀=停写/冻结（evidence 10-17、approvals 10-30、experience 10-26、feedback 10-18）</text>
+      <text x="396" y="708" fill="#94a3b8" font-size="8.5">✗ 红=断点/影子（inbox 无消费、outbox 无 webhook、2 套影子证据、3 套审批账、JEV 在底座外、8734 黑链）</text>
+
+      <rect x="890" y="640" width="320" height="82" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+      <text x="902" y="660" fill="#fde68a" font-size="10" font-weight="700">外发通道（断）</text>
+      <text x="902" y="676" fill="#94a3b8">outbox：16 行 / 9 delivered_internal</text>
+      <text x="902" y="692" fill="#94a3b8">webhook 两处凭据均不存在 → 必返错误</text>
+      <text x="902" y="708" fill="#fda4af">业务线直发（feishu_push/alert_fail）绕开账本</text>
+
+      <rect x="890" y="726" width="320" height="82" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.1"/>
+      <text x="902" y="746" fill="#ddd6fe" font-size="10" font-weight="700">外部依赖</text>
+      <text x="902" y="762" fill="#94a3b8">PG 5446（JEV/门户少量）· MySQL 3306 · Neo4j</text>
+      <text x="902" y="776" fill="#94a3b8">xtcloud 181 表（tdx_sync 单向拉）</text>
+      <text x="902" y="792" fill="#94a3b8">飞书开放平台（三 bot 推送）</text>
+    </g>
+
+    <!-- ledger legend -->
+    <g>
+      <rect x="380" y="726" width="480" height="82" rx="6" fill="#0b1220" stroke="#1e293b"/>
+      <text x="396" y="746" fill="#cbd5e1" font-size="10" font-weight="700">账本判定标准（本次审计口径）</text>
+      <text x="396" y="762" fill="#94a3b8" font-size="8.5">闭环 = 有产线写 + 有产线读 + 有人消费/回执；半接 = 只有读或单点写；</text>
+      <text x="396" y="778" fill="#94a3b8" font-size="8.5">冻结 = 最近一次写入 > 7 天且无调度；影子 = 业务线自建同名替代账。</text>
+      <text x="396" y="794" fill="#64748b" font-size="7.5">证据：11-12 底座/运行体/业务线/组织四份只读审计（deliverables/2026-11-12_组织架构协同与A底座接入盘点_v1.md）</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============================ 图 4 承接与验收协议 ============================ -->
+<div class="section">
+  <h2><span class="idx">图 4</span> 承接与交付验收协议：一个任务从下单到关闭的完整状态机</h2>
+  <p class="note">状态字段以 tasks.jsonl 为准；真正阻断合入的是「九项评审门 + fast 九套件 + H5 钉扎 + 内核 ADR + 合并窗」，不是人工签字。黄忠 E3 目前 observe，不阻断。</p>
+  <div class="card">
+  <svg viewBox="0 0 1240 900" role="img" aria-label="任务生命周期与验收协议">
+    <defs>
+      <pattern id="g4" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+      <marker id="a4e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#34d399"/></marker>
+      <marker id="a4v" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#a78bfa"/></marker>
+      <marker id="a4r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fb7185"/></marker>
+      <marker id="a4c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#22d3ee"/></marker>
+    </defs>
+    <rect x="0" y="0" width="1240" height="900" fill="url(#g4)"/>
+
+    <!-- state machine -->
+    <text x="30" y="34" fill="#a5f3fc" font-size="10.5" font-weight="700">A · 单任务状态机（tasks.jsonl status + history）</text>
+    <g font-size="8.5">
+      <rect x="30" y="52" width="180" height="92" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="44" y="74" fill="#a5f3fc" font-size="10.5" font-weight="700">① open 下达</text>
+      <text x="44" y="92" fill="#94a3b8">谁：老田 / A0 / watchdog</text>
+      <text x="44" y="106" fill="#94a3b8">写：task_id, severity, dept</text>
+      <text x="44" y="120" fill="#94a3b8">history: open(...)</text>
+      <text x="44" y="136" fill="#64748b">当前 27 单</text>
+
+      <rect x="250" y="52" width="180" height="92" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.5"/>
+      <text x="264" y="74" fill="#a7f3d0" font-size="10.5" font-weight="700">② doing 承接</text>
+      <text x="264" y="92" fill="#94a3b8">谁：席位 / agent 认领</text>
+      <text x="264" y="106" fill="#94a3b8">写：assigned_agent（应写）</text>
+      <text x="264" y="120" fill="#fda4af">实际 null 66/66</text>
+      <text x="264" y="136" fill="#64748b">当前 36 单 · P0 直入</text>
+
+      <rect x="470" y="52" width="180" height="92" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="484" y="74" fill="#fde68a" font-size="10.5" font-weight="700">③ review 交付送审</text>
+      <text x="484" y="92" fill="#94a3b8">交付：commit / deliverables</text>
+      <text x="484" y="106" fill="#94a3b8">/ evidence / 回执</text>
+      <text x="484" y="120" fill="#94a3b8">history: guard_fail 明细</text>
+      <text x="484" y="136" fill="#64748b">失败=门禁原文，不静默</text>
+
+      <rect x="690" y="52" width="180" height="92" rx="8" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="704" y="74" fill="#ddd6fe" font-size="10.5" font-weight="700">④ done 验收通过</text>
+      <text x="704" y="92" fill="#94a3b8">谁：门禁 + 黄忠 + 人签</text>
+      <text x="704" y="106" fill="#94a3b8">写：closure_note, history</text>
+      <text x="704" y="120" fill="#94a3b8">回收 worktree / 关单</text>
+      <text x="704" y="136" fill="#64748b">当前 2 单 · 大量卡在 doing</text>
+
+      <rect x="910" y="52" width="180" height="92" rx="8" fill="#0f172a" stroke="#64748b" stroke-width="1.3" stroke-dasharray="5,3"/>
+      <text x="924" y="74" fill="#cbd5e1" font-size="10.5" font-weight="700">✕ cancelled</text>
+      <text x="924" y="92" fill="#94a3b8">谁：下单人 / A0</text>
+      <text x="924" y="106" fill="#94a3b8">写：取消原因</text>
+      <text x="924" y="120" fill="#94a3b8">当前 1 单</text>
+      <text x="924" y="136" fill="#64748b">防呆：不可静默消失</text>
+    </g>
+    <!-- arrows states -->
+    <line x1="210" y1="98" x2="244" y2="98" stroke="#34d399" stroke-width="1.3" marker-end="url(#a4e)"/>
+    <text x="212" y="88" fill="#6ee7b7" font-size="7.5">认领/开工</text>
+    <line x1="430" y1="98" x2="464" y2="98" stroke="#fbbf24" stroke-width="1.3" marker-end="url(#a4v)"/>
+    <text x="427" y="88" fill="#fde68a" font-size="7.5">交付</text>
+    <line x1="650" y1="98" x2="684" y2="98" stroke="#a78bfa" stroke-width="1.3" marker-end="url(#a4v)"/>
+    <text x="648" y="88" fill="#c4b5fd" font-size="7.5">通过</text>
+
+    <!-- rejected loop -->
+    <rect x="470" y="190" width="180" height="72" rx="8" fill="#0f172a" stroke="#fb7185" stroke-width="1.4"/>
+    <text x="484" y="212" fill="#fecdd3" font-size="10.5" font-weight="700">↺ rejected 返修</text>
+    <text x="484" y="230" fill="#94a3b8">写：驳回理由 + 返修项</text>
+    <text x="484" y="246" fill="#94a3b8">回到 doing，不换单</text>
+    <path d="M 560 144 L 560 186" fill="none" stroke="#fb7185" stroke-width="1.2" marker-end="url(#a4r)"/>
+    <text x="568" y="168" fill="#fda4af" font-size="7.5">门禁/验收未过</text>
+    <path d="M 470 226 L 340 226 L 340 148" fill="none" stroke="#fb7185" stroke-width="1.2" marker-end="url(#a4r)"/>
+    <text x="352" y="220" fill="#fda4af" font-size="7.5">返修后重跑</text>
+
+    <text x="920" y="180" fill="#64748b" font-size="8">状态可信度：status 字段全量（66 行）；worktree 存在=真在执行；deliverable 存在=真交付</text>
+
+    <!-- gate chain -->
+    <text x="30" y="310" fill="#fde68a" font-size="10.5" font-weight="700">B · 合入前的固定门链（顺序固定、任一门失败即停；不绕门、不跳门）</text>
+    <g font-size="8">
+      <rect x="30" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#22d3ee" stroke-width="1.2"/>
+      <text x="42" y="346" fill="#a5f3fc" font-size="9.5" font-weight="700">1 任务准入</text>
+      <text x="42" y="362" fill="#94a3b8">TID / dept / 审批域</text>
+      <text x="42" y="376" fill="#94a3b8">_approval_check</text>
+      <text x="42" y="390" fill="#64748b">block 即拒</text>
+
+      <rect x="177" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="189" y="346" fill="#a7f3d0" font-size="9.5" font-weight="700">2 worktree</text>
+      <text x="189" y="362" fill="#94a3b8">隔离 + 分支 task/&lt;TID&gt;</text>
+      <text x="189" y="376" fill="#94a3b8">脏重叠检查</text>
+      <text x="189" y="390" fill="#64748b">上限 80</text>
+
+      <rect x="324" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="336" y="346" fill="#a7f3d0" font-size="9.5" font-weight="700">3 评审门 ×9</text>
+      <text x="336" y="362" fill="#94a3b8">mixin/导航/端口/凭据</text>
+      <text x="336" y="376" fill="#94a3b8">语法/导入/metadata</text>
+      <text x="336" y="390" fill="#94a3b8">route/budget</text>
+
+      <rect x="471" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.2"/>
+      <text x="483" y="346" fill="#fde68a" font-size="9.5" font-weight="700">4 fast 门 ×9</text>
+      <text x="483" y="362" fill="#94a3b8">portal/kstock/ide/</text>
+      <text x="483" y="376" fill="#94a3b8">agent/quant/tools/dw/</text>
+      <text x="483" y="390" fill="#94a3b8">analysis/commercial</text>
+
+      <rect x="618" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#fbbf24" stroke-width="1.2"/>
+      <text x="630" y="346" fill="#fde68a" font-size="9.5" font-weight="700">5 H5 钉扎</text>
+      <text x="630" y="362" fill="#94a3b8">test_gate.ps1 必须同</text>
+      <text x="630" y="376" fill="#94a3b8">PIN 校验 · 钉扎文件</text>
+      <text x="630" y="390" fill="#64748b">例外需 ADR</text>
+
+      <rect x="765" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#fb7185" stroke-width="1.3"/>
+      <text x="777" y="346" fill="#fecdd3" font-size="9.5" font-weight="700">6 内核 ADR</text>
+      <text x="777" y="362" fill="#94a3b8">kernel_guard：改内核</text>
+      <text x="777" y="376" fill="#94a3b8">契约文件必须 tip 提交</text>
+      <text x="777" y="390" fill="#fda4af">信息带 ADR-号</text>
+
+      <rect x="912" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#a78bfa" stroke-width="1.2"/>
+      <text x="924" y="346" fill="#ddd6fe" font-size="9.5" font-weight="700">7 合并窗</text>
+      <text x="924" y="362" fill="#94a3b8">16:30-17:00 / 21:40-22:10</text>
+      <text x="924" y="376" fill="#94a3b8">禁并期硬拒</text>
+      <text x="924" y="390" fill="#64748b">token 跳过重复门</text>
+
+      <rect x="1059" y="326" width="132" height="76" rx="6" fill="#0f172a" stroke="#34d399" stroke-width="1.2"/>
+      <text x="1071" y="346" fill="#a7f3d0" font-size="9.5" font-weight="700">8 合并/回收</text>
+      <text x="1071" y="362" fill="#94a3b8">git merge + done</text>
+      <text x="1071" y="376" fill="#94a3b8">worktree remove</text>
+      <text x="1071" y="390" fill="#64748b">无证据=未完成</text>
+    </g>
+    <g stroke="#64748b" stroke-width="1">
+      <line x1="162" y1="364" x2="173" y2="364" marker-end="url(#a4c)"/>
+      <line x1="309" y1="364" x2="320" y2="364" marker-end="url(#a4c)"/>
+      <line x1="456" y1="364" x2="467" y2="364" marker-end="url(#a4c)"/>
+      <line x1="603" y1="364" x2="614" y2="364" marker-end="url(#a4c)"/>
+      <line x1="750" y1="364" x2="761" y2="364" marker-end="url(#a4c)"/>
+      <line x1="897" y1="364" x2="908" y2="364" marker-end="url(#a4c)"/>
+      <line x1="1044" y1="364" x2="1055" y2="364" marker-end="url(#a4c)"/>
+    </g>
+    <text x="30" y="422" fill="#fda4af" font-size="8">⚠ 现实教训：11-10 因 mixin 基线漏刷新被拒 2 次；11-11 因 kernel guard 缺 ADR 被拒 2 次；门红多数不是分支问题，而是 master 基线漂移。</text>
+
+    <!-- 承接 protocols -->
+    <text x="30" y="470" fill="#a7f3d0" font-size="10.5" font-weight="700">C · 承接协议（怎么接住一个任务）</text>
+    <g font-size="8.5">
+      <rect x="30" y="486" width="380" height="132" rx="8" fill="rgba(6,78,59,.22)" stroke="#34d399" stroke-width="1.1"/>
+      <text x="46" y="508" fill="#a7f3d0" font-size="10" font-weight="700">C1 自动承接（系统→席位）</text>
+      <text x="46" y="526" fill="#94a3b8">触发：watchdog / 计划任务失败 / P0 告警</text>
+      <text x="46" y="542" fill="#94a3b8">写入：tasks.jsonl open(直接 doing) + history</text>
+      <text x="46" y="558" fill="#94a3b8">承接人：A0 转派 → 部门 lead（写 assigned_agent）</text>
+      <text x="46" y="578" fill="#fda4af">失败态：无人认领 → 停留 doing（36/66）</text>
+      <text x="46" y="596" fill="#6ee7b7">改进：超 24h 未认领 → 升级到 A0 收件箱并回退 open</text>
+      <text x="46" y="610" fill="#64748b">证据：history 时间戳 + assigned_agent 非空</text>
+
+      <rect x="430" y="486" width="380" height="132" rx="8" fill="rgba(8,51,68,.3)" stroke="#22d3ee" stroke-width="1.1"/>
+      <text x="446" y="508" fill="#a5f3fc" font-size="10" font-weight="700">C2 派单承接（人→席位）</text>
+      <text x="446" y="526" fill="#94a3b8">触发：老田/A0 明示任务（会话/飞书/会议）</text>
+      <text x="446" y="542" fill="#94a3b8">入口：devtask new → TID + worktree + 分支</text>
+      <text x="446" y="558" fill="#94a3b8">接单：部门 lead 领走；席位技能包 hr/&lt;SEAT&gt;</text>
+      <text x="446" y="578" fill="#fda4af">失败态：口头派单无 TID → 不可追踪、无法验收</text>
+      <text x="446" y="596" fill="#67e8f9">改进：无 TID 不接单；TID 必填 acceptance 标准</text>
+      <text x="446" y="610" fill="#64748b">证据：tasks.jsonl 单号 + worktree 目录</text>
+
+      <rect x="830" y="486" width="380" height="132" rx="8" fill="rgba(120,53,15,.22)" stroke="#fbbf24" stroke-width="1.1"/>
+      <text x="846" y="508" fill="#fde68a" font-size="10" font-weight="700">C3 认领承接（agent 自取）</text>
+      <text x="846" y="526" fill="#94a3b8">触发：会话/子代理自行开工（含 DSH 会话）</text>
+      <text x="846" y="542" fill="#94a3b8">记录：worktree + 分支 + 会话心跳</text>
+      <text x="846" y="558" fill="#94a3b8">边界：必须是 org 在册身份（73 人）</text>
+      <text x="846" y="578" fill="#fda4af">失败态：未在册接单 904 单（占 .worktrees 60%）</text>
+      <text x="846" y="596" fill="#fde68a">改进：未在册 → 拒绝建 worktree；认领即写 assigned_agent</text>
+      <text x="846" y="610" fill="#64748b">证据：identity_registry + org_audit</text>
+    </g>
+
+    <!-- acceptance protocols -->
+    <text x="30" y="664" fill="#ddd6fe" font-size="10.5" font-weight="700">D · 验收协议（凭什么算「交付完成」）</text>
+    <g font-size="8.5">
+      <rect x="30" y="680" width="290" height="130" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.1"/>
+      <text x="44" y="702" fill="#a7f3d0" font-size="10" font-weight="700">D1 门禁验收（代码交付）</text>
+      <text x="44" y="720" fill="#94a3b8">标准：评审门 9 项 + fast 9 套件全绿</text>
+      <text x="44" y="736" fill="#94a3b8">+ PIN/H5 + 内核 ADR + 合并窗</text>
+      <text x="44" y="752" fill="#94a3b8">证据：gate log + rc + merge SHA</text>
+      <text x="44" y="772" fill="#6ee7b7">✓ 当前唯一硬约束；不可绕</text>
+      <text x="44" y="792" fill="#64748b">失败 → review + 门禁原文，不静默</text>
+
+      <rect x="335" y="680" width="290" height="130" rx="8" fill="#0f172a" stroke="#a78bfa" stroke-width="1.1"/>
+      <text x="349" y="702" fill="#ddd6fe" font-size="10" font-weight="700">D2 黄忠 E3（质量验收）</text>
+      <text x="349" y="720" fill="#94a3b8">标准：证据 ≤48h / 基线 failed=0 / 红队 ≥0.8</text>
+      <text x="349" y="736" fill="#94a3b8">现状：observe 模式，不阻断 merge</text>
+      <text x="349" y="752" fill="#94a3b8">六条 5/6：③ 误拒复核 56/77 未满</text>
+      <text x="349" y="772" fill="#c4b5fd">转强制门槛：77/77 + 基线绿 + warn 观察 ≥3 窗 + 老田书面批</text>
+      <text x="349" y="792" fill="#64748b">证据：work/huangzhong/review_*.json</text>
+
+      <rect x="640" y="680" width="290" height="130" rx="8" fill="#0f172a" stroke="#22d3ee" stroke-width="1.1"/>
+      <text x="654" y="702" fill="#a5f3fc" font-size="10" font-weight="700">D3 情报 G4（判断验收）</text>
+      <text x="654" y="720" fill="#94a3b8">标准：五问检查单 + 六字段回填</text>
+      <text x="654" y="736" fill="#94a3b8">关键假设/替代解释/反证与空白/</text>
+      <text x="654" y="752" fill="#94a3b8">失败前三因与预警/独立复核与置信度</text>
+      <text x="654" y="772" fill="#67e8f9">作者自评不算挑战；只覆盖 G4</text>
+      <text x="654" y="792" fill="#64748b">文档：docs/ops/2026-11-11_情报发布G4检查单_v1.md</text>
+
+      <rect x="945" y="680" width="265" height="130" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.1"/>
+      <text x="959" y="702" fill="#fde68a" font-size="10" font-weight="700">D4 人工签批（边界）</text>
+      <text x="959" y="720" fill="#94a3b8">适用：L2 五要素 / 内核 ADR / 战略拍板</text>
+      <text x="959" y="736" fill="#94a3b8">/ 冻结令 / 对外承诺</text>
+      <text x="959" y="752" fill="#94a3b8">签批件：ADR 签名表 / 决议 / 回执</text>
+      <text x="959" y="772" fill="#fde68a">不代签、不默认通过、必须有日期</text>
+      <text x="959" y="792" fill="#64748b">例：ADR-025 双签 11-07；ADR-027 已 Accepted</text>
+    </g>
+
+    <!-- legend -->
+    <g>
+      <rect x="30" y="836" width="1180" height="46" rx="8" fill="#0b1220" stroke="#1e293b"/>
+      <text x="46" y="858" fill="#cbd5e1" font-size="9.5" font-weight="700">一句话总结：</text>
+      <text x="170" y="858" fill="#94a3b8" font-size="9">承接=「谁建 worktree / 谁写 assigned_agent」；交付=「commit+deliverable+证据」；验收=「门禁全绿（硬）+ 黄忠 observe（软）+ 人签（边界）」。当前断点在承接侧（66/66 未写承接人、inbox 197/3、未在册 904 单）。</text>
+      <text x="46" y="875" fill="#64748b" font-size="7.5">图例：青=人/指令 · 绿=真实闭环 · 琥珀=审查/门槛 · 红=断点/返修 · 紫=验收/归档 · 灰虚线=影子/停用</text>
+    </g>
+  </svg>
+  </div>
+</div>
+
+<!-- ============================ 表格：谁给谁什么 ============================ -->
+<div class="section">
+  <h2><span class="idx">附</span> 谁给谁什么任务 / 怎么承接 / 交付什么 / 谁验收</h2>
+  <table>
+    <thead><tr><th style="width:15%">发起方（谁给）</th><th style="width:14%">承接方（给谁）</th><th style="width:17%">任务内容</th><th style="width:16%">承接方式</th><th style="width:19%">交付物</th><th style="width:19%">验收 / 关闭</th></tr></thead>
+    <tbody>
+      <tr><td><b>老田</b>（human）</td><td>A0 / 指挥部</td><td>战略方向、拍板、冻结令、预算与边界</td><td>会话 / 飞书 / 会议纪要；A0 收口成决议</td><td>决议文档、派单清单、回执</td><td>老田本人签批；无门禁，靠人工</td></tr>
+      <tr><td><b>老田 / A0</b></td><td>dev 部门席位</td><td>功能开发、修复、回执类工单</td><td>devtask new → TID + worktree + 分支 task/&lt;TID&gt;</td><td>commit + deliverables/ + 回执 + gate log</td><td>评审门 9 项 → fast 9 套件 → H5/PIN/内核 → 合并窗 → merge SHA → done</td></tr>
+      <tr><td><b>看门狗</b>（系统）</td><td>A0 → 部门</td><td>计划任务失败 / P0 告警（38/66 单）</td><td>自动开单：tasks.jsonl open(P0 直入 doing)</td><td>修复 + 重跑日志 + closure_note</td><td>closure_note 人工确认；失败转 review 顺延</td></tr>
+      <tr><td><b>飞书客户</b>（外部）</td><td>comm 部门 / 应接 osleg_consumer</td><td>客户请求、语音、卡片动作</td><td>comm_dispatch → inbox_gateway（当前 197/3，无消费）</td><td>工单 + 回执（设计）</td><td>设计：consume→processed + 回执；<span class="ro">当前断在承接</span></td></tr>
+      <tr><td><b>指挥部会议</b></td><td>各 line / 席位</td><td>决议、专项、复盘改进项</td><td>A0 拆单 → 任务账本（会议已停摆 9 天）</td><td>会议决议执行记录</td><td>下次会议回看；目前无固定验收</td></tr>
+      <tr><td><b>黄忠 HZ</b>（验收席）</td><td>合入队列 / 开发者</td><td>验收裁定、驳回、风险提示</td><td>独立验收系统（30 分钟节拍，observe）</td><td>review_*.json（证据/基线/红队）</td><td>目前 observe 不阻断；转强制需老田书面批</td></tr>
+      <tr><td><b>情报线</b>（INTEL0 等）</td><td>JEV / 裁决池 / AIDE</td><td>情报判断卡、预警、复核</td><td>intel_inbox 只 accept（25 条）→ <span class="ro">无下游消费</span></td><td>研判卡（六字段）、G4 检查单</td><td>G4 五问 + 人工复核；量化/交易决策未接</td></tr>
+      <tr><td><b>部门 lead</b>（D1/ARCH1/DATA1…）</td><td>本部门席位</td><td>日常任务、晨会分解、技能包加载</td><td>任务账本 + hr/&lt;SEAT&gt; 技能包</td><td>产出文档 / 数据 / 脚本</td><td>部门 lead 初审；无独立门禁</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>
+  <span>零界 · 组织与协作四图 · v1 · 2026-11-12</span>
+  <span>数据源：agent_platform/registry/org.json · agent_platform/data/org/tasks/tasks_202611.jsonl · 2026-11-12 四份只读审计（底座/运行体/组织协同/业务线）</span>
+</footer>
+
+</div>
+</body>
+</html>
