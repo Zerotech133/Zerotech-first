@@ -548,7 +548,68 @@ def build_cross(force=False):
         "matrix": matrix,
     }
     _CACHE["t"], _CACHE["d"] = time.time(), out
+    out["orthogonal"] = build_orthogonal(stocks, src_state)
     return out
+
+
+# ── P2 正交碰撞（2026-11-13，教材"三维碰撞"的工程化）────────────────
+CONTRA_SOURCES = {"9dim"}   # 反指源（W5 口径）：不进正交看多集
+
+
+def build_orthogonal(stocks, src_state):
+    """各看多源独立判定 → 交集/单源/差集三类集合（只读标注，不拦截）。
+
+    教材出处：《公安大数据挖掘与分析教程》长歌案 5.1.3"三维碰撞"——
+    各数据块独立研判出嫌疑目标，最后碰撞整合。交集=高置信，差集=待查证。
+
+    与 n_hit 计数的本质区别（n_hit 教训的工程化，见 JUDGMENT_AUDIT #2）：
+    n_hit 数的是"源出现次数"，任何源（含反向标记）都凑数；
+    正交碰撞只看【看多源】（dir=long），且必须源状态 ok——
+    error/missing 的源不算"没票"，算"未知"，不进差集。
+
+    输出（随 build_cross 产物归档，供差集后验）：
+      sets.long{n源: [codes]}  —— 每档独立看多源数的票集
+      pairs[A_not_B]: [codes]  —— 差集（A long 而 B 无观点），按源对归档，
+                                   这是度量各源独立信息量的天然对照组
+      audit: 三字段（同台账纪律）
+    """
+    ok_srcs = {sid for sid, v in src_state.items() if v.get("status") == "ok"}
+    # 反指源（W5 口径：9dim 方向取反×0.5）不进正交碰撞的看多集——
+    # 它的 long 语义与正向源相反，混入会把差集口径搅浑。
+    contra = {sid for sid in ok_srcs if CONTRA_SOURCES and sid in CONTRA_SOURCES}
+    ok_srcs -= contra
+    bull_sets = {}       # sid -> {code}
+    for sid in ok_srcs:
+        bull_sets[sid] = {
+            code for code, s in stocks.items()
+            if any(h["sid"] == sid and h["dir"] == "long" for h in s["hits"])
+        }
+    # 交集分档
+    tiers = {}
+    for code, s in stocks.items():
+        n = sum(1 for sid in ok_srcs if code in bull_sets.get(sid, ()))
+        if n:
+            tiers.setdefault(n, []).append(code)
+    # 差集（源对）
+    pairs = {}
+    sids = sorted(bull_sets)
+    for i, a in enumerate(sids):
+        for b in sids[i + 1:]:
+            pairs["%s_not_%s" % (a, b)] = sorted(bull_sets[a] - bull_sets[b])
+            pairs["%s_not_%s" % (b, a)] = sorted(bull_sets[b] - bull_sets[a])
+    return {
+        "ok_sources": sorted(ok_srcs),
+        "bull_n_tiers": {str(k): sorted(v) for k, v in sorted(tiers.items())},
+        "diff_pairs": pairs,
+        "n_diff_total": sum(len(v) for v in pairs.values()),
+        "audit": {
+            "assumptions": "看多源=dir long；源 ok 才参与（error/missing 不进差集）",
+            "falsifier": "反向源（short）混入 long 集；差集票后验与交集无差"
+                         "（各源无独立信息量）",
+            "cost_if_wrong": "差集若被当'待查证线索'使用而无独立信息，"
+                             "只是噪声放大——仅归档后验，不进名单",
+        },
+    }
 
 
 # ── W3-4 源健康检查（三态 ok/stale/missing + 数据锚日期） ──────
