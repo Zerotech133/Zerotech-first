@@ -22,6 +22,48 @@ param(
     [string]$Log = 'C:\Temp\preopen_task.log'
 )
 
+# ══ P0 启动落痕（2026-11-12）══════════════════════════════════════════
+# 「任务是否启动」与「是否算票」必须能分开判。
+# 判例（2026-11-12）：计划任务 08:10 触发，但日志文件的创建时间是 08:27:42 ——
+# 08:10 那几次到底跑没跑，事后无从判断，因为日志只在业务跑起来之后才写第一行。
+# 「没启动」和「启动了但没算票」在证据上完全一样，这比任何单点故障都难查。
+#
+# 所以本段是本脚本的第一段可执行代码，且落痕路径 **不依赖后面的任何推导**
+# （$root / $entry 都可能算错，落痕绝不能用它们算出来的路径）。
+# 落痕是 append-only JSONL，一行一次启动；字段 schema=launch/v1，kind 区分
+# start / end / preview（preview = -WhatIf，不算真跑）。
+$LAUNCH = 'C:\Temp\preopen_launch.jsonl'
+$T0 = Get-Date
+
+function Write-Launch([string]$kind, [hashtable]$extra) {
+    try {
+        $o = [ordered]@{
+            schema    = 'launch/v1'
+            kind      = $kind
+            task      = 'preopen'
+            ts        = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+            day       = (Get-Date).ToString('yyyyMMdd')
+            pid       = $PID
+            host      = $env:COMPUTERNAME
+            user      = $env:USERNAME
+            psver     = $PSVersionTable.PSVersion.ToString()
+            whatif    = [bool]$WhatIf
+            skip_pick = [bool]$SkipPick
+            log       = $Log
+            psscript  = $PSCommandPath
+        }
+        if ($extra) { foreach ($k in $extra.Keys) { $o[$k] = $extra[$k] } }
+        $enc = [System.Text.UTF8Encoding]::new($false)
+        [System.IO.File]::AppendAllText($LAUNCH, (($o | ConvertTo-Json -Compress) + "`n"), $enc)
+    } catch {
+        # 落痕失败绝不阻断业务，但要往日志塞一条 —— 否则「没痕迹」又被当成「没跑」
+        try { ((Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + ' WARN launch beacon failed: ' + $_.Exception.Message) | Out-File $Log -Append -Encoding utf8 } catch { }
+    }
+}
+
+# -WhatIf 不是一次真跑，落痕写成 preview，否则「今天启动过」会变成假阳性
+if ($WhatIf) { Write-Launch 'preview' } else { Write-Launch 'start' }
+
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Continue'
@@ -30,10 +72,12 @@ $py = 'C:\Program Files\Python311\python.exe'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $entry = Join-Path $root 'tools\preopen\run_preopen.py'
 $alert = Join-Path $root 'quant_backtest\alert_fail.py'
-$stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
+# 时间戳按「写这一行的时候」取。
+# 旧写法在顶部算一次 $stamp 全程复用，于是 start 和 end 两行时间戳完全相同 ——
+# 正好把 P0 想分清的「几点启动 / 跑了几分钟」抹平了。这不是格式问题，是证据问题。
 function Write-Log([string]$msg) {
-    ($stamp + ' ' + $msg) | Out-File $Log -Append -Encoding utf8
+    ((Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + ' ' + $msg) | Out-File $Log -Append -Encoding utf8
 }
 
 if ($WhatIf) {
@@ -51,6 +95,9 @@ if (-not (Test-Path $entry)) {
     if (Test-Path $alert) {
         & $py -X utf8 $alert 'preopen' 3 $Log | Out-Null
     }
+    # 启动过、没进业务就死了 —— 这条 end 记录是「无痕」与「有痕」的分界
+    Write-Launch 'end' @{ rc = 3; ts_rc = 3; stage = 'entry_check'
+                          dur_sec = [int](((Get-Date) - $T0).TotalSeconds) }
     exit 3
 }
 
@@ -80,5 +127,11 @@ if ($rc -eq 2 -or $rc -eq 3) {
 #   0 = 已完成（业务 0/1 都算完成，报告已出）
 #   2 = 阻断，未出报告
 #   3 = 脚本崩溃
-if ($rc -eq 0 -or $rc -eq 1) { exit 0 }
+if ($rc -eq 0 -or $rc -eq 1) {
+    Write-Launch 'end' @{ rc = $rc; ts_rc = 0; stage = 'done'
+                          dur_sec = [int](((Get-Date) - $T0).TotalSeconds) }
+    exit 0
+}
+Write-Launch 'end' @{ rc = $rc; ts_rc = $rc; stage = 'blocked'
+                      dur_sec = [int](((Get-Date) - $T0).TotalSeconds) }
 exit $rc

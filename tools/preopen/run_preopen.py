@@ -45,8 +45,80 @@ PICK = os.path.join(PICK_DIR, "_preopen_pick15_v2_adj.py")
 PKG_ROOT = os.path.join(PICK_DIR, "strategy_center_inbox")
 DELIV = r"C:\项目\deliverables"
 
+# P0 启动落痕（2026-11-12）：由 preopen_task.ps1 第一行可执行代码写入。
+# 这里只读、不写 —— 落痕必须独立于业务代码，业务死掉也照样有。
+LAUNCH = r"C:\Temp\preopen_launch.jsonl"
+
 sys.path.insert(0, HERE)
 import audit_preopen as audit  # noqa: E402
+
+
+def read_launch(day: str) -> dict:
+    """读某日的启动落痕。读不到就如实说「无记录」，不推断也不补默认值。
+
+    为什么要有这个函数：「任务是否启动」和「是否算票」是两件事。
+    2026-11-12 的判例是 08:10 触发、日志却在 08:27 才创建 —— 没有落痕时，
+    「08:10 没启动」与「启动了但在写第一行日志前就死了」在证据上完全等价。
+    """
+    rec = {"source": LAUNCH, "n_start": 0, "started_at": None, "first_started_at": None,
+           "ended": None, "last_kind": None, "dur_sec": None, "pids": [],
+           "skip_pick": None, "found": False}
+    if not os.path.exists(LAUNCH):
+        return rec
+    try:
+        fh = io.open(LAUNCH, encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return rec
+    with fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if str(r.get("day") or "") != day:
+                continue
+            rec["found"] = True
+            if r.get("kind") == "start":
+                rec["n_start"] += 1
+                rec["started_at"] = r.get("ts")          # 最后一条 start
+                if rec["first_started_at"] is None:
+                    rec["first_started_at"] = r.get("ts")
+                if r.get("pid") not in rec["pids"]:
+                    rec["pids"].append(r.get("pid"))
+                rec["skip_pick"] = r.get("skip_pick")
+            rec["last_kind"] = r.get("kind")
+            if r.get("kind") == "end":
+                rec["ended"] = r.get("ts")
+                rec["dur_sec"] = r.get("dur_sec")
+    return rec
+
+
+def pick_provenance(path: str) -> dict:
+    """选票产物的「什么时候算的」。
+
+    优先读产物自述的 picker_run_at；老产物没有这个字段就退回文件 mtime，
+    但必须标成 source="mtime" —— 两者可信度不同，混为一谈就等于没标。
+    """
+    if not os.path.exists(path):
+        return {"exists": False, "picker_run_at": None, "picker_run_at_source": "absent"}
+    mtime = datetime.fromtimestamp(os.stat(path).st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        d = json.load(io.open(path, encoding="utf-8"))
+    except (ValueError, OSError):
+        return {"exists": True, "picker_run_at": None,
+                "picker_run_at_source": "unreadable", "mtime": mtime}
+    run_at = d.get("picker_run_at")
+    return {"exists": True,
+            "picker_run_at": run_at or mtime,
+            "picker_run_at_source": "artifact" if run_at else "mtime",
+            "mtime": mtime,
+            "chain_policy_v": d.get("chain_policy_v"),
+            "n_picks": len(d.get("top15_adj") or []),
+            "data_day": d.get("refine_date")}
+
 
 
 def latest_pkg() -> str | None:
@@ -77,10 +149,26 @@ def main() -> int:
 
     asof, _ = audit.max_date("tdx/ts_daily", "trade_date")
     day = a.date or asof
+    # 执行日 = 数据日之后的下一个交易日。台账/简报文件名都用它（老田早上翻的是
+    # 「今天这份」，写成 11-11 会让他以为是昨天那份）。提前到这里算，是因为
+    # 选票篮子的落盘名也要用它 —— 篮子回答的是「今天开盘用哪份票」。
+    cal = audit.trade_cal()
+    later = [x for x in cal if x > day]
+    exec_day = later[0] if later else day
+
     out["data_day"] = day
+    out["exec_day"] = exec_day
+    launch = read_launch(exec_day)
+    out["launch"] = launch
     print("=" * 62)
     print("后峰盘前 · %s" % stamp)
-    print("数据日 %s" % day)
+    print("数据日 %s   执行日 %s" % (day, exec_day))
+    if launch["found"]:
+        print("启动落痕 %s 起 %d 次%s"
+              % (launch["first_started_at"], launch["n_start"],
+                 "，已 end" if launch["ended"] else "，**无 end —— 有启动没跑完**"))
+    else:
+        print("启动落痕 无记录 —— 不是计划任务拉起，或落痕写入前就失败了")
     print("=" * 62)
 
     # ── 1. 校对 ─────────────────────────────────────────────────────────
@@ -101,9 +189,15 @@ def main() -> int:
 
     # ── 2. 选票 ─────────────────────────────────────────────────────────
     pick_json = os.path.join(DELIV, "preopen_pick15_v2_adj_check_%s.json" % day)
-    if a.skip_pick and os.path.exists(pick_json):
-        print("\n[2/5] 选票 → 跳过（复用 %s）" % os.path.basename(pick_json))
-        out["steps"].append({"step": "pick", "skipped": True})
+    reused = bool(a.skip_pick and os.path.exists(pick_json))
+    if reused:
+        pv0 = pick_provenance(pick_json)
+        print("\n[2/5] 选票 → 复用 %s（未重算）" % os.path.basename(pick_json))
+        print("      这份票算于 %s（来源 %s）"
+              % (pv0.get("picker_run_at"), pv0.get("picker_run_at_source")))
+        print("      ⚠ 名单不是本次运行算的 —— 简报会带 reused=true，别和当天新算看成一样")
+        out["steps"].append({"step": "pick", "skipped": True, "reused": True,
+                             "pick_json": pick_json})
     else:
         pkg = latest_pkg()
         if not pkg:
@@ -116,16 +210,49 @@ def main() -> int:
         rc, log = run([PY, "-X", "utf8", PICK, "--pkg", pkg, "--asof", day], cwd=PICK_DIR)
         tail = "\n".join(log.strip().splitlines()[-6:])
         print("      rc=%d\n%s" % (rc, "\n".join("      " + l for l in tail.splitlines())))
-        out["steps"].append({"step": "pick", "rc": rc, "pkg": pkg, "tail": tail})
+        out["steps"].append({"step": "pick", "rc": rc, "pkg": pkg, "tail": tail,
+                             "reused": False, "pick_json": pick_json})
         if rc != 0:
             out["rc"] = 3
             _dump(out, a.json_out)
             return 3
 
+    # 选票溯源（P1）：无论算的还是复用的，都从产物里读「到底什么时候算的」。
+    # 老产物没有 picker_run_at，退回 mtime 并标 source=mtime —— 不标就等于冒充。
+    pvp = pick_provenance(pick_json)
+    out["pick_provenance"] = dict(pvp, reused=reused)
+    print("      选票溯源：picker_run_at=%s（%s）reused=%s"
+          % (pvp.get("picker_run_at"), pvp.get("picker_run_at_source"), reused))
+
+    # 选票篮子：回答「今天开盘到底用哪份票」，与「基于哪天数据算的」分开存。
+    # 2026-11-12 的坑正是这两件事被混成一件：08:27 复用 11-11 的 json，
+    # 简报却打 exec_day=20261112，外观与当天新算完全一致。
+    codes: list[str] = []
+    try:
+        _pj = json.load(io.open(pick_json, encoding="utf-8"))
+        codes = [x["ts_code"] for x in (_pj.get("top15_adj") or [])]
+    except (ValueError, OSError, KeyError) as e:
+        print("      ⚠ 选票产物读不出名单（%s）—— 篮子仍落盘，codes 为空" % e)
+    basket = {"schema": "preopen_basket/v1", "exec_day": exec_day, "data_day": day,
+              "pick_json": pick_json, "reused": reused,
+              "picker_run_at": pvp.get("picker_run_at"),
+              "picker_run_at_source": pvp.get("picker_run_at_source"),
+              "chain_policy_v": pvp.get("chain_policy_v"),
+              "run_started": stamp, "launch_started": launch.get("started_at"),
+              "codes": codes, "n_codes": len(codes)}
+    basket_path = os.path.join(DELIV, "preopen_basket_%s.json" % exec_day)
+    io.open(basket_path, "w", encoding="utf-8").write(
+        json.dumps(basket, ensure_ascii=False, indent=1))
+    out["basket"] = {"path": basket_path, "n_codes": len(codes), "reused": reused}
+    print("      篮子 %s（%d 只）" % (os.path.basename(basket_path), len(codes)))
+
     # ── 3. 报告 ─────────────────────────────────────────────────────────
+    # 先落一次盘再出报告：简报要读本次运行的选票溯源（picker_run_at / reused），
+    # 读不到就退化成「来源未确认」。落盘顺序即数据依赖顺序。
+    _dump(out, a.json_out)
     print("\n[3/5] 简报 →")
     rc, log = run([PY, "-X", "utf8", os.path.join(HERE, "build_preopen_report.py"),
-                   "--date", day])
+                   "--date", day, "--run-json", a.json_out])
     print("      " + log.strip().splitlines()[-1] if log.strip() else "      (无输出)")
     out["steps"].append({"step": "report", "rc": rc, "out": log.strip()})
 
@@ -158,9 +285,7 @@ def main() -> int:
     print("\n[5/5] 进化台账 →")
     # 文件名用执行日，不用数据日 —— 老田早上翻的是「今天这份台账」，
     # 写成 11-11 会让他以为是昨天那份（报告顶栏同一个坑，已经踩过一次）。
-    cal = audit.trade_cal()
-    later = [x for x in cal if x > day]
-    exec_day = later[0] if later else day
+    # exec_day 在函数开头已算好（篮子落盘要用），此处复用，不再重复推导。
     md_out = os.path.join(DELIV, "preopen_evolve_%s.md" % exec_day)
     html_out = os.path.join(DELIV, "preopen_evolve_%s.html" % exec_day)
     rc_d, log_d = run([PY, "-X", "utf8", os.path.join(HERE, "evolve.py"),

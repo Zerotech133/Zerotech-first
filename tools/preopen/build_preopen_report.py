@@ -51,6 +51,43 @@ INDEX_WANT = [("000001.SH", "上证指数"), ("399001.SZ", "深证成指"),
 
 
 # ---------------------------------------------------------------------------
+# 选票溯源（P1，2026-11-12）
+# ---------------------------------------------------------------------------
+# 简报最容易骗人的地方不是数字算错，是「这份名单什么时候算的」没有落款。
+# 2026-11-12 判例：08:27 与 08:30 两次运行都 SkipPick=True，直接复用 11-11 的 json，
+# 简报照样打 exec_day=20261112 —— 外观与当天新算完全一致，README 之外无从分辨。
+# 所以：reused / picker_run_at 必须进报告，且读不到时写「未确认」，不能留白。
+def read_provenance(run_json: str | None) -> dict:
+    out = {"available": False, "reused": None, "picker_run_at": None,
+           "picker_run_at_source": "unknown", "run_started": None,
+           "launch_started": None, "note": "未提供本次运行记录（--run-json），来源未确认"}
+    if not run_json or not os.path.exists(run_json):
+        return out
+    try:
+        r = json.load(io.open(run_json, encoding="utf-8"))
+    except (ValueError, OSError):
+        return out
+    pv = r.get("pick_provenance") or {}
+    out.update({
+        "available": True,
+        "reused": pv.get("reused"),
+        "picker_run_at": pv.get("picker_run_at"),
+        "picker_run_at_source": pv.get("picker_run_at_source") or "unknown",
+        "run_started": r.get("started"),
+        "launch_started": (r.get("launch") or {}).get("started_at"),
+        "data_day": r.get("data_day"),
+        "exec_day": r.get("exec_day"),
+        "note": None,
+    })
+    if out["reused"] is True:
+        out["note"] = "本份名单为复用（本次运行未重算）"
+    elif out["picker_run_at"] is None:
+        out["note"] = "产物未自述计算时刻，来源未确认"
+    return out
+
+
+
+# ---------------------------------------------------------------------------
 # 采集
 # ---------------------------------------------------------------------------
 def collect(day: str) -> dict:
@@ -372,6 +409,12 @@ details .body .kv2 b{color:var(--ink2);font-variant-numeric:tabular-nums}
 
 def render(d: dict) -> str:
     dv = derive(d)
+    # 三态，不是布尔：true=本次复用 / false=本次重算 / unknown=来源未确认。
+    # 把 unknown 压成 false 就是「不知道」被写成「是新的」，这正是要防的。
+    pvv = d.get("provenance") or {}
+    prov_reused_attr = ("true" if pvv.get("reused") is True
+                        else "false" if pvv.get("reused") is False
+                        else "unknown")
     day = d["day"]
     daycn = "%s月%s日" % (day[4:6], day[6:])
     ex_day = d.get("exec_day") or day
@@ -381,7 +424,13 @@ def render(d: dict) -> str:
     P = []
     A = P.append
 
-    A("<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">")
+    A("<!DOCTYPE html><html lang=\"zh-CN\"")
+    # 机器可读的溯源：写在 <html> 属性上，扫一遍文件就能验「这份是不是复用的」，
+    # 不用渲染不用 OCR。人眼看的版本在同一页的 meta / 提示卡 / 页脚（三处一致）。
+    A(" data-picker-run-at=\"%s\" data-reused=\"%s\" data-run-started=\"%s\">"
+      % (esc(pvv.get("picker_run_at") or ""), prov_reused_attr,
+         esc(pvv.get("run_started") or "")))
+    A("<head><meta charset=\"utf-8\">")
     A("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
     A("<title>后峰盘前简报 %s</title>" % excn)
     A("<meta name=\"description\" content=\"后峰盘前策略简报，%s开盘参考，基于%s收盘数据\"%s>"
@@ -406,6 +455,14 @@ def render(d: dict) -> str:
     A("<span>标的池 <b>%s</b> 只</span>" % (d["picks_meta"].get("pool_n") or "-"))
     A("<span>入选 <b>%d</b> 只</span>" % len(d.get("picks") or []))
     A("<span>生成 <b>%s</b></span>" % datetime.now().strftime("%m-%d %H:%M"))
+    # 选票时刻必须和「生成时刻」并排：生成 08:30 而名单算于昨天 09:36，
+    # 只看生成时间会以为名单是刚算的。这一格是 P1 的核心，别删。
+    if pvv.get("picker_run_at"):
+        A("<span>选票 <b>%s %s</b></span>"
+          % (esc(str(pvv["picker_run_at"])[5:16]),
+             "复用" if pvv.get("reused") is True else "重算"))
+    else:
+        A("<span>选票 <b>来源未确认</b></span>")
     A("</div></header>")
 
     # 关键数字
@@ -480,6 +537,15 @@ def render(d: dict) -> str:
     # 三、今日名单
     picks = d.get("picks") or []
     A("<section><h2><i>03</i>今日名单<small>%d 只</small></h2>" % len(picks))
+    # 复用的显式提示：数字没错、时点错了才是错的。不标出来，转发出去的人
+    # 会把它当成「今天早上刚算的名单」——2026-11-12 就是这个情形。
+    if pvv.get("reused") is True:
+        A("<div class=\"card warn\">本份名单为<b>复用</b>：算于 <b>%s</b>，本次运行未重算。"
+          "名单本身有效，但它绑定的是那个时点的池与行情；之后若有新数据或口径调整，"
+          "这里不会体现。</div>" % esc(pvv.get("picker_run_at") or "未知时刻"))
+    elif not pvv.get("available"):
+        A("<div class=\"card warn\">选票来源<b>未确认</b>：本次未提供运行记录，"
+          "无法判断名单是刚算的还是沿用的旧文件 —— 请核对产物时间。</div>")
     if picks:
         A("<table><thead><tr><th>标的</th><th>行业</th><th>评分</th>"
           "<th>昨收</th><th>昨日涨幅</th><th>10日动量</th></tr></thead><tbody>")
@@ -635,8 +701,13 @@ def render(d: dict) -> str:
       "请勿截图断章、删去风险提示与免责声明，或改动其中任何数字与结论 —— "
       "报告的价值在于口径可追溯，掐掉口径的片段会误导他人。</p>")
     A("</div>")
-    A("<div class=\"foot\">后峰 · 盘前策略简报　|　数据基准 %s　|　生成 %s</div>"
-      % (day, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    _p_tag = ("复用" if pvv.get("reused") is True
+              else "重算" if pvv.get("reused") is False else None)
+    A("<div class=\"foot\">后峰 · 盘前策略简报　|　数据基准 %s　|　生成 %s"
+      "　|　选票 %s%s</div>"
+      % (day, datetime.now().strftime("%Y-%m-%d %H:%M"),
+         esc(pvv.get("picker_run_at") or "来源未确认"),
+         ("（%s）" % _p_tag) if _p_tag else ""))
     A("</div></body></html>")
     return "\n".join(P)
 
@@ -645,6 +716,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="后峰盘前简报 → H5")
     ap.add_argument("--date", default=None)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--run-json", default=None,
+                    help="本次运行的 preopen_run_latest.json；用于读取选票溯源。"
+                         "缺省时报告标「来源未确认」，不假装是当天新算的")
     a = ap.parse_args()
     cal = audit.trade_cal()
     tmax, _ = audit.max_date("tdx/ts_daily", "trade_date")
@@ -653,6 +727,7 @@ def main() -> int:
         print("无可用的个股日线，终止")
         return 2
     d = collect(day)
+    d["provenance"] = read_provenance(a.run_json)
     html_txt = render(d)
     # 文件名用「执行日」：老田早上转出去的是"今天开盘用"的那份
     tag = d.get("exec_day") or day

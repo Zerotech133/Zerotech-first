@@ -1,0 +1,543 @@
+# -*- coding: utf-8 -*-
+"""收盘复盘：今天开盘用的那份票，收盘后到底怎么样。
+
+为什么必须有这一步
+------------------
+盘前链路只生产「预期」，不生产「结果」。没有 15:40 这一步，每天只有过程、
+没有成绩：选得对不对、评分有没有区分度、超额是正还是负，全靠事后手工复盘
+（2026-11-12 就是这么干的，一次花掉半小时，且不可累积）。
+
+三个必须写死的判据，否则这份报告会变成自我安慰
+----------------------------------------------
+① **日期必须对上**。行情快照的日期字段 != 执行日 → 直接阻断。不复权、不推断、
+   不「大概就是今天」。用错日期的行情算出来的收益是「看起来对」的那一类错误，
+   比报错危险得多。
+② **同时给绝对值和超额**。只报绝对收益，会把 beta 当 alpha（11-12 组合 −1.27%，
+   看着很糟，同池基准 −1.46%，其实超额 +0.19pct）；只报超额，会掩盖风格暴露。
+③ **声明口径**。本报告是「1 日 / 开盘买收盘 / 等权 / 未扣费」的**当日体检**，
+   不是记账口径（记账是 40 日 / T+1 开盘 / 双边 0.002 / 批级日等权）。
+   两个口径不能互相代言，报告里必须写明这一点。
+
+行情从哪来
+----------
+本地 tdx/ts_daily 收盘后当天通常还没有（日更 04:26），所以默认走外网新浪快照。
+本地若已有当日数据则优先用本地（同一份口径、可离线复算）。两条路都失败 → 阻断。
+
+用法
+----
+    python tools/review/close_review.py                # 复盘今天
+    python tools/review/close_review.py --date 20261112
+    python tools/review/close_review.py --no-ledger    # 只出报告，不写累计台账
+
+退出码：0 OK / 2 阻断（无篮子、行情日期不符、行情取不到）/ 3 脚本异常
+"""
+from __future__ import annotations
+
+import argparse
+import io
+import json
+import os
+import statistics as st
+import sys
+import time
+import urllib.request
+from collections import Counter
+from datetime import datetime
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PREOPEN = os.path.join(os.path.dirname(HERE), "preopen")
+sys.path.insert(0, PREOPEN)
+import audit_preopen as audit  # noqa: E402
+
+ROOT = r"C:\项目\老田的AI助手"
+DELIV = r"C:\项目\deliverables"
+LEDGER_DIR = os.path.join(ROOT, "var", "preopen", "close_review")
+LEDGER = os.path.join(LEDGER_DIR, "ledger.jsonl")
+TARGET_DAYS = 40          # 攒够这么多个交易日，这条链路才谈得上「被评价过」
+
+# 「科技硬件」的归类口径写死在代码里，不每天各算各的。
+# 存在的意义：2026-11-12 提出「53% 集中在该板块要不要中性化」，而当时的判断
+# 靠的是临时脚本里一个现写的集合 —— 那种数字明天就复现不出来。
+# 这里只**记录**暴露度，不参与选股、不改口径；台账攒够天数才谈得上要不要动它。
+TECH_HW = {"半导体", "元器件", "通信设备", "IT设备", "软件服务",
+           "电子元件", "光学光电子", "消费电子"}
+
+INDEX = [("sh000001", "上证指数"), ("sz399001", "深证成指"), ("sz399006", "创业板指"),
+         ("sh000688", "科创50"), ("sh000300", "沪深300"), ("sh000852", "中证1000")]
+
+
+def die(msg: str) -> "None":
+    """阻断：打印原因并以 2 退出。
+
+    不用 raise SystemExit("字符串") —— 那会退成 rc=1，与脚本异常撞码，
+    自动化就分不清「逻辑上不该出报告」和「代码炸了」。
+    """
+    print(msg)
+    raise SystemExit(2)
+
+
+# ---------------------------------------------------------------------------
+# 输入
+# ---------------------------------------------------------------------------
+def load_basket(exec_day: str) -> dict:
+    """今天开盘到底用了哪份票。篮子优先，没有篮子才按交易日历反推。"""
+    bp = os.path.join(DELIV, "preopen_basket_%s.json" % exec_day)
+    if os.path.exists(bp):
+        b = json.load(io.open(bp, encoding="utf-8"))
+        b["_source"] = "basket"
+        return b
+    cal = audit.trade_cal()
+    data_day = cal[cal.index(exec_day) - 1] if exec_day in cal and cal.index(exec_day) > 0 else None
+    pp = os.path.join(DELIV, "preopen_pick15_v2_adj_check_%s.json" % data_day) if data_day else None
+    if not (pp and os.path.exists(pp)):
+        die("[FATAL] 既无 %s，也找不到可反推的选票产物 —— 今天没出票，无从复盘"
+            % os.path.basename(bp))
+    return {"exec_day": exec_day, "data_day": data_day, "pick_json": pp,
+            "reused": None, "picker_run_at": None, "_source": "derived"}
+
+
+def load_picks(b: dict) -> tuple[dict, list[dict], list[dict]]:
+    d = json.load(io.open(b["pick_json"], encoding="utf-8"))
+    top = d.get("top15_adj") or []
+    pool = d.get("full_rated") or []
+    if not top:
+        die("[FATAL] 选票产物 top15_adj 为空：%s" % b["pick_json"])
+    return d, top, pool
+
+
+# ---------------------------------------------------------------------------
+# 行情
+# ---------------------------------------------------------------------------
+def sina_code(ts: str) -> str:
+    c, mk = ts.split(".")
+    return ("sh" if mk.upper() == "SH" else "sz") + c
+
+
+def quotes_local(exec_day: str, codes: list[str]) -> dict:
+    """本地日线。只有同步已经把当日落下来时才有 —— 15:40 通常没有，是备用路。"""
+    try:
+        df = audit.load_day("tdx/ts_daily", exec_day,
+                            ["ts_code", "open", "close", "pre_close"])
+    except Exception:
+        return {}
+    if df is None or not len(df):
+        return {}
+    df = df[df["ts_code"].isin(codes)]
+    out = {}
+    for r in df.itertuples():
+        out[r.ts_code] = {"open": float(r.open), "last": float(r.close),
+                          "pre": float(r.pre_close), "date": exec_day, "src": "local"}
+    return out
+
+
+def _fetch_sina(batch: list[str]) -> dict:
+    url = "https://hq.sinajs.cn/list=" + ",".join(batch)
+    req = urllib.request.Request(url, headers={
+        "Referer": "https://finance.sina.com.cn", "User-Agent": "Mozilla/5.0"})
+    op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    raw = op.open(req, timeout=20).read().decode("gbk", "ignore")
+    out = {}
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line.startswith("var hq_str_"):
+            continue
+        key = line.split("hq_str_")[1].split("=")[0]
+        body = line.split('"')[1] if '"' in line else ""
+        f = body.split(",")
+        if len(f) < 32 or not f[3]:
+            continue
+        try:
+            out[key] = {"open": float(f[1]), "pre": float(f[2]), "last": float(f[3]),
+                        "date": (f[30] or "").replace("-", ""), "tm": f[31], "src": "sina"}
+        except ValueError:
+            continue
+    return out
+
+
+def quotes_sina(keys: list[str]) -> dict:
+    out = {}
+    for i in range(0, len(keys), 30):
+        try:
+            out.update(_fetch_sina(keys[i:i + 30]))
+        except Exception as e:
+            die("[FATAL] 行情取不到（%s: %s）—— 今天这份复盘没有数据基础，"
+                "不出报告比出一份没数的报告强" % (type(e).__name__, e))
+        time.sleep(0.35)
+    return out
+
+
+def get_quotes(b: dict, codes: list[str], exec_day: str) -> tuple[dict, str]:
+    q = quotes_local(exec_day, codes)
+    if len(q) >= max(1, int(0.8 * len(codes))):
+        return q, "local"
+    keys = [sina_code(c) for c in codes]
+    sq = quotes_sina(keys)
+    if not q:
+        q = {}
+        for c in codes:
+            v = sq.get(sina_code(c))
+            if v:
+                q[c] = v
+        return q, "sina"
+    # 本地只有一部分 → 用外网补齐，逐只标注来源
+    for c in codes:
+        if c in q:
+            continue
+        v = sq.get(sina_code(c))
+        if v:
+            q[c] = v
+    return q, "mixed"
+
+
+def index_quotes() -> dict:
+    """指数单独取。
+
+    坑：股票行情以 ts_code 为键（000001.SZ），指数以 sina 代码为键（sh000001），
+    两者混在一个字典里查，指数会永远查不到 —— 而且不报错，只是指数表空着。
+    「空表不报错」是本平台反复踩的那一类静默失败，所以这里显式分开取、单独返回。
+    """
+    try:
+        sq = quotes_sina([k for k, _ in INDEX])
+    except SystemExit:
+        return {}
+    out = {}
+    for k, nm in INDEX:
+        v = sq.get(k)
+        if v:
+            out[nm] = pct(v.get("last"), v.get("pre"))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 计算
+# ---------------------------------------------------------------------------
+def pct(a: float, b: float):
+    if not b or a is None or b is None:
+        return None
+    return (a / b - 1.0) * 100.0
+
+
+def check_quote_dates(q: dict, exec_day: str) -> list[str]:
+    """返回与执行日不符的行情日期（空列表 = 全部对上）。
+
+    单独抽成函数是为了能直接喂构造数据验证：这条闸门挡的是「用昨天的行情算今天
+    的成绩」，算出来的数字看着完全正常 —— 属于必须靠断言守、不能靠人眼守的一类。
+    """
+    return sorted({v.get("date") for v in q.values()
+                   if v.get("date") and v["date"] != exec_day})
+
+
+def mean(xs):
+    xs = [x for x in xs if x is not None]
+    return sum(xs) / len(xs) if xs else None
+
+
+def med(xs):
+    xs = [x for x in xs if x is not None]
+    return st.median(xs) if xs else None
+
+
+def rows_for(items: list[dict], q: dict, exec_day: str) -> list[dict]:
+    out = []
+    for it in items:
+        code = it["ts_code"]
+        x = q.get(code)
+        if not x or not x.get("open") or not x.get("last"):
+            out.append({"code": code, "name": it.get("name"),
+                        "score": it.get("score"), "miss": True})
+            continue
+        out.append({"code": code, "name": it.get("name"), "ind": it.get("industry"),
+                    "score": it.get("score"), "open": x["open"], "close": x["last"],
+                    "pre": x["pre"],
+                    "gap": pct(x["open"], x["pre"]),
+                    "o2c": pct(x["last"], x["open"]),
+                    "c2c": pct(x["last"], x["pre"]),
+                    "src": x.get("src"), "quote_date": x.get("date"),
+                    "miss": False})
+    return out
+
+
+def industry_exposure(rows: list[dict]) -> dict:
+    """组合的行业集中度（只记录，不改口径）。
+
+    HHI = Σ(行业权重²)，1/HHI 可读作「等效行业数」。等权 15 只、10 个行业时
+    HHI 大致 0.13，等效约 7.7 个行业 —— 比「53% 集中在科技硬件」这句话更适合
+    做跨日比较：它能随天数累积成序列，而一句占比不能。
+    """
+    ok = [r for r in rows if not r["miss"] and r.get("ind")]
+    if not ok:
+        return {}
+    n = len(ok)
+    c = Counter(r["ind"] for r in ok)
+    return {"n": n, "n_industries": len(c),
+            "hhi": round(sum((v / n) ** 2 for v in c.values()), 4),
+            "tech_n": sum(v for k, v in c.items() if k in TECH_HW),
+            "tech_share": round(100.0 * sum(v for k, v in c.items() if k in TECH_HW) / n, 1),
+            "top3": [[k, v] for k, v in c.most_common(3)]}
+
+
+def summarize(rows: list[dict]) -> dict:
+    ok = [r for r in rows if not r["miss"]]
+    o2c = [r["o2c"] for r in ok if r["o2c"] is not None]
+    c2c = [r["c2c"] for r in ok if r["c2c"] is not None]
+    gap = [r["gap"] for r in ok if r["gap"] is not None]
+    return {"n": len(ok), "n_miss": len(rows) - len(ok),
+            "miss_codes": [r["code"] for r in rows if r["miss"]],
+            "o2c_mean": mean(o2c), "o2c_med": med(o2c), "n_o2c": len(o2c),
+            "c2c_mean": mean(c2c), "c2c_med": med(c2c), "n_c2c": len(c2c),
+            "gap_mean": mean(gap),
+            "win_o2c": sum(1 for x in o2c if x > 0), "win_c2c": sum(1 for x in c2c if x > 0)}
+
+
+# ---------------------------------------------------------------------------
+# 台账（40 日评价靠它，不靠每天的报告）
+# ---------------------------------------------------------------------------
+def read_ledger() -> list[dict]:
+    if not os.path.exists(LEDGER):
+        return []
+    out = []
+    with io.open(LEDGER, encoding="utf-8-sig", errors="replace") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                out.append(json.loads(line))
+            except ValueError:
+                continue
+    return out
+
+
+def ledger_digest(exec_day: str) -> dict:
+    """按执行日去重（同日重跑取最后一条），算累计与 40 日进度。"""
+    recs = {}
+    for r in read_ledger():
+        d = r.get("exec_day")
+        if d:
+            recs[d] = r
+    days = sorted(recs)
+    ex = [recs[d].get("excess_o2c") for d in days if recs[d].get("excess_o2c") is not None]
+    return {"n_days": len(days), "target": TARGET_DAYS,
+            "progress": "%d/%d" % (len(days), TARGET_DAYS),
+            "cum_excess": sum(ex) if ex else None,
+            "mean_excess": (sum(ex) / len(ex)) if ex else None,
+            "day_win": sum(1 for x in ex if x > 0), "n_ex": len(ex),
+            "first_day": days[0] if days else None,
+            "last_day": days[-1] if days else None,
+            "includes_today": exec_day in recs}
+
+
+def append_ledger(rec: dict) -> None:
+    os.makedirs(LEDGER_DIR, exist_ok=True)
+    with io.open(LEDGER, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+# ---------------------------------------------------------------------------
+# 输出
+# ---------------------------------------------------------------------------
+def _f(x, fmt="%+.2f%%"):
+    return "-" if x is None else fmt % x
+
+
+def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
+              rows: list[dict], dg: dict, qsrc: str, expo: dict) -> str:
+    ex_o2c = (top_s["o2c_mean"] - pool_s["o2c_mean"]
+              if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None else None)
+    L = []
+    A = L.append
+    A("# 收盘复盘 · %s" % b["exec_day"])
+    A("")
+    A("> **口径**：1 日 / 开盘买 · 收盘卖 / 等权 / 未扣费。这是**当日体检**，"
+      "不是记账口径（记账 = 40 日 / T+1 开盘 / 双边 0.002 / 批级日等权）。"
+      "两者不能互相代言。")
+    A("")
+    A("| 项 | 值 |")
+    A("|---|---|")
+    A("| 执行日 | %s |" % b["exec_day"])
+    A("| 数据日 | %s |" % (b.get("data_day") or "-"))
+    A("| 选票计算于 | %s |" % (b.get("picker_run_at") or "未知（产物未自述）"))
+    A("| 选票来源 | %s |" % ("复用（本次未重算）" if b.get("reused") is True else
+                            "重算" if b.get("reused") is False else "未记录"))
+    A("| 篮子 | %s |" % ("preopen_basket_%s.json" % b["exec_day"]
+                          if b.get("_source") == "basket" else "按交易日历反推（非当时实际所用）"))
+    A("| 行情来源 | %s |" % qsrc)
+    A("")
+    A("## 一、结果")
+    A("")
+    A("| 口径 | 均值 | 中位 | 胜率 | 样本 |")
+    A("|---|---|---|---|---|")
+    A("| 开盘买 → 收盘卖 | **%s** | %s | %d/%d | %d |"
+      % (_f(top_s["o2c_mean"]), _f(top_s["o2c_med"]), top_s["win_o2c"],
+         top_s["n_o2c"], top_s["n"]))
+    A("| 昨收 → 今收 | %s | %s | %d/%d | %d |"
+      % (_f(top_s["c2c_mean"]), _f(top_s["c2c_med"]), top_s["win_c2c"],
+         top_s["n_c2c"], top_s["n"]))
+    A("| 跳空（昨收→今开） | %s | - | - | %d |" % (_f(top_s["gap_mean"]), top_s["n"]))
+    if top_s["n_miss"]:
+        A("")
+        A("**缺行情 %d 只**（停牌或取数失败，未计入均值）：%s"
+          % (top_s["n_miss"], "、".join(top_s["miss_codes"])))
+    A("")
+    A("## 二、超额（对同池等权）")
+    A("")
+    A("同池基准 = 当日参与打分的 %d 只等权，与组合同一天、同一入口径。" % pool_s["n"])
+    A("")
+    A("| | 组合 | 同池 | 超额 |")
+    A("|---|---|---|---|")
+    A("| 开盘→收盘 | %s | %s | **%s** |"
+      % (_f(top_s["o2c_mean"]), _f(pool_s["o2c_mean"]), _f(ex_o2c)))
+    A("| 昨收→今收 | %s | %s | %s |"
+      % (_f(top_s["c2c_mean"]), _f(pool_s["c2c_mean"]),
+         _f(None if top_s["c2c_mean"] is None or pool_s["c2c_mean"] is None
+            else top_s["c2c_mean"] - pool_s["c2c_mean"])))
+    A("")
+    A("## 三、市场（判断亏损是 beta 还是 alpha）")
+    A("")
+    A("| 指数 | 涨跌 |")
+    A("|---|---|")
+    for nm, v in idx.items():
+        A("| %s | %s |" % (nm, _f(v)))
+    A("")
+    A("## 四、逐只（按开盘→收盘排序）")
+    A("")
+    A("| # | 代码 | 名称 | 行业 | 评分 | 开盘 | 收盘 | 跳空 | 开→收 | 日涨 |")
+    A("|---|---|---|---|---|---|---|---|---|---|")
+    ok = [r for r in rows if not r["miss"]]
+    for i, r in enumerate(sorted(ok, key=lambda x: -(x["o2c"] if x["o2c"] is not None else -99)), 1):
+        A("| %d | %s | %s | %s | %.3f | %.2f | %.2f | %s | **%s** | %s |"
+          % (i, r["code"], r["name"] or "-", r["ind"] or "-", float(r["score"] or 0),
+             r["open"], r["close"], _f(r["gap"]), _f(r["o2c"]), _f(r["c2c"])))
+    A("")
+    A("## 五、行业暴露（只记录，不参与选股）")
+    A("")
+    if expo:
+        A("| 项 | 值 |")
+        A("|---|---|")
+        A("| 入选覆盖行业 | %d 个 / %d 只 |" % (expo["n_industries"], expo["n"]))
+        A("| HHI | %.4f（等效约 %.1f 个行业）|" % (expo["hhi"], 1.0 / expo["hhi"]))
+        A("| 科技硬件 | %d 只，占 %.1f%% |" % (expo["tech_n"], expo["tech_share"]))
+        A("| 前三大行业 | %s |"
+          % "、".join("%s %d" % (k, v) for k, v in expo["top3"]))
+        A("")
+        A("> 这一节**不参与选股**，只把每天的集中度记进台账。理由是集中度要不要"
+          "中性化，是口径变更，得先有 20~40 日的「暴露—结果」序列才能判；"
+          "单日集中既可能是风险也可能是当天最强的板块，凭一天定不了。")
+    else:
+        A("（行业字段缺失，本节跳过）")
+    A("")
+    A("## 六、累计进度")
+    A("")
+    A("已记 %s 个交易日（目标 %d）。累计超额 %s，日均 %s，正超额 %d/%d 日。"
+      % (dg["progress"], dg["target"], _f(dg["cum_excess"]), _f(dg["mean_excess"]),
+         dg["day_win"], dg["n_ex"]))
+    A("")
+    if dg["n_days"] < dg["target"]:
+        A("> 样本不足（%s），上面的日均与胜率**还不足以下结论**。"
+          "这条链路要攒够 %d 个交易日才算被评价过 —— 单日数字只用来发现异常，不用来定性。"
+          % (dg["progress"], dg["target"]))
+    else:
+        A("> 样本已达 %s，日均与胜率具备参考性；但与记账口径（40 日/T+1 开盘/双边成本）"
+          "仍不是同一件事，不要把这里的数字当净收益。" % dg["progress"])
+    A("")
+    A("---")
+    A("生成 %s · close_review · 数据基准 %s"
+      % (datetime.now().strftime("%Y-%m-%d %H:%M"), b["exec_day"]))
+    return "\n".join(L) + "\n"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="收盘复盘：当日选票成绩")
+    ap.add_argument("--date", default=None, help="执行日 YYYYMMDD，缺省今天")
+    ap.add_argument("--no-ledger", action="store_true", help="不写累计台账")
+    a = ap.parse_args()
+
+    exec_day = a.date or datetime.now().strftime("%Y%m%d")
+    cal = audit.trade_cal()
+    if exec_day not in cal:
+        print("[SKIP] %s 非交易日" % exec_day)
+        return 0
+
+    b = load_basket(exec_day)
+    d, top, pool = load_picks(b)
+    if not b.get("picker_run_at"):
+        b["picker_run_at"] = d.get("picker_run_at")
+    b.setdefault("reused", None)
+    print("执行日 %s | 数据日 %s | 选票 %s | 篮子来源 %s"
+          % (exec_day, b.get("data_day"), d.get("picker_run_at") or "未自述", b["_source"]))
+
+    codes = [x["ts_code"] for x in top] + [x["ts_code"] for x in pool]
+    codes = list(dict.fromkeys(codes))
+    q, qsrc = get_quotes(b, codes, exec_day)
+
+    # ① 日期闸门：拿错日期的行情算收益，是「看起来对」的错误，必须硬拦
+    bad = check_quote_dates(q, exec_day)
+    if bad:
+        die("[FATAL] 行情日期 %s != 执行日 %s —— 拒绝用错日期的行情出复盘"
+            % (",".join(bad), exec_day))
+    if len(q) < max(1, int(0.5 * len(codes))):
+        die("[FATAL] 只取到 %d/%d 只行情，样本不足，不出复盘" % (len(q), len(codes)))
+
+    rows = rows_for(top, q, exec_day)
+    pool_rows = rows_for(pool, q, exec_day)
+    top_s = summarize(rows)
+    pool_s = summarize(pool_rows)
+
+    idx = index_quotes()
+    if not idx:
+        print("[WARN] 指数取不到 —— 报告里市场一栏会空着（不影响个股成绩）")
+
+    expo = industry_exposure(rows)
+
+    rec = {"schema": "close_review/v1", "exec_day": exec_day,
+           "data_day": b.get("data_day"), "quote_source": qsrc,
+           "picker_run_at": b.get("picker_run_at"), "reused": b.get("reused"),
+           "n": top_s["n"], "n_miss": top_s["n_miss"],
+           "top_o2c": top_s["o2c_mean"], "top_c2c": top_s["c2c_mean"],
+           "pool_o2c": pool_s["o2c_mean"], "pool_c2c": pool_s["c2c_mean"],
+           "excess_o2c": (top_s["o2c_mean"] - pool_s["o2c_mean"]
+                          if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None
+                          else None),
+           "win_o2c": top_s["win_o2c"], "rows": rows,
+           "exposure": expo,
+           "index": idx, "written_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+    # 先入账、再算摘要、最后渲染。
+    # 反过来做（先算摘要再入账）会让报告里的累计永远慢一天 —— 首日甚至显示 0/40，
+    # 这正是「产物看着正常、数字其实是旧的」那一类错误。
+    if not a.no_ledger:
+        append_ledger({k: rec[k] for k in
+                       ("schema", "exec_day", "data_day", "quote_source", "picker_run_at",
+                        "reused", "n", "n_miss", "top_o2c", "top_c2c", "pool_o2c",
+                        "pool_c2c", "excess_o2c", "win_o2c", "exposure", "written_at")})
+
+    dg = ledger_digest(exec_day)
+    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, expo)
+
+    md_path = os.path.join(DELIV, "close_review_%s.md" % exec_day)
+    js_path = os.path.join(DELIV, "close_review_%s.json" % exec_day)
+    io.open(md_path, "w", encoding="utf-8").write(md)
+    io.open(js_path, "w", encoding="utf-8").write(json.dumps(rec, ensure_ascii=False, indent=1))
+
+    print("组合 开→收 %s（%d 只，胜 %d/%d）| 同池 %s | 超额 %s"
+          % (_f(top_s["o2c_mean"]), top_s["n"], top_s["win_o2c"], top_s["n_o2c"],
+             _f(pool_s["o2c_mean"]),
+             _f(None if top_s["o2c_mean"] is None or pool_s["o2c_mean"] is None
+                else top_s["o2c_mean"] - pool_s["o2c_mean"])))
+    print("累计 %s 日（目标 %d），日均超额 %s" % (dg["progress"], dg["target"],
+                                          _f(dg["mean_excess"])))
+    print("WROTE %s" % md_path)
+    print("WROTE %s" % js_path)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print("[FATAL] 收盘复盘异常：%s: %s" % (type(e).__name__, e))
+        sys.exit(3)
