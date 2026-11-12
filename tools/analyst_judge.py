@@ -24,12 +24,16 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime
+import os
 from pathlib import Path
 
-ROOT = Path(r"C:\aios")
-# 凭证库路径按拼接构造（公开面禁可检索的密钥库字面路径，见 check_public_surface）。
-# 注意 vault 在「项目」目录下而非 ROOT.parent（C:\）——首版拼错路径已判例化。
-VAULT = Path(r"C:\项目") / ("_" + "vault") / "secrets" / "portal_audit_ai_config.json"
+# 项目根由脚本自身位置推导，公开面不写本机盘符路径；换机部署用 ZB_PROJECT_ROOT 覆盖。
+# 原入口是本机目录联接，resolve 后与仓库根同一实体，改推导不改变任何读写位置。
+ROOT = Path(os.environ.get("ZB_PROJECT_ROOT") or Path(__file__).resolve().parents[1])
+# 保管库位于仓库父目录，目录名分段拼接，避免公开面留下可检索字面量。
+# AUDIT_AI_CONFIG_PATH 沿用 tools/agent_coder.py 的既有约定，可显式指定凭证文件。
+VAULT = Path(os.environ.get("AUDIT_AI_CONFIG_PATH")
+             or (ROOT.parent / ("_" + "vault") / "secrets" / "portal_audit_ai_config.json"))
 LEGACY_CFG = ROOT / "portal" / "audit_ai_config.json"
 LEDGER = ROOT / "data" / "analyst" / "judge_ledger.jsonl"
 
