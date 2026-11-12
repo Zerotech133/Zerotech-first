@@ -1803,8 +1803,11 @@ def _zen_svg(bars, bis, pvs, n_disp=90, W=780, H=300, mini=False):
         ly = Y(segs[-1][3])
         el.append("<circle cx='%.1f' cy='%.1f' r='1.9' fill='#f5c542'/>"
                   % (X(segs[-1][1]), ly))
-        el.append(TX(X(segs[-1][1]), ly - 8, "%.0f" % segs[-1][3], "#f5c542",
-                     9, "middle", "700"))
+        # 末端点多是最新一根，贴在右边界上：居中锚点会让半个数字出画（实测截到 "3"）
+        ex = X(segs[-1][1])
+        anchor = "end" if ex > W - PR - 12 else ("start" if ex < PL + 12 else "middle")
+        el.append(TX(ex, ly - 8, "%.0f" % segs[-1][3], "#f5c542",
+                     9, anchor, "700"))
 
     # ── 现价线 ──
     cur = disp[-1]["c"]
