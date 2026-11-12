@@ -1,6 +1,13 @@
-# K263 GubaCrawl daily wrapper (17:50, after close; pool-mode active stocks)
+# K263 GubaCrawl daily wrapper (daytime anti-rate-limit windows since 2026-11-12:
+# GubaCrawl 09:40 / GubaCrawl_B 10:40 / GubaCrawl_C 14:00; evening 17:50/20:30/22:30
+# windows hit eastmoney soft rate-limit -> no_marker storms, see
+# deliverables/2026-11-12 GubaCrawl root-cause report (approved combo 1+4)
 # Three-iron-rule wrapper: python out/err to separate files, ASCII status log, rc!=0 -> alert_fail
 # 2026-11-02 multi-window: optional -BatchIndex (default -1 = auto rotation; 0..3 = fixed batch)
+# G14-dedup 2026-11-12: same-day alert dedup - only first failing run of the day
+# sends the feishu alert; later failures log one line (flag file logs\guba_alert_sent.flag
+# holds the yyyyMMdd of last sent day; single file, no accumulation).
+# rollback: restore the .bak-20261112-G14 copy in the project backups folder
 param(
     [int]$BatchIndex = -1,
     [switch]$DryRun
@@ -23,6 +30,18 @@ Add-Content -Path $log -Value ("starting " + (Get-Date).ToUniversalTime().ToStri
 $rc = $LASTEXITCODE
 Add-Content -Path $log -Value ("exit=$rc " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
 if ($rc -ne 0) {
-    & $py -X utf8 (Join-Path (Split-Path $root -Parent) 'news_collector\alert_fail_wrap.py') guba_crawl $rc $err 1>$null 2>$null
+    # G14-dedup: alert only on first failure of the calendar day (dedupe key =
+    # local yyyyMMdd in flag file); repeats within same day -> one log line only
+    $flag = Join-Path $root 'logs\guba_alert_sent.flag'
+    $today = (Get-Date).ToString('yyyyMMdd')
+    $sentDay = ''
+    if (Test-Path $flag) { $sentDay = (Get-Content $flag -Raw).Trim() }
+    if ($sentDay -eq $today) {
+        Add-Content -Path $log -Value ("alert suppressed (already sent today " + $today + ")") -Encoding ascii
+    } else {
+        & $py -X utf8 (Join-Path (Split-Path $root -Parent) 'news_collector\alert_fail_wrap.py') guba_crawl $rc $err 1>$null 2>$null
+        Set-Content -Path $flag -Value $today -Encoding ascii
+        Add-Content -Path $log -Value ("alert sent for " + $today) -Encoding ascii
+    }
 }
 exit $rc
