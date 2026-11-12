@@ -39,6 +39,17 @@ try {
     # 错误流已并入 $body，err 文件保留占位，告警脚本仍能拿到路径
     if ($rc -ne 0) { $body | Set-Content -LiteralPath $errFile -Encoding UTF8 }
 
+    # 2026-11-13 morning-dispatch: graded alert after every run.
+    # 05:30 run = the pre-market gate (P0 red -> urgent to person + quant
+    # group per user decision); 19:10 run also alerts (routine digest).
+    # Alert failure must NOT mask the check rc (soft, logged only).
+    $alertRc = & $py -X utf8 'contract_alert.py' 'reports\contract_health.json' 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) {
+        ('contract_alert soft-fail: ' + $alertRc.Trim().Substring(0,
+         [Math]::Min(160, $alertRc.Trim().Length))) |
+            Out-File $log -Append -Encoding utf8
+    }
+
     $verdict = ''
     $json = Join-Path $wd 'reports\contract_health.json'
     if (Test-Path $json) {
