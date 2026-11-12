@@ -1,8 +1,23 @@
 # -*- coding: utf-8 -*-
-"""涨停事件交叉卡 v1（J-03，2026-11-13）
+"""涨停事件交叉卡 v2（J-03，2026-11-13 定案两维卡）
 
-一个涨停事件 → 一张卡，四维证据铺开。**不产出结论**：卡上不写"建议""预期"
-"看涨"，只写"哪一维有数据、精度到哪、原始值多少"。结论由人下。
+一个涨停事件 → 一张卡，证据分**主维**和**附表**两层铺开。**不产出结论**：卡上
+不写"建议""预期""看涨"，只写"哪一维有数据、精度到哪、原始值多少"。结论由人下。
+
+## 为什么是两维卡（2026-11-13 裁定 A 案）
+
+四维平行铺开在实践中不成立：时间维依赖小票分钟，覆盖不到是小票的结构性事实，
+不是本线能补的（见 `docs/需求单_小票分钟覆盖_采集工位_v1.md`）。四维平等摆着，
+会让一张卡「四格空两格」看起来像半成品，而实际上资金与席位两维是**完整可用**的。
+所以改为主副两层：
+
+| 层 | 维 | 是否参与验收 |
+|---|---|---|
+| **主维** | `flow`（收盘终值）+ `seat`（T+1 席位） | **是**，`acceptance.verdict` 只看这两维 |
+| 附表 | `time`（分钟）+ `narrative`（日期级） | 否，只陈述、不判定 |
+
+附表不是"不重要"，而是**精度天然低于主维**：叙事维的公告本身没有时分（精度就是天），
+时间维在本地覆盖不到时是空的。把它们拉进验收等于用不可得的维拖累可得的维。
 
 ## 四维与各自的**时点精度**（这是本模块最重要的字段）
 
@@ -23,6 +38,23 @@
 2. **零联网**。四个维全部只读本地。要补数据是采集工位的事，不在渲染链路里做。
 3. **不调 LLM**。卡面规则拼装，不消耗云端额度，也不引入"模型看多"这种不可复算的东西。
 
+## 验收口径：已知率，但已知率**不得单独用**（裁定 C 案）
+
+`known = ok + none`。`none`（确认无记录）算已知是有理由的：「涨停但当天没公告」本身
+就是判据，不是缺数据。但**单独报一个 100% 会自我安慰**，因为它把三件事压成了零：
+`pending`（按规则没到）、`partial`（拿到的不可采信）、`unavailable`（取不到）。
+
+所以本模块的验收结论是 `acceptance.verdict` 三档，不看百分比：
+
+| 档 | 条件 | 含义 |
+|---|---|---|
+| `pass` | 主维全部 `ok`/`none` | 两维都拿到了，可以拿去用 |
+| `wait` | 无 unavailable/partial，但有 `pending` | 数据按规则还没到（龙虎榜 T+1），等 |
+| `fail` | 主维出现 `unavailable` 或 `partial` | 取不到或不可采信，这张卡这两维作废 |
+
+百分比（`primary_known_pct` / `all_dims_known_pct`）只作为**附注**出现在同一行，
+必须与四态计数同时出现，禁止单独引用。
+
 ## 与 `jev_graph.minute_profile` 的关系
 
 时间维**直接复用** `minute_profile` 的口径（首次异动 / 一字板 at_open / 封板时刻），
@@ -34,6 +66,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from datetime import datetime
 
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QUANT = os.path.join(STATION, "quant_backtest")
@@ -42,6 +75,12 @@ DAILY_DIR = os.path.join(QUANT, "data", "tushare", "daily")
 SNAP_DIR = os.path.join(QUANT, "data", "tushare", "_jev_snap")
 SEAT_DIR = os.path.join(STATION, "data", "hm_detail")
 TOP_DIR = os.path.join(STATION, "data", "top_list")
+
+# 主维 / 附表（2026-11-13 裁定 A 案）。顺序即展示顺序，主维在前。
+PRIMARY_DIMS = ("flow", "seat")
+AUX_DIMS = ("time", "narrative")
+
+_DIM_LABEL = {"flow": "资金", "seat": "席位", "time": "时间", "narrative": "叙事"}
 
 _STATUS_ZH = {"ok": "有", "partial": "部分（不可采信）", "pending": "待补（T+1）",
               "none": "无该票记录", "unavailable": "取不到"}
@@ -91,6 +130,22 @@ def _mins_local_ro(ts_code: str, day: str):
     sub.attrs["source"] = "local_ro"
     sub.attrs["tbl"] = None
     return sub
+
+
+def _session_open(day, now=None) -> bool:
+    """当日是否**尚未收盘**——用于把「按规则未到」与「取不到」分开。
+
+    收盘终值类数据（`ts_moneyflow`）盘中必然没有，这不是缺数据，是精度定义：
+    它只有在收盘那一刻才成立。若盘中把 `unavailable` 判成 fail，11-16 接盘中
+    时每一张卡都会 fail，而实际上它们只是"还没到"。
+
+    只认"当天 + 未过 15:30"。查历史日一律 False：历史日已收盘，再没有就是真缺。
+    """
+    d = _d8(day)
+    now = now or datetime.now()
+    if d != now.strftime("%Y%m%d"):
+        return False
+    return now.strftime("%H%M") < "1530"
 
 
 def _daily_of(day: str, code: str):
@@ -207,12 +262,19 @@ def _dim_time(code, day, limit_price, pre_close, name, remote=None):
             "data": data, "note": None}
 
 
-def _dim_flow(day, c6):
+def _dim_flow(day, c6, now=None):
     snap = _json_snapshot("flow", day)
     if snap is None:
+        if _session_open(day, now=now):
+            # 盘中：收盘终值还没生成。这是**精度定义**，不是缺数据——
+            # 判成 unavailable 会让每张盘中卡都 fail（11-16 接盘中时的必修）。
+            return {"status": "pending", "precision": "eod",
+                    "source": "ts_moneyflow", "data": None,
+                    "note": ("当日未收盘：资金流是收盘终值，盘中不可用。"
+                             "收盘后同一张卡重跑即有（不需要补采）")}
         return {"status": "unavailable", "precision": "eod",
                 "source": "ts_moneyflow", "data": None,
-                "note": ("无当日资金流快照；补法：一次 build 会落 "
+                "note": ("该日已收盘但无资金流快照；补法：一次 build 会落 "
                          "_jev_snap/flow_%s.json" % _d8(day))}
     v = snap.get(c6)
     if not v:
@@ -299,7 +361,8 @@ def _dim_narrative(day, c6):
 
 
 # ── 组卡 ──────────────────────────────────────────────────
-def build_card(code: str, day: str, remote_mins: bool | None = None) -> dict:
+def build_card(code: str, day: str, remote_mins: bool | None = None,
+               now=None) -> dict:
     """单票单日四维卡。→ dict（见模块头四维表）。
 
     `remote_mins` 控制时间维要不要走远端兜底（`None` = 读环境）。**批量出卡
@@ -321,12 +384,22 @@ def build_card(code: str, day: str, remote_mins: bool | None = None) -> dict:
             name = x.get("name")
             break
 
-    card = {"code": code, "c6": c6, "day": d, "name": name,
-            "close": None, "pre_close": None, "pct": None,
-            "limit": {"is_limit_up": None, "touch_only": None,
-                      "ratio": None, "price": None},
-            "dims": {}, "completeness": {"n_ok": 0, "n_total": 4, "pct": 0.0},
-            "warnings": []}
+    card = {}
+    card["code"] = code
+    card["c6"] = c6
+    card["day"] = d
+    card["name"] = name
+    card["close"] = None
+    card["pre_close"] = None
+    card["pct"] = None
+    card["limit"] = {"is_limit_up": None, "touch_only": None,
+                     "ratio": None, "price": None}
+    card["dims"] = {}
+    card["completeness"] = {"n_ok": 0, "n_total": 4, "pct": 0.0}
+    card["primary"] = {}
+    card["aux"] = {}
+    card["acceptance"] = {}
+    card["warnings"] = []
 
     if daily is None:
         card["warnings"].append("无当日本地日线，无法判定涨停档位")
@@ -353,7 +426,7 @@ def build_card(code: str, day: str, remote_mins: bool | None = None) -> dict:
 
     card["dims"]["time"] = _dim_time(code, d, limit_price, pre_close, name,
                                      remote=remote_mins)
-    card["dims"]["flow"] = _dim_flow(d, c6)
+    card["dims"]["flow"] = _dim_flow(d, c6, now=now)
     card["dims"]["seat"] = _dim_seat(d, code, c6)
     card["dims"]["narrative"] = _dim_narrative(d, c6)
 
@@ -368,7 +441,73 @@ def build_card(code: str, day: str, remote_mins: bool | None = None) -> dict:
     cnt["n_total"] = 4
     cnt["pct_known"] = round(cnt["n_known"] / 4 * 100, 1)
     card["completeness"] = cnt
+
+    # ── 两维主卡（裁定 A）：验收只看 flow + seat ──
+    p = {"known": 0, "unavailable": 0, "pending": 0, "partial": 0,
+         "none": 0, "ok": 0, "dims": {}}
+    for k in PRIMARY_DIMS:
+        s = card["dims"][k]["status"]
+        p["dims"][k] = s
+        if s in ("ok", "none"):
+            p["known"] += 1
+            p[s] += 1
+        elif s in p:
+            p[s] += 1
+    p["n_total"] = len(PRIMARY_DIMS)
+    p["pct_known"] = round(p["known"] / p["n_total"] * 100, 1)
+    card["primary"] = p
+    card["aux"] = {k: card["dims"][k]["status"] for k in AUX_DIMS}
+
+    # ── 验收（裁定 C）：三档判定，不拿百分比当结论 ──
+    card["acceptance"] = {
+        "metric": "primary_known_rate",
+        "known": p["known"], "n_total": p["n_total"], "pct": p["pct_known"],
+        "verdict": _verdict_primary(p),
+        "breakdown": {k: p[k] for k in
+                      ("ok", "none", "pending", "partial", "unavailable")},
+        "reference_all_dims_pct": cnt["pct_known"],
+        "guard": ("已知率不得单独引用：必须与四态计数同行出现；"
+                  "验收看 verdict，不看百分比"),
+    }
     return card
+
+
+def _verdict_primary(p: dict) -> str:
+    """主维三档判定。**`pending` 一律不归入 pass**——「还没到」不等于「没问题」。
+
+    pass  主维全部 ok/none，两维拿到了
+    wait  无 unavailable/partial，但有 pending（龙虎榜 T+1，等就有）
+    fail  主维出现 unavailable 或 partial，这两维对本案作废
+    """
+    if p["unavailable"] or p["partial"]:
+        return "fail"
+    if p["pending"] or p["known"] < p["n_total"]:
+        return "wait"
+    return "pass"
+
+
+def acceptance_summary(cards: list) -> dict:
+    """批量验收汇总。`pct_pass` 是主指标；两个 known 百分比只作附注。
+
+    为什么不用「已知率」当主指标（裁定 C 的反面）：已知率把 `pending` 之外的三态
+    合成一个分母，一张卡「资金有、席位取不到」和「资金有、席位没赶上」在百分比上
+    可能看起来差不多，但一张该等、一张该修。`pass/wait/fail` 分档才分得开。
+    """
+    n = len(cards)
+    if not n:
+        return {"n": 0, "pass": 0, "wait": 0, "fail": 0, "pct_pass": 0.0,
+                "guard": "无卡，不出验收结论"}
+    v = {"pass": 0, "wait": 0, "fail": 0}
+    for c in cards:
+        v[c["acceptance"]["verdict"]] = v.get(c["acceptance"]["verdict"], 0) + 1
+    pk = sum(c["primary"]["known"] for c in cards)
+    ak = sum(c["completeness"]["n_known"] for c in cards)
+    return {"n": n, "pass": v["pass"], "wait": v["wait"], "fail": v["fail"],
+            "pct_pass": round(v["pass"] / n * 100, 1),
+            "primary_known_pct": round(pk / (n * len(PRIMARY_DIMS)) * 100, 1),
+            "all_dims_known_pct": round(ak / (n * 4) * 100, 1),
+            "guard": ("all_dims_known_pct 只作参考（含附表两维，受分钟覆盖拖累）；"
+                      "验收主指标是 pct_pass")}
 
 
 def candidate_codes(day: str, limit_up_only: bool = True) -> list:
@@ -442,31 +581,60 @@ def candidate_codes(day: str, limit_up_only: bool = True) -> list:
     return out
 
 
+def _verdict_zh(v) -> str:
+    return {"pass": "通过", "wait": "等数据（T+1）", "fail": "不通过"}.get(v, str(v))
+
+
 def render_markdown(card: dict) -> str:
-    """一张卡的文本面。**只陈述，不结论**。"""
+    """一张卡的文本面。**只陈述，不结论**。
+
+    主维在前、附表在后，且显式标注「附表不参与验收」——不标的话，读者会把
+    「时间维取不到」当成这张卡的质量问题，而它其实是采集层的覆盖问题。
+    """
     L = []
     lim = card.get("limit") or {}
     tag = "涨停" if lim.get("is_limit_up") else ("触板未封" if lim.get("touch_only") else "非涨停")
     L.append("## %s %s · %s · %s" % (card["code"], card.get("name") or "-",
                                      card["day"], tag))
     L.append("")
+    ac = card.get("acceptance") or {}
+    pr = card.get("primary") or {}
+    cp = card["completeness"]
     L.append("| 项 | 值 |")
     L.append("|---|---|")
     L.append("| 收盘 / 昨收 | %s / %s |" % (card.get("close"), card.get("pre_close")))
     L.append("| 涨幅 | %s%% |" % card.get("pct"))
     L.append("| 涨停价（档位 %s） | %s |"
              % (lim.get("ratio"), lim.get("price")))
-    cp = card["completeness"]
-    L.append("| 完整度 | 已知 %d/4（有值 %d · 确认无 %d · 部分 %d · 待补 %d · 取不到 %d） |"
-             % (cp["n_known"], cp["ok"], cp["none"], cp["partial"],
-                cp["pending"], cp["unavailable"]))
+    L.append("| 验收（主维：资金+席位） | **%s**｜已知 %d/%d（%s%%） |"
+             % (_verdict_zh(ac.get("verdict")), pr.get("known", 0),
+                pr.get("n_total", len(PRIMARY_DIMS)), pr.get("pct_known")))
+    L.append("| 四态明细 | 有值 %d · 确认无 %d · 部分 %d · 待补 %d · 取不到 %d"
+             "（全四维，含附表） |"
+             % (cp["ok"], cp["none"], cp["partial"], cp["pending"],
+                cp["unavailable"]))
+    L.append("")
+    L.append("**主维**（参与验收）")
     L.append("")
     L.append("| 维 | 状态 | 精度 | 来源 | 数据 |")
     L.append("|---|---|---|---|---|")
-    for k in ("time", "flow", "seat", "narrative"):
+    for k in PRIMARY_DIMS:
         d = card["dims"].get(k) or {}
-        L.append("| %s | %s | %s | %s | %s |"
-                 % (k, _STATUS_ZH.get(d.get("status"), d.get("status")),
+        L.append("| %s %s | %s | %s | %s | %s |"
+                 % (_DIM_LABEL.get(k, k), k,
+                    _STATUS_ZH.get(d.get("status"), d.get("status")),
+                    d.get("precision"), d.get("source"),
+                    _compact(d.get("data"))))
+    L.append("")
+    L.append("附表（**不参与验收**：精度天然低于主维）")
+    L.append("")
+    L.append("| 维 | 状态 | 精度 | 来源 | 数据 |")
+    L.append("|---|---|---|---|---|")
+    for k in AUX_DIMS:
+        d = card["dims"].get(k) or {}
+        L.append("| %s %s | %s | %s | %s | %s |"
+                 % (_DIM_LABEL.get(k, k), k,
+                    _STATUS_ZH.get(d.get("status"), d.get("status")),
                     d.get("precision"), d.get("source"),
                     _compact(d.get("data"))))
     notes = [d.get("note") for k, d in card["dims"].items() if d.get("note")]
@@ -538,11 +706,11 @@ def _main(argv):
             fn = "%s_%s.%s" % (c["day"], c["c6"], "json" if a.json else "md")
             with open(os.path.join(a.out, fn), "w", encoding="utf-8") as f:
                 f.write(txt + "\n")
-    n = len(cards)
-    ok = sum(1 for c in cards if c["completeness"]["n_known"] >= 3)
-    pure = sum(1 for c in cards if c["completeness"]["ok"] >= 3)
-    print("== %d 张卡：已知≥3维 %d 张（%.0f%%）｜有值≥3维 %d 张（%.0f%%）"
-          % (n, ok, ok / n * 100 if n else 0, pure, pure / n * 100 if n else 0))
+    s = acceptance_summary(cards)
+    print("== %d 张卡｜主维验收：通过 %d · 等数据 %d · 不通过 %d（通过率 %s%%）"
+          % (s["n"], s["pass"], s["wait"], s["fail"], s["pct_pass"]))
+    print("   参考（不得单独引用）：主维已知率 %s%%｜全四维已知率 %s%%（含附表，"
+          "受小票分钟覆盖拖累）" % (s["primary_known_pct"], s["all_dims_known_pct"]))
     return 0
 
 
