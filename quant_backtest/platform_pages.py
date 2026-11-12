@@ -591,6 +591,45 @@ h1{font-size:20px;margin:0 0 4px;letter-spacing:.2px}
 .foot a:hover{text-decoration:underline}
 .note{margin:14px 0 0;padding:11px 13px;border-radius:8px;background:#101821;
  border-left:3px solid #38506b;color:#94a3b8;font-size:12px;line-height:1.75}
+/* 盘前结构大卡：进门第一眼就要看见「今天在什么位置」，不是一串入口 */
+.zenhero{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start;
+ padding:14px 16px;border-radius:12px;background:#0f1720;
+ border:1px solid #26374d;margin:14px 0 4px;text-decoration:none;color:inherit;
+ transition:.14s}
+.zenhero:hover{background:#13202e;border-color:#3d5b80}
+.zenhero .zf{border:1px solid #1e2733;border-radius:8px;overflow:hidden;
+ background:#0e141b}
+.zenhero .zh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:0 0 2px}
+.zenhero .zh .t{font-size:16px;font-weight:600;color:#e6edf3}
+.zenhero .zh .d{font-size:11px;color:#7b8698}
+.zenhero .stage{display:inline-block;font-size:12px;padding:3px 10px;border-radius:11px;
+ background:#1b2532;border:1px solid #2f4056;color:#a8bdd6;margin:8px 0 0}
+.zenhero .px{font-size:26px;font-weight:700;color:#e6edf3;line-height:1.2;margin:6px 0 0;
+ letter-spacing:.4px}
+.zenhero .px small{font-size:12px;font-weight:400;color:#7b8698;margin-left:5px}
+.zenhero .lv{margin:9px 0 0}
+.zenhero .lv .r{display:flex;justify-content:space-between;gap:8px;font-size:12px;
+ padding:3px 0;border-bottom:1px dashed #1e2733;color:#9fb0c4}
+.zenhero .lv .r b{color:#dfe7f0;font-weight:600;white-space:nowrap}
+.zenhero .say{font-size:12px;color:#a8b8cc;line-height:1.65;margin:9px 0 0;
+ padding:7px 10px;border-radius:7px;background:#0b1119;border-left:2px solid #3a5a86}
+.zenhero .go{font-size:12px;color:#58a6ff;margin-top:9px}
+.zenhero .chartwrap{border:1px solid #1e2733;border-radius:8px;overflow:hidden;
+ background:#0e141b}
+.zenhero .chartlg{display:flex;gap:13px;flex-wrap:wrap;margin:7px 0 0;
+ font-size:11px;color:#8a93a3}
+.zenhero .chartlg i{display:inline-block;width:8px;height:8px;border-radius:2px;
+ margin-right:5px;vertical-align:0}
+/* 手机上这张图是进门第一眼的东西，等比缩会把端点价压成 3px 的字。
+   保留近原尺寸、图内横向滑动，且初始停在右端（最新一根）。
+   注意 svg 外面还有一层 .chartwrap（overflow:hidden）——滚动容器要落在那层，
+   否则 svg 的 min-width 被它裁掉，滑不动（11-12 实测 sw==cw）。 */
+@media (max-width:620px){
+ .zenhero .zf .chartwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  border-radius:8px;direction:rtl}
+ .zenhero .zf svg{min-width:620px;direction:ltr}
+}
+@media (max-width:760px){.zenhero{grid-template-columns:1fr;gap:10px}}
 @media (max-width:520px){.grid{grid-template-columns:1fr 1fr;gap:8px}
  .hero-grid{grid-template-columns:1fr}
  .card{padding:10px}.card .t{font-size:13px}
@@ -625,6 +664,51 @@ def collect():
     return rows
 
 
+def zen_hero_card():
+    """进门第一屏的盘前结构卡：读盘前产物里的 zen（11-12 老田：进去就要看见图）。
+
+    数据源 reports/premarket_latest.json 的 zen 段——与盘前页零+节**同一份**，
+    不重算：两处若各算一次，图上框与文字迟早讲成两个中枢（11-12 已踩过）。
+    全 soft：盘前页没跑（休市/失败）或 zen 为空时返回空串，门面照常出。
+    """
+    p = os.path.join(REPORTS, "premarket_latest.json")
+    try:
+        with open(p, encoding="utf-8") as f:
+            z = (json.load(f) or {}).get("zen") or {}
+    except Exception:
+        return ""
+    if not z.get("svg") or not z.get("levels"):
+        return ""
+
+    close = z["close"]
+    lv = "".join(
+        '<div class="r"><span>%s</span><b>%.0f <span style="color:%s">%+.1f%%</span></b></div>'
+        % (x["label"], x["v"],
+           "#e5484d" if close >= x["v"] else "#30a46c",
+           (close / x["v"] - 1) * 100)
+        for x in z["levels"]
+    )
+    # 只取结论最后一段（「明日只看三处」），前面段落留给盘前页——门面是目录，
+    # 不是正文，堆五段文字就没人往下看入口了
+    say = (z.get("paras") or [""])[-1]
+    asof = str(z.get("asof") or "")
+    asof_s = ("%s-%s-%s" % (asof[:4], asof[4:6], asof[6:8])) if len(asof) == 8 else asof
+    return (
+        '<a class="card zenhero" href="premarket.html#zen">'
+        '<div class="zf">%s</div>'
+        '<div class="zi">'
+        '<div class="zh"><span class="t">盘前结构 · 上证日线</span>'
+        '<span class="d">数据 %s · 与全池同一套结构引擎</span></div>'
+        '<div class="stage">%s</div>'
+        '<div class="px">%.0f<small>现价</small></div>'
+        '<div class="lv">%s</div>'
+        '<div class="say">%s</div>'
+        '<div class="go">点进去看完整结构解读 →</div>'
+        "</div></a>"
+        % (z["svg"], asof_s, z.get("stage") or "", close, lv, say)
+    )
+
+
 def build_home(rows=None):
     rows = rows or collect()
     by_dom = {}
@@ -653,6 +737,13 @@ def build_home(rows=None):
                  % (worst["level"], worst["item"]["title"], worst["note"]))
     h.append('<span class="tchip">生成 %s</span>' % datetime.now().strftime("%m-%d %H:%M"))
     h.append('</div>')
+
+    # 进门第一屏先给结构，再给入口：老田 11-12「每天的那个页面进去要有盘前的
+    # 缠论分析图」。图与盘前页同源，点进去看全文；取不到就不出这块（soft）。
+    zh = zen_hero_card()
+    if zh:
+        h.append(zh)
+
 
     # HERO 第一屏：四张核心大卡（hero=True），进门先回答「今天该看什么」。
     # 大卡也是 class="card"，sharecode 注入与 h5_pack 门面卡片自检都兼容。
@@ -728,8 +819,12 @@ def build_home(rows=None):
     for(var i=0;i<cards.length;i++){
       var a = cards[i], h = a.getAttribute('href');
       if(!h || h.indexOf('sharecode=') >= 0) continue;
+      // 带锚点的（premarket.html#zen）必须把 query 插在 # 之前：
+      // 拼到 # 后面就成 fragment 的一部分，线上逐请求校验拿不到 sharecode → 403
+      var hi = h.indexOf('#'), hash = '';
+      if(hi >= 0){ hash = h.slice(hi); h = h.slice(0, hi); }
       a.setAttribute('href', h + (h.indexOf('?')<0 ? '?' : '&')
-                     + 'sharecode=' + encodeURIComponent(sc));
+                     + 'sharecode=' + encodeURIComponent(sc) + hash);
     }
   }
 

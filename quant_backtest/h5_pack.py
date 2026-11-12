@@ -138,7 +138,8 @@ def verify(strict=True):
     htxt = open(home, encoding="utf-8", errors="ignore").read()
     # hero 大卡也是 class="card ..."（card hero），放宽匹配
     cards = re.findall(r'<a class="card[^"]*" href="([^"]+)"', htxt)
-    miss = [c for c in cards if c.split("?")[0] not in have]
+    # 去掉 query 与锚点再比文件：premarket.html#zen 指向的是 premarket.html
+    miss = [c for c in cards if c.split("?")[0].split("#")[0] not in have]
     if miss:
         for c in miss[:6]:
             log("[fail] 门面卡片指向 %s，文件不存在" % c)

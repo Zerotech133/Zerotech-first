@@ -1683,91 +1683,160 @@ def deep_verdict(data, w=None):
     return out
 
 
-def _zen_svg(bars, bis, pvs, n_disp=90, W=560, H=170):
-    """说禅配图：近 n_disp 根 K 线 + 中枢矩形（虚线蓝）+ 笔折线（金）。
+def _zen_svg(bars, bis, pvs, n_disp=90, W=780, H=300, mini=False):
+    """盘前结构图：与账本 drawChart 同一套视觉口径。
 
-    中枢/笔取自全窗口结构，超出显示窗的端点钳到画布边缘。
+    K 线打底（涨红跌绿）· 黄色折线连笔 · 末 5 个笔端点标价 ·
+    中枢框（末中枢实线亮色，其余虚线暗色）· ZG/ZD 右延虚线 + 价格轴 ·
+    现价蓝虚线。价格轴取对数——否则 3 倍价差会把中枢压成一条线。
+
+    宽度走 viewBox 自适应（手机端整图缩放，不裁切）。
     """
+    if not bars:
+        return ""
     disp = bars[-n_disp:]
-    d0 = disp[0]["dt"]
-    dx = {b["dt"]: i for i, b in enumerate(disp)}
-    lo = min(b["l"] for b in disp)
-    hi = max(b["h"] for b in disp)
-    pad = (hi - lo) * 0.06
-    lo -= pad
-    hi += pad
+    dx = {int(b["dt"]): i for i, b in enumerate(disp)}
+    n = len(disp)
+    if n < 20:
+        return ""
+    PL, PR, PT, PB = (6, 40, 12, 12) if mini else (10, 62, 18, 18)
+    cw = (W - PL - PR) / float(n)
 
-    def X(dt):
-        i = dx.get(int(dt))
-        return None if i is None else 6 + i * (W - 12) / (len(disp) - 1)
+    hi = max(b["h"] for b in disp)
+    lo = min(b["l"] for b in disp)
+    # 纵轴只按 K 线 + 末中枢定：早期中枢价位若远离现价，纳入会把整图压扁
+    if pvs:
+        hi = max(hi, float(pvs[-1]["zg"]))
+        lo = min(lo, float(pvs[-1]["zd"]))
+    pad = (hi - lo) * 0.08 or 1.0
+    hi += pad
+    lo -= pad
+
+    def X(i):
+        return PL + (i + 0.5) * cw
 
     def Y(v):
-        return H - 14 - (v - lo) / (hi - lo) * (H - 34)
+        v = max(float(v), 1e-6)
+        return (PT + (math.log(hi) - math.log(v))
+                / (math.log(hi) - math.log(lo)) * (H - PT - PB))
 
-    cw = max(1.5, (W - 12) / len(disp) * 0.55)
-    el = []
-    for b in disp:
-        x = X(b["dt"])
-        col = "#e35d5d" if b["c"] >= b["o"] else "#3aa76d"
-        el.append(
-            "<line x1='%g' y1='%g' x2='%g' y2='%g' stroke='%s' "
-            "stroke-width='1'/>" % (x, Y(b["h"]), x, Y(b["l"]), col)
-        )
-        y1, y2 = Y(max(b["o"], b["c"])), Y(min(b["o"], b["c"]))
-        el.append(
-            "<rect x='%g' y='%g' width='%g' height='%g' fill='%s'/>"
-            % (x - cw / 2, y1, cw, max(0.8, y2 - y1), col)
-        )
-    # 中枢矩形
-    for q in pvs:
-        x1, x2 = X(q["s_dt"]), X(q["e_dt"])
-        if x2 is None and x1 is None:
+    FS = 8 if mini else 9
+    el = ["<rect x='0' y='0' width='%d' height='%d' fill='#0e141b'/>" % (W, H)]
+
+    def TX(x, y, txt, fill, size=None, anchor="start", weight=None):
+        """文字统一加深色描边：端点价常压在 K 线/框线上，无描边看不清。"""
+        return ("<text x='%.1f' y='%.1f' fill='%s' font-size='%s'"
+                " text-anchor='%s'%s paint-order='stroke' stroke='#0e141b'"
+                " stroke-width='2.6' stroke-linejoin='round'>%s</text>"
+                % (x, y, fill, size or FS, anchor,
+                   " font-weight='%s'" % weight if weight else "", txt))
+
+    # ── 中枢框（先画，压在 K 线之下）──
+    for zi, q in enumerate(pvs):
+        i1 = dx.get(int(q["e_dt"]))
+        if i1 is None:                       # 终点在窗外：这个中枢不进图
             continue
-        x1 = 6 if x1 is None else x1
-        x2 = W - 6 if x2 is None else x2
-        el.append(
-            "<rect x='%g' y='%g' width='%g' height='%g' "
-            "fill='rgba(90,130,190,0.10)' stroke='#5a82be' stroke-width='0.8' "
-            "stroke-dasharray='2,2'/>"
-            % (x1, Y(q["zg"]), max(4, x2 - x1), Y(q["zd"]) - Y(q["zg"]))
-        )
-    q = pvs[-1]
-    lx = min((X(q["e_dt"]) or (W - 6)) + 2, W - 46)
-    el.append(
-        "<text x='%g' y='%g' font-size='9' fill='#8fb0dd'>zg %.0f</text>"
-        % (lx, Y(q["zg"]) - 2, q["zg"])
-    )
-    el.append(
-        "<text x='%g' y='%g' font-size='9' fill='#8fb0dd'>zd %.0f</text>"
-        % (lx, Y(q["zd"]) + 10, q["zd"])
-    )
-    # 笔折线（相邻笔共享端点，去重）
-    pts = []
+        i0 = dx.get(int(q["s_dt"]))
+        if i0 is None:
+            i0 = 0                           # 起点在窗左之外：半截框，从左沿起
+        if i1 <= i0:
+            continue
+        yA, yB = Y(q["zg"]), Y(q["zd"])
+        if yB - yA < 0.5:                    # 价格带压成一条线，画了也看不懂
+            continue
+        last = (zi == len(pvs) - 1)
+        cl = "#8b95a5" if last else "#3a4a5c"
+        x0 = max(PL, X(i0) - cw * 0.5)
+        x1 = X(i1) + cw * 0.5
+        el.append("<rect x='%.1f' y='%.1f' width='%.1f' height='%.1f'"
+                  " fill='%s18' stroke='%s' stroke-width='1'"
+                  " stroke-dasharray='%s'/>"
+                  % (x0, yA, x1 - x0, yB - yA, cl, cl, "0" if last else "5 3"))
+        for yy in (yA, yB):
+            el.append("<line x1='%.1f' y1='%.1f' x2='%d' y2='%.1f' stroke='%s'"
+                      " stroke-width='0.8' stroke-dasharray='4 3'"
+                      " opacity='0.6'/>" % (x0, yy, W - PR, yy, cl))
+        if last and not mini:
+            el.append(TX(W - PR + 3, yA - 3, "%.0f ZG" % q["zg"], cl, 9))
+            el.append(TX(W - PR + 3, yB + 10, "%.0f ZD" % q["zd"], cl, 9))
+
+    # ── K 线（涨红跌绿，中国习惯）──
+    for i, b in enumerate(disp):
+        up = b["c"] >= b["o"]
+        col = "#e5484d" if up else "#30a46c"
+        cx = X(i)
+        el.append("<line x1='%.1f' y1='%.1f' x2='%.1f' y2='%.1f' stroke='%s'"
+                  " stroke-width='0.9'/>"
+                  % (cx, Y(b["h"]), cx, Y(b["l"]), col))
+        bt, bb = Y(max(b["o"], b["c"])), Y(min(b["o"], b["c"]))
+        el.append("<rect x='%.1f' y='%.1f' width='%.1f' height='%.1f'"
+                  " fill='%s' stroke='%s' stroke-width='0.7'/>"
+                  % (cx - cw * 0.3, bt, cw * 0.6, max(0.8, bb - bt),
+                     col if up else "none", col))
+
+    # ── 笔：黄折线 + 端点圆点 + 末 5 个端点标价 ──
+    segs = []
     for x in bis:
-        if int(x["e_dt"]) < d0:
-            continue
-        sx, ex = X(x["s_dt"]), X(x["e_dt"])
-        sx = 6 if sx is None else sx
-        ex = W - 6 if ex is None else ex
-        p1 = (sx, Y(x["s_price"]))
-        p2 = (ex, Y(x["e_price"]))
-        if not pts or pts[-1] != p1:
-            pts.append(p1)
-        pts.append(p2)
-    if pts:
-        el.append(
-            "<polyline points='%s' fill='none' stroke='#d8b45a' "
-            "stroke-width='1.6'/>" % " ".join("%g,%g" % t for t in pts)
-        )
-    el.append(
-        "<text x='6' y='10' font-size='9' fill='#7b8698'>%.0f</text>" % hi
-    )
-    el.append(
-        "<text x='6' y='%g' font-size='9' fill='#7b8698'>%.0f</text>"
-        % (H - 2, lo)
-    )
-    return ("<svg width='%d' height='%d' style='margin-top:6px;display:block'>"
-            "%s</svg>" % (W, H, "".join(el)))
+        i0, i1 = dx.get(int(x["s_dt"])), dx.get(int(x["e_dt"]))
+        if i0 is None or i1 is None or i1 <= i0:
+            continue                        # 只画完整落在窗内的笔，截断会画成尖刺
+        segs.append((i0, i1, float(x["s_price"]), float(x["e_price"])))
+    if segs:
+        pts = ["%.1f,%.1f" % (X(s[0]), Y(s[2])) for s in segs]
+        pts.append("%.1f,%.1f" % (X(segs[-1][1]), Y(segs[-1][3])))
+        el.append("<polyline points='%s' fill='none' stroke='#f5c542'"
+                  " stroke-width='1.5' stroke-linejoin='round'"
+                  " opacity='0.95'/>" % " ".join(pts))
+        keep = 3 if mini else 5
+        for j, s in enumerate(segs):
+            yv = Y(s[2])
+            if j >= len(segs) - keep:
+                dy = -7 if j % 2 == 0 else 13
+                # 端点常正落在中枢沿上（ZG/ZD 就是笔重叠区），与沿线太近就往下让
+                for q in pvs[-2:]:
+                    if abs(Y(q["zg"]) - yv) < 9 or abs(Y(q["zd"]) - yv) < 9:
+                        dy = 15
+                el.append("<circle cx='%.1f' cy='%.1f' r='1.7'"
+                          " fill='#f5c542'/>" % (X(s[0]), yv))
+                el.append(TX(X(s[0]), yv + dy, "%.0f" % s[2], "#f5c542",
+                             FS - 0.5, "middle"))
+        ly = Y(segs[-1][3])
+        el.append("<circle cx='%.1f' cy='%.1f' r='1.9' fill='#f5c542'/>"
+                  % (X(segs[-1][1]), ly))
+        el.append(TX(X(segs[-1][1]), ly - 8, "%.0f" % segs[-1][3], "#f5c542",
+                     9, "middle", "700"))
+
+    # ── 现价线 ──
+    cur = disp[-1]["c"]
+    yc = Y(cur)
+    el.append("<line x1='%d' y1='%.1f' x2='%d' y2='%.1f' stroke='#4f8fe6'"
+              " stroke-width='0.9' stroke-dasharray='2 2'/>"
+              % (PL, yc, W - PR, yc))
+    if mini:
+        el.append(TX(PL + 2, yc - 3, "%.0f" % cur, "#7fb3ff", 8))
+    else:
+        lbl = "现价 %.0f" % cur
+        el.append("<rect x='%.1f' y='%.1f' width='%.1f' height='13'"
+                  " fill='#0e141b' opacity='0.82' rx='2'/>"
+                  % (PL + 2, yc - 14, len(lbl) * 7.6 + 4))
+        el.append(TX(PL + 4, yc - 4, lbl, "#7fb3ff", 9))
+
+    if not mini:
+        el.append(TX(PL, H - 4, str(disp[0]["dt"]), "#6b7787", 9))
+        el.append(TX(W - PR, H - 4, str(disp[-1]["dt"]), "#6b7787", 9, "end"))
+
+    svg = ("<svg viewBox='0 0 %d %d' preserveAspectRatio='xMidYMid meet'"
+           " style='width:100%%;height:auto;display:block'>%s</svg>"
+           % (W, H, "".join(el)))
+    if mini:
+        return svg
+    return ("<div class='chartwrap'>%s</div>"
+            "<div class='chartlg'>"
+            "<span><i style='background:#e5484d'></i>阳线</span>"
+            "<span><i style='background:#30a46c'></i>阴线</span>"
+            "<span><i style='background:#f5c542'></i>笔（端点价为黄数字）</span>"
+            "<span><i style='background:#8b95a5'></i>中枢框（ZG/ZD）</span>"
+            "<span><i style='background:#4f8fe6'></i>最新收盘</span></div>" % svg)
 
 
 def zen_market(win_start="20240101", n_disp=90):
@@ -1963,6 +2032,26 @@ position:relative;overflow:hidden}
 .hrow .tr i{position:absolute;top:0;height:100%;border-radius:3px}
 .hrow .vv{width:80px;flex:none;font-weight:600;font-size:12.5px}
 .hfact{margin:0 0 9px 166px}
+/* 结构图：与账本同一套口径（chartwrap/chartlg 同名，视觉一致） */
+.chartwrap{border:1px solid #1e2733;border-radius:8px;overflow:hidden;
+background:#0e141b;margin:6px 0 0}
+.chartlg{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 2px;
+font-size:11.5px;color:#8a93a3}
+.chartlg i{display:inline-block;width:9px;height:9px;border-radius:2px;
+margin-right:5px;vertical-align:-1px}
+/* 手机端：宽表格是这页天生的（龙虎榜十几列），压字号 + 允许断词，
+   否则整页横向溢出，第一屏的图跟着被拖出屏幕（11-12 实测 390→516px） */
+@media (max-width:620px){
+ table{font-size:11px}
+ th,td{padding:2px 3px;white-space:normal;word-break:break-word}
+ /* 结构图不缩到看不清：390px 下等比缩会把端点价压成 3px 的字。
+    保留近原尺寸、图内横向滑动——横滑看 K 线比缩成一条线有用。
+    direction:rtl 让初始滚动停在右端（最新那根），图内 svg 再转回 ltr：
+    盘前要看的是「现在在哪」，不该一进来先看三个月前的历史。 */
+ .chartwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;direction:rtl}
+ .chartwrap svg{min-width:660px;direction:ltr}
+ .chartlg{font-size:10.5px;gap:10px}
+}
 </style>"""
 
 
@@ -2196,7 +2285,8 @@ def write_page(data, snap):
         parts.append(
             "<div class='env'><b>近 %d 日倾向轨迹</b>（今日 %s，%d 日中位 %s，"
             "区间 %s ~ %s，%d 日样本）<br>"
-            "<svg width='%d' height='%d' style='margin-top:6px'>%s"
+            "<svg viewBox='0 0 %d %d' preserveAspectRatio='xMidYMid meet' "
+            "style='width:100%%;height:auto;display:block;margin-top:6px'>%s"
             "<polyline points='%s' fill='none' stroke='%s' stroke-width='2'/>"
             "%s</svg><div class='dim'>今日分位：历史近 10 日中排第 %s%%"
             "（越高代表越接近近期乐观极值，别把高位当常态）</div></div>"
@@ -3160,6 +3250,29 @@ def write_page(data, snap):
         # 互跳由 ☰ 域内下拉承担
         f.write(RR._page("盘前分析", RR._top_nav("pre") + "".join(parts)))
     print("PAGE premarket.html")
+    _sync_platform()
+
+
+def _sync_platform():
+    """盘前页写完后立刻推进发布目录（老田 11-12「每天进去要有盘前结构图」）。
+
+    原链路只有 18:30 的 h5_pack 会把 reports/ 拷进 h5_daily/，而盘前页是
+    08:20 生成的 —— 早上点开线上看到的是**昨天**那张图，图再好也白搭。
+    这里补一次单页修补 + 门面重建（门面卡片读的 premarket_latest.json
+    也刚写完，两处必然同源）。
+
+    全 soft：这一步失败只记日志，不影响盘前页生成与推送；18:30 的完整打包
+    幂等覆盖，晚到的修补不会造成状态撕裂。
+    """
+    try:
+        import platform_pages as PP
+
+        item = next(i for i in PP.CATALOG if i.get("out") == "premarket.html")
+        out, _st = PP.patch_one(item)
+        PP.build_home()
+        print("SYNC %s + index.html" % os.path.basename(out))
+    except Exception as exc:  # noqa: BLE001 — 页面同步失败不能挡盘前
+        logging.getLogger(__name__).warning("平台同步跳过（soft）: %s", exc)
 
 
 def _lark_exe():
