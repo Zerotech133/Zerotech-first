@@ -29,6 +29,7 @@ import time
 
 SRC_WT = 'tools/git-hooks/pre-commit-worktree-guard.sh'
 SRC_EOL = 'tools/git-hooks/pre-commit-eol-guard.sh'
+SRC_ID = 'tools/git-hooks/pre-commit-id-guard.sh'
 
 # 每块一对标记。标记必须互不为前缀，否则剥离时会互相误伤：
 #   '# <<< [WB-GUARD]'        与  '# <<< [WB-EOL-GUARD]'   → 前者不是后者的前缀，安全。
@@ -48,6 +49,14 @@ BLOCKS = (
         'src': SRC_EOL,
         'show_mode': False,
         'desc': '判定：git ls-files --eol 的 w/ 字段 vs .gitattributes 的 eol 声明。',
+    },
+    {
+        'key': 'idguard',
+        'begin': '# >>> [WB-ID-GUARD] id 稳定性守卫',
+        'end': '# <<< [WB-ID-GUARD]',
+        'src': SRC_ID,
+        'show_mode': False,
+        'desc': '判定：暂存 .py 是否含裸 hash()（tokenize 精确判定，排除 hashlib/注释/字符串/属性调用）。默认 audit 只告警，WB_ID_GUARD_ENFORCE=1 才阻断。',
     },
 )
 

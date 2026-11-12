@@ -10,6 +10,7 @@
 REG-W-20261108 之后的落点：观测记录写入唯一真源体系的 store，
 与 intel_collector/registry/sources.json（authoritative=true）配套。
 """
+import hashlib
 import os
 import sys
 from datetime import datetime, timezone
@@ -20,6 +21,18 @@ if _INTEL not in sys.path:
     sys.path.insert(0, _INTEL)
 
 DB = os.path.join(_INTEL, "store", "observations.db")
+
+
+def _stable_snapshot_digest(source_id, now):
+    """R-01 确定性快照指纹（替代 Python 内置 hash()）。
+
+    病因同 R22 的 sse id：内置 hash() 按进程加盐，跨进程不稳定——同一
+    (source_id, now) 在两次独立运行会得到不同值，导致观测快照无法回溯/
+    无法幂等。改用 sha256 内容指纹前 16 位十六进制：确定性、跨进程恒定、
+    十六进制形态不会触发手机号类误报。
+    """
+    raw = "%s|%s" % (source_id, now)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
 def record(source_id, ok, got=0, err="", db_path=None):
@@ -40,7 +53,7 @@ def record(source_id, ok, got=0, err="", db_path=None):
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         obs = Observation(
             source_id=source_id,
-            snapshot_id="bridge-%s-%s" % (now[:10], abs(hash((source_id, now))) % 10**8),
+            snapshot_id="bridge-%s-%s" % (now[:10], _stable_snapshot_digest(source_id, now)),
             entity_type="collect_run",
             entity_id=source_id,
             clock=SourceClock(collected_at=now),
