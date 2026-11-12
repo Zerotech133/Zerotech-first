@@ -148,6 +148,55 @@ def _full_asof(tbl, dcol):
     return best
 
 
+def _shrink(tbl, dcol, day):
+    """asof 当天的行数只剩历史中位的一半以下 = 数据萎缩（假绿）。
+
+    为什么必须有这条（2026-11-12 实证）
+    ----------------------------------
+    tdx_sector_daily 不是 10-22 突然停的。**10-13 起每天只剩 3 行**（此前 1119 行），
+    上游每天照常写入、_fetched_at 一直很新、日期一直在前走。所有只看
+    「最后日期 / 有没有新行 / rc」的检查全部通过 —— 一道防线都没响。
+    真实缺口是 21 个交易日，表面上只缺 14 个，前面 8 天里有 3 个板块在「陪着走」。
+
+    判据：**asof 那一天**的行数 / 末片各日行数中位数。低于 50% 报警。
+    · 必须按 asof 取，不能取末片 max：分片不按日期排序，末片最大日期
+      可能是 2021 年某天（ts_top10_floatholders 就这么误报过）。
+    · asof 不在末片里就放弃判断（宁可漏报，不可误报）。
+    · 门槛 med>=10 排除「一天一行」的表（宏观/日历）。
+    """
+    import pandas as pd
+    import tdx_read as T
+    parts = [str(x) for x in T._parts(tbl)]
+    if not parts or not dcol or not day:
+        return None
+    try:
+        # 分片不按日期排序，asof 那天可能不在最后一片里（_fast_asof 也是读末两片
+        # 才拿到的），所以末两片都试一遍。
+        s = None
+        for p in parts[-2:][::-1]:
+            try:
+                t = pd.read_parquet(p, columns=[dcol])[dcol].astype(str).map(_norm)
+            except Exception:
+                continue
+            if day in t.dropna().values:
+                s = t
+                break
+        if s is None:
+            return None
+    except Exception:
+        return None
+    v = s.dropna().value_counts()
+    if len(v) < 5 or day not in v.index:
+        return None
+    med = float(v.median())
+    if med < 10:
+        return None
+    rows = int(v[day])
+    ratio = round(rows / med, 3)
+    return {"day": day, "rows": rows, "median": int(med), "ratio": ratio,
+            "shrunk": ratio < 0.5}
+
+
 # ── 上游探针 ─────────────────────────────────────────────
 _UP_CACHE = os.path.join(REPORTS, "_upstream_cache.json")
 _UP_TTL = 1800
@@ -407,6 +456,15 @@ def check(probe=True, only=None, now=None, refresh_consumers=False):
         else:
             status = "dead"
         rec.update({"asof": asof, "lag": lag, "status": status})
+        # 假绿探测：日期在走、行数塌了。只对「看着没问题」的表改状态，
+        # 已经红的表也查一次，把萎缩起点挂上去（dead 的成因常常就是这个）。
+        if status in ("ok", "late", "dead"):
+            sh = _shrink(tbl, dcol, asof)
+            if sh:
+                rec["shrink"] = sh
+                if sh["shrunk"] and status in ("ok", "late"):
+                    rec["was_status"] = status
+                    rec["status"] = "shrink"
         return rec
 
     from concurrent.futures import ThreadPoolExecutor
@@ -443,7 +501,7 @@ def _counts(rows):
     return c
 
 
-ALERT = ("contract_bug", "dead", "absent", "reader_gap")
+ALERT = ("contract_bug", "shrink", "dead", "absent", "reader_gap")
 
 
 def _table(items):
@@ -484,8 +542,8 @@ def report(out, show_all=False):
     legacy = [r for r in bad if (r["lag"] is not None) and r["lag"] > 60]
     fresh.sort(key=lambda r: (ALERT.index(r["status"]) if r["status"] in ALERT else 9,
                               -(r["lag"] or 0)))
-    print("\n【近期断供】%d 张（dead=超容差3交易日+ / absent=无分片 / reader_gap=读不出）:"
-          % len(fresh))
+    print("\n【近期断供】%d 张（shrink=日期在走但行数塌了 / dead=超容差3交易日+ / "
+          "absent=无分片 / reader_gap=读不出）:" % len(fresh))
     _table(fresh)
     if legacy:
         print("\n【存量遗留】%d 张（落后 60 个交易日以上，多为一次性快照表，未修）:"
