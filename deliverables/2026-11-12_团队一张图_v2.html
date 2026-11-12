@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<title>零界团队 · 一张图看懂（组织与思路）</title>
+<style>
+  html,body{margin:0;background:#020617;font-family:"Microsoft YaHei","JetBrains Mono",sans-serif}
+  .wrap{max-width:2400px;margin:0 auto;padding:18px}
+  svg{display:block;width:100%;height:auto;background:
+    linear-gradient(rgba(30,41,59,.18) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(30,41,59,.18) 1px,transparent 1px);
+    background-size:40px 40px;border-radius:12px}
+</style></head><body><div class="wrap">
+<svg viewBox="0 0 2400 1660" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arrowG" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#64748b"/></marker></defs>
+<rect x="50" y="620" width="400" height="180" rx="16" fill="#0f172a" stroke="#22d3ee" stroke-width="3"/>
+<text x="78" y="670" fill="#f8fafc" font-size="34" font-weight="700">零界</text>
+<text x="78" y="704" fill="#94a3b8" font-size="17">老田的 AI 助手 · 个人事业 OS</text>
+<text x="78" y="732" fill="#94a3b8" font-size="16">对外叙事：OSINT 情报与数据平台</text>
+<text x="78" y="766" fill="#34d399" font-size="16">1 人 + 5 席指挥部 + 17 部门 / 81 席</text>
+<text x="78" y="790" fill="#fbbf24" font-size="16">当前主线：先收口（入口/承接/账本）</text>
+<rect x="520" y="110" width="300" height="108" rx="12" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="2.5"/>
+<text x="542" y="154" fill="#e2e8f0" font-size="26" font-weight="700">① 指挥与拍板</text>
+<text x="542" y="186" fill="#94a3b8" font-size="16">老田 + 5 席</text>
+<path d="M 450 710.0 C 485.0 710.0, 485.0 164.0, 520 164.0" fill="none" stroke="#22d3ee" stroke-width="3.2" opacity="0.85"/>
+<line x1="820" y1="164.0" x2="880" y2="73.0" stroke="#22d3ee" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="30" width="470" height="86" rx="10" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="2"/>
+<rect x="880" y="30" width="6" height="86" rx="3" fill="#22d3ee" opacity="0.95"/>
+<text x="898" y="58" fill="#e2e8f0" font-size="19" font-weight="700">老田（human）</text>
+<text x="898" y="83" fill="#94a3b8" font-size="13">唯一上级 · 签批 · 冻结令</text>
+<text x="898" y="102" fill="#94a3b8" font-size="13">最终裁决，不直接写代码</text>
+<line x1="820" y1="164.0" x2="880" y2="173.0" stroke="#22d3ee" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="130" width="470" height="86" rx="10" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="2"/>
+<rect x="880" y="130" width="6" height="86" rx="3" fill="#22d3ee" opacity="0.95"/>
+<text x="898" y="158" fill="#e2e8f0" font-size="19" font-weight="700">A0 田丰 · 幕府参谋长</text>
+<text x="898" y="183" fill="#94a3b8" font-size="13">收口 / 派单 26 单 / 汇总</text>
+<text x="898" y="202" fill="#94a3b8" font-size="13">指挥部召集人；A0A 为助理</text>
+<line x1="820" y1="164.0" x2="1400" y2="73.0" stroke="#22d3ee" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="30" width="470" height="86" rx="10" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="2"/>
+<rect x="1400" y="30" width="6" height="86" rx="3" fill="#22d3ee" opacity="0.95"/>
+<text x="1418" y="58" fill="#e2e8f0" font-size="19" font-weight="700">指挥部 5 席</text>
+<text x="1418" y="83" fill="#94a3b8" font-size="13">ZHAOYUN 治理官（编外·持 532 单）</text>
+<text x="1418" y="102" fill="#94a3b8" font-size="13">AI1 军师 · GUANYU 整治 · HUANGZHONG 验收</text>
+<line x1="820" y1="164.0" x2="1400" y2="183.0" stroke="#fb7185" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="140" width="470" height="86" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2" stroke-dasharray="6,4"/>
+<rect x="1400" y="140" width="6" height="86" rx="3" fill="#fb7185" opacity="0.95"/>
+<text x="1418" y="168" fill="#e2e8f0" font-size="19" font-weight="700">⚠ 会议停摆 9 天</text>
+<text x="1418" y="193" fill="#94a3b8" font-size="13">末次 11-03；指令改走会话/文档</text>
+<text x="1418" y="212" fill="#94a3b8" font-size="13">→ 指挥部实为「单线汇报」</text>
+<rect x="520" y="390" width="300" height="108" rx="12" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2.5"/>
+<text x="542" y="434" fill="#e2e8f0" font-size="26" font-weight="700">② 业务一线</text>
+<text x="542" y="466" fill="#94a3b8" font-size="16">4 部门 · 31 席</text>
+<path d="M 450 710.0 C 485.0 710.0, 485.0 444.0, 520 444.0" fill="none" stroke="#34d399" stroke-width="3.2" opacity="0.85"/>
+<line x1="820" y1="444.0" x2="880" y2="343.0" stroke="#34d399" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="300" width="470" height="86" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<rect x="880" y="300" width="6" height="86" rx="3" fill="#34d399" opacity="0.95"/>
+<text x="898" y="328" fill="#e2e8f0" font-size="17" font-weight="700">量化交易部 · 13 席（主力）</text>
+<text x="898" y="351" fill="#94a3b8" font-size="13">09:10–15:10 盯盘；lead D1</text>
+<text x="898" y="370" fill="#94a3b8" font-size="13">1,755 条模型 trace（唯一有真实调用记录）</text>
+<line x1="820" y1="444.0" x2="880" y2="443.0" stroke="#34d399" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="400" width="470" height="86" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<rect x="880" y="400" width="6" height="86" rx="3" fill="#34d399" opacity="0.95"/>
+<text x="898" y="428" fill="#e2e8f0" font-size="19" font-weight="700">情报部 · 11 席</text>
+<text x="898" y="453" fill="#94a3b8" font-size="13">lead INTEL0；10/11 静默</text>
+<text x="898" y="472" fill="#94a3b8" font-size="13">intel_inbox 25 条只收不消费</text>
+<line x1="820" y1="444.0" x2="1400" y2="343.0" stroke="#34d399" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="300" width="470" height="86" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<rect x="1400" y="300" width="6" height="86" rx="3" fill="#34d399" opacity="0.95"/>
+<text x="1418" y="328" fill="#e2e8f0" font-size="19" font-weight="700">数据智能部 · 5 席</text>
+<text x="1418" y="353" fill="#94a3b8" font-size="13">lead DATA1；仅 DATA1 接单 14（末 11-05）</text>
+<text x="1418" y="372" fill="#94a3b8" font-size="13">其余 4 席 30 天零产出</text>
+<line x1="820" y1="444.0" x2="1400" y2="443.0" stroke="#34d399" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="400" width="470" height="86" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<rect x="1400" y="400" width="6" height="86" rx="3" fill="#34d399" opacity="0.95"/>
+<text x="1418" y="428" fill="#e2e8f0" font-size="19" font-weight="700">通信与客户服务部 · 2 席</text>
+<text x="1418" y="453" fill="#94a3b8" font-size="13">飞书 18 模块在跑；inbox 仅 1 条</text>
+<text x="1418" y="472" fill="#94a3b8" font-size="13">客户流断在「无人承接」</text>
+<rect x="520" y="660" width="300" height="108" rx="12" fill="rgba(76,29,149,0.42)" stroke="#a78bfa" stroke-width="2.5"/>
+<text x="542" y="704" fill="#e2e8f0" font-size="26" font-weight="700">③ 研发交付</text>
+<text x="542" y="736" fill="#94a3b8" font-size="16">3 部门 + 矩阵 · 18 席</text>
+<path d="M 450 710.0 C 485.0 710.0, 485.0 714.0, 520 714.0" fill="none" stroke="#a78bfa" stroke-width="3.2" opacity="0.85"/>
+<line x1="820" y1="714.0" x2="880" y2="603.0" stroke="#a78bfa" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="560" width="470" height="86" rx="10" fill="rgba(76,29,149,0.42)" stroke="#a78bfa" stroke-width="2"/>
+<rect x="880" y="560" width="6" height="86" rx="3" fill="#a78bfa" opacity="0.95"/>
+<text x="898" y="588" fill="#e2e8f0" font-size="17" font-weight="700">研发部 · 11 席（ARCH1）</text>
+<text x="898" y="611" fill="#94a3b8" font-size="13">工单主战场；近 30 天仅 W 11/11</text>
+<text x="898" y="630" fill="#94a3b8" font-size="13">分支/worktree/门禁都在这条线</text>
+<line x1="820" y1="714.0" x2="880" y2="703.0" stroke="#a78bfa" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="660" width="470" height="86" rx="10" fill="rgba(76,29,149,0.42)" stroke="#a78bfa" stroke-width="2"/>
+<rect x="880" y="660" width="6" height="86" rx="3" fill="#a78bfa" opacity="0.95"/>
+<text x="898" y="688" fill="#e2e8f0" font-size="19" font-weight="700">质量工程部 · 4 席</text>
+<text x="898" y="713" fill="#94a3b8" font-size="13">QA1 仅 3 单（10-23）</text>
+<text x="898" y="732" fill="#94a3b8" font-size="13">门禁靠脚本，不靠人工 QA</text>
+<line x1="820" y1="714.0" x2="1400" y2="603.0" stroke="#a78bfa" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="560" width="470" height="86" rx="10" fill="rgba(76,29,149,0.42)" stroke="#a78bfa" stroke-width="2"/>
+<rect x="1400" y="560" width="6" height="86" rx="3" fill="#a78bfa" opacity="0.95"/>
+<text x="1418" y="588" fill="#e2e8f0" font-size="19" font-weight="700">产品管理部 · 3 席</text>
+<text x="1418" y="613" fill="#94a3b8" font-size="13">lead PM1；仅 1 单（10-13）</text>
+<text x="1418" y="632" fill="#94a3b8" font-size="13">需求定义能力闲置</text>
+<line x1="820" y1="714.0" x2="1400" y2="703.0" stroke="#a78bfa" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="660" width="470" height="86" rx="10" fill="rgba(76,29,149,0.42)" stroke="#a78bfa" stroke-width="2"/>
+<rect x="1400" y="660" width="6" height="86" rx="3" fill="#a78bfa" opacity="0.95"/>
+<text x="1418" y="688" fill="#e2e8f0" font-size="17" font-weight="700">矩阵项目部门 A / B / C</text>
+<text x="1418" y="711" fill="#94a3b8" font-size="13">回测 3 · 数据治理 2（冻结）· 下版本 3</text>
+<text x="1418" y="730" fill="#94a3b8" font-size="13">跨部门兼职，交付完归建</text>
+<rect x="520" y="940" width="300" height="108" rx="12" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2.5"/>
+<text x="542" y="984" fill="#e2e8f0" font-size="26" font-weight="700">④ 运行与治理</text>
+<text x="542" y="1016" fill="#94a3b8" font-size="16">4 单元 + 2 · 24 席</text>
+<path d="M 450 710.0 C 485.0 710.0, 485.0 994.0, 520 994.0" fill="none" stroke="#fbbf24" stroke-width="3.2" opacity="0.85"/>
+<line x1="820" y1="994.0" x2="880" y2="893.0" stroke="#fbbf24" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="850" width="470" height="86" rx="10" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2"/>
+<rect x="880" y="850" width="6" height="86" rx="3" fill="#fbbf24" opacity="0.95"/>
+<text x="898" y="878" fill="#e2e8f0" font-size="19" font-weight="700">运行体部 · 7 席</text>
+<text x="898" y="903" fill="#94a3b8" font-size="13">JEV 四进程 / 看板 / 桥；7/7 静默</text>
+<text x="898" y="922" fill="#94a3b8" font-size="13">JEV 不在底座，直连 PG</text>
+<line x1="820" y1="994.0" x2="880" y2="993.0" stroke="#fbbf24" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="950" width="470" height="86" rx="10" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2"/>
+<rect x="880" y="950" width="6" height="86" rx="3" fill="#fbbf24" opacity="0.95"/>
+<text x="898" y="978" fill="#e2e8f0" font-size="19" font-weight="700">研究院 · 9 席</text>
+<text x="898" y="1003" fill="#94a3b8" font-size="13">lead ACAD1；指挥部三席（AI1/GUANYU/HUANGZHONG）在此</text>
+<text x="898" y="1022" fill="#94a3b8" font-size="13">8/9 静默，11 月 0 记录</text>
+<line x1="820" y1="994.0" x2="1400" y2="893.0" stroke="#fbbf24" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="850" width="470" height="86" rx="10" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2"/>
+<rect x="1400" y="850" width="6" height="86" rx="3" fill="#fbbf24" opacity="0.95"/>
+<text x="1418" y="878" fill="#e2e8f0" font-size="17" font-weight="700">风控部 · 3 席 / 市场·法务 · 2 席</text>
+<text x="1418" y="901" fill="#94a3b8" font-size="13">RiskGuard 影子运行（19:10）</text>
+<text x="1418" y="920" fill="#94a3b8" font-size="13">市场/法务 0 单；合规未产品化</text>
+<line x1="820" y1="994.0" x2="1400" y2="993.0" stroke="#fbbf24" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="950" width="470" height="86" rx="10" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2"/>
+<rect x="1400" y="950" width="6" height="86" rx="3" fill="#fbbf24" opacity="0.95"/>
+<text x="1418" y="978" fill="#e2e8f0" font-size="17" font-weight="700">直属参谋长线 · 3 席 / 交易部 · 0</text>
+<text x="1418" y="1001" fill="#94a3b8" font-size="13">OPT1 A0 A0A；A0A 兼运行体部</text>
+<text x="1418" y="1020" fill="#94a3b8" font-size="13">交易部已并入量化，工单白名单未更新</text>
+<rect x="520" y="1210" width="300" height="108" rx="12" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2.5"/>
+<text x="542" y="1254" fill="#e2e8f0" font-size="26" font-weight="700">⑤ 底座与账本</text>
+<text x="542" y="1286" fill="#94a3b8" font-size="16">16 账本 · 3 闭环</text>
+<path d="M 450 710.0 C 485.0 710.0, 485.0 1264.0, 520 1264.0" fill="none" stroke="#fb7185" stroke-width="3.2" opacity="0.85"/>
+<line x1="820" y1="1264.0" x2="880" y2="1173.0" stroke="#fb7185" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="1130" width="470" height="86" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2"/>
+<rect x="880" y="1130" width="6" height="86" rx="3" fill="#fb7185" opacity="0.95"/>
+<text x="898" y="1158" fill="#e2e8f0" font-size="19" font-weight="700">A 底座 · 16 个账本载体</text>
+<text x="898" y="1183" fill="#94a3b8" font-size="13">真闭环仅 3：tasks / memory / observability</text>
+<text x="898" y="1202" fill="#94a3b8" font-size="13">其余「落盘 ≠ 被读」</text>
+<line x1="820" y1="1264.0" x2="880" y2="1273.0" stroke="#fb7185" stroke-width="2.4" opacity="0.8"/>
+<rect x="880" y="1230" width="470" height="86" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2" stroke-dasharray="6,4"/>
+<rect x="880" y="1230" width="6" height="86" rx="3" fill="#fb7185" opacity="0.95"/>
+<text x="898" y="1258" fill="#e2e8f0" font-size="19" font-weight="700">冻结与断点</text>
+<text x="898" y="1283" fill="#94a3b8" font-size="13">evidence 停 26 天 / approvals 停 13 天</text>
+<text x="898" y="1302" fill="#94a3b8" font-size="13">inbox 197·3 / outbox webhook 缺 / 8734 黑链</text>
+<line x1="820" y1="1264.0" x2="1400" y2="1173.0" stroke="#fb7185" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="1130" width="470" height="86" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2"/>
+<rect x="1400" y="1130" width="6" height="86" rx="3" fill="#fb7185" opacity="0.95"/>
+<text x="1418" y="1158" fill="#e2e8f0" font-size="19" font-weight="700">业务线接法</text>
+<text x="1418" y="1183" fill="#94a3b8" font-size="13">量化半接 · 采集未接 · 门户读多写 1</text>
+<text x="1418" y="1202" fill="#94a3b8" font-size="13">内容有接线无调用；2 套影子证据</text>
+<line x1="820" y1="1264.0" x2="1400" y2="1273.0" stroke="#fb7185" stroke-width="2.4" opacity="0.8"/>
+<rect x="1400" y="1230" width="470" height="86" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2" stroke-dasharray="6,4"/>
+<rect x="1400" y="1230" width="6" height="86" rx="3" fill="#fb7185" opacity="0.95"/>
+<text x="1418" y="1258" fill="#e2e8f0" font-size="19" font-weight="700">审批三账本</text>
+<text x="1418" y="1283" fill="#94a3b8" font-size="13">engine db / approval_control jsonl / L2</text>
+<text x="1418" y="1302" fill="#94a3b8" font-size="13">「谁批的」跨系统无法核验</text>
+<text x="60" y="58" fill="#f8fafc" font-size="40" font-weight="700">零界团队 · 一张图看懂</text>
+<text x="60" y="96" fill="#94a3b8" font-size="19">谁是决策者 · 谁在干活 · 活怎么走 · 数据落在哪 · 凭什么算完成　（2026-11-12 实测）</text>
+<text x="1970" y="106" fill="#64748b" font-size="15">关键状态 · 实测 11-12</text>
+<rect x="1970" y="120" width="380" height="70" rx="10" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="2"/>
+<text x="1986" y="148" fill="#22d3ee" font-size="18" font-weight="700">编制</text>
+<text x="1986" y="172" fill="#94a3b8" font-size="14">81 席 / 去重 73 人</text>
+<rect x="1970" y="204" width="380" height="70" rx="10" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2"/>
+<text x="1986" y="232" fill="#fbbf24" font-size="18" font-weight="700">静默</text>
+<text x="1986" y="256" fill="#94a3b8" font-size="14">69 / 73 · 30 天零产出 43</text>
+<rect x="1970" y="288" width="380" height="70" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<text x="1986" y="316" fill="#34d399" font-size="18" font-weight="700">真实闭环</text>
+<text x="1986" y="340" fill="#94a3b8" font-size="14">账本 3 / 16 载体</text>
+<rect x="1970" y="372" width="380" height="70" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2"/>
+<text x="1986" y="400" fill="#fb7185" font-size="18" font-weight="700">唯一入口</text>
+<text x="1986" y="424" fill="#94a3b8" font-size="14">8734 黑链（8080 无监听）</text>
+<rect x="40" y="1400" width="2320" height="220" rx="14" fill="#0b1220" stroke="#1e293b" stroke-width="1.5"/>
+<text x="66" y="1438" fill="#f1f5f9" font-size="24" font-weight="700">一条主线（现在唯一真闭环）：任务 → 工单 → 承接 → 交付 → 门链 → 合并</text>
+<text x="2020" y="1438" fill="#fb7185" font-size="17" text-anchor="end">断点：承接人 66/66 空 · inbox 197/3 · 未在册接单 904</text>
+<rect x="60" y="1466" width="350" height="96" rx="10" fill="rgba(8,51,68,0.45)" stroke="#22d3ee" stroke-width="2"/>
+<text x="78" y="1496" fill="#e2e8f0" font-size="20" font-weight="700">① 下达</text>
+<text x="78" y="1520" fill="#94a3b8" font-size="13">老田 / A0 / 看门狗</text>
+<text x="78" y="1541" fill="#94a3b8" font-size="13">会议 · 飞书 · 看门狗</text>
+<line x1="413" y1="1514" x2="431" y2="1514" stroke="#64748b" stroke-width="2" marker-end="url(#arrowG)"/>
+<rect x="434" y="1466" width="350" height="96" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<text x="452" y="1496" fill="#e2e8f0" font-size="20" font-weight="700">② 工单</text>
+<text x="452" y="1520" fill="#94a3b8" font-size="13">devtask new</text>
+<text x="452" y="1541" fill="#94a3b8" font-size="13">TID + worktree + 分支</text>
+<line x1="787" y1="1514" x2="805" y2="1514" stroke="#64748b" stroke-width="2" marker-end="url(#arrowG)"/>
+<rect x="808" y="1466" width="350" height="96" rx="10" fill="rgba(136,19,55,0.40)" stroke="#fb7185" stroke-width="2"/>
+<text x="826" y="1496" fill="#e2e8f0" font-size="20" font-weight="700">③ 承接</text>
+<text x="826" y="1520" fill="#94a3b8" font-size="13">谁建 worktree 谁做</text>
+<text x="826" y="1541" fill="#94a3b8" font-size="13">assigned_agent 应写，实际空</text>
+<line x1="1161" y1="1514" x2="1179" y2="1514" stroke="#64748b" stroke-width="2" marker-end="url(#arrowG)"/>
+<rect x="1182" y="1466" width="350" height="96" rx="10" fill="rgba(6,78,59,0.42)" stroke="#34d399" stroke-width="2"/>
+<text x="1200" y="1496" fill="#e2e8f0" font-size="20" font-weight="700">④ 交付</text>
+<text x="1200" y="1520" fill="#94a3b8" font-size="13">commit + deliverables</text>
+<text x="1200" y="1541" fill="#94a3b8" font-size="13">evidence + 回执 + gate log</text>
+<line x1="1535" y1="1514" x2="1553" y2="1514" stroke="#64748b" stroke-width="2" marker-end="url(#arrowG)"/>
+<rect x="1556" y="1466" width="350" height="96" rx="10" fill="rgba(120,53,15,0.32)" stroke="#fbbf24" stroke-width="2"/>
+<text x="1574" y="1496" fill="#e2e8f0" font-size="20" font-weight="700">⑤ 门链</text>
+<text x="1574" y="1520" fill="#94a3b8" font-size="13">评审 9 项 → fast 9 套件</text>
+<text x="1574" y="1541" fill="#94a3b8" font-size="13">H5 钉扎 → 内核 ADR → 合并窗</text>
+<line x1="1909" y1="1514" x2="1927" y2="1514" stroke="#64748b" stroke-width="2" marker-end="url(#arrowG)"/>
+<rect x="1930" y="1466" width="350" height="96" rx="10" fill="rgba(76,29,149,0.42)" stroke="#a78bfa" stroke-width="2"/>
+<text x="1948" y="1496" fill="#e2e8f0" font-size="20" font-weight="700">⑥ 完成</text>
+<text x="1948" y="1520" fill="#94a3b8" font-size="13">git merge + done</text>
+<text x="1948" y="1541" fill="#94a3b8" font-size="13">回收 worktree；黄忠 observe</text>
+<text x="66" y="1596" fill="#94a3b8" font-size="15">三条旁路：告警流（看门狗自动开单，38/66，真跑）；战略指令流（会议已停，改走会话/文档）；客户流（飞书→inbox，断在无人消费）。验收标准：门禁全绿（硬）＋黄忠 E3 observe（软）＋人工签批（L2/ADR/冻结令）。</text>
+</svg></div></body></html>
