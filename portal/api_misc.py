@@ -104,6 +104,9 @@ def get_containers():
     return res
 def tcp_ok(port, t=0.5):
     # 双栈探测：vite 等开发服务器可能只绑 IPv6 ::1
+    # 单栈超时上限 0.2s：死端口在 Windows 双栈都会吃满 timeout，
+    # 冷启骨架一次探 4 个端口曾累计 1s+，拖破 overview 冷启 <0.5s 契约。
+    t = min(t, 0.2)
     for host in ("127.0.0.1", "::1"):
         try:
             s = socket.create_connection((host, port), timeout=t)
