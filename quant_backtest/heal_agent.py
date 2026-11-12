@@ -84,7 +84,12 @@ SWITCH_CANDIDATE = {
 
 POST_CLOSE_HHMM = 1530
 MAX_ACTIONS = 5
-DEFER_HOURS = 24
+
+# 防抖窗口 20h，不是 24h。任务每天 19:20 跑，若窗口取 24h：
+# 昨天 19:20:05 成功、今天 19:20:00 启动 → 19:20:05 >= 今天-24h(昨天19:20:00) 成立
+# → 被自己昨天那条记录挡掉，变成「隔天补一次」。20h 留出 4h 余量，
+# 日任务永远能重试，小时级看门狗仍然被限成一天一次。
+DEFER_HOURS = 20
 
 
 def _now():
@@ -249,8 +254,13 @@ def plan(rows, only=None):
                             "consumers": r["n_consumers"],
                             "owner": r["owner"]})
                 break
-    # 影响面大的先做
-    out.sort(key=lambda x: (-x["consumers"], x["table"]))
+    # 排序：先做「我方有明确修法」的，同级再按影响面。
+    # 单轮只有 5 个名额，不能被「大概率白跑」的占掉 —— upstream_dead 表示上游
+    # 自己也停了，重跑只是证伪（便宜，值得做，但不该排在能修好的前面）。
+    # 2026-11-12 实测：纯按消费方排序，前 5 名里两个是 upstream_dead（板块日线 37 家），
+    # 而 ts_rt_min / stock_news 这些真能补的排到下一轮去了。
+    prefs = {"our_gap": 0, "ledger_mismatch": 0, "upstream_dead": 1}
+    out.sort(key=lambda x: (prefs.get(x["cause"], 9), -x["consumers"], x["table"]))
     return out
 
 
@@ -286,10 +296,14 @@ def main(argv=None):
     print("自愈计划 · %s   体检基准=%s   红项=%s"
           % (now.strftime("%Y-%m-%d %H:%M"), h.get("base_asof"), h.get("counts")))
     if trading:
-        left = POST_CLOSE_HHMM - (now.hour * 100 + now.minute)
+        # 别用 hhmm 直接相减：1530-1152=378，那不是 3 小时 78 分。
+        # 2026-11-12 实测打出过「还有 3 小时 78 分钟」。分钟必须走 timedelta。
+        close = now.replace(hour=POST_CLOSE_HHMM // 100,
+                            minute=POST_CLOSE_HHMM % 100, second=0, microsecond=0)
+        mins = max(0, int((close - now).total_seconds() // 60))
         print("【盘中】还有 %d 小时 %d 分钟到收盘窗口。盘中重跑会拉到半截日线，"
               "收盘再 append 一次会写重当天记录 —— 本次一律 dry-run。"
-              % (left // 100, left % 100))
+              % (mins // 60, mins % 60))
     if not tasks:
         print("没有可自动处理的项（其余红项属于：上游断供/存量冻结/自建表/契约错，一律人工）")
         return 0
