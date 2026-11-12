@@ -394,6 +394,29 @@ def save(ev: dict) -> str:
         ev["amended"] = old.get("amended") or []
         ev["first_written_at"] = old.get("first_written_at") or old.get("written_at")
         ev["rerun_n"] = (old.get("rerun_n") or 1) + 1
+        # drift 是「事后拿实现结果评价这次选票」，不是盘前重算的产物。
+        # 盘前重跑把它冲掉，等于重跑一次就删掉一次事后结论 —— 2026-11-12 实测：
+        # 16:27 重跑后 SCORE_RANK_INVERTED 整条消失（当时只能 git checkout 手工捞回）。
+        # 幂等键同 attach_drift：(id, exec_day)，不重复累加。
+        new_keys = {(x.get("id"), x.get("exec_day"))
+                    for x in (ev.get("drift") or []) if isinstance(x, dict)}
+        keep = [x for x in (old.get("drift") or [])
+                if isinstance(x, dict) and (x.get("id"), x.get("exec_day")) not in new_keys]
+        if keep:
+            ev["drift"] = (ev.get("drift") or []) + keep
+            ev["drift_carried_at"] = _now()
+            ev["drift_carried_n"] = len(keep)
+            print("[INFO] 保留 %d 条事后 drift（盘前重跑不覆盖）：%s"
+                  % (len(keep), ",".join(str(x.get("id")) for x in keep)))
+        if old.get("drift_appended_at") and not ev.get("drift_appended_at"):
+            ev["drift_appended_at"] = old["drift_appended_at"]
+        # 上一版留一份（单份覆盖式，不按次数堆积）：万一还有别的字段被冲掉，至少有据可查
+        try:
+            io.open(p + ".bak", "w", encoding="utf-8").write(
+                json.dumps(old, ensure_ascii=False, indent=1))
+            ev["prev_backup"] = os.path.basename(p + ".bak")
+        except OSError:
+            pass
     else:
         ev["first_written_at"] = ev["written_at"]
         ev["rerun_n"] = 1

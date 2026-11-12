@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""盘前三态体检：启动了吗 / 算票了吗 / 简报出了吗。
+"""盘前四态体检：启动了吗 / 算票了吗 / 简报出了吗 / 收盘复盘了吗。
 
 为什么要单独一个工具
 --------------------
@@ -10,15 +10,17 @@
     启动了但脚本秒退      → 没有日志、没有产物   ← 与上一条完全无法区分
     跑了但跳过了选票      → 有日志、有产物、简报照发，外观与「当天新算」一致
 
-所以判据必须落在三种**互不相同的证据**上：
+所以判据必须落在互不相同的证据上：
 
     启动   ← C:\\Temp\\preopen_launch.jsonl（preopen_task.ps1 第一行可执行代码写入，
              独立于业务代码；业务死掉也照样有）
     算票   ← 篮子文件 / 选票产物自述的 picker_run_at（不是文件 mtime：
              复用旧文件时根本不写文件，mtime 会假扮成「刚算过」）
     简报   ← 报告 HTML 的存在与生成时刻
+    复盘   ← close_review_<exec_day>.json（收盘后那条链路的产物）
 
-三者齐才算这条链路今天真的走通了。缺哪一环就报哪一环，不合并成一句「今天没出票」。
+前三者齐才算盘前链路今天真的走通了；复盘按 15:40 之后才「该有」，早盘查不报缺。
+缺哪一环就报哪一环，不合并成一句「今天没出票」。
 
 用法
 ----
@@ -28,15 +30,17 @@
 
 退出码
 ------
-    0 三态齐全
+    0 三态齐全（复盘已出，或未到 15:40 不要求）
     4 未启动（无落痕，且日志无当日 start 行）
     5 启动了但没算出票（无篮子/无产物）
     6 有票但没出简报
     7 非交易日
+    8 盘前走通但收盘复盘缺失（仅当已过 15:40 或查历史日才判）
 """
 from __future__ import annotations
 
 import argparse
+import glob
 import io
 import json
 import os
@@ -116,17 +120,39 @@ def read_log_marks(day: str) -> dict:
     return out
 
 
+def _find_pick_by_run_at(exec_day: str):
+    """按产物自述的 picker_run_at 找「执行日当天算的那份票」。
+
+    不能只按「执行日的前一交易日」推数据日 —— 那条规则假设数据日总是前一天，
+    而 2026-11-12 实测：`check_20261111.json` 是 11-12 才算出来的（数据日 1111）。
+    推断在先、产物在后，两者对不上时信产物：自述里带着真实计算时刻。
+    """
+    want = "%s-%s-%s" % (exec_day[:4], exec_day[4:6], exec_day[6:])
+    hits = []
+    for p in glob.glob(os.path.join(DELIV, "preopen_pick15_v2_adj_check_*.json")):
+        try:
+            d = json.load(io.open(p, encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        ts = str(d.get("picker_run_at") or "")
+        if ts[:10] == want:
+            hits.append((ts, os.path.getmtime(p), p))
+    return max(hits)[2] if hits else None
+
+
 def resolve_paths(exec_day: str) -> dict:
     """执行日 → (数据日, 篮子, 选票产物)。
 
     篮子优先：它直接记着「今天开盘用哪份票」。没有篮子才退回按交易日历推数据日，
     并把这个退化本身标出来 —— 推出来的不等于当时真的用的那份。
     """
-    out = {"data_day": None, "basket": None, "pick_json": None, "derived": True}
+    out = {"data_day": None, "basket": None, "pick_json": None, "derived": True,
+           "pick_source": "calendar"}
     basket_path = os.path.join(DELIV, "preopen_basket_%s.json" % exec_day)
     if os.path.exists(basket_path):
         out["basket"] = basket_path
         out["derived"] = False
+        out["pick_source"] = "basket"
         try:
             b = json.load(io.open(basket_path, encoding="utf-8"))
             out["data_day"] = b.get("data_day")
@@ -135,6 +161,16 @@ def resolve_paths(exec_day: str) -> dict:
             return out
         except (ValueError, OSError):
             pass
+    # 退一步：按产物自述找当日算的那份（比按日历推更接近事实）
+    fp = _find_pick_by_run_at(exec_day)
+    if fp:
+        out["pick_json"] = fp
+        out["pick_source"] = "run_at"
+        try:
+            out["data_day"] = json.load(io.open(fp, encoding="utf-8")).get("refine_date")
+        except (ValueError, OSError):
+            pass
+        return out
     cal = audit.trade_cal()
     if exec_day in cal:
         i = cal.index(exec_day)
@@ -172,8 +208,32 @@ def pick_state(p: dict) -> dict:
     return st
 
 
+def review_state(day: str) -> dict:
+    """收盘复盘：与盘前三态不同的证据源（收盘链路自己的产物）。
+
+    早盘查当天时这份必然还没有 —— 所以「缺失」要不要算错，取决于现在几点，
+    由 main 里的 due 判断；这里只报事实，不替调用方下结论。
+    """
+    p = os.path.join(DELIV, "close_review_%s.json" % day)
+    st = {"path": p, "exists": os.path.exists(p), "top_o2c": None, "excess_o2c": None,
+          "win": None, "n": None, "written_at": None, "quote_source": None,
+          "evidence": None, "source_changed": False}
+    if not st["exists"]:
+        return st
+    try:
+        d = json.load(io.open(p, encoding="utf-8"))
+    except (ValueError, OSError):
+        return st
+    ev = d.get("evidence") or {}
+    st.update(top_o2c=d.get("top_o2c"), excess_o2c=d.get("excess_o2c"),
+              win=d.get("win_o2c"), n=d.get("n"), written_at=d.get("written_at"),
+              quote_source=d.get("quote_source"), evidence=(ev.get("sha256") or "")[:12],
+              source_changed=bool(ev.get("source_changed")))
+    return st
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="盘前三态体检：启动 / 算票 / 简报")
+    ap = argparse.ArgumentParser(description="盘前四态体检：启动 / 算票 / 简报 / 复盘")
     ap.add_argument("--date", default=None, help="执行日 YYYYMMDD，缺省今天")
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     a = ap.parse_args()
@@ -193,8 +253,13 @@ def main() -> int:
     report = {"path": rep, "exists": os.path.exists(rep),
               "mtime": (datetime.fromtimestamp(os.stat(rep).st_mtime)
                         .strftime("%Y-%m-%d %H:%M:%S") if os.path.exists(rep) else None)}
+    rev = review_state(day)
+    now = datetime.now()
+    # 「复盘缺失」要不要算错，取决于现在几点：历史日必须已有；当天 15:40 之前
+    # 它本来就不该有，早盘报红只会训练人忽略告警。
+    review_due = (day < now.strftime("%Y%m%d")) or (now.hour, now.minute) >= (15, 40)
 
-    # 三态判定：证据分别来自落痕 / 产物自述 / 报告文件，不互相顶替
+    # 四态判定：证据分别来自落痕 / 产物自述 / 报告文件 / 复盘产物，不互相顶替
     started = launch["found"]
     picked = pick["exists"] and (pick["n_codes"] or 0) > 0
     reported = report["exists"]
@@ -208,6 +273,8 @@ def main() -> int:
         verdict, code = "STARTED_NO_PICK", 5
     elif not reported:
         verdict, code = "PICK_NO_REPORT", 6
+    elif not rev["exists"] and review_due:
+        verdict, code = "NO_REVIEW", 8
     else:
         verdict, code = "OK", 0
 
@@ -215,11 +282,12 @@ def main() -> int:
         print(json.dumps({"exec_day": day, "verdict": verdict, "launch": launch,
                           "log_marks": logm, "paths": {k: v for k, v in paths.items()
                                                        if k != "basket_meta"},
-                          "pick": pick, "report": report},
+                          "pick": pick, "report": report,
+                          "review": rev, "review_due": review_due},
                          ensure_ascii=False, indent=1))
         return code
 
-    print("盘前三态 · 执行日 %s" % day)
+    print("盘前四态 · 执行日 %s" % day)
     print("-" * 60)
     # ① 启动
     if started:
@@ -257,15 +325,36 @@ def main() -> int:
                   "复用旧文件时它不更新，可能比实际计算晚")
     else:
         print("[2] 算票  ✘ 无可用选票产物")
-        print("           数据日 %s（%s）"
-              % (paths.get("data_day") or "-",
-                 "来自篮子" if not paths["derived"] else "按交易日历反推，非当时实际所用"))
+        how = {"basket": "来自篮子", "run_at": "按产物自述的计算时刻匹配",
+               "calendar": "按交易日历反推，非当时实际所用"}.get(paths.get("pick_source"),
+                                                                  paths.get("pick_source"))
+        print("           数据日 %s（%s）" % (paths.get("data_day") or "-", how))
 
     # ③ 简报
     if reported:
         print("[3] 简报  ✔ %s 生成于 %s" % (os.path.basename(rep), report["mtime"]))
     else:
         print("[3] 简报  ✘ 无 preopen_report_%s.html" % day)
+
+    # ④ 收盘复盘
+    if rev["exists"]:
+        s = "组合开→收 %s | 同池超额 %s | 胜 %s/%s" % (
+            "-" if rev["top_o2c"] is None else "%+.2f%%" % rev["top_o2c"],
+            "-" if rev["excess_o2c"] is None else "%+.2f%%" % rev["excess_o2c"],
+            rev["win"], rev["n"])
+        print("[4] 复盘  ✔ %s｜%s｜行情 %s · 证据 %s"
+              % (os.path.basename(rev["path"]), s,
+                 rev["quote_source"] or "-", rev["evidence"] or "-"))
+        if rev["source_changed"]:
+            print("           ⚠ 该日行情证据与上次留存不一致（同日重跑换了数据源？），"
+                  "两次数字不可直接比较")
+    elif review_due:
+        print("[4] 复盘  ✘ 无 close_review_%s.json —— 盘前走通了，但收盘结果没被记录"
+              % day)
+        print("           跑一次：python tools/review/close_review.py --date %s" % day)
+    else:
+        print("[4] 复盘  ⏳ 未到点（收盘复盘 15:40 才有；现在 %s）"
+              % now.strftime("%H:%M"))
 
     print("-" * 60)
     print("结论：%s（退出码 %d）" % (verdict, code))

@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -53,6 +54,7 @@ ROOT = r"C:\项目\老田的AI助手"
 DELIV = r"C:\项目\deliverables"
 LEDGER_DIR = os.path.join(ROOT, "var", "preopen", "close_review")
 LEDGER = os.path.join(LEDGER_DIR, "ledger.jsonl")
+QUOTE_DIR = os.path.join(LEDGER_DIR, "quotes")   # 当日行情原始输入（证据，非缓存）
 TARGET_DAYS = 40          # 攒够这么多个交易日，这条链路才谈得上「被评价过」
 
 # 「科技硬件」的归类口径写死在代码里，不每天各算各的。
@@ -328,9 +330,61 @@ def ledger_digest(exec_day: str) -> dict:
 
 
 def append_ledger(rec: dict) -> None:
+    """台账每天一行，同日重跑就地覆盖。
+
+    早先是纯追加：同一天每跑一次就多一行，于是「文件里有几行」与「攒了几天」
+    脱钩 —— 今天测试跑了 4 次，账上就有 4 行 20261112，看上去像攒了 4 天。
+    digest 虽然按 exec_day 去重算得对，但物理文件本身在说另一套话，
+    而人第一眼看到的是文件。
+    """
     os.makedirs(LEDGER_DIR, exist_ok=True)
-    with io.open(LEDGER, "a", encoding="utf-8") as fh:
-        fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    rows = [r for r in read_ledger() if r.get("exec_day") != rec.get("exec_day")]
+    rows.append(rec)
+    rows.sort(key=lambda r: str(r.get("exec_day") or ""))
+    with io.open(LEDGER, "w", encoding="utf-8", newline="\n") as fh:
+        for r in rows:
+            fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+
+def save_evidence(exec_day: str, q: dict, qsrc: str) -> dict:
+    """把「本次用来算收益的行情」原样落盘，并给一个内容指纹。
+
+    没有这一步，结论就只能信不能验：次日本地日线同步到位后，同一天会算出
+    略微不同的数字（复权、停牌标记、源差异），而没有原始输入就无法区分
+    「是数据变了」还是「是代码变了」。审计口径下这是硬伤 —— 报告的每一个
+    百分比都必须能由某份留存输入原样复算出来。
+    """
+    os.makedirs(QUOTE_DIR, exist_ok=True)
+    p = os.path.join(QUOTE_DIR, "q_%s.json" % exec_day)
+    body = {"exec_day": exec_day, "quote_source": qsrc,
+            "quotes": {k: q[k] for k in sorted(q)}}
+    h = hashlib.sha256(json.dumps(body, ensure_ascii=False, sort_keys=True)
+                       .encode("utf-8")).hexdigest()
+    prev = None
+    if os.path.exists(p):
+        try:
+            prev = json.loads(io.open(p, encoding="utf-8").read())
+        except ValueError:
+            prev = None
+    prev_h = (prev or {}).get("sha256")
+    ev = {"path": "var/preopen/close_review/quotes/q_%s.json" % exec_day,
+          "sha256": h, "n": len(q), "written": False,
+          "source_changed": bool(prev_h and prev_h != h)}
+    if prev_h == h:
+        return ev          # 同日重跑、输入一致 → 不重写，避免制造无意义改动
+    if prev_h and prev_h != h:
+        # 同一执行日的行情变了：留旧版并响亮告警。静默覆盖等于毁掉复核线索。
+        io.open(p + ".prev", "w", encoding="utf-8").write(
+            json.dumps(prev, ensure_ascii=False, indent=1))
+        print("[WARN] 行情证据内容变了（%s → %s，旧版存 q_%s.json.prev）—— "
+              "同一执行日的行情源给出了不同数字，本次数字与上次不可直接比较"
+              % (prev_h[:12], h[:12], exec_day))
+    io.open(p, "w", encoding="utf-8").write(
+        json.dumps(dict(body, schema="quote_evidence/v1", sha256=h,
+                        fetched_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        prev_sha256=prev_h), ensure_ascii=False, indent=1))
+    ev["written"] = True
+    return ev
 
 
 # ---------------------------------------------------------------------------
@@ -341,7 +395,7 @@ def _f(x, fmt="%+.2f%%"):
 
 
 def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
-              rows: list[dict], dg: dict, qsrc: str, expo: dict) -> str:
+              rows: list[dict], dg: dict, qsrc: str, expo: dict, ev: dict) -> str:
     ex_o2c = (top_s["o2c_mean"] - pool_s["o2c_mean"]
               if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None else None)
     L = []
@@ -362,6 +416,13 @@ def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
     A("| 篮子 | %s |" % ("preopen_basket_%s.json" % b["exec_day"]
                           if b.get("_source") == "basket" else "按交易日历反推（非当时实际所用）"))
     A("| 行情来源 | %s |" % qsrc)
+    A("| 行情证据 | `%s` · sha256 `%s` · %d 只 |"
+      % (ev["path"].split("/")[-1], (ev.get("sha256") or "")[:12], ev.get("n") or 0))
+    if ev.get("source_changed"):
+        A("")
+        A("> ⚠️ **本次行情与同日上一次留存不一致**（sha256 变了，旧版留在 "
+          "`q_%s.json.prev`）。两次数字不可直接比较，先查是数据源差异还是行情修正。"
+          % b["exec_day"])
     A("")
     A("## 一、结果")
     A("")
@@ -478,6 +539,9 @@ def main() -> int:
     if len(q) < max(1, int(0.5 * len(codes))):
         die("[FATAL] 只取到 %d/%d 只行情，样本不足，不出复盘" % (len(q), len(codes)))
 
+    # 先留证据、再算数。顺序反了就会出现「报告出了、输入没了」的不可复核产物。
+    ev = save_evidence(exec_day, q, qsrc)
+
     rows = rows_for(top, q, exec_day)
     pool_rows = rows_for(pool, q, exec_day)
     top_s = summarize(rows)
@@ -499,7 +563,7 @@ def main() -> int:
                           if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None
                           else None),
            "win_o2c": top_s["win_o2c"], "rows": rows,
-           "exposure": expo,
+           "exposure": expo, "evidence": ev,
            "index": idx, "written_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
     # 先入账、再算摘要、最后渲染。
@@ -509,10 +573,11 @@ def main() -> int:
         append_ledger({k: rec[k] for k in
                        ("schema", "exec_day", "data_day", "quote_source", "picker_run_at",
                         "reused", "n", "n_miss", "top_o2c", "top_c2c", "pool_o2c",
-                        "pool_c2c", "excess_o2c", "win_o2c", "exposure", "written_at")})
+                        "pool_c2c", "excess_o2c", "win_o2c", "exposure",
+                        "evidence", "written_at")})
 
     dg = ledger_digest(exec_day)
-    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, expo)
+    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, expo, ev)
 
     md_path = os.path.join(DELIV, "close_review_%s.md" % exec_day)
     js_path = os.path.join(DELIV, "close_review_%s.json" % exec_day)
