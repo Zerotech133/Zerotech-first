@@ -162,9 +162,15 @@ def main(argv=None):
     code = argv[1] if len(argv) > 1 else "?"
     raw_log = argv[2] if len(argv) > 2 else ""
     norm_log = ""
+    norm_is_temp = False  # P3-a：提前初始化，normalize 抛异常时 finally 不 NameError
     wrapper_error = False
     try:
         norm_log = normalize_err_log(raw_log)
+        # P3-a 2026-11-12：只清理自建规范化副本；原 err 日志恰为 UTF-8 时
+        # normalize 原样返回原路径，此前 finally-unlink 会把原始证据一并删掉
+        # （11-12 kg_kg_evt_sync_err.log 消失判例）。回滚：恢复
+        # C:\项目\backups\alert_fail_wrap.py.bak-20261112-P123
+        norm_is_temp = bool(norm_log) and (norm_log != raw_log)
         r = subprocess.run(
             [sys.executable, "-X", "utf8", ALERT_FAIL_PY, task, code, norm_log],
             capture_output=True,
@@ -181,7 +187,7 @@ def main(argv=None):
         ok, reason = False, "wrap_err " + str(e)[:100]
         wrapper_error = True
     finally:
-        if norm_log and os.path.isfile(norm_log):
+        if norm_is_temp and os.path.isfile(norm_log):
             try:
                 os.unlink(norm_log)
             except OSError as exc:

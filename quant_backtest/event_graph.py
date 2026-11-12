@@ -158,6 +158,26 @@ def _code6(v):
 
 
 # ── 持久化（原子写） ─────────────────────────────────────────
+def _replace_retry(tmp, path, retries=3, wait=5):
+    """os.replace 遇 WinError 5(文件锁) 短退避重试。
+
+    2026-11-10 判例：evt_build 656s 嵌入重算完成后，落盘 os.replace 被
+    杀软/索引器/并发读者短暂锁挡，PermissionError 直接 ABORT 整链。
+    短退避可让持锁方释放；重试耗尽仍抛原异常（行为不变差）。
+    回滚：恢复 C:\\项目\\backups\\event_graph.py.bak-20261112-P123
+    """
+    import time as _t
+
+    for i in range(retries):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if i == retries - 1:
+                raise
+            _t.sleep(wait)
+
+
 def _load_events():
     if not os.path.exists(EVENT_F):
         return []
@@ -176,7 +196,7 @@ def _atomic_jsonl(path, rows):
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
-    os.replace(tmp, path)
+    _replace_retry(tmp, path)
 
 
 def _atomic_npy(path, mat):
@@ -184,7 +204,7 @@ def _atomic_npy(path, mat):
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
     with os.fdopen(fd, "wb") as f:
         np.save(f, mat)
-    os.replace(tmp, path)
+    _replace_retry(tmp, path)
 
 
 def _load_state():

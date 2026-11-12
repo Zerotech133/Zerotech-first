@@ -107,6 +107,22 @@ $py = 'C:\Program Files\Python311\python.exe'
 $wd = 'C:\项目\老田的AI助手\quant_backtest'
 # [20261016血缘收编] zerobound-kg（旧名 KGStockAnalysis）侧脚本经此变量桥接 import linreg（章程 §4.4）
 $env:QUANT_BACKTEST_ROOT = $wd
+# [P1-a 2026-11-12 批准落地] DB/图就绪门：7687(Neo4j) 与 5442(quant-pg) 端口就绪才放行，
+# 最多等 30 分钟。背景：夜间睡眠后唤醒补跑 09:35 撞 Docker 容器冷启动（~10:40 才起），
+# kg_evt_sync 连 7687 refused ×6 后 ABORT。只探测端口、不写库；超时记 WARN 放行，
+# 失败仍由既有 exit=1 + 告警链路兜底。夜间正常场景（06:20 端口已就绪）零等待直行。
+# 回滚：删除本代码块，或恢复 C:\项目\backups\start_kg_sync.ps1.bak-20261112-P123
+$deadline = (Get-Date).AddMinutes(30)
+foreach ($port in @(7687, 5442)) {
+    $ready = $false
+    while ((Get-Date) -lt $deadline -and -not $ready) {
+        $c = Test-NetConnection -ComputerName 127.0.0.1 -Port $port -WarningAction SilentlyContinue
+        if ($c.TcpTestSucceeded) { $ready = $true } else { Start-Sleep -Seconds 20 }
+    }
+    if (-not $ready) {
+        ('kg_sync WARN: port ' + $port + ' not ready after 30min, proceed anyway ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+    }
+}
 try {
     foreach ($step in @(
         @{name='catalog_build';     script='build_catalog.py';       arg=''},
@@ -151,7 +167,7 @@ try {
         if ($code -ne 0) {
             ('kg_sync ABORT at ' + $step.name) | Out-File $log -Append -Encoding utf8
             $errL = "C:\Temp\kg_" + $step.name + "_err.log"
-            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py ("kg_sync:" + $step.name) $code $errL 1>$null 2>$null
+            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py ("kg_sync_" + $step.name) $code $errL 1>$null 2>$null
             exit 1
         }
     }
@@ -181,7 +197,7 @@ try {
     }
     if ($alignRc -ne 0) {
         ('kg_sync STALE registry_align rc=' + $alignRc + ' after ' + $alignMax + ' attempts at ' + (Get-Date -Format s) + ': warehouse_registry may be outdated; run tools/datawarehouse/registry_align.py --apply manually') | Out-File $log -Append -Encoding utf8
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py kg_sync:registry_align $alignRc $alignErr 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py kg_sync_registry_align $alignRc $alignErr 1>$null 2>$null
     }
     ('kg_sync OK ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     exit 0
