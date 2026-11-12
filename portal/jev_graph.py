@@ -651,8 +651,14 @@ def _mins(ts_code: str, day: str):
     return None
 
 
-def minute_profile(ts_code: str, day: str, limit_price=None, pre_close=None) -> dict:
+def minute_profile(ts_code: str, day: str, limit_price=None, pre_close=None,
+                   loader=None) -> dict:
     """一只票当日的分钟画像：开盘/首次异动/封板/最大单分钟涨幅。
+
+    `loader` 是取数钩子，默认 `_mins`（本地优先 → 远端兜底 → 写回）。交叉卡
+    （`portal/jev_cross.py`）传只读本地版，保证「渲染层不联网」——**口径仍走
+    这一份**，不要在别处复制一遍（复制就会漂移，判例 #25 的档位/封板口径
+    一旦两处不一致，两页会给出不同结论）。
 
     返回 {ok, source, open, bars, first_move, first_move_pct, at_open, gap_pct,
           seal_time, spike}
@@ -662,7 +668,7 @@ def minute_profile(ts_code: str, day: str, limit_price=None, pre_close=None) -> 
       seal_time   close 首次 ≥ 涨停价 的那一分钟（封板时刻）
       spike       单分钟涨幅 ≥1% 且量 ≥2× 当日分钟均量 的第一次
     """
-    d = _mins(ts_code, day)
+    d = (loader or _mins)(ts_code, day)
     if d is None:
         return {"ok": False, "reason": "no_minute", "source": None}
 
@@ -704,6 +710,11 @@ def minute_profile(ts_code: str, day: str, limit_price=None, pre_close=None) -> 
         "ok": True, "source": d.attrs.get("source"),
         "tbl": d.attrs.get("tbl"),          # ts_stk_mins / ts_rt_min / None(本地)
         "open": round(base, 2), "bars": len(times),
+        # 分钟覆盖的起止：数据源残缺时（rt_min 实测只有 85~237 根，且可能从
+        # 13:35 起）`times[0]` 不是开盘那一根，at_open / first_move 会被
+        # 误当成「09:30 就异动」。调用方必须看 first_bar 才知道能不能采信。
+        "first_bar": times[0] if times else None,
+        "last_bar": times[-1] if times else None,
         "first_move": fm, "first_move_pct": fm_pct,
         "at_open": at_open, "gap_pct": gap_pct,
         "seal_time": seal, "spike": spike,
