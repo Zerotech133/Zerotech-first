@@ -366,7 +366,11 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              # 2026-11-05 16:30 合并门前实测：9335=headless Edge 飞书简报调试口
              # (--headless=new --remote-debugging-port=9335)。浏览器客户端不是平台服务，
              # 同 msedgewebview2/feishu 先例入豁免；不整体放行 python/node。
-             "msedge")
+             "msedge",
+             # 2026-11-12 K-ORG-20261112-PORT-RUSTDESK：rustdesk.exe 远控客户端
+             # 监听随机动态口（当前 33213），桌面第三方非平台栈；同 todesk 先例入豁免。
+             # 不登记 REGISTRY：动态口登记会写成假事实，且下次启动即漂移。
+             "rustdesk")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
