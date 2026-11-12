@@ -59,7 +59,15 @@ QUOTE_DIR = os.path.join(LEDGER_DIR, "quotes")   # 当日行情原始输入（�
 TARGET_DAYS = 40          # 攒够这么多个交易日，这条链路才谈得上「被评价过」
 PY = r"C:\Program Files\Python311\python.exe"    # 计划任务所用的同一个解释器
 STATUS = os.path.join(PREOPEN, "preopen_status.py")
-SINA_RETRY = 3            # 单批最多试几次（同源重试，不涉及「两源冲突信谁」）
+SINA_RETRY = 3            # 主源单批最多试几次（同源重试）
+TENCENT_RETRY = 2         # 备用源只试 2 次，且超时更短 —— 它挂了不能拖住主路径
+TENCENT_TIMEOUT = 8
+CONFLICT_PCT = 0.5        # 两源对同一只票收盘价的相对差阈值（%）
+# 为什么是 0.5%：2026-11-12 实测 sina/腾讯/东财 对 8 只票逐分不差（max 0.0000%），
+# 阈值放到 0.5% 仍然过不去，说明超阈指向的是真异常（某源未更新/除权/字段漂移），
+# 不是两家算法差异。这条闸门顺带当「上游改字段顺序」的探针：字段错位会让整批票
+# 系统性偏移，一次比对就能抓住（今天我自己就误把 sina 的 f[2]=昨收 当收盘，造出
+# 6.8% 的假冲突，正是靠三源一比才发现是探针写错、不是数据错）。
 
 # 「科技硬件」的归类口径写死在代码里，不每天各算各的。
 # 存在的意义：2026-11-12 提出「53% 集中在该板块要不要中性化」，而当时的判断
@@ -140,8 +148,10 @@ def _fetch_sina(batch: list[str], tries: int = SINA_RETRY) -> dict:
     """单批行情，失败重试。
 
     sina 偶发挂起或返回空体是常态，一次失败就让整份复盘不出（rc=2）代价太大。
-    这里只做同源重试 —— 不引入第二个数据源，因为「两源不一致时信谁」是口径
-    决定，不是可靠性问题，得单独定。
+    这里只做同源重试；跨源的两件事在 get_quotes 里分开处理：
+      · failover —— sina 全挂时由腾讯顶上，此时只有一个源有值，不产生「信谁」问题；
+      · cross-check —— 两源都有值时逐只比对，超阈值即判该日冲突。
+    混在一起写会把「可靠性」和「口径」搅成一团，说不清哪一步该谁负责。
     """
     url = "https://hq.sinajs.cn/list=" + ",".join(batch)
     req = urllib.request.Request(url, headers={
@@ -195,19 +205,161 @@ def quotes_sina(keys: list[str]) -> dict:
     return out
 
 
-def get_quotes(b: dict, codes: list[str], exec_day: str) -> tuple[dict, str]:
+def _fetch_tencent(batch: list[str], tries: int = TENCENT_RETRY) -> dict:
+    """备用源单批行情。字段位是实测 dump 出来的（2026-11-12）：
+    f[1]=名称 f[2]=6位代码 f[3]=现价 f[4]=昨收 f[5]=今开 f[30]=yyyyMMddHHmmss。
+
+    注意 sina 与腾讯的字段位**并不相同**：sina 的 f[2] 是昨收、f[3] 才是收盘，
+    腾讯的 f[3] 就是现价。照抄下标会得到「整批票系统性偏移」—— 两源比对能抓住
+    这类错，单源看不出任何异常。
+    """
+    url = "https://qt.gtimg.cn/q=" + ",".join(batch)
+    last = None
+    for i in range(max(1, tries)):
+        try:
+            op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            raw = op.open(req, timeout=TENCENT_TIMEOUT).read().decode("gbk", "ignore")
+            if "~" not in raw:
+                last = RuntimeError("腾讯响应无可解析行情（%d 字节）" % len(raw))
+            else:
+                out = {}
+                for chunk in raw.split(";"):
+                    if "~" not in chunk:
+                        continue
+                    f = chunk.split("~")
+                    if len(f) < 33 or not f[3]:
+                        continue
+                    try:
+                        key = chunk.split("v_")[1].split("=")[0]
+                        out[key] = {"open": float(f[5]), "pre": float(f[4]),
+                                    "last": float(f[3]), "date": (f[30] or "")[:8],
+                                    "tm": (f[30] or "")[8:], "src": "tencent"}
+                    except (ValueError, IndexError):
+                        continue
+                if not out:
+                    last = RuntimeError("腾讯返回 0 只可解析行情")
+                else:
+                    return out
+        except Exception as e:          # noqa: BLE001 - 网络层异常种类多，统一重试
+            last = e
+        if i + 1 < tries:
+            time.sleep(0.8)
+    raise last if last else RuntimeError("腾讯行情请求失败（重试 %d 次）" % tries)
+
+
+def quotes_tencent_safe(keys: list[str]) -> tuple[dict, str | None]:
+    """备用源取数，**永不抛**。
+
+    它的角色是「能救就救」，不能把主路径拖下水：某批失败就停下，返回已拿到的
+    部分和错误串，由调用方决定是 failover 还是只记一条「校验不可用」。
+    """
+    out, err = {}, None
+    for i in range(0, len(keys), 30):
+        try:
+            out.update(_fetch_tencent(keys[i:i + 30]))
+        except Exception as e:          # noqa: BLE001
+            err = "%s: %s" % (type(e).__name__, e)
+            break
+    return out, err
+
+
+def cross_check(primary: dict, alt: dict, codes: list[str], exec_day: str) -> dict:
+    """逐只比对两源收盘价，返回校验结论（只判断，不改数据）。"""
+    det, bad = {}, []
+    for c in codes:
+        k = sina_code(c)
+        a, b2 = primary.get(k), alt.get(k)
+        if not a or not b2 or not a.get("last") or not b2.get("last"):
+            continue
+        if (b2.get("date") or "") != exec_day:
+            continue                    # 备用源日期不符 → 不是今天的数据，比了没意义
+        d = (b2["last"] / a["last"] - 1.0) * 100.0
+        det[c] = {"a": a["last"], "b": b2["last"], "diff_pct": round(d, 4)}
+        if abs(d) > CONFLICT_PCT:
+            bad.append(c)
+    mx = max((abs(v["diff_pct"]) for v in det.values()), default=None)
+    status = "no_overlap" if not det else ("conflict" if bad else "agree")
+    return {"status": status, "threshold_pct": CONFLICT_PCT,
+            "n_compared": len(det), "max_diff_pct": mx,
+            "conflict_codes": bad, "alt_source": "tencent", "details": det}
+
+
+def save_qc(exec_day: str, cross: dict) -> dict:
+    """校验证据单独落盘，不塞进 q_<day>.json。
+
+    因为 q 文件的 sha256 是「同一执行日行情是否变过」的指纹：把跨源比对结果混进去，
+    以后每次改校验逻辑都会让指纹变一次，真正的「行情变了」就被噪声淹没。
+    证据分文件，指纹只认行情本身。
+    """
+    os.makedirs(QUOTE_DIR, exist_ok=True)
+    p = os.path.join(QUOTE_DIR, "qc_%s.json" % exec_day)
+    body = dict(cross, schema="quote_crosscheck/v1", exec_day=exec_day,
+                checked_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    io.open(p, "w", encoding="utf-8").write(
+        json.dumps(body, ensure_ascii=False, indent=1))
+    return {"path": "var/preopen/close_review/quotes/qc_%s.json" % exec_day,
+            "status": cross.get("status"),
+            "max_diff_pct": cross.get("max_diff_pct"),
+            "conflict_codes": cross.get("conflict_codes") or [],
+            "n_compared": cross.get("n_compared"),
+            "threshold_pct": cross.get("threshold_pct")}
+
+
+def get_quotes(b: dict, codes: list[str], exec_day: str) -> tuple[dict, str, dict]:
+    """取当日行情，返回 (行情, 来源, 校验结论)。
+
+    三层顺序：本地日线 → sina → 腾讯(failover)。本地是复权序列，只在覆盖 ≥80%
+    时采用，且**不做跨源比对** —— 复权与不复权比出来的是自己造的假冲突。
+    """
     q = quotes_local(exec_day, codes)
     if len(q) >= max(1, int(0.8 * len(codes))):
-        return q, "local"
+        return q, "local", {"status": "skip_local", "threshold_pct": CONFLICT_PCT,
+                            "n_compared": 0, "max_diff_pct": None, "conflict_codes": [],
+                            "note": "本地复权日线，与实时源不复权口径不同，不做跨源比对"}
+
     keys = [sina_code(c) for c in codes]
-    sq = quotes_sina(keys)
+    sq, sina_err = {}, None
+    try:
+        sq = quotes_sina(keys)
+    except SystemExit as e:             # quotes_sina 取不到就 die()，这里接住做 failover
+        sina_err = "sina 已重试 %d 次仍无数据（rc=%s）" % (SINA_RETRY, e.code)
+
+    if sina_err:
+        tq, terr = quotes_tencent_safe(keys)
+        if not tq:
+            die("[FATAL] 主源与备用源都没取到行情（%s / 腾讯: %s）—— 今天这份复盘"
+                "没有数据基础，不出报告比出一份没数的报告强"
+                % (sina_err, terr or "无数据"))
+        q = {}
+        for c in codes:
+            v = tq.get(sina_code(c))
+            if v:
+                q[c] = v
+        print("[WARN] 主源 sina 取数失败，已由备用源腾讯顶上（单源，无交叉校验）：%s"
+              % sina_err)
+        return q, "tencent_failover", {
+            "status": "single_source", "threshold_pct": CONFLICT_PCT,
+            "n_compared": 0, "max_diff_pct": None, "conflict_codes": [],
+            "sina_err": sina_err, "alt_err": terr,
+            "note": "主源全失败，只有备用源有值，不存在冲突可比"}
+
+    tq, terr = quotes_tencent_safe(keys)
+    if tq:
+        cross = cross_check(sq, tq, codes, exec_day)
+    else:
+        cross = {"status": "cross_unavailable", "threshold_pct": CONFLICT_PCT,
+                 "n_compared": 0, "max_diff_pct": None, "conflict_codes": [],
+                 "alt_err": terr,
+                 "note": "备用源不可用，当日只有单源，未做交叉校验"}
+
     if not q:
         q = {}
         for c in codes:
             v = sq.get(sina_code(c))
             if v:
                 q[c] = v
-        return q, "sina"
+        return q, "sina", cross
     # 本地只有一部分 → 用外网补齐，逐只标注来源
     for c in codes:
         if c in q:
@@ -215,7 +367,13 @@ def get_quotes(b: dict, codes: list[str], exec_day: str) -> tuple[dict, str]:
         v = sq.get(sina_code(c))
         if v:
             q[c] = v
-    return q, "mixed"
+    # 补进来的才参与判冲突：本地复权值不能因为和实时源不一致就判冲突
+    keep = [c for c in (cross.get("conflict_codes") or [])
+            if (q.get(c) or {}).get("src") == "sina"]
+    cross["conflict_codes"] = keep
+    if cross.get("n_compared"):
+        cross["status"] = "conflict" if keep else "agree"
+    return q, "mixed", cross
 
 
 def index_quotes() -> dict:
@@ -338,21 +496,30 @@ def read_ledger() -> list[dict]:
 
 
 def ledger_digest(exec_day: str) -> dict:
-    """按执行日去重（同日重跑取最后一条），算累计与 40 日进度。"""
+    """按执行日去重（同日重跑取最后一条），算累计与 40 日进度。
+
+    冲突日不进分母 —— 这是口径，不是优化：既然已声明「两源差 >阈值 的日子不可信」，
+    就必须真的把它从天数里剔掉，而不是统计时按 0 计入。否则「40 日」里掺进一堆
+    自己都不信的日子，进度条就在撒谎，而且这种谎话没人会去核对。
+    """
     recs = {}
     for r in read_ledger():
         d = r.get("exec_day")
         if d:
             recs[d] = r
     days = sorted(recs)
-    ex = [recs[d].get("excess_o2c") for d in days if recs[d].get("excess_o2c") is not None]
-    return {"n_days": len(days), "target": TARGET_DAYS,
-            "progress": "%d/%d" % (len(days), TARGET_DAYS),
+    bad = [d for d in days if recs[d].get("quote_conflict")]
+    ok_days = [d for d in days if not recs[d].get("quote_conflict")]
+    ex = [recs[d].get("excess_o2c") for d in ok_days
+          if recs[d].get("excess_o2c") is not None]
+    return {"n_days": len(ok_days), "target": TARGET_DAYS,
+            "progress": "%d/%d" % (len(ok_days), TARGET_DAYS),
             "cum_excess": sum(ex) if ex else None,
             "mean_excess": (sum(ex) / len(ex)) if ex else None,
             "day_win": sum(1 for x in ex if x > 0), "n_ex": len(ex),
-            "first_day": days[0] if days else None,
-            "last_day": days[-1] if days else None,
+            "n_conflict_days": len(bad), "conflict_days": bad, "n_rows": len(days),
+            "first_day": ok_days[0] if ok_days else None,
+            "last_day": ok_days[-1] if ok_days else None,
             "includes_today": exec_day in recs}
 
 
@@ -457,9 +624,30 @@ def _hms(ts) -> str:
     return (str(ts) or "")[11:19] or "-"
 
 
+def _cross_label(cc: dict) -> str:
+    """把校验结论翻成人话。分开写是因为「一致/冲突/单源/没比」四种状态
+    在报告里必须一眼能分辨 —— 把「没比」写成「一致」是这类校验最常见的谎。"""
+    cc = cc or {}
+    st, n, mx = cc.get("status"), cc.get("n_compared") or 0, cc.get("max_diff_pct")
+    if st == "agree":
+        return "✔ 双源一致（sina vs 腾讯，%d 只，max %+.4f%%）" % (n, mx or 0.0)
+    if st == "conflict":
+        return ("✘ **双源冲突 %d/%d 只，max %s%%**（阈值 %s%%）"
+                % (len(cc.get("conflict_codes") or []), n, mx, cc.get("threshold_pct")))
+    if st == "single_source":
+        return "单源（sina 失败，腾讯 failover）—— 无冲突可比"
+    if st == "cross_unavailable":
+        return "单源（备用源不可用，未做交叉校验）"
+    if st == "skip_local":
+        return "未比对（本地复权口径，与实时源不同口径）"
+    if st == "no_overlap":
+        return "无可比对票"
+    return st or "-"
+
+
 def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
-              rows: list[dict], dg: dict, qsrc: str, expo: dict, ev: dict,
-              chain: dict) -> str:
+              rows: list[dict], dg: dict, qsrc: str, cross: dict, expo: dict,
+              ev: dict, chain: dict) -> str:
     ex_o2c = (top_s["o2c_mean"] - pool_s["o2c_mean"]
               if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None else None)
     L = []
@@ -480,6 +668,7 @@ def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
     A("| 篮子 | %s |" % ("preopen_basket_%s.json" % b["exec_day"]
                           if b.get("_source") == "basket" else "按交易日历反推（非当时实际所用）"))
     A("| 行情来源 | %s |" % qsrc)
+    A("| 行情校验 | %s |" % _cross_label(cross))
     A("| 行情证据 | `%s` · sha256 `%s` · %d 只 |"
       % (ev["path"].split("/")[-1], (ev.get("sha256") or "")[:12], ev.get("n") or 0))
     if ev.get("source_changed"):
@@ -487,6 +676,12 @@ def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
         A("> ⚠️ **本次行情与同日上一次留存不一致**（sha256 变了，旧版留在 "
           "`q_%s.json.prev`）。两次数字不可直接比较，先查是数据源差异还是行情修正。"
           % b["exec_day"])
+    if (cross or {}).get("status") == "conflict":
+        A("")
+        A("> ⛔ **当日行情两源冲突，本日不进 40 日累计分母。** 冲突票：%s。"
+          "三源原值已落 `qc_%s.json`。这里不取平均、也不挑一个 —— 选边会引入方向性"
+          "偏差，而本项目的目的是评价链路，**缺一天样本远比错一天样本便宜**。"
+          % ("、".join(cross.get("conflict_codes") or []), b["exec_day"]))
     A("")
     A("## 一、结果")
     A("")
@@ -557,6 +752,10 @@ def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
       % (dg["progress"], dg["target"], _f(dg["cum_excess"]), _f(dg["mean_excess"]),
          dg["day_win"], dg["n_ex"]))
     A("")
+    if dg.get("n_conflict_days"):
+        A("> 另有 %d 个交易日因行情两源冲突**已排除在分母之外**：%s"
+          % (dg["n_conflict_days"], "、".join(dg["conflict_days"])))
+        A("")
     if dg["n_days"] < dg["target"]:
         A("> 样本不足（%s），上面的日均与胜率**还不足以下结论**。"
           "这条链路要攒够 %d 个交易日才算被评价过 —— 单日数字只用来发现异常，不用来定性。"
@@ -616,7 +815,7 @@ def main() -> int:
 
     codes = [x["ts_code"] for x in top] + [x["ts_code"] for x in pool]
     codes = list(dict.fromkeys(codes))
-    q, qsrc = get_quotes(b, codes, exec_day)
+    q, qsrc, cross = get_quotes(b, codes, exec_day)
 
     # ① 日期闸门：拿错日期的行情算收益，是「看起来对」的错误，必须硬拦
     bad = check_quote_dates(q, exec_day)
@@ -628,6 +827,9 @@ def main() -> int:
 
     # 先留证据、再算数。顺序反了就会出现「报告出了、输入没了」的不可复核产物。
     ev = save_evidence(exec_day, q, qsrc)
+    # 校验证据单独一份：不并进 q 文件，免得改了校验逻辑就把行情指纹一起改掉
+    qc = save_qc(exec_day, cross)
+    conflicted = (cross.get("status") == "conflict")
 
     rows = rows_for(top, q, exec_day)
     pool_rows = rows_for(pool, q, exec_day)
@@ -646,6 +848,7 @@ def main() -> int:
 
     rec = {"schema": "close_review/v1", "exec_day": exec_day,
            "data_day": b.get("data_day"), "quote_source": qsrc,
+           "quote_check": cross, "quote_conflict": conflicted, "qc": qc,
            "picker_run_at": b.get("picker_run_at"), "reused": b.get("reused"),
            "n": top_s["n"], "n_miss": top_s["n_miss"],
            "top_o2c": top_s["o2c_mean"], "top_c2c": top_s["c2c_mean"],
@@ -662,13 +865,14 @@ def main() -> int:
     # 这正是「产物看着正常、数字其实是旧的」那一类错误。
     if not a.no_ledger:
         append_ledger({k: rec[k] for k in
-                       ("schema", "exec_day", "data_day", "quote_source", "picker_run_at",
+                       ("schema", "exec_day", "data_day", "quote_source", "quote_check",
+                        "quote_conflict", "picker_run_at",
                         "reused", "n", "n_miss", "top_o2c", "top_c2c", "pool_o2c",
                         "pool_c2c", "excess_o2c", "win_o2c", "exposure",
                         "evidence", "written_at")})
 
     dg = ledger_digest(exec_day)
-    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, expo, ev, chain)
+    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, cross, expo, ev, chain)
 
     md_path = os.path.join(DELIV, "close_review_%s.md" % exec_day)
     js_path = os.path.join(DELIV, "close_review_%s.json" % exec_day)
@@ -682,6 +886,12 @@ def main() -> int:
                 else top_s["o2c_mean"] - pool_s["o2c_mean"])))
     print("累计 %s 日（目标 %d），日均超额 %s" % (dg["progress"], dg["target"],
                                           _f(dg["mean_excess"])))
+    print("行情校验 %s" % _cross_label(cross))
+    if conflicted:
+        print("[WARN] 两源冲突 %d 只（max %s%%）→ 本日不进 40 日累计分母，"
+              "原值见 %s；业务 rc 置 1（产物已出，任务计划程序仍按 0 收）"
+              % (len(cross.get("conflict_codes") or []), cross.get("max_diff_pct"),
+                 qc["path"]))
     if chain.get("error"):
         print("[WARN] 链路体检没跑成：%s（复盘本身已出）" % chain["error"])
     else:
@@ -692,7 +902,9 @@ def main() -> int:
                  "✔" if chain.get("reported") else "✘"))
     print("WROTE %s" % md_path)
     print("WROTE %s" % js_path)
-    return 0
+    # 业务码：0 = 干净出报告；1 = 出了但带告警（今日行情两源冲突，已排除出分母）。
+    # 不要用 2 —— 2 的语义是「阻断」，冲突日报告是完整可用的，只是不入账。
+    return 1 if conflicted else 0
 
 
 if __name__ == "__main__":
