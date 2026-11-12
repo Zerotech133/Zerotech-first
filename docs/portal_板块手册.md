@@ -30,6 +30,18 @@
 - [ ] 与 JEV 手册联动：conf 显示透传字段是否彻底摘除，由 JEV 板块判定
 - [ ] 阶段 A 验收门：8091 health 常绿、conf 零决策驱动、零 `C:\aios` 写死
 
+### 2026-11-13 增量：数据日报第七节「采集新鲜度 SLA」
+- **出口**：`api_daily_data.collect_section()`，读 `news_collector/data/collect_sla.json`（只读快照），
+  返回 `{exists, generated_at, summary, thresholds, thresholds_source, rows[]}`；
+  逐行投影 source/label/state/last_ok_ts/stale_hours/covered/expected/gap/gap_open/
+  gap_known/gap_pending_fix/consecutive_bad/note，`missing` 只留 3 只样本（全量走 JSON 契约，避免 UI 撑爆）。
+- **页面**：`data_daily.html` 新增「七 · 采集新鲜度 SLA」+ 指标带两张卡（SLA 判定 / 缺口待查）。
+- **fail-visible**：产物缺失 → `exists=false` + hint（合法空态，非 500）；坏 JSON → `exists=true` + error。
+- **重启**：已按协议 flag → `Start-ScheduledTask AI工作站门户API` 换血（pid 44896→47824，health 200，flag 已消费）。
+- **公网快照**：`build_daily_data_public.py` 直接注入整份聚合 JSON，**会自动带上本节**（无需改代码）；
+  若判定本节不宜公开（暴露采集覆盖/缺口），须在快照侧显式剥离——**属对外口径，待老田裁定**。
+- **测试**：`portal/tests/test_api_daily_collect.py` 4 条（缺失/坏 JSON/投影白名单/Handler 装配）。
+
 ## 五、一句话给研究者
 portal 是**外壳不是内脏**：它的债几乎全是"一致性债"（conf 残留、路径混用、端口标错、吞错），没有编译级炸弹；
 研究它别看功能，看**接缝**——每个 `except` 和每个写死的路径都是潜在断点。

@@ -64,7 +64,7 @@ a{color:var(--link)}
 <meta name=wb-shell content=adopted></head>
 <body>
 <div class="wrap">
-<h1>📊 数据日报 <span class="sub">JEV 多维数据 · 情绪×次日实证 · 冲击力分层 · 漂移哨兵 · 管道体检 · 源 /api/daily/data</span></h1>
+<h1>📊 数据日报 <span class="sub">JEV 多维数据 · 情绪×次日实证 · 冲击力分层 · 漂移哨兵 · 管道体检 · 采集SLA · 源 /api/daily/data</span></h1>
 
 <section><h2>〇 · 指标带</h2><div class="metrics" id="metrics"><span class="empty">加载中…</span></div></section>
 
@@ -81,7 +81,9 @@ a{color:var(--link)}
 <section><h2>五 · 管道体检（产物新鲜度）</h2><div class="panel" id="health"><span class="empty">加载中…</span></div></section>
 <section><h2>六 · 市场情绪指数 + 五源情绪分布卡（股吧 / 淘股吧 / 互动易 / 雪球 / 新闻流）</h2><div class="panel" id="market"><span class="empty">加载中…</span></div><div class="panel" id="sent" style="margin-top:10px"><span class="empty">加载中…</span></div></section>
 
-<footer>K-ORG-183 数据日报 M1 · 2026-10-18 · 聚合出口 /api/daily/data（只读）· 上游：sentiment_backtest / jev_impact / jev_drift / xq_daily_report</footer>
+<section><h2>七 · 采集新鲜度 SLA（每源最后成功 · 覆盖缺口 · 连续不达标）</h2><div class="panel" id="collect"><span class="empty">加载中…</span></div></section>
+
+<footer>K-ORG-183 数据日报 M1 · 2026-10-18 · 聚合出口 /api/daily/data（只读）· 上游：sentiment_backtest / jev_impact / jev_drift / xq_daily_report / collect_sla</footer>
 </div>
 
 <script>
@@ -109,7 +111,7 @@ function chipMap(m,cn){var ks=Object.keys(m).sort(function(a,b){return m[b]-m[a]
 
 function render(d){
  if(d.error){el('metrics').innerHTML='<span class="err">'+esc(d.error)+'</span>';return}
- var ds=d.dist||{},bt=d.bt||{},im=d.impact||{},dr=d.drift||{},hl=d.health||{};
+ var ds=d.dist||{},bt=d.bt||{},im=d.impact||{},dr=d.drift||{},hl=d.health||{},cl=d.collect||{};
  /* ── 〇 指标带 ── */
  var tot=ds.total||0,bias=ds.bias||{};
  var skew=tot?(bias.bull||0)-(bias.bear||0):null;
@@ -121,7 +123,11 @@ function render(d){
  +metric('回测样本 n',bt.exists?bt.n:'—',bt.exists?'':'dim')
  +metric('corr(情绪分,T+1)',bt.exists?num(bt.corr_score_pct1,function(v){return v.toFixed(3)}):'—','')
  +metric('漂移 OPEN 告警',openN==null?'—':openN,openN>0?'bad':'good')
- +metric('bias_probs 覆盖',ds.exists?(ds.bias_probs_n||0)+' 条':'—',ds.exists?'':'dim');
+ +metric('bias_probs 覆盖',ds.exists?(ds.bias_probs_n||0)+' 条':'—',ds.exists?'':'dim')
+ +metric('采集 SLA 判定',(cl.exists&&cl.summary)?(cl.summary.verdict||'—'):'—',
+   (cl.exists&&cl.summary)?(cl.summary.verdict==='RED'?'bad':(cl.summary.verdict==='AMBER'?'warn':'good')):'dim')
+ +metric('采集缺口待查',(cl.exists&&cl.summary)?num(cl.summary.gap_open):'—',
+   (cl.exists&&cl.summary)?(cl.summary.gap_open>0?'warn':'good'):'dim');
  /* ── 一 舆情分布 ── */
  if(!ds.exists){
   el('dist').innerHTML='<span class="empty">'+esc(ds.error||'news.db 无当日判定')+'</span>';
@@ -263,6 +269,40 @@ function render(d){
     +'<td class="num"><b>'+esc(c.volume)+'</b></td></tr>'}).join('');
   html+='</table>';
   el('sent').innerHTML=html;
+ }
+ /* ── 七 采集新鲜度 SLA（2026-11-13 新增，只读快照） ── */
+ if(!cl.exists){
+  el('collect').innerHTML='<span class="empty">'+esc(cl.error||cl.hint||'collect_sla.json 未生成（news_collector/collect_sla.py）')+'</span>';
+ }else{
+  var cs=cl.summary||{},crows=cl.rows||[],th=cl.thresholds||{};
+  var vc=cs.verdict==='RED'?'err':(cs.verdict==='AMBER'?'warn':'ok');
+  var ch='<div class="legend">判定 <span class="badge '+vc+'">'+esc(cs.verdict||'—')+'</span>'
+   +' · RED <b>'+esc(cs.n_red||0)+'</b> / AMBER <b>'+esc(cs.n_amber||0)+'</b> / 无数据 <b>'+esc(cs.n_nodata||0)+'</b>'
+   +' · 共 '+esc(cs.n_sources||0)+' 源'
+   +' · 缺口合计 <b>'+esc(cs.gap_total==null?'—':cs.gap_total)+'</b>（已核验合法 '+esc(cs.gap_known||0)+' / 待查 <b>'+esc(cs.gap_open||0)+'</b>）'
+   +' · 生成于 '+esc(cl.generated_at||'—')+'</div>';
+  ch+='<table style="margin-top:8px"><tr><th>源</th><th>判定</th><th>最后成功</th><th>滞后</th><th>覆盖/期望</th><th>缺口</th><th>待查</th><th>连坏</th><th>备注</th></tr>';
+  ch+=crows.map(function(x){
+   var bc=x.state==='RED'?'err':(x.state==='AMBER'?'warn':(x.state==='GREEN'?'ok':'warn'));
+   var cov=(x.expected==null)?'—':(esc(x.covered)+'/'+esc(x.expected));
+   return '<tr><td>'+esc(x.label||x.source)+'</td>'
+    +'<td><span class="badge '+bc+'">'+esc(x.state||'—')+'</span></td>'
+    +'<td class="num dim">'+esc(x.last_ok_ts||'—')+'</td>'
+    +'<td class="num">'+esc(x.stale_hours==null?'—':x.stale_hours+'h')+'</td>'
+    +'<td class="num">'+cov+'</td>'
+    +'<td class="num">'+esc(x.gap==null?'—':x.gap)+'</td>'
+    +'<td class="num">'+(x.gap_open>0?'<b>'+esc(x.gap_open)+'</b>':esc(x.gap_open==null?'—':x.gap_open))+'</td>'
+    +'<td class="num">'+esc(x.consecutive_bad==null?'—':x.consecutive_bad)+'</td>'
+    +'<td class="dim" style="white-space:normal;min-width:220px">'+esc(x.note||'')+'</td></tr>'}).join('');
+  ch+='</table>';
+  ch+='<div class="legend" style="margin-top:8px">阈值来源 <b>'+esc(cl.thresholds_source||'DEFAULT')+'</b>：GREEN &lt;'+esc(th.amber_stale_hours==null?'—':th.amber_stale_hours)+'h'
+   +' · AMBER &lt;'+esc(th.red_stale_hours==null?'—':th.red_stale_hours)+'h · 其余 RED'
+   +' · 连续不达标 ≥'+esc(th.red_consecutive==null?'—':th.red_consecutive)+' 轮提级 RED'
+   +' · 本轮回周末放宽 '+esc(cl.weekend_slack_hours==null?'0':cl.weekend_slack_hours)+'h（过去 3 天含周末日累加）</div>';
+  ch+='<div class="legend">口径：<b>最后成功=产物内容最后新增</b>，不等于运行成功（append-on-new 源 0 新增时 mtime 不动，故另报运行日志时间仅用于降级解释）；'
+   +'<b>缺口</b>=分母内缺文件数，<b>待查</b>=缺口−已核验合法（白名单 30 天到期，防清单只增不减）。'
+   +'本表只给读数与判据，不含研判结论。</div>';
+  el('collect').innerHTML=ch;
  }
 }
 

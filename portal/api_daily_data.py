@@ -18,6 +18,10 @@ GET /api/daily/data   零参数
              sentiment_card 产出；活跃标的前 20，2026-11-09）
       market 市场级情绪指数（news_collector/data/market_sentiment.json，
              market_sentiment 产出；指数/状态/广度/分源，2026-11-09）
+      collect 采集新鲜度 SLA（news_collector/data/collect_sla.json，
+             collect_sla.py 产出；每源最后成功/滞后小时/覆盖缺口/连续不达标，
+             2026-11-13 新增）。只投影读数与判据，不含任何研判结论——
+             判定 GREEN/AMBER/RED 由生成器按阈值给出，阈值为经验值、非标准。
 
 只读纪律（沿 api_capability 判例）：mode=ro / fail-visible（产物缺失返回
 exists=false 合法观测态而非 500，坏 JSON 带 error 不吞）；参数白名单空集，
@@ -47,6 +51,8 @@ MARKET_JSON = REPO / "news_collector" / "data" / "market_sentiment.json"
 # A8（2026-11-10）：XQ_LATEST 收编进 REPO 锚（原写死 C:/aios 全路径绕过了
 # env AIOS_ROOT 覆盖——G2 判例的锚不一致病灶，genkit/paths.py 已立案）
 XQ_LATEST = REPO / "automation_runs" / "xq_report" / "latest.json"
+# 采集新鲜度 SLA（2026-11-13）：生成器 news_collector/collect_sla.py，只读快照
+COLLECT_JSON = REPO / "news_collector" / "data" / "collect_sla.json"
 
 CST = timezone(timedelta(hours=8))
 
@@ -355,6 +361,55 @@ def market_section() -> dict:
     }
 
 
+def collect_section() -> dict:
+    """采集新鲜度 SLA 投影（news_collector/data/collect_sla.json）。
+
+    生成器 collect_sla.py（2026-11-13）：每源最后成功时间 / 滞后小时 /
+    覆盖缺口 / 连续不达标次数。只投影读数与判据，**不含研判结论**。
+
+    字段取舍：`missing` 全量代码清单可长达数十条、且随队列变动，出口只给
+    计数与前三只样本，需要全码请直接读 JSON（机读契约）。
+    """
+    data, err = _read_json(COLLECT_JSON)
+    if err:
+        return {"exists": True, "error": err}
+    if data is None:
+        return {"exists": False, "error": None,
+                "hint": "由 news_collector/collect_sla.py 产出"}
+    rows = []
+    for r in data.get("rows") or []:
+        missing = r.get("missing") or []
+        rows.append({
+            "source": r.get("source"),
+            "label": r.get("label"),
+            "state": r.get("state"),
+            "last_ok_ts": r.get("last_ok_ts"),
+            "stale_hours": r.get("stale_hours"),
+            "covered": r.get("covered"),
+            "expected": r.get("expected"),
+            "gap": r.get("gap"),
+            "gap_open": r.get("gap_open"),
+            "gap_known": r.get("gap_known"),
+            "gap_pending_fix": r.get("gap_pending_fix"),
+            "consecutive_bad": r.get("consecutive_bad"),
+            "empty_files": r.get("empty_files"),
+            "missing_n": r.get("missing_n"),
+            "missing_sample": missing[:3],
+            "last_run_ts": r.get("last_run_ts"),
+            "note": r.get("note"),
+        })
+    return {
+        "exists": True,
+        "generated_at": data.get("generated_at"),
+        "summary": data.get("summary") or {},
+        "thresholds": data.get("thresholds") or {},
+        "thresholds_source": data.get("thresholds_source"),
+        "weekend_slack_hours": data.get("weekend_slack_hours"),
+        "rows": rows,
+        "note": data.get("note"),
+    }
+
+
 class Handler:
     def _daily_data(self, qs):
         # 零参数出口：参数白名单空集，带任何参数走 400（api_perf 判例）
@@ -371,4 +426,5 @@ class Handler:
             "health": health_section(),
             "sent": sent_section(),
             "market": market_section(),
+            "collect": collect_section(),
         })
