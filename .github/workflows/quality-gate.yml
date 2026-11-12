@@ -27,11 +27,22 @@ permissions:
   contents: read
 
 concurrency:
-  group: quality-gate-${{ github.ref }}
+  # 2026-11-12（P0-1 通知洪水修复）：ls-remote 实证 main 与 master 指向同一 SHA
+  # （84eae94，同一笔提交双推）。按 github.ref 分组会让这两个 run 各跑满约 8 分钟、
+  # 各发一条 failure 通知，且因分属不同组互不取消 —— 每笔提交被放大成两次红。
+  # 改为按提交 SHA 分组：同一 commit 的重复触发互为同组，后触发者取消前者，
+  # 只跑一次、只留一条结论。PR / 手动 / 定时仍各自独立。
+  group: quality-gate-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
   fast-gate:
+    # 2026-11-12（P0-1 通知洪水修复）：master 是 main 的镜像分支（同一 commit 双推），
+    # push 到 master 的那次 run 不再重复执行质量闸 —— run 仍会创建，但两个 job 均
+    # skipped，结论不再是 failure，从源头砍掉一半失败通知。因 main 上同一 SHA 已跑过
+    # 完全相同的闸，严格性零放宽、无漏检。
+    # PR / schedule / workflow_dispatch 不受影响，仍照常执行。
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
     # 本地实测 11:28（688s）。runner 磁盘慢、首次还要装依赖，按 2.5x 留余量；
     # timeout 触发会以红报出，掩盖真正的失败原因，故给到 45 分钟。
@@ -149,3 +160,13 @@ jobs:
 # 6. nightly-full 的 `pytest -q` 全仓跑曾稳定挂死（栈停在 os_goal_store._file_lock，
 #    成因是 deadline 用 time.time()，被同目录测试冻结墙钟后永不超时）。
 #    2026-11-08 已改 time.monotonic() 并加守卫用例，重跑实测无 Timeout。
+# 7. 2026-11-12（K-CI-20261112-DUP 通知洪水修复）：ls-remote 实证 main/master 指向
+#    同一 SHA（84eae94，同一笔提交双推），双分支各触发一次 quality-gate 且按 ref
+#    分组互不取消，每笔提交产生两条 failure；叠加自愈任务每 7~16 分钟一次提交，
+#    形成「提交→红→再修→再提交」自激振荡。修复两处（均在上方）：
+#      · concurrency.group: github.ref → github.sha（同一 commit 只跑一次）
+#      · fast-gate 增加 job 级 if：push 到 master 的 run 不再重复跑闸
+#    main 上同一 SHA 已跑过完全相同的闸，严格性零放宽、无漏检；PR/手动/定时不受影响。
+# 8. Node.js 20 deprecated annotation（checkout@v4 / setup-python@v5 / upload-artifact@v4
+#    被强制跑在 Node 24）是 warning，相关 step 全部 success，与 gate 失败无关。
+#    升级需跨 v4→v7 并核对 breaking changes，列为 P2 单独回归，勿与本次修复捆绑。
