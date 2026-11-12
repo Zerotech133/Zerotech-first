@@ -125,6 +125,74 @@ python tools/git-hooks/install_guard.py --uninstall   # 卸载（保留原有内
 
 ---
 
+## 八、2026-11-13 增补：三项裁定落地 + 全量 14 处 + 解释器盲区修正
+
+本节**追加**，不改上文历史结论（上文「5 处 / 37 处」为 2026-11-12 单时点观测，此处为复核后的准确值）。
+
+### 8.1 数字订正（两处）
+
+| 项 | 原记 | 实际 | 原因 |
+|---|---|---|---|
+| 全仓 `--all` 命中 | 37 处 | **40 处原始 → 14 处待治理** | 原 37 为口径遗漏；40 中 **28 处在 `video/pylibs/*`**（第三方库），应排除 |
+| 三目录命中 | 5 处 | **7 处**（三目录口径）/ **14 处**（全仓口径） | 漏检 2 处 f-string 内调用，见 8.2 |
+
+> 上一轮我曾把 `video/pylibs/*` 误读为顶层 `pylibs`，导致"排除第三方"第一版无效。真实路径是
+> `video/pylibs/...`（pylibs 在第二级），故排除规则改为「任一路径段命中」。
+
+### 8.2 关键缺陷修正：tokenize 的 f-string 盲区
+
+原判据用 `tokenize`。**Python ≤3.11 把整个 f-string 当作一个 STRING token**，
+所以 `f"u{abs(hash(question)) % 35 + 1:04d}"` 里的裸 `hash()` **检不出来**；
+3.12+ 会拆开才检出。实测后果：
+
+- 手工用 **3.11** 扫 → 12 处；钩子用 **3.13** 跑 → 14 处 → 同一文件报「新增」，**基线失效**。
+
+**修正**：判据改为 **`ast` 为主**（`ast.Name(id='hash')` 作 `ast.Call` 的 func；
+`xx.hash()` / `hashlib.*` 是 `ast.Attribute`，天然排除），`tokenize` 仅作语法错兜底。
+修正后 **3.11 与 3.13 结果完全一致（均 14 处）**。
+
+**收益**：新发现 2 处真实漏检 —— `tools/tests/test_kb_qa_bank_v2.py:65`、
+`tools/kb_corpus/assertion_conflict_fixture.py:35`（均为 f-string 内生成 id）。
+
+### 8.3 三项裁定的处置
+
+| 裁定项 | 处置 | 依据 |
+|---|---|---|
+| ① 何时装 idguard | **已装**（2026-11-13）。不等"清完再装"——改用**基线豁免 + 分域 enforce**：`news_collector/**` 硬拦（该目录基线 0 命中，零误伤）、其余目录 audit 只告警 | 时间不是质量判据；分域让「该保护的立刻受保护」，不必等全网清零 |
+| ② 5 处是否代改 | **不代改**。已出 `docs/id_stability_cleanup_worklist.md`，逐条给级别+补丁+归属线 | 改法涉业务语义（`rid` 要唯一还是要稳定、`fp` 消费方类型），改错静默改变业务行为；且改后需该线验证 |
+| ③ `--all` 是否纳入 | **纳入，但先剥第三方**。28 处 `video/pylibs/*` 属库内部实现，非本仓治理对象 | 治理对象应是「我们生成的 id」，不是第三方库的 hash 实现 |
+
+### 8.4 14 处定级摘要（详见工单）
+
+- **P1 真 bug 6 处**：回测种子（`liudu_trial_run.py:180`）、行情指纹（`sector_state.py:303` +
+  `sector_replay.py:102`）、记忆 id（`memory/store.py:136`）、MinHash 签名（`phase1_dq.py:49`）、
+  断言 id（`assertion_conflict_fixture.py:35`）
+- **P2 5 处**：血缘 rid（`data_lineage.py:104`）+ 测试分桶/期望 id（`tools/tests/*` 4 处）
+- **P3 3 处**：沙箱名（已含 `time.time()`）、已撤回补丁内的临时文件、`tmp_path` 隔离的临时目录
+
+**采集主线 `news_collector/` 0 命中** —— 这是本席能立刻转硬拦的前提。
+
+### 8.5 验收证据（2026-11-13 实测）
+
+```
+本线 news_collector/ 注入裸 hash        → hook rc=1 阻断 ✓
+tools/ 注入裸 hash                      → hook rc=0 告警 ✓
+基线内文件（加无关注释后暂存）           → hook 输出 0 行，完全静默 ✓
+--all 双解释器一致性                    → 3.11=14 / 3.13=14 ✓
+--all 基线生效后                        → 0 新增 / 14 条已知 ✓
+```
+
+### 8.6 转全量 enforce 的判据（替代"观察一周"）
+
+按线清零、逐线纳入硬拦：`news_collector/`（**已完成**）→ `quant_backtest/`（3 处 P1，危害最大）
+→ `tools/kb_corpus/`（2 处 P1）→ `tools/tests/`（5 处）→ `agent_platform/`（3 处）→
+`deliverables/withdrawn-*`（确认废弃则归档）。全部清零 → 基线清空 → 全量 enforce。
+
+---
+
 ## 修订记录
 
 - v1（2026-11-12 23:45）：初版。R-01 修复 + 检查器 + 钩子块注册 + 普查表 + 实证。
+- v2（2026-11-13 00:xx）：追加 §八。三项裁定处置；全仓命中订正 37→14（排除 `video/pylibs/*` 28 处）；
+  判据改 AST 修复 f-string 盲区（3.11/3.13 结果一致，新发现 2 处）；idguard 已装（分域 enforce）；
+  存量清理工单见 `docs/id_stability_cleanup_worklist.md`。

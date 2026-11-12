@@ -1,0 +1,21 @@
+{
+  "_note": "裸 hash() 存量基线：仅用于让守卫先上线（存量不阻塞、增量必拦）。待归属线清理后应逐项删除，删除即恢复严格拦截。",
+  "_howto": "重生成：python tools/id_stability_lint.py --write-baseline",
+  "count": 14,
+  "keys": [
+    "agent_platform/memory/store.py|1b025455a36955d7",
+    "agent_platform/tools/agent_sandbox.py|5d7d1797d20eb3b5",
+    "agent_platform/tools/data_lineage.py|5b1ddfd3bba79603",
+    "deliverables/withdrawn-warn-patch-20261020/test_devtask_owner_domain_status.py|a1b4cc2cc502d2f8",
+    "quant_backtest/sector_replay.py|a2d011b3ac7ab03f",
+    "quant_backtest/sector_state.py|a2d011b3ac7ab03f",
+    "quant_backtest/tools/liudu_trial_run.py|6f9df969df0037aa",
+    "tools/kb_corpus/assertion_conflict_fixture.py|a117a2431b16bc75",
+    "tools/kb_corpus/phase1_dq.py|5803844352ffc6d3",
+    "tools/tests/test_kb_qa_bank_v2.py|27ab7ab29cd2a82f",
+    "tools/tests/test_kb_qa_bank_v2.py|909f7b7377758494",
+    "tools/tests/test_kb_qa_bank_v2.py|f7ee3b29c0cd3f47",
+    "tools/tests/test_kb_qa_bank_v3.py|70f80a1b2f4e418d",
+    "tools/tests/test_r1_daily_check.py|7257fb4fe7c24e74"
+  ]
+}

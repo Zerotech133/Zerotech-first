@@ -255,3 +255,90 @@ python -c "import sys;sys.path.insert(0,'news_collector');import xq_stock_timeli
 
 ### 边界声明
 本席只做采集/治理工程：**未改任何他线代码、未裁任何阈值、未动扩源决策、未安装共享 git 钩子**（仅注册块代码，`--status` 确认未安装）。
+
+---
+
+## 十、R-03：三项裁定落地（idguard 安装 + 分域 enforce + 存量工单）· 2026-11-13
+
+> **状态变更提示**：上节 R-02 边界声明的「未安装共享 git 钩子」，**自本节起已变更**——
+> idguard 块已于 2026-11-13 安装。
+
+### 10.1 三项裁定的处置
+
+| 裁定项 | 处置 |
+|---|---|
+| ① idguard 何时装 | **已装**。不等"清完存量"，改用**基线豁免 + 分域 enforce** |
+| ② 5 处是否代改 | **不代改**，改为出工单（`docs/id_stability_cleanup_worklist.md`），逐条给级别+补丁+归属 |
+| ③ `--all` 是否纳入 | **纳入，但先剥第三方**：28 处 `video/pylibs/*` 属库内部实现，非治理对象 |
+
+### 10.2 数字订正（两处，均系本席前次记录有误）
+
+| 项 | 原记 | 实际 | 原因 |
+|---|---|---|---|
+| 全仓 `--all` | 37 处 | 40 原始 → **14 待治理** | 40 中 28 处在 `video/pylibs/*`（第三方）；原 37 为口径遗漏 |
+| 三目录 | 5 处 | **7 处**（三目录）/ 14（全仓） | 漏检 2 处 f-string 内调用，见 10.3 |
+
+### 10.3 判据缺陷修正：tokenize 的 f-string 盲区（重要）
+
+原判据用 `tokenize`。**Python ≤3.11 把整个 f-string 当一个 STRING token** →
+`f"u{abs(hash(question)) % 35 + 1:04d}"` 里的裸 `hash()` **检不出**；3.12+ 才拆开。
+实测后果：手工用 **3.11** 扫出 12 处，钩子用 **3.13**（PATH 上 `python` 实为 3.13.14）跑出 14 处 →
+同一文件被判「新增」，基线失效。
+
+**修正**：判据改 **`ast` 为主**（`ast.Name(id='hash')` 作 `ast.Call` 的 func；`xx.hash()` /
+`hashlib.*` 是 `ast.Attribute`，天然排除），`tokenize` 仅作语法错兜底。
+修正后 **3.11 与 3.13 结果完全一致（14/14）**，并新发现 2 处真实漏检。
+
+### 10.4 守卫当前策略（已生效）
+
+| 暂存路径 | 模式 | 行为 |
+|---|---|---|
+| `news_collector/**` | **enforce** | 新增裸 hash → **阻断提交**（本线基线 0 命中，零误伤） |
+| 其余目录 | audit | 新增裸 hash → 告警 + 留痕，不阻断 |
+| 基线内 14 条 | 豁免 | 不告警（`tools/id_stability_baseline.json`，按「文件+源码行指纹」，行号漂移不影响） |
+| `WB_ID_GUARD_ENFORCE=1` | 全量 enforce | 基线内仍豁免 |
+
+### 10.5 验收证据（实测，非声明）
+
+```
+本线 news_collector/ 注入裸 hash   → hook rc=1 阻断 ✓
+tools/ 注入裸 hash                 → hook rc=0 告警 ✓
+基线内文件（加无关注释后暂存）      → hook 输出 0 行，完全静默 ✓
+--all 双解释器一致性               → 3.11=14 / 3.13=14 ✓
+--all 基线生效后                   → 0 新增 / 14 条已知 ✓
+install_guard.py --status          → idguard 块 已安装；worktree/eol 保持 audit ✓
+```
+
+### 10.6 14 处定级（详见工单 `docs/id_stability_cleanup_worklist.md`）
+
+- **P1 真 bug 6**：`quant_backtest/tools/liudu_trial_run.py:180`（回测种子→不可复现）、
+  `quant_backtest/sector_state.py:303` + `sector_replay.py:102`（行情指纹→缓存恒失效）、
+  `agent_platform/memory/store.py:136`（记忆 id→去重失效）、
+  `tools/kb_corpus/phase1_dq.py:49`（MinHash→签名不可比）、
+  `tools/kb_corpus/assertion_conflict_fixture.py:35`（断言 id）
+- **P2 5**：`agent_platform/tools/data_lineage.py:104`（rid 语义双向可疑）+ `tools/tests/*` 4 处（测试不稳定）
+- **P3 3**：`agent_platform/tools/agent_sandbox.py:81`（已含 time.time）、
+  `deliverables/withdrawn-*` 临时文件、`tools/tests/test_r1_daily_check.py:113`（tmp_path 隔离）
+- **采集主线 `news_collector/` = 0 命中**（这是能立刻转硬拦的前提）
+
+### 10.7 转全量 enforce 的判据（替代"观察一周"）
+
+按线清零、逐线纳入硬拦：`news_collector/`（**已完成**）→ `quant_backtest/`（3 处 P1，危害最大）
+→ `tools/kb_corpus/`（2 处 P1）→ `tools/tests/`（5 处）→ `agent_platform/`（3 处）→
+`deliverables/withdrawn-*`（确认废弃则归档）。全部清零 → 基线清空 → 全量 enforce。
+
+### 10.8 复现命令
+```
+python tools/id_stability_lint.py --all                    # 全仓普查（已排第三方）
+python tools/id_stability_lint.py --all --no-baseline      # 只看新增
+python tools/id_stability_lint.py --all --show-known       # 列出基线内已知
+python tools/id_stability_lint.py --all --write-baseline   # 收缩基线（清零后执行）
+python tools/git-hooks/install_guard.py --status           # 守卫状态
+python tools/git-hooks/install_guard.py --uninstall        # 回滚（仅卸块，保留原有内容）
+```
+
+### 10.9 边界声明（R-03）
+- **未改任何他线代码**：14 处命中只定位、定级、给补丁，未落任何一行到他线文件。
+- **未裁任何阈值/扩源/研判**：本项纯工程护栏。
+- **已装共享钩子**（与 R-02 不同）：装的是 `install_guard.py` 生成的**托管块**（按标记增删），
+  未手改 `.git/hooks/pre-commit`；回滚一条命令；分域设计保证他线提交不被阻断。
