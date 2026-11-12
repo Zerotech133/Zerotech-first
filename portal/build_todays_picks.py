@@ -46,6 +46,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import date as _date
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -61,6 +62,19 @@ QB = os.path.join(ROOT, "quant_backtest")
 ASHARE_DIR = os.path.join(QB, "data", "ashare")  # 收盘行情主库（TdpSync 16:0x 落盘）
 OUT = os.path.join(HERE, "data", "todays_picks.json")
 STALE_LAG_DAILY = 4  # 日扫源允许的最大滞后自然日（覆盖周末+小长假；五审闸门）
+
+# ── 四十一审三闸（2026-11-12 盘后复盘落地，用户拍板）────────────────────
+# 当日实证（普跌日，全市场均值 -1.65%）：名单 597 只整体 -2.09% 跑输 0.44pp。
+# ① 弱势日不缩名单：盘前 score=12 / 下跌概率 79 时清单照发 597 只——
+#   盘面判断与选股名单之间没有任何联动。
+# ② 共振保护层缺位：T2 里 bull（看多源数）=1 的 38 只、=0 的 10 只混在一起，
+#   后验分层从未在 T2 内部生效。
+# ③ 信号龄无过期：T2 里挂着 78 天前的 2买（亿华通 08-25）；当日实测
+#   bull=1 且龄>30交易日 -1.64% vs 龄内 -1.27%，旧信号更差还没人清。
+# 三条闸门（对齐当日数据预演：T2 48→约 13 只；T1 bull>=2 口径不动——
+# 当日 T1 停挂是数据问题，不是口径问题）：
+WEAK_DAY = {"score_max": 30, "prob_min": 70}   # premarket_latest 的 overall/prob
+SIG_MAX_TRADE_DAYS = 30                        # T2 信号龄硬过期（交易日）
 BASIS_FAIL_RC = 4  # 基准新鲜度闸门失败退出码（与 0=正常 / 3=T1停挂 区分）
 # P5b 毒层过滤开关（2026-10-11 启用，用户拍板）：毒层买点不计 T1 共振。
 # 回退=改 False（cl_buy/载荷计数即刻恢复同权口径）。
@@ -716,9 +730,75 @@ def _pick_sort_key(x):
     """清单排序键（P5c 形态 C 2026-10-11 启用）：tier → tier 内缠论 1买
     （q_first_buy，唯一正中位层）置顶 → n_hit 降序 → code。纯展示层
     优先级，不影响 tier 判定/拦截；形态 B（strong∩chanlun 通道 1买
-    独占）待影子达标另议，数据工具 t1_channel_verdicts.py。"""
+    独占）待影子达标另议，数据工具 t1_channel_verdicts.py。
+    四十一审补：弱势日被缩掉的 T3（weak_day_trim）沉到同 tier 最底。"""
     order = {"T1": 0, "T2": 1, "CROWD": 2, "T3": 3}
-    return (order[x["tier"]], not x.get("q_first_buy"), -x["n_hit"], x["code"])
+    return (order[x["tier"]], not x.get("q_first_buy"), -x["n_hit"],
+            bool(x.get("weak_day_trim")), x["code"])
+
+
+def _sig_age_days(e, basis_day):
+    """票内最新缠论买点距基准日的自然日数（供交易日折算）。
+
+    只看买点（'买' in tag）——卖点是离场依据不是入场信号，龄再长也不该
+    把一只票从看多层清出去。无 chanlun 日期的票（strong/qpzm 单源）返回
+    None：这类源的时效由五源 stale 闸门把关，这里不重复设卡。
+    """
+    days = []
+    for s in e["sources"]:
+        if s.get("s") != "chanlun" or "买" not in (s.get("tag") or ""):
+            continue
+        d = s.get("dt") or ""
+        if len(d) >= 10 and d[4] == "-" and basis_day:
+            try:
+                y1, m1, d1 = int(d[:4]), int(d[5:7]), int(d[8:10])
+                y2, m2, d2 = int(basis_day[:4]), int(basis_day[4:6]), int(basis_day[6:8])
+                days.append((_date(y2, m2, d2) - _date(y1, m1, d1)).days)
+            except Exception:
+                continue
+    return min(days) if days else None
+
+
+def _bull_count(srcs):
+    """看多源计数（与 tier_of 的 bull 同口径，抽出供闸门复用）。
+
+    与 n_hit（源总数）不同：weak/ninedim/卖点/回避都不算看多。2026-11-12
+    复盘教训：把源总数当共振，会把 weak:深度垫底（超跌反弹标记）误读成
+    「共振保护」——方向反了的信号凑数比单信号更危险。
+    """
+    tags = [s.get("tag") or "" for s in srcs if s["s"] == "chanlun"]
+    cl_buy = any("买" in t for t in tags) and not any("卖" in t for t in tags)
+    if TOXIC_EXCLUDE and cl_buy and _chanlun_toxic(srcs):
+        cl_buy = False
+    return (
+        any(s["s"] == "qpzm" and s.get("tag") == "买入" for s in srcs)
+        + cl_buy
+        + any(s["s"] == "strong" and s.get("tag") == "板块领涨" for s in srcs)
+    )
+
+
+def _weak_market_state(basis_day):
+    """读盘前情绪快照，判今日是否弱势日（fail-open：读不到=不缩名单）。
+
+    联动点：premarket_latest.json 的 overall（五维总分，0~100）与 prob
+    （下跌概率 %）。11-12 实证：overall=12、prob=79，名单照发 597 只、
+    当日 -2.09% vs 基准 -1.65%——盘面判断和名单之间没有联动，这是当日
+    最大的口径缺口。缺文件/字段缺失/非交易快照（生成日≠基准日）都按
+    「判不了」处理：宁可漏报弱势，不可用昨天的情绪缩今天的名单。
+    """
+    fp = os.path.join(QB, "reports", "premarket_latest.json")
+    try:
+        d = json.load(open(fp, encoding="utf-8"))
+    except Exception:
+        return None
+    snap_day = _ymd((d.get("ts") or "")[:10]) or _ymd(str(d.get("trade_date") or ""))
+    if snap_day != basis_day:
+        return None                     # 快照不是今天的，情绪不可外推
+    score, prob = d.get("overall"), d.get("prob")
+    if not isinstance(score, (int, float)) or not isinstance(prob, (int, float)):
+        return None
+    return {"score": score, "prob": prob,
+            "weak": score <= WEAK_DAY["score_max"] or prob >= WEAK_DAY["prob_min"]}
 
 
 def tier_of(e, veto_ok=True, gate_tight=False):
@@ -902,7 +982,6 @@ def _basis_guard(basis_day, ashare_day=None):
             "（TdxSync_A_高频 17:35 未同步/失败）" % (b, a)
         )
     if os.environ.get("PICKS_BASIS_STRICT", "0") == "1" and a and b and b == a:
-        from datetime import date as _date
         today = _date.today()
         t = today.strftime("%Y%m%d")
         if today.weekday() < 5 and t > b:
@@ -1097,10 +1176,35 @@ def main():
     # env_gate 缺失 → gate_tight=False（fail-closed，不打日级标注）。
     env_gate = (metas.get("qpzm") or {}).get("env_gate")
     gate_tight = bool(env_gate and env_gate.get("safe") is False)
+    # 四十一审①：弱势日联动（fail-open）。盘前 score/prob 判弱时，
+    # 名单缩到 T1 + 「T2 干净层」——T3 单信号层整体降为影子标注
+    # （保留在 stocks 里带 weak_day_trim=true，页面与后验仍可见）。
+    # 11-12 实证：普跌日 T3 五百多只平均比市场多跌 0.5pp，最大的负超额
+    # 来源就是这一层；缩掉它是当日复盘最直接的止血。
+    wm = _weak_market_state(basis0)
+    weak_day = bool(wm and wm.get("weak"))
+    n_sig_stale = 0
     n_env_diff = n_panic_buy = n_exempt = n_q_toxic = n_q_first = 0
     for c, e in stocks.items():
         e["n_hit"] = len({s["s"] for s in e["sources"]} - {"cross"})
         e["tier"] = tier_of(e, veto_ok, gate_tight)
+        # 四十一审②③：T2 收口 —— bull 恰 1（单看多源，与 T1 的 bull>=2
+        # 同一序列）+ 信号龄 <=30 交易日。bull=0 的 T2 是被否决/毒层压下来
+        # 的边缘票（当日 -1.44%，且无独立验证价值），龄超的旧买点当日
+        # -1.64% vs 龄内 -1.27%，都清回 T3。归因写进 sources 供页面显示。
+        if e["tier"] == "T2":
+            if _bull_count(e["sources"]) == 0:
+                e["tier"] = "T3"
+                e["t2_demote_why"] = "无看多源（否决/毒层压降的边缘票）"
+            else:
+                age = _sig_age_days(e, basis0)
+                # 自然日 42 ≈ 交易日 30（含约 6 周末 + 假期余量）
+                if age is not None and age > 42:
+                    e["tier"] = "T3"
+                    e["t2_demote_why"] = "信号龄 %d 天（>30 交易日）" % age
+                    n_sig_stale += 1
+        if weak_day and e["tier"] == "T3":
+            e["weak_day_trim"] = True
         d, p, why = _env_diff_shadow(e, gate_tight)
         if d:
             e["env_diff"] = True
@@ -1180,6 +1284,18 @@ def main():
                 if veto_ok
                 else "关键源（否决/证据/封顶）异常失败，T1 当日停挂"
                 "（共振票降 T2/T3）——三十九审五源全景闸"
+            ),
+        },
+        # 四十一审①②③（2026-11-12）：弱势日联动 + T2 收口 + 信号龄硬过期
+        "risk_gate": {
+            "weak_day": weak_day,
+            "weak_day_ref": wm,
+            "t2_sig_stale_demoted": n_sig_stale,
+            "sig_max_trade_days": SIG_MAX_TRADE_DAYS,
+            "note": (
+                "盘前 score<=%(score_max)d 或 prob>=%(prob_min)d → 名单缩至 T1+T2；"
+                "T2 收口为 bull=1 且信号龄<=%d 交易日"
+                % dict(WEAK_DAY, d=SIG_MAX_TRADE_DAYS)
             ),
         },
         "counts": {

@@ -722,3 +722,115 @@ def test_pct_between_partial_factor_missing_degrades():
         assert pct_between("600000.SH", "20260501", "20260502") == "exdiv"
     finally:
         monkeypatch.undo()
+
+
+# ── 四十一审三闸（2026-11-12 盘后复盘落地）──────────────────
+def test_bull_count_only_counts_bullish_sources():
+    """bull 口径：qpzm买入/chanlun买(无同批卖)/strong领涨 计 1，其余 0。
+
+    与 n_hit（源总数）区分的判例：weak:深度垫底+chanlun买 的票 n_hit=2
+    但 bull=1——把源总数当共振会把超跌反弹标记误读成「共振保护」。
+    """
+    assert btp._bull_count([STRONG_LEAD, CL_BUY]) == 2
+    assert btp._bull_count([QPZM_BUY, CL_BUY]) == 2
+    assert btp._bull_count([CL_BUY]) == 1
+    assert btp._bull_count([CL_BUY, CL_SELL]) == 0          # 同批买卖并存
+    assert btp._bull_count([WEAK, CL_BUY]) == 1             # weak 不算看多
+    assert btp._bull_count([QPZM_AVOID, CL_BUY]) == 1       # 回避不算看多
+    assert btp._bull_count([NINEDIM_LOW]) == 0              # 九维影子不算
+    assert btp._bull_count([CL_3BUY_BEI_F]) == 0            # 毒层买点不算
+
+
+def test_sig_age_days_buy_only_and_fallback():
+    """信号龄只看买点；无 chanlun 日期返回 None（stale 闸门已把关）。"""
+    e = {"sources": [CL_BUY, {"s": "chanlun", "tag": "1卖", "dt": "2026-08-01"}]}
+    # CL_BUY dt=2026-09-16，基准 20261010 → 24 天；卖点 08-01 不参与
+    assert btp._sig_age_days(e, "20261010") == 24
+    assert btp._sig_age_days({"sources": [STRONG_LEAD]}, "20261010") is None
+    assert btp._sig_age_days({"sources": []}, "20261010") is None
+
+
+def test_sig_age_days_takes_freshest_buy():
+    """多买点取最新（min 龄）——旧买点不该把带新买点的票清出去。"""
+    e = {"sources": [
+        {"s": "chanlun", "tag": "2买", "dt": "2026-08-25"},   # 78 天旧
+        CL_BUY,                                               # 2026-09-16
+    ]}
+    assert btp._sig_age_days(e, "20261010") == 24
+
+
+def test_weak_market_state_gate(monkeypatch):
+    """弱势日判定：快照日≠基准日 → None（fail-open）；字段齐 → weak 按
+    score/prob 阈值判。11-12 判例：score=12 / prob=79 → weak=True。"""
+    import builtins
+    orig_open = builtins.open
+
+    def fake_open(fp, *a, **k):
+        if "premarket_latest" in str(fp):
+            import io as _io
+            return _io.StringIO(json.dumps({
+                "ts": "2026-11-12T08:49:36+08:00", "trade_date": "20261112",
+                "overall": 12, "prob": 79,
+            }))
+        return orig_open(fp, *a, **k)
+
+    monkeypatch.setattr(builtins, "open", fake_open)
+    assert btp._weak_market_state("20261112") == {
+        "score": 12, "prob": 79, "weak": True}
+    assert btp._weak_market_state("20261111") is None      # 快照不是这一天
+
+
+# ── 四十一审三闸（2026-11-12 盘后复盘落地）──────────────────
+def test_bull_count_only_counts_bullish_sources():
+    """bull 口径：qpzm买入/chanlun买(无同批卖)/strong领涨 计 1，其余 0。
+
+    与 n_hit（源总数）区分的判例：weak:深度垫底+chanlun买 的票 n_hit=2
+    但 bull=1——把源总数当共振会把超跌反弹标记误读成「共振保护」。
+    """
+    assert btp._bull_count([STRONG_LEAD, CL_BUY]) == 2
+    assert btp._bull_count([QPZM_BUY, CL_BUY]) == 2
+    assert btp._bull_count([CL_BUY]) == 1
+    assert btp._bull_count([CL_BUY, CL_SELL]) == 0          # 同批买卖并存
+    assert btp._bull_count([WEAK, CL_BUY]) == 1             # weak 不算看多
+    assert btp._bull_count([QPZM_AVOID, CL_BUY]) == 1       # 回避不算看多
+    assert btp._bull_count([NINEDIM_LOW]) == 0              # 九维影子不算
+    assert btp._bull_count([CL_3BUY_BEI_F]) == 0            # 毒层买点不算
+
+
+def test_sig_age_days_buy_only_and_fallback():
+    """信号龄只看买点；无 chanlun 日期返回 None（stale 闸门已把关）。"""
+    e = {"sources": [CL_BUY, {"s": "chanlun", "tag": "1卖", "dt": "2026-08-01"}]}
+    # CL_BUY dt=2026-09-16，基准 20261010 → 24 天；卖点 08-01 不参与
+    assert btp._sig_age_days(e, "20261010") == 24
+    assert btp._sig_age_days({"sources": [STRONG_LEAD]}, "20261010") is None
+    assert btp._sig_age_days({"sources": []}, "20261010") is None
+
+
+def test_sig_age_days_takes_freshest_buy():
+    """多买点取最新（min 龄）——旧买点不该把带新买点的票清出去。"""
+    e = {"sources": [
+        {"s": "chanlun", "tag": "2买", "dt": "2026-08-25"},   # 78 天旧
+        CL_BUY,                                               # 2026-09-16
+    ]}
+    assert btp._sig_age_days(e, "20261010") == 24
+
+
+def test_weak_market_state_gate(monkeypatch):
+    """弱势日判定：快照日≠基准日 → None（fail-open）；字段齐 → weak 按
+    score/prob 阈值判。11-12 判例：score=12 / prob=79 → weak=True。"""
+    import builtins
+    orig_open = builtins.open
+
+    def fake_open(fp, *a, **k):
+        if "premarket_latest" in str(fp):
+            import io as _io
+            return _io.StringIO(json.dumps({
+                "ts": "2026-11-12T08:49:36+08:00", "trade_date": "20261112",
+                "overall": 12, "prob": 79,
+            }))
+        return orig_open(fp, *a, **k)
+
+    monkeypatch.setattr(builtins, "open", fake_open)
+    assert btp._weak_market_state("20261112") == {
+        "score": 12, "prob": 79, "weak": True}
+    assert btp._weak_market_state("20261111") is None      # 快照不是这一天
