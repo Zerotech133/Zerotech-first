@@ -31,7 +31,10 @@ $rc = $LASTEXITCODE
 Add-Content -Path $log -Value ("exit=$rc " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
 if ($rc -ne 0) {
     # G14-dedup: alert only on first failure of the calendar day (dedupe key =
-    # local yyyyMMdd in flag file); repeats within same day -> one log line only
+    # local yyyyMMdd in flag file); repeats within same day -> one log line only.
+    # Race hardening: concurrent runs (manual multi-start) both pass the read ->
+    # write "already sent" check. Lock file wins: create-exclusive decides the
+    # single alerter; loser reads today's date from the winner's write.
     $flag = Join-Path $root 'logs\guba_alert_sent.flag'
     $today = (Get-Date).ToString('yyyyMMdd')
     $sentDay = ''
@@ -39,9 +42,27 @@ if ($rc -ne 0) {
     if ($sentDay -eq $today) {
         Add-Content -Path $log -Value ("alert suppressed (already sent today " + $today + ")") -Encoding ascii
     } else {
-        & $py -X utf8 (Join-Path (Split-Path $root -Parent) 'news_collector\alert_fail_wrap.py') guba_crawl $rc $err 1>$null 2>$null
-        Set-Content -Path $flag -Value $today -Encoding ascii
-        Add-Content -Path $log -Value ("alert sent for " + $today) -Encoding ascii
+        $lock = Join-Path $root 'logs\guba_alert.lock'
+        $got = $false
+        try { [void][IO.File]::WriteAllText($lock, $today); $got = $true }
+        catch [System.IO.IOException] { $got = $false }  # file in use = loser
+        catch { $got = $true }  # other IO errors: prefer alerting over silence
+        if (-not $got) {
+            Start-Sleep -Seconds 3
+            $recheck = ''
+            if (Test-Path $flag) { $recheck = (Get-Content $flag -Raw).Trim() }
+            if ($recheck -ne $today) {
+                & $py -X utf8 (Join-Path (Split-Path $root -Parent) 'news_collector\alert_fail_wrap.py') guba_crawl $rc $err 1>$null 2>$null
+                Set-Content -Path $flag -Value $today -Encoding ascii
+                Add-Content -Path $log -Value ("alert sent for " + $today + " (lock lost)") -Encoding ascii
+            } else {
+                Add-Content -Path $log -Value ("alert suppressed (lock lost, winner sent)") -Encoding ascii
+            }
+        } else {
+            & $py -X utf8 (Join-Path (Split-Path $root -Parent) 'news_collector\alert_fail_wrap.py') guba_crawl $rc $err 1>$null 2>$null
+            Set-Content -Path $flag -Value $today -Encoding ascii
+            Add-Content -Path $log -Value ("alert sent for " + $today) -Encoding ascii
+        }
     }
 }
 exit $rc
