@@ -134,6 +134,10 @@ DATE_COL_HINT = {
     "ts_news": "datetime", "ts_major_news": "pub_time",
     "ts_new_share": "ipo_date", "ts_stk_surv": "surv_date",
     "ts_fut_weekly_detail": "week_date",
+    # SQLite 后端（tdx_info.db），列里没有 trade_date；不写清楚会退回猜列，
+    # 2026-11-12 曾把 stock_notice 的 symbol 当成日期，整表判成 absent。
+    "stock_news": "pub_date", "stock_report": "pub_date",
+    "stock_notice": "notice_date",
 }
 
 _FIN_KEYS = ("fina", "income", "balancesheet", "cashflow", "forecast",

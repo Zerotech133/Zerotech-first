@@ -44,6 +44,7 @@ import datetime as dt
 import json
 import os
 import re
+import sqlite3
 import sys
 import time
 import urllib.error
@@ -57,12 +58,14 @@ import data_contracts as DC  # noqa: E402
 
 REPORTS = os.path.join(HERE, "reports")
 MANIFEST = os.path.join(HERE, "data", "tdx", "_manifest.json")
+SQLITE_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
 UPSTREAM = "http://rookie.xtcloud-tech.com:48088"
 CONS_CACHE = os.path.join(HERE, "reports", "_consumers_cache.json")
 SKIP_DIRS = ("__pycache__", ".git", "data", "reports", "h5_daily",
              "node_modules", ".workbuddy", "logs")
-_DATE_KEYS = ("trade_date", "cal_date", "end_date", "ann_date", "date", "datetime",
-              "time", "pub_time", "ipo_date", "surv_date", "week_date", "break_time")
+_DATE_KEYS = ("trade_date", "cal_date", "end_date", "ann_date", "notice_date",
+              "pub_date", "date", "datetime", "time", "pub_time", "ipo_date",
+              "surv_date", "week_date", "break_time")
 _TBL_RE = re.compile(r"\b((?:ts|tdx|stock|dknife)_[a-z0-9_]+)\b")
 
 
@@ -133,6 +136,45 @@ def _fast_asof(tbl, dcol):
     return None
 
 
+def _meta_asof(tbl, dcol):
+    """从 parquet 页脚的 row-group statistics 取全表最大日期 —— 只读 footer，不读数据。
+
+    为什么必须换成这个（2026-11-12 复核计划任务队列时发现）
+    ------------------------------------------------------
+    分片【不按日期排序】：远端会把新行 append 进旧分片。原来的快路径只读末两片，
+    于是 ts_fund_portfolio 被算成 asof=2020-08-31（真实 2026-06-30）、
+    ts_stk_week_month_adj 算成 1995-02-10（真实 2026-10-31），滞后 1500+ 交易日，
+    全被误判成 dead，还差点让自愈 Agent 去拉一堆根本没缺的数据。
+    大表又因为"全片复核太慢"被跳过 —— 两头都不准。
+
+    页脚统计里有每个 row-group 每列的 min/max，是写入时算好的，
+    实测 5 张大表各 0.01~0.05s；比"读末两片"还快，且覆盖全部分片。
+    """
+    import pyarrow.parquet as pq
+    import tdx_read as T
+    best = None
+    for p in T._parts(tbl):
+        try:
+            pf = pq.ParquetFile(str(p))
+            cols = pf.schema_arrow.names
+            if dcol not in cols:
+                continue
+            j = cols.index(dcol)
+            md = pf.metadata
+            for i in range(md.num_row_groups):
+                st = md.row_group(i).column(j).statistics
+                if not st or st.max is None:
+                    continue
+                v = st.max.decode("utf-8", "replace") if isinstance(st.max, bytes) \
+                    else str(st.max)
+                n = _norm(v)
+                if n and (best is None or n > best):
+                    best = n
+        except Exception:
+            continue
+    return best
+
+
 def _full_asof(tbl, dcol):
     import pandas as pd
     import tdx_read as T
@@ -197,6 +239,83 @@ def _shrink(tbl, dcol, day):
             "shrunk": ratio < 0.5}
 
 
+# ── SQLite 后端：新闻三表不在 parquet 分片里 ─────────────────────────────
+# 2026-11-12 实证（挂计划任务前复核消费方式时挖出来的）：
+#   stock_news / stock_notice / stock_report 由 tdx_sync.sync_sqlite_table 写进
+#   data/tdx/tdx_info.db（289MB，41万/22万/15万行，数据到 11-10），根本没有
+#   data/tdx/<表>/*.parquet 目录。体检器只找 parquet，把它们判成 absent，
+#   再归因成「账实不符」，差点让 heal_agent 去重置账本全量重拉 ——
+#   而那三张表在 SQLite 里【没有主键】，INSERT OR IGNORE 不去重，
+#   整份重拉等于把每张表复制一遍。判据错 → 修法跟着错 → 自动执行就是事故。
+# 所以：数据在哪就按哪读，不能只认一种存储形态。
+_SQL_TBLS = None
+
+
+def _sqlite_tables():
+    """只读打开，从 sqlite_master 取真实表名集合（不写死名单）。"""
+    global _SQL_TBLS
+    if _SQL_TBLS is None:
+        found = set()
+        try:
+            uri = "file:%s?mode=ro" % SQLITE_DB.replace("\\", "/")
+            c = sqlite3.connect(uri, uri=True, timeout=5)
+            found = {r[0] for r in c.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'")}
+            c.close()
+        except Exception:
+            pass
+        _SQL_TBLS = found
+    return _SQL_TBLS
+
+
+def _sqlite_schema(tbl):
+    try:
+        uri = "file:%s?mode=ro" % SQLITE_DB.replace("\\", "/")
+        c = sqlite3.connect(uri, uri=True, timeout=5)
+        cols = [r[1] for r in c.execute("PRAGMA table_info(%s)" % tbl)]
+        n = c.execute("SELECT COUNT(*) FROM %s" % tbl).fetchone()[0]
+        c.close()
+        return cols, n
+    except Exception:
+        return None, 0
+
+
+def _sqlite_asof(tbl, dcol):
+    """SQLite 里全表 MAX(日期列)：SQL 聚合，几十万行也是毫秒级，不用快路径。"""
+    try:
+        uri = "file:%s?mode=ro" % SQLITE_DB.replace("\\", "/")
+        c = sqlite3.connect(uri, uri=True, timeout=5)
+        v = c.execute("SELECT MAX(%s) FROM %s" % (dcol, tbl)).fetchone()[0]
+        c.close()
+        return _norm(v)
+    except Exception:
+        return None
+
+
+def _sqlite_shrink(tbl, dcol, day):
+    """按日聚合行数，判「日期在走但行数塌了」。口径与 parquet 版一致。"""
+    try:
+        uri = "file:%s?mode=ro" % SQLITE_DB.replace("\\", "/")
+        c = sqlite3.connect(uri, uri=True, timeout=5)
+        rows = c.execute(
+            "SELECT %s AS d, COUNT(*) FROM %s GROUP BY d ORDER BY d DESC LIMIT 40"
+            % (dcol, tbl)).fetchall()
+        c.close()
+    except Exception:
+        return None
+    vals = {_norm(d): int(n) for d, n in rows if _norm(d)}
+    if len(vals) < 5:
+        return None
+    import statistics
+    med = statistics.median(vals.values())
+    if med < 10 or day not in vals:
+        return None
+    n = vals[day]
+    return {"day": day, "rows": n, "median": int(med),
+            "ratio": round(n / med, 3), "shrunk": n / med < 0.5,
+            "backend": "sqlite"}
+
+
 # ── 上游探针 ─────────────────────────────────────────────
 _UP_CACHE = os.path.join(REPORTS, "_upstream_cache.json")
 _UP_TTL = 1800
@@ -223,9 +342,13 @@ def _upstream(tbl, timeout=12, use_cache=True):
 
     判据为什么是这个（2026-11-12 踩过两次）
     ----------------------------------------
-    ① 上游 API **不返回** _fetched_at。早先硬编码 row[8] 当投喂时间，
-       实际取到的是第 9 个业务列（ts_rt_min 的 time），看着像时间戳，
-       于是一次误判整套归因都跟着歪。
+    ① 上游**有** `_fetched_at`，但它是最后一列、列数逐表不同，且并非每张表都有
+       （ts_rt_min / tdx_sector_daily 9 列 → row[8] 恰好对；ts_daily 12 列 →
+       row[8] 是业务列；ts_index_weekly / ts_hs_const 干脆没这列）。早先硬编码
+       row[8] 在 9 列表上碰巧是对的，换张表就取到业务值、看着仍像时间戳。
+       更根本的是：**投喂时间答不了「数据到哪天」**。tdx_sector_daily 从 10-13
+       起每天只写 3 行，`_fetched_at` 天天很新，实质已经断供。
+       （2026-11-12 复核更正：此前写成「上游不返回该列」是以偏概全，别再沿用。）
     ② 用 total 差判「我方漏取」也不可靠：历史上漏过的量会永久差着，
        tdx_sector_daily 上游 374 万 vs 本地 361 万，差 12 万看着像我们的错，
        实际是上游 10-22 就停了 —— 差异是长期漏取的存量，不是当下的缺口。
@@ -400,13 +523,20 @@ def check(probe=True, only=None, now=None, refresh_consumers=False):
 
     def _one(tbl):
         c = DC.contract(tbl)
-        cols = _schema(tbl)
+        sqlite = tbl in _sqlite_tables()
+        sql_cols, sql_rows = _sqlite_schema(tbl) if sqlite else (None, 0)
+        cols = sql_cols if sqlite else _schema(tbl)
         rec = {"table": tbl, "cn": c["cn"], "want": base, "allowed": c["lag"],
                "tier": c["tier"], "review": c["review"], "owner": c["owner"],
                "active_fetch": c["active_fetch"], "why": c["why"],
+               "storage": "sqlite" if sqlite else "parquet",
                "rows": entries.get(tbl, {}).get("rows"),
                "n_consumers": len(cons.get(tbl, [])),
                "consumers": cons.get(tbl, [])[:6]}
+        if sqlite and cols:
+            # 账本记的是"累计拉过多少行"，SQLite 里是实际行数 ——
+            # 滚动窗口下两者会差很远，row 数一律以库里实测为准。
+            rec["rows"] = sql_rows
 
         if c["tier"] == "GHOST":
             # 上游确认无此表：报 dead/absent 都是噪音，要报「契约错」
@@ -429,22 +559,25 @@ def check(probe=True, only=None, now=None, refresh_consumers=False):
             rec.update({"asof": _fast_asof(tbl, dcol), "lag": None, "status": "n/a"})
             return rec
 
-        # 快路径先出结论。分片【不按日期排序】（远端 append 到旧分片里），
-        # 所以末片 max 可能小于全片 max —— 但只在【贴边】时复核。
-        # 落后十几天的表复核也还是落后，全扫一遍 tdx_sector_min（2567 万行）
-        # 能把整个体检拖到 80s。实测：只在 lag∈(容差+2, 容差+5] 时全扫。
-        asof = _fast_asof(tbl, dcol)
+        # asof 优先读 parquet 页脚统计（覆盖全部分片、0.02s），SQLite 走 SQL 聚合。
+        # 只在「页脚没统计」时才回落到旧的读末两片 + 贴边全扫路径。
+        if sqlite:
+            asof, rec["how"] = _sqlite_asof(tbl, dcol), "sql"
+        else:
+            asof = _meta_asof(tbl, dcol)
+            rec["how"] = "meta" if asof is not None else "fast"
+            if asof is None:
+                asof = _fast_asof(tbl, dcol)
+                lag0 = DC.lag_in_trade_days(open_days, asof, base)
+                nrows = rec.get("rows") or 0
+                edge = (lag0 is not None and c["lag"] + 2 < lag0 <= c["lag"] + 5)
+                cheap = (lag0 is not None and lag0 > c["lag"] + 2
+                         and nrows <= 2_000_000)
+                if edge or cheap:
+                    full = _full_asof(tbl, dcol)
+                    if full and (asof is None or full > asof):
+                        asof, rec["how"] = full, "full"
         lag = DC.lag_in_trade_days(open_days, asof, base)
-        nrows = entries.get(tbl, {}).get("rows") or 0
-        # 复核条件：贴边必查；落后多的只查小表（大表全扫一次能拖 10s，
-        # 而落后 20 天的表复核完还是落后，不值得）。
-        edge = (lag is not None and c["lag"] + 2 < lag <= c["lag"] + 5)
-        cheap = (lag is not None and lag > c["lag"] + 2 and nrows <= 2_000_000)
-        if edge or cheap:
-            full = _full_asof(tbl, dcol)
-            if full and (asof is None or full > asof):
-                asof, rec["how"] = full, "full"
-                lag = DC.lag_in_trade_days(open_days, asof, base)
         if asof is None:
             status = "absent"
         elif lag is None:
@@ -459,7 +592,8 @@ def check(probe=True, only=None, now=None, refresh_consumers=False):
         # 假绿探测：日期在走、行数塌了。只对「看着没问题」的表改状态，
         # 已经红的表也查一次，把萎缩起点挂上去（dead 的成因常常就是这个）。
         if status in ("ok", "late", "dead"):
-            sh = _shrink(tbl, dcol, asof)
+            sh = (_sqlite_shrink(tbl, dcol, asof) if sqlite
+                  else _shrink(tbl, dcol, asof))
             if sh:
                 rec["shrink"] = sh
                 if sh["shrunk"] and status in ("ok", "late"):

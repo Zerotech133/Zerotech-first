@@ -63,6 +63,23 @@ ALLOWED = {
     "switch": {"upstream_dead"},                 # 只出建议，不真切
 }
 
+# 按表硬排除：cause 判对了，但「按这个 cause 的通用修法」对这几张表是破坏性的。
+# 2026-11-12 挂计划任务前逐条复核真实落盘链路时挖出来的，两条都是实证：
+#   · 新闻三表写进 tdx_info.db（SQLite），且 CREATE TABLE 里【没有主键】。
+#     sync_sqlite_table 用 INSERT OR IGNORE 去重，无主键时 IGNORE 不生效 ——
+#     重置账本全量重拉 = 把 41万/22万/15万行整份复制一遍。
+#     它们在 parquet 视角下"没有分片"是体检器的读法错了，不是账实不符。
+#   · ts_rt_min 的 sync_rtmin() 只补「本地最新那一天」（滚动窗口），
+#     本地停在 10-23 就永远只重拉 10-23，resync 不可能追上后面的日子；
+#     而全量重拉要面对上游 7765 万行（本地只有 60 万），数小时起步，
+#     远超本任务 PT2H 上限。必须单独排程，不能在夜间自愈里顺手做。
+MANUAL_TABLES = {
+    "stock_news": "SQLite 无主键，全量重拉 = 整表复制（需修体检器读法，不是补数据）",
+    "stock_notice": "SQLite 无主键，全量重拉 = 整表复制（需修体检器读法，不是补数据）",
+    "stock_report": "SQLite 无主键，全量重拉 = 整表复制（需修体检器读法，不是补数据）",
+    "ts_rt_min": "专用同步只补最新本地日；全量 7765万行数小时，超 PT2H，须单独排程",
+}
+
 # 永远不自动执行的动作原因（写清楚，免得下次有人以为忘了做）
 MANUAL = {
     "upstream_frozen": "存量冻结：上游自己也停在很久以前，修不了也不该修",
@@ -298,6 +315,8 @@ def plan(rows, only=None):
             continue
         if (r.get("n_consumers") or 0) == 0:
             continue                      # 没有下游在用，修了也是白修
+        if r["table"] in MANUAL_TABLES:
+            continue                      # 通用修法对这张表是破坏性的，见 MANUAL_TABLES
         for action, causes in ALLOWED.items():
             if cause in causes:
                 out.append({"table": r["table"], "cause": cause, "action": action,
@@ -389,6 +408,15 @@ def main(argv=None):
               % (len(deferred), args.max_actions))
         for t in deferred[:10]:
             print("  %-22s %-8s %s" % (t["table"], t["action"], t.get("skipped", "超上限")))
+
+    by_table = [r for r in h["tables"]
+                if r["table"] in MANUAL_TABLES
+                and r["status"] in ("dead", "absent", "late")]
+    if by_table:
+        print("\n按表硬排除 %d 项（cause 判对了，但通用修法会伤数据）：" % len(by_table))
+        for r in sorted(by_table, key=lambda x: -(x.get("n_consumers") or 0)):
+            print("  %-22s %-16s %s"
+                  % (r["table"], r.get("cause"), MANUAL_TABLES[r["table"]]))
 
     manual = [r for r in h["tables"]
               if r["status"] in ("dead", "absent", "late")
