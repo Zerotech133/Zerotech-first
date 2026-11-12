@@ -60,6 +60,39 @@ SYNC_EOF
 fi
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+
+# [public-surface-gate] 2026-11-12 · 公开面新增暴露拦截
+# -----------------------------------------------------------------------------
+# 根因：主仓 GitHub 面 public，仓内存量 426 个文件带内网地址 / 无鉴权 /
+#       无审批 / _vault 路径。当日 4 份内部审计文档误提交，复盘算出「移出
+#       HEAD」只覆盖全部暴露面的 3.7%（8/217 行），逐文件清理不现实
+#       → 改为「存量冻结 + 增量阻断」：今天已有的登记为基线，新增一处
+#       都要在 push 前解释清楚。基线 tools/public_surface_baseline.tsv。
+#
+# 位置：必须排在下面 dep-closure 段之前。那段在检查器缺失时 `exit 0` 早退，
+#       挂它后面会被静默跳过（同 2026-11-11「数据未就绪被说成无事可做」）。
+#
+# 判据：目标远端是否 public 一律匿名实测 api.github.com，不凭仓名、不凭记忆。
+#       404 时用 git/git 做对照 —— 否则「API 不通」会被读成「私有」而放行
+#       （2026-11-11 判例：主站 443 被阻时 api 子域仍 200，单端探测证明不了）。
+#
+# 行为：exit 1 阻断 / exit 2 判不了可见性，fail-open + 大声告警 / exit 0 放行
+# 逃生舱：ZB_PUBLIC_SURFACE=warn 只警告；=off 跳过（禁常态化）
+# 本钩子不入版本库，副本见 tools/git-hooks/pre-push（换机后 cp 恢复）。
+# -----------------------------------------------------------------------------
+PS_GATE="$ROOT/tools/check_public_surface.py"
+if [ -f "$PS_GATE" ] && [ "${ZB_PUBLIC_SURFACE:-}" != "off" ]; then
+    PS_EXTRA=""
+    [ "${ZB_PUBLIC_SURFACE:-}" = "warn" ] && PS_EXTRA="--warn"
+    python -X utf8 "$PS_GATE" --remote-url "${2:-}" $PS_EXTRA
+    PS_RC=$?
+    if [ "$PS_RC" -eq 1 ]; then
+        echo "[pre-push] 已阻断本次 push（公开面新增暴露）。"
+        echo "[pre-push] 临时放行：ZB_PUBLIC_SURFACE=warn git push ...（禁常态化）"
+        exit 1
+    fi
+fi
+
 CHECKER="$ROOT/tools/check_dep_closure.py"
 [ -f "$CHECKER" ] || exit 0
 

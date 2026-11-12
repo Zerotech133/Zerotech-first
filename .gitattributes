@@ -8,6 +8,11 @@
 *.sh    text eol=lf
 *.bash  text eol=lf
 
+# 钩子副本没有扩展名，上面的 *.sh 覆盖不到（2026-11-12 补）：
+# tools/git-hooks/pre-push 检出时被转成 CRLF，cp 回 .git/hooks/ 后 sh 会按
+# "\r: command not found" 直接失效——钩子静默不跑，比报错更难发现。
+tools/git-hooks/pre-push text eol=lf
+
 # nginx.conf 强制 CRLF（2026-11-08）：round7 结构校验（test_round7_closeout.py）
 # 以 \r\n 为断言锚（server 级指令、禁裸 LF 混行）；blob 规范化为 LF、检出恒 CRLF，
 # Windows/Linux CI 检出行为一致。64f610c68 重写时丢行尾导致 CI portal 两红。

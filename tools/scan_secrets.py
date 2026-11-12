@@ -93,6 +93,15 @@ VENDOR_PATH_PATTERNS = [
 MAX_LINE_PREVIEW = 120
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB 以上跳过（记录 skipped）
 
+# 自动生成的清单/基线文件：默认跳过（2026-11-12）
+# 这类文件的内容就是一列仓库内路径，目的是给工具比对、不是给人读；
+# 路径里的长英文段会稳定触发 HIGH_ENTROPY，而这些命中没有任何凭据含义。
+# 逐行加 allowlist 豁免不可行：allowlist 的 key 含行号，清单重建后行序一变
+# 豁免就失效，会在提交时冒出假阻断（这正是 allowlist 文件头自己写的代价）。
+GENERATED_PATH_PATTERNS = [
+    r"(^|/)public_surface_baseline\.tsv$",
+]
+
 # ---------------------------------------------------------------------------
 # 规则定义
 # 规则元组：(规则名, 编译后正则, 捕获组序号或 None(整段匹配即密))
@@ -342,6 +351,10 @@ def is_vendor(path_norm: str) -> bool:
     return any(re.search(p, path_norm) for p in VENDOR_PATH_PATTERNS)
 
 
+def is_generated(path_norm: str) -> bool:
+    return any(re.search(p, path_norm) for p in GENERATED_PATH_PATTERNS)
+
+
 def scan_file(path: str, include_vendor: bool = False):
     """扫描单个文件。返回 (hits, meta)；hits = [(lineno, rule, preview, exempt)]"""
     hits = []
@@ -357,6 +370,8 @@ def scan_file(path: str, include_vendor: bool = False):
         return hits, {"skipped": "unreadable"}
 
     path_norm = path.replace("\\", "/")
+    if not include_vendor and is_generated(path_norm):
+        return hits, {"skipped": "generated"}
     if not include_vendor and is_vendor(path_norm):
         return hits, {"skipped": "vendor"}
     path_exempt = any(re.search(p, path_norm) for p in EXEMPT_PATH_PATTERNS)
@@ -577,8 +592,9 @@ def main():
 
     print("=" * 72)
     vendor_n = sum(1 for _, why in skipped if why == "vendor")
+    generated_n = sum(1 for _, why in skipped if why == "generated")
     print(f"[scan_secrets] 扫描文件数={files_scanned}  跳过={len(skipped)}"
-          f"(其中第三方/依赖={vendor_n})  路径豁免文件={len(exempt_files)}  "
+          f"(其中第三方/依赖={vendor_n}  生成清单={generated_n})  路径豁免文件={len(exempt_files)}  "
           f"命中行: 未豁免={len(real_hits)}  基线豁免={len(baseline_hits)}"
           f"  豁免(假密钥/测试桩)={len(exempt_hits)}")
     print("=" * 72)
