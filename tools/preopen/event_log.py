@@ -410,7 +410,11 @@ def _rebuild_index() -> None:
             "event_id": e.get("event_id"), "data_day": d,
             "verdict": e.get("verdict"), "n_surprise": len(e.get("surprise") or []),
             "n_cand": len(e.get("candidates") or []),
-            "patterns": [c.get("pattern") for c in (e.get("candidates") or [])],
+            # drift 不在候选规则表里，但它是聚合器的输入；不记这一列，
+            # 索引看上去就像「什么都没追加」，正是容易被误读成没跑成的那种输出。
+            "n_drift": len(e.get("drift") or []),
+            "patterns": [c.get("pattern") for c in (e.get("candidates") or [])]
+                        + [d.get("id") for d in (e.get("drift") or [])],
             "signed": bool(e.get("signed_by")),
         })
     p = os.path.join(EV_DIR, "_index.jsonl")
@@ -434,6 +438,32 @@ def amend(day: str, note: str) -> dict:
     return ev
 
 
+def attach_drift(day: str, finding: dict) -> tuple[dict, bool]:
+    """把盘后/关系级发现挂到**既有**事件上。返回 (事件, 是否新增)。
+
+    与 build_from_run 的区别：盘前那件事已经记完了，盘后才拿到的实现结果
+    是「对那次选票的事后评价」，不是新的一次盘前流程。另开一天事件会把
+    流程账的天数虚增 —— 那本账数的是「跑了几次流程」，不是「看了几次结果」。
+
+    幂等键是 (id, exec_day)：同一天同一发现重复跑不累加，否则刷一次复盘
+    就多一条「独立观测」，quorum 会被人为凑够。
+    """
+    ev = load(day)
+    if not ev:
+        raise SystemExit("没有 %s 的事件，先 --from-run；事后观测不能凭空开一天流程账" % day)
+    key = (finding.get("id"), finding.get("exec_day"))
+    drift = ev.setdefault("drift", [])
+    for d in drift:
+        if (d.get("id"), d.get("exec_day")) == key:
+            return ev, False
+    drift.append(finding)
+    ev["drift_appended_at"] = _now()
+    io.open(_p(day), "w", encoding="utf-8").write(
+        json.dumps(ev, ensure_ascii=False, indent=1))
+    _rebuild_index()
+    return ev, True
+
+
 # ── CLI ─────────────────────────────────────────────────────────────────
 def main() -> int:
     ap = argparse.ArgumentParser(description="盘前事件账（事情化）")
@@ -448,9 +478,9 @@ def main() -> int:
     if a.list:
         for d in list_days():
             e = load(d) or {}
-            print("%s  %-6s 意外%d 候选%d %s" % (
+            print("%s  %-6s 意外%d 候选%d 关系%d %s" % (
                 d, e.get("verdict"), len(e.get("surprise") or []),
-                len(e.get("candidates") or []),
+                len(e.get("candidates") or []), len(e.get("drift") or []),
                 "已签" if e.get("signed_by") else ""))
         return 0
 

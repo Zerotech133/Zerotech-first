@@ -66,8 +66,17 @@ DIRECTION = {
     "BOUNDARY_FUZZY":  ("gate", "名单长度"),
     "NAME_STALE":      ("gate", "时点闸门"),
     "UNIVERSE_SHRINK": ("pipeline", "供给完整性"),
+    "NO_DATA":         ("pipeline", "供给完整性"),
+    # 盘后复盘观测：评分与实现收益的秩相关。归 param 而非新开一类 ——
+    # 「排序方向反了」的诱人结论必然指向改权重，而六次参数实验已否决该方向。
+    # 它只该记账 + 质询，绝不能自动发起调参建议。
+    "SCORE_RANK_INVERTED": ("param", "选股参数"),
 }
 PARAM_BLOCKED = "param"          # 若将来有 pattern 归到此类，默认拒提
+# 未登记的 pattern 一律按参数类处理。原先默认 "unknown" 会绕过上面那道
+# 拒提：新加一个 detector、忘了登记方向，第 3 次出现就会自动立一个调参
+# 假设 —— 门禁的精神是「没定性的方向先别动」，不是「没登记就放行」。
+UNKNOWN_DIRECTION = (PARAM_BLOCKED, "未分类（按参数类处理）")
 
 
 def _now() -> str:
@@ -234,7 +243,7 @@ def _hypothesis_of(pat: str, agg: dict) -> dict:
     span = "%s~%s" % (days[0], days[-1]) if days else "-"
     return {
         "pattern": pat,
-        "layer": DIRECTION.get(pat, ("unknown", "未分类"))[1],
+        "layer": DIRECTION.get(pat, UNKNOWN_DIRECTION)[1],
         "hypothesis": "TODO 由人补写：在当前观测（%s，近 %d 次出现，%s）的基础上，"
                       "具体要验证的可检验命题是什么" % (r["cue"], n, span),
         "observations": n,
@@ -257,7 +266,7 @@ def propose(force: bool = False) -> tuple[list[dict], dict]:
     skip = {"below_quorum": [], "open_exists": [], "failed_before": [], "param_blocked": []}
 
     for pat, r in sorted(agg.items(), key=lambda kv: -kv[1]["n"]):
-        direction, layer = DIRECTION.get(pat, ("unknown", "未分类"))
+        direction, layer = DIRECTION.get(pat, UNKNOWN_DIRECTION)
 
         # Ｂ. 方向分流：参数类默认拒提
         if direction == PARAM_BLOCKED and not force:
