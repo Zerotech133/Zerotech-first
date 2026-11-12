@@ -3639,7 +3639,7 @@
           "analysis_type": "osint_verification",
           "charter_detail": "军情司·职业分析师席（责任书 07）：核验流转执笔（rumor_verification 底表 verification 字段：status/by/note/as_of/admiralty_code，632 code 存量消化）+ 六源 track record 月度回填（NATO Admiralty A-F×1-6 二维独立评级）+ RFI 发起与销项（复核流 needs_more→定向收集请求派单 OSINT1）+ 多维交叉结论执笔（板块事件消息面×资金×社交结论行）；supervisor=INTEL0、复核=马超(KG枢纽)；产出形态=AI 执笔草稿+人工批 status（责任书 07 §四·丙案）；红线=只裁「证据支持什么」不产生交易指令不荐股、结论必带 as_of 与判据链、单源不立论（回音室判读）、不动采集器/渲染链路代码、评级失误登记 track record 不删改、出策不执行（街亭判：策略建议与执行分离，马谡不下场）",
           "llm_binding": "glm/glm-5.3",
-          "binding_note": "老田 2026-11-12 06:48 会话定名「新增角色马谡」，直接入编（会话裁定留痕，无工单，同马良先例）；岗位章程依据 zerobound-kg/docs/governance_roles/07_职业分析师岗_增设建议_草案.md（25 处分析岗预设盘点）；人选形态=丙案（AI 执笔+人复核），复核人=老田本人终审（2026-11-12 08:02 甲案签发，R-G 闭环；每周一批，只批 pending→verified/debunked 枚举；马超若日后以人位落位可转授，转授前老田签字有效）",
+          "binding_note": "老田 2026-11-12 06:48 会话定名「新增角色马谡」，直接入编（会话裁定留痕，无工单，同马良先例）；岗位章程依据 zerobound-kg/docs/governance_roles/07_职业分析师岗_增设建议_草案.md（25 处分析岗预设盘点）；人选形态=丙案（AI 执笔+人复核），复核人=老田本人终审（2026-11-12 08:02 甲案签发，R-G 闭环；每周一批，只批 pending→verified/debunked 枚举；马超若日后以人位落位可转授，转授前老田签字有效）；底座落位=Hermes profile analyst1（~/.hermes/profiles/analyst1：SOUL+SEAT_CARD+config，2026-11-12 08:30 B案S1 试点，老田批「按此执行」）",
           "tools": [],
           "tools_note": "入编初始为空，按工单另行授予（rumor_verification 只读、track_record 读写为首批候选）",
           "memory_grants": [],
