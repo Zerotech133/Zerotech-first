@@ -2,7 +2,8 @@
  "schema": "seat_memory_card/v1.1",
  "generated_at": "2026-11-12T08:50:00+08:00",
  "seat": "houfeng-preopen",
- "cn_name": "【待定：糜竺 / 孙乾 / 董允】",
+ "cn_name": "糜竺",
+ "cn_name_note": "老田 2026-11-12 确认；已过现有 11 席查重（无重名）。",
  "cn_name_note": "名号须先查主库花名册防撞。推荐糜竺：记账（商贾出身）+ 点粮（掌粮草供给）+ 只出简报不主战，三职与本职同构。未核主库前不写 ~/.hermes/profiles/。",
  "base": "Hermes profile（执行入口为纯 Python，不依赖 hermes CLI —— gateway 不可用时不连带）",
  "org_binding": {
