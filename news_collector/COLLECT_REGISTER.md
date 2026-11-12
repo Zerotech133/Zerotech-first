@@ -634,3 +634,101 @@ WAF 触发 0 次、deferred 0 次。落盘字段复核：`symbol=BJ920870`、`co
 4. **`XqTimelineDaily` 电池策略**：`DisallowStartIfOnBatteries=True`，
    若 07:00 时在市电之外则该轮直接不启动（今日实测 AC 供电，无影响）。是否放宽属系统级配置，待批准。
 
+
+## 十五、2026-11-13 四项批准落地（15.1–15.4，同日提交）
+
+老田当日批准 §14.4 全部四项。以下按「改了什么 / 判据 / 验证 / 未做什么」四段记，
+不裁阈值、不改他线代码。
+
+### 15.1 淘股吧 parse_empty 护栏（`taoguba_collector.py`）
+
+**改了什么**：新增 `judge_parse_empty()` 纯函数 + 两个计数器。判据拆两条，互不替代：
+
+| 判据 | 触发条件 | 含义 |
+|---|---|---|
+| `STRUCT_MISMATCH` | 首页 `headImg` 标记存在但解析 0 行 | 解析器失效（模板变更），与占比无关，直接失败 |
+| `PARSE_EMPTY` | 首页 0 行占比 > 30% 且样本 ≥ 5 | 大面积空，疑似挑战页伪装成功 |
+
+**为什么拆两条**：判例（§14.2）那一轮是「页面正常、解析 0 行」，若只按占比判，
+少量结构失配会被大样本摊薄；若只按结构判，挑战页（无 headImg）会被漏掉。
+两条都要有，才覆盖「我们瞎了」与「源端真空」的两种成因。
+
+**容忍边界**（防误伤）：①阈值是「**超过**」才判，40 只里 12 只空（正好 30%）放行；
+②样本 < 5 不判（手动跑 2–3 只不告警）；③真·空票（如北交所无帖）计入分子但通常不越线。
+`--parse-empty-pct` 可调，`--no-parse-guard` 仅排障用。
+
+**验证**：`tests/test_tgb_parse_guard.py` 9 条（含判例复现：65 只全空 → rc=2）。
+退出码语义：rc=2 = 采集到但全解析不出（真故障）；驱动脚本 `run_target_queue_intel.py`
+只记 `!! rc=2` 不中断后续源，故不影响同批其它源。
+
+### 15.2 雪球断点游标 + 分片配额（`xq_stock_timeline.py`）
+
+**改了什么**：新增 `_load_cursor/_save_cursor/rotate_from` + `--quota/--no-cursor/--reset-cursor/--plan-only`。
+游标落 `data/xq_timeline/_cursor.json`（原子写：tmp + fsync + `os.replace`），
+**每码写一次**，所以被关机/强杀也能从断点续跑，不再每轮从队头重来。
+
+**分域**：游标按 `(scope, sources)` 分域。全量轮（`--queue all`）与 21:00 分片轮
+（`--sources ...`）的断点互不串味——否则分片跑到哪里，全量轮就从哪里起，覆盖会错乱。
+
+**验证**：单元 7 条（旋转无损、队尾 wrapped 进轮次、名单变更退回原序、原子写不留 tmp）；
+真队列集成（`--plan-only`，不启浏览器、不与在跑任务争 profile）：
+
+```
+配额 40/647 起=000001…              ← 无游标：从队头
+模拟上次止于第301只 301515 → 起=301516  ← 有游标：从紧邻下一只
+```
+
+**未做**：`--quota` 默认仍为 0（不限）——**不替你决定单轮跑多少**。理由：07:00 窗口
+被关机打断时，配额挡不住中断，游标才是解；配额只在「想让多轮拼成一天全覆盖」时才需要设，
+那是调度决策。跑完本次清理后 `_cursor.json` 已删除，下一轮由新代码自行建立。
+
+**残留**：游标解决「不重复劳动」，但**一轮跑不完整个队列**这件事仍在。
+647 只 × 1 页 ≈ 1 小时量级，若窗口不够，全队列周期仍 > 1 天。要「每天全覆盖」需改
+按「最久未刷新优先」排序（比轮转更彻底），属新方案，未做。
+
+### 15.3 SLA「单票陈旧」维度（`collect_sla.py`）
+
+**改了什么**：新增 `_scan_stale()`，每源输出 `no_new_n` / `no_new_pct` /
+`oldest_age_h` / `no_new_sample`，表加一列「48h无新增」，汇总加 `no_new_48h_total`。
+
+**口径纪律（关键，别读错）**：四源全是 append-on-new，文件 mtime 停住只说明**期间没有新内容**，
+不说明没去采。所以字段一律叫 `no_new_*`（无新增），不叫 stale/dead；
+判「有没有去采」交叉 `last_run_ts` 或源日志。**该列不改判定，只做旁证**——
+阈值裁定权不在本席。
+
+**改判定的地方一处也没有**：`state` 仍只看源级 mtime；新增列与 summary 计数是纯增量。
+
+**验证**：`test_single_ticker_no_new_dimension` 等 4 条（含「无单票粒度源须留空，不许编 0」）。
+实测立刻显出旧工具看不见的东西：
+
+```
+互动易   GREEN  14.6h   13/28 (46.4%)  ← 源级绿，近半数两天无新增
+雪球     GREEN   0.0h  136/647 (21.0%) ← 正是 §14.3 那批尾部饥饿的票
+```
+
+**边界**：`news`（sqlite）与 `qianping`（一天一文件）没有单票粒度，输出 `-`，不编数。
+
+### 15.4 `XqTimelineDaily` 电池策略（系统级，已执行）
+
+**五要素**（按规范先列后做）：
+1. 命令全文：`$s=(Get-ScheduledTask XqTimelineDaily).Settings; $s.DisallowStartIfOnBatteries=$false; $s.StopIfGoingOnBatteries=$false; Set-ScheduledTask -TaskName XqTimelineDaily -Settings $s`
+2. 影响面：只改该任务的电池两项；动作/触发器/时限（PT72H）/重启策略读回未变；
+   任务本身仍在 Running（改的是下次生效的设置）。
+3. 不可逆点：无（布尔值，可随时改回）。
+4. 替代方案：不改（当前 AC 供电）；或在 wrapper 内做 AC 检测自旋——更复杂且无收益。
+5. 回滚：同样命令把两个值设回 `$true`。
+
+**读回核对**：`BEFORE True/True → AFTER False/False`，`ExecutionTimeLimit=PT72H` 保留，
+`ACTION`/`TRIGGER` 未变。
+
+**顺带读数（只报不改）**：全机仍有 **146** 个任务 `DisallowStartIfOnBatteries=True`，
+其中与采集/日报相关的另有 `SentimentSnapshot`、`houfeng_paper_daily`、
+`ZeroQ-KStock-Resume-Daily` 三个。是否一并放宽属系统级决策，本席不动。
+
+### 15.5 本轮未做（明确列出，便于下轮追）
+
+- 未改 09:30 / 21:00 任何调度参数；未新增计划任务。
+- 未给 `--quota` 设生产值（见 15.2「未做」）。
+- 未按「最久未刷新优先」重排队列（新方案，需批准）。
+- 未调查互动易 13/28 的成因（本轮只出读数）。
+- 未代改他线代码；未裁任何阈值。

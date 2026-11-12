@@ -221,3 +221,52 @@ def test_render_md_and_table_smoke(sandbox):
     rep = cs.build_report(now=NOW, state={})
     assert "| 源 | 判定 |" in cs.render_md(rep)
     assert "判定=" in cs.render_table(rep)
+
+
+def test_single_ticker_no_new_dimension(sandbox):
+    """源级 GREEN ≠ 每只都新（判例：11-13 雪球 GREEN 但 136 只 48h+ 未刷新）。
+
+    该维度必须：①不改变源级判定；②按分母内「有文件」的票算分子分母；
+    ③对没有单票粒度的源（news 库、qianping 一天一文件）明确留空，不编数。
+    """
+    codes = ["600000", "600001", "000001", "300001", "920001"]
+    _touch_dir(sandbox / "data/taoguba", codes[:2], hours_ago=72)   # 2 只 72h 无新增
+    _touch_dir(sandbox / "data/taoguba", codes[2:], hours_ago=1)
+    rep = cs.build_report(now=NOW, state={})
+    r = _row(rep, "taoguba")
+    assert r["state"] == cs.STATE_GREEN      # 源级照旧：目录里确有新东西
+    assert r["stale_checked"] == 5
+    assert r["no_new_n"] == 2
+    assert r["no_new_pct"] == 40.0
+    assert r["oldest_age_h"] >= 71
+    assert set(r["no_new_sample"]) == set(codes[:2])
+
+
+def test_single_ticker_respects_market_denominator(sandbox):
+    """分子分母都要落在本源的覆盖分母内：irm 只看深市，沪市/北交所陈旧不计入。"""
+    _touch_dir(sandbox / "data/irm", ["600000", "920001"], hours_ago=80)
+    rep = cs.build_report(now=NOW, state={})
+    irm = _row(rep, "irm")
+    assert irm["stale_checked"] == 2, irm["stale_checked"]        # 只有 000001/300001
+    assert irm["no_new_n"] == 0, irm["no_new_sample"]
+
+
+def test_no_ticker_granularity_sources_leave_blank(sandbox):
+    """news（sqlite）与 qianping（一天一文件）没有单票粒度——必须留空，不许编 0。"""
+    rep = cs.build_report(now=NOW, state={})
+    assert _row(rep, "news")["no_new_n"] is None
+    assert _row(rep, "qianping")["no_new_n"] is None
+    assert _row(rep, "news")["stale_checked"] is None
+    assert "-" in cs.render_table(rep)
+
+
+def test_scan_stale_ignores_empty_files_and_outsiders(sandbox, tmp_path):
+    """空文件不算「有内容」，分母外代码不计——否则会把「没采到」混进「没新增」。"""
+    d = tmp_path / "scan"
+    d.mkdir()
+    (d / "600000.jsonl").write_text('{"id":"x"}\n', encoding="utf-8")   # 新
+    (d / "600001.jsonl").write_text("", encoding="utf-8")               # 空
+    (d / "999999.jsonl").write_text('{"id":"x"}\n', encoding="utf-8")   # 分母外
+    info = cs._scan_stale(str(d), {"600000", "600001"}, NOW)
+    assert info["checked"] == 1
+    assert info["no_new_n"] == 0

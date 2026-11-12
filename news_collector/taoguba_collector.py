@@ -44,6 +44,12 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36")
 _GAP = 2.0
 
+# ── parse_empty 护栏（2026-11-13，判例：11-12 那轮 65 只全报「新增 0」）
+# 失效形态：HTTP 200 + 页面 >8KB + 解析 0 行 → 采集器不报错，只记「新增 0」，
+# 与「确实无新帖」在日志里完全同形。护栏把这两种情况分开计数，并给出判定。
+PARSE_EMPTY_PCT = 0.30      # 首页解析 0 行的占比上限
+PARSE_MIN_SAMPLE = 5        # 样本不足不判（手动跑 2-3 只不触发）
+
 RE_BLOCK = re.compile(r'<img class="headImg"', re.S)
 RE_AUTHOR = re.compile(r'href="https://www\.tgb\.cn/blog/(\d+)"[^>]*>([^<]{1,30})</a>')
 RE_TIME = re.compile(r'class="related-sources">(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*([^<]{2,6})<')
@@ -129,11 +135,37 @@ def _load_existing(path):
     return seen
 
 
+def judge_parse_empty(p1_ok, p1_empty, struct_bad, pct_limit=None,
+                      min_sample=None):
+    """判定本轮是否「静默空」。返回 (verdict, rc)；verdict 空串表示通过。
+
+    两条独立判据：
+      1. struct_bad > 0 —— 页面有帖块标记却解析 0 行，解析器已失效（不管占比）；
+      2. 首页 0 行占比 > pct_limit 且样本 >= min_sample —— 大面积空，疑似挑战页。
+    空页与解析失效必须分开：前者是「源端无帖」（正常），后者是「我们瞎了」（故障）。
+    """
+    pct_limit = PARSE_EMPTY_PCT if pct_limit is None else pct_limit
+    min_sample = PARSE_MIN_SAMPLE if min_sample is None else min_sample
+    if struct_bad:
+        return ("STRUCT_MISMATCH %d 只（页面有帖块标记但解析 0 行，"
+                "疑似模板变更）" % struct_bad, 2)
+    if p1_ok >= min_sample and p1_empty and (p1_empty / p1_ok) > pct_limit:
+        return ("PARSE_EMPTY %.0f%% > %.0f%%（首页 %d/%d 解析 0 行，"
+                "疑似被挑战页/模板变更伪装成成功）"
+                % (100.0 * p1_empty / p1_ok, 100.0 * pct_limit,
+                   p1_empty, p1_ok), 2)
+    return "", 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("codes", nargs="?", default="", help="逗号分隔 6 位代码；缺省用队列")
     ap.add_argument("--queue", choices=["actionable", "all"], default="actionable")
     ap.add_argument("--pages", type=int, default=2, help="每标的翻页数")
+    ap.add_argument("--parse-empty-pct", type=float, default=PARSE_EMPTY_PCT,
+                    help="首页解析 0 行占比超过此值即判失败（默认 0.30）")
+    ap.add_argument("--no-parse-guard", action="store_true",
+                    help="关闭 parse_empty 护栏（仅排障用，正常采集勿关）")
     args = ap.parse_args()
 
     if args.codes:
@@ -150,6 +182,9 @@ def main():
 
     t0 = time.time()
     tot_new, fails, blocked = 0, [], []
+    # 护栏计数：p1_ok/p1_empty=首页请求与其中解析 0 行；struct_bad=有帖块却解析不出
+    p1_ok, p1_empty, struct_bad = 0, 0, 0
+    empty_codes = []
     for code, name in queue:
         got_new = 0
         try:
@@ -163,7 +198,17 @@ def main():
                 if "身份核实" in html[:3000] or len(html) < 8000:
                     blocked.append(code)
                     break
+                if pg == 1:
+                    p1_ok += 1
                 rows = parse_blocks(html, code)
+                if pg == 1 and not rows:
+                    p1_empty += 1
+                    empty_codes.append(code)
+                    if RE_BLOCK.search(html):
+                        # 页面里明明有帖块标记，却一行都解析不出 → 解析器失效（非空页）
+                        struct_bad += 1
+                        print("[tgb] %s 结构失配：headImg %d 个、解析 0 行（疑似模板变更）"
+                              % (code, len(RE_BLOCK.findall(html))), flush=True)
                 new = [r for r in rows if r["id"] not in seen]
                 for r in new:
                     seen.add(r["id"])
@@ -180,10 +225,26 @@ def main():
         except Exception as e:
             fails.append("%s: %s" % (code, str(e)[:70]))
         time.sleep(_GAP)
-    print("[tgb] 完成: %d 标的, 新增 %d 条, 失败 %d, 拦截页 %s, 耗时 %.0fs"
-          % (len(queue), tot_new, len(fails), blocked or "-", time.time() - t0))
+    pct = (100.0 * p1_empty / p1_ok) if p1_ok else 0.0
+    print("[tgb] 完成: %d 标的, 新增 %d 条, 失败 %d, 拦截页 %s, "
+          "首页解析0行 %d/%d (%.0f%%), 结构失配 %d, 耗时 %.0fs"
+          % (len(queue), tot_new, len(fails), blocked or "-",
+             p1_empty, p1_ok, pct, struct_bad, time.time() - t0))
     for m in fails[:6]:
         print("[tgb] FAIL %s" % m)
+
+    # ── 判定：静默空必须显形，不能与「确实无新帖」同形
+    verdict, rc = ("", 0)
+    if not args.no_parse_guard:
+        verdict, rc = judge_parse_empty(p1_ok, p1_empty, struct_bad,
+                                        pct_limit=args.parse_empty_pct)
+    if verdict:
+        print("[tgb] PARSE_EMPTY_GUARD 判失败：%s | 0 行样本 %s"
+              % (verdict, ",".join(empty_codes[:12]) or "-"), flush=True)
+        return rc
+    if p1_empty and p1_ok >= PARSE_MIN_SAMPLE:
+        print("[tgb] parse_empty %d/%d (%.0f%%) 在阈值内——视为源端确无帖，"
+              "非解析失效" % (p1_empty, p1_ok, pct), flush=True)
     return 0
 
 

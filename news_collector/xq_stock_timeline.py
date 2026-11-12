@@ -44,6 +44,12 @@ WAF_RETRY = 3                # 冷却后同码同页重试次数
 SUSTAINED_ABORT_PCT = 0.20   # 持续封锁阈值：waf_hits/已处理 > 此值才整轮停（防拉黑）
 MAX_DEFERRED_ATTEMPTS = 5    # 单码跨日重试上限，超过则放弃（防冷却死循环）
 DEFERRED_F = os.path.join(OUT_DIR, "_deferred.json")  # 跨日自愈 ledger
+CURSOR_F = os.path.join(OUT_DIR, "_cursor.json")      # 断点游标（尾部饥饿治理）
+
+# ── 断点游标（2026-11-13，判例：11-12 07:00 与 21:00 两轮均被强杀，队列尾部
+# 600780 起连续 136 只 52.8h 未刷新）。每轮从上次结束处继续，配额限制单轮时长；
+# 游标每码落一次盘（原子替换），中途 SIGTERM 也能从断点续跑。
+DEFAULT_QUOTA = int(os.environ.get("XQ_SHARD_QUOTA") or 0)   # 0=不限（兼容旧行为）
 
 API_JS = """
 async (arg) => {
@@ -195,6 +201,50 @@ def _load_deferred():
     return {str(k): int(v) for k, v in d.items()}
 
 
+def _load_cursor():
+    """读取断点游标。结构：{scope, sources, last_code, queue_len, round, quota, updated_at}。"""
+    if not os.path.exists(CURSOR_F):
+        return {}
+    try:
+        d = json.load(open(CURSOR_F, encoding="utf-8"))
+    except Exception:
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def _save_cursor(last_code, scope, sources, queue_len, rnd, quota, done):
+    """原子写游标（tmp + fsync + os.replace），保证被强杀也不会写出半截 JSON。"""
+    payload = {
+        "scope": scope, "sources": sources or "",
+        "last_code": last_code, "queue_len": queue_len,
+        "round": rnd, "quota": quota, "done_this_run": done,
+        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    tmp = CURSOR_F + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, CURSOR_F)
+    except Exception:
+        pass
+
+
+def rotate_from(codes, last_code):
+    """把顺序队列旋转成「上次结束处之后」开头。
+
+    返回 (ordered, wrapped, start_idx)。last_code 不在队列（名单变了/首次）则原序。
+    wrapped=True 表示上次恰好跑到队尾，本轮是新一轮的起点。
+    """
+    codes = list(codes)
+    if not last_code or last_code not in codes:
+        return codes, False, -1
+    i = codes.index(last_code)
+    ordered = codes[i + 1:] + codes[:i + 1]
+    return ordered, (i + 1 >= len(codes)), i
+
+
 def _fetch_page(page, symbol, pg):
     """页内 fetch 封装；返回 (ok, data, err)。"""
     data = page.evaluate(API_JS, {"symbol": symbol, "page": pg, "count": COUNT})
@@ -233,13 +283,44 @@ def main():
     ap.add_argument("--sources", default="",
                     help="分片模式：逗号分隔注册表源 key，只取这些源（绕过 xq_include）")
     ap.add_argument("--pages", type=int, default=PAGES)
+    ap.add_argument("--quota", type=int, default=DEFAULT_QUOTA,
+                    help="单轮最多处理只数（0=不限）；配合断点游标把长跑切成多轮")
+    ap.add_argument("--no-cursor", action="store_true",
+                    help="忽略断点游标，本轮从队列头部开始（排障用）")
+    ap.add_argument("--reset-cursor", action="store_true",
+                    help="不读旧游标（本轮顺序照常），用于名单大改后重排")
+    ap.add_argument("--plan-only", action="store_true",
+                    help="只打印本轮解析出的顺序/配额/游标，不启浏览器（验配置用）")
     args = ap.parse_args()
+    scope, src_key, cursor_on, rnd, queue_len = "", "", False, 1, 0
     if args.codes:
         codes = [c.strip() for c in args.codes.split(",") if c.strip()]
+        queue_len = len(codes)
     else:
         scope = args.queue or "all"
         src_list = [s.strip() for s in args.sources.split(",") if s.strip()]
-        codes = load_queue(scope, sources=src_list or None)
+        src_key = ",".join(src_list)
+        base = load_queue(scope, sources=src_list or None)
+        queue_len = len(base)
+        cursor_on = not args.no_cursor
+        cur = {} if args.reset_cursor else _load_cursor()
+        # 游标按 (scope, sources) 分域：全量轮与分片轮的断点互不串味
+        if cursor_on and cur and cur.get("scope") == scope \
+                and (cur.get("sources") or "") == src_key:
+            rnd = int(cur.get("round") or 1)
+            last = str(cur.get("last_code") or "")
+            if last:
+                base, wrapped, idx = rotate_from(base, last)
+                if wrapped:
+                    rnd += 1
+                print("[xq_tl] 断点续跑：上次止于 %s（队列第 %d/%d）→ 本轮自 %s 起%s"
+                      % (last, idx + 1, queue_len, base[0] if base else "-",
+                         "，进入第 %d 轮" % rnd if wrapped else ""), flush=True)
+        if args.quota and args.quota > 0 and len(base) > args.quota:
+            print("[xq_tl] 配额：本轮 %d/%d 只，余下由下轮从断点续跑"
+                  % (args.quota, len(base)), flush=True)
+            base = base[:args.quota]
+        codes = list(base)
     # 跨日自愈：deferred 码前置重试（仅队列/分片模式；手动指定码不前置）
     deferred_prev = {}
     if not args.codes:
@@ -251,6 +332,15 @@ def main():
                   flush=True)
     print("[xq_tl] 标的 %d 只，每只 %d 页 x %d 条" % (
         len(codes), args.pages, COUNT), flush=True)
+    if args.plan_only:
+        head = ",".join(codes[:6]) + ("…" if len(codes) > 6 else "")
+        tail = ",".join(codes[-3:]) if len(codes) > 3 else ""
+        print("[xq_tl] PLAN scope=%s sources=%s quota=%s cursor=%s round=%d "
+              "queue_len=%d 本轮=%d 起=%s 止=%s"
+              % (scope or "-", src_key or "-", args.quota,
+                 "off" if not cursor_on else "on", rnd, queue_len,
+                 len(codes), head, tail or "-"), flush=True)
+        return 0
 
     from playwright.sync_api import sync_playwright
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -335,6 +425,10 @@ def main():
             if waf_this:
                 waf_hits += 1
             total_new += new
+            # 逐码落游标：被强杀（含关机）时下一轮从此码之后继续，尾部不再饿死
+            if cursor_on and code:
+                _save_cursor(code, scope, src_key, queue_len, rnd,
+                             args.quota, i + 1)
             # 持续封锁判定：撞 WAF 比例超阈值 → 整轮停（真·拉黑风险）
             if waf_hits and (waf_hits / max(1, i + 1)) > SUSTAINED_ABORT_PCT:
                 halted = "SUSTAINED_WAF_BLOCK"

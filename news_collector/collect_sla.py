@@ -308,6 +308,52 @@ def _scan_jsonl_dir(path):
     return last, n, codes, len(empty_codes), sorted(empty_codes)[:5]
 
 
+def _scan_stale(path, expect, now, hours=48.0):
+    """分母内「存在文件但超过 N 小时无新增」的票数。
+
+    **口径边界（必须连着读）**：四源均为 append-on-new（有新帖才追加），
+    所以文件 mtime 停在 N 小时前，只说明**期间没有新内容**，不说明没有去采。
+    故字段统一命名 `no_new_*`（无新增），不叫 stale/dead——避免把它读成断供。
+    要看「是否有去采」，交叉 `last_run_ts` 或对应日志。
+
+    返回 {checked, no_new_n, no_new_pct, oldest_age_h, no_new_sample}；
+    分母外（缺口）不在此列，缺口另有 gap/gap_open 字段。
+    """
+    empty = {"checked": 0, "no_new_n": 0, "no_new_pct": None,
+             "oldest_age_h": None, "no_new_sample": []}
+    if not os.path.isdir(path):
+        return empty
+    ages = {}
+    try:
+        names = os.listdir(path)
+    except OSError:
+        return empty
+    for name in names:
+        if not name.endswith(".jsonl"):
+            continue
+        code = name[:-6].split(".")[0].zfill(6)
+        if expect and code not in expect:
+            continue
+        fp = os.path.join(path, name)
+        try:
+            st = os.stat(fp)
+        except OSError:
+            continue
+        if st.st_size == 0:
+            continue
+        ages[code] = (now - datetime.fromtimestamp(st.st_mtime)).total_seconds() / 3600.0
+    if not ages:
+        return empty
+    old = sorted([c for c, a in ages.items() if a > hours])
+    return {
+        "checked": len(ages),
+        "no_new_n": len(old),
+        "no_new_pct": round(100.0 * len(old) / len(ages), 1),
+        "oldest_age_h": round(max(ages.values()), 1),
+        "no_new_sample": old[:10],
+    }
+
+
 def _scan_qianping(path):
     fp = os.path.join(path, "latest.json")
     if not os.path.exists(fp):
@@ -463,6 +509,28 @@ def build_report(now=None, thresholds=None, state=None):
         row["expected_all"] = len(expect_all) if expect_all else None
         row["covered"] = covered
         row["covered_all"] = covered_all
+        # 单票维度：源级 GREEN 只代表「目录里有新东西」，不代表每只都新。
+        # 仅目录型源（一票一文件）可算；news 是库、qianping 是「一天一文件」都没有单票粒度。
+        if kind == "jsonl_dir":
+            st_info = _scan_stale(path, expect, now)
+            if st_info["checked"]:
+                row["stale_checked"] = st_info["checked"]
+                row["no_new_n"] = st_info["no_new_n"]
+                row["no_new_pct"] = st_info["no_new_pct"]
+                row["oldest_age_h"] = st_info["oldest_age_h"]
+                row["no_new_sample"] = st_info["no_new_sample"]
+            else:
+                row["stale_checked"] = 0
+                row["no_new_n"] = None
+                row["no_new_pct"] = None
+                row["oldest_age_h"] = None
+                row["no_new_sample"] = []
+        else:
+            row["stale_checked"] = None
+            row["no_new_n"] = None
+            row["no_new_pct"] = None
+            row["oldest_age_h"] = None
+            row["no_new_sample"] = []
         if expect and covered is not None:
             row["gap"] = max(0, len(expect) - covered)
             row["coverage_pct"] = round(100.0 * covered / len(expect), 1) if expect else None
@@ -545,12 +613,25 @@ def build_report(now=None, thresholds=None, state=None):
                     "gap_total": sum(r.get("gap") or 0 for r in rows),
                     "gap_known": sum(r.get("gap_known") or 0 for r in rows),
                     "gap_open": sum(r.get("gap_open") or 0 for r in rows),
+                    "no_new_48h_total": sum(r.get("no_new_n") or 0 for r in rows),
                     "gap_whitelist_expired": wl_expired,
                     "verdict": "RED" if n_red else ("AMBER" if (n_amber or n_nodata) else "GREEN")},
         "rows": rows,
         "note": "只读快照；state=GREEN/AMBER/RED/NODATA；阈值为 DEFAULT 经验值，调参归 11-15 微调日；"
-                "gap=分母内缺文件数，gap_known=已核验合法缺口（见 collect_gap_whitelist.json），gap_open=待查",
+                "gap=分母内缺文件数，gap_known=已核验合法缺口（见 collect_gap_whitelist.json），gap_open=待查；"
+                "no_new_n/pct=分母内有文件但 48h 无新增的只数（内容维度，非采集动作维度——"
+                "追加型源「无新帖」与「未采集」同形，须交叉 last_run_ts 或源日志）",
     }
+
+
+def _nn_cell(r):
+    """48h 无新增单元格：只对有单票粒度的源出数；pct 为 None 时不出括号。"""
+    if r.get("no_new_n") is None:
+        return "-"
+    txt = "%d/%s" % (r["no_new_n"], r.get("stale_checked"))
+    if r.get("no_new_pct") is not None:
+        txt += " (%s%%)" % r["no_new_pct"]
+    return txt
 
 
 def render_md(rep):
@@ -565,43 +646,48 @@ def render_md(rep):
            rep["summary"]["gap_total"], rep["summary"]["gap_known"],
            rep["summary"]["gap_open"]),
         "",
-        "| 源 | 判定 | 最后成功 | 滞后(h) | 覆盖/期望 | 缺口 | 待查 | 连续不达标 | 备注 |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| 源 | 判定 | 最后成功 | 滞后(h) | 覆盖/期望 | 缺口 | 待查 | 48h无新增 | 连续不达标 | 备注 |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rep["rows"]:
         cov = "-" if r.get("expected") is None else "%s/%s" % (r.get("covered"), r["expected"])
         if r.get("covered_all") is not None:
             cov += "（all %s/%s）" % (r["covered_all"], r["expected_all"])
-        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+        nn = _nn_cell(r)
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
             r["label"], r["state"], r.get("last_ok_ts") or "-",
             "-" if r.get("stale_hours") is None else r["stale_hours"],
             cov, "-" if r.get("gap") is None else r["gap"],
             "-" if r.get("gap_open") is None else r["gap_open"],
-            r.get("consecutive_bad"), r.get("note")))
+            nn, r.get("consecutive_bad"), r.get("note")))
     lines += [
         "",
         "口径：最后成功 = 各源产物落盘时间/库内 max(ts)（非日志行）；覆盖分母见各行 `expected_from`。",
         "缺口已拆两截：**缺口**=分母内缺文件数；**待查**=缺口减去已核验合法的部分"
         "（白名单 `collect_gap_whitelist.json`，到期自动失效，防止清单只增不减）。",
+        "**48h无新增**=分母内「有文件但 48 小时无新增」的只数/占比（百分比按分母内有文件的票算）。"
+        "四源均为追加写，无新帖时 mtime 不动，故此列是**内容维度**，不等于未采集；"
+        "判「有没有去采」看 `last_run_ts`/源日志。源级 GREEN 只保证「有源在动」，不保证「每只都新」。",
         "本表只给读数与判据，不含任何研判结论。",
     ]
     return "\n".join(lines) + "\n"
 
 
 def render_table(rep):
-    head = "%-12s %-6s %-16s %7s %10s %6s %5s %5s  %s" % (
-        "源", "判定", "最后成功", "滞后h", "覆盖/期望", "缺口", "待查", "连坏", "备注")
+    head = "%-12s %-6s %-16s %6s %10s %5s %5s %12s %4s  %s" % (
+        "源", "判定", "最后成功", "滞后h", "覆盖/期望", "缺口", "待查", "48h无新增", "连坏", "备注")
     out = [head, "-" * len(head)]
     for r in rep["rows"]:
         cov = "-" if r.get("expected") is None else "%s/%s" % (r.get("covered"), r["expected"])
         if r.get("covered_all") is not None:
             cov += "(all %s/%s)" % (r["covered_all"], r["expected_all"])
-        out.append("%-12s %-6s %-16s %7s %10s %6s %5s %5s  %s" % (
+        nn = _nn_cell(r)
+        out.append("%-12s %-6s %-16s %6s %10s %5s %5s %12s %4s  %s" % (
             r["label"], r["state"], r.get("last_ok_ts") or "-",
             "-" if r.get("stale_hours") is None else r["stale_hours"],
             cov, "-" if r.get("gap") is None else r["gap"],
             "-" if r.get("gap_open") is None else r["gap_open"],
-            r.get("consecutive_bad"), r.get("note")))
+            nn, r.get("consecutive_bad"), r.get("note")))
     s = rep["summary"]
     out.append("")
     out.append("判定=%s  RED=%d AMBER=%d NODATA=%d  阈值来源=%s  周末放宽=%.0fh"
@@ -609,6 +695,8 @@ def render_table(rep):
                   rep["thresholds_source"], rep["weekend_slack_hours"]))
     out.append("缺口合计=%d（已核验合法 %d / 待查 %d；白名单过期 %d 条）"
                % (s["gap_total"], s["gap_known"], s["gap_open"], s["gap_whitelist_expired"]))
+    out.append("48h无新增合计=%d 只（内容维度：无新帖≠未采集，判采集动作看 last_run_ts/源日志）"
+               % s["no_new_48h_total"])
     return "\n".join(out)
 
 
