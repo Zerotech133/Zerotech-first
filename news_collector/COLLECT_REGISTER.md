@@ -342,3 +342,91 @@ python tools/git-hooks/install_guard.py --uninstall        # 回滚（仅卸块�
 - **未裁任何阈值/扩源/研判**：本项纯工程护栏。
 - **已装共享钩子**（与 R-02 不同）：装的是 `install_guard.py` 生成的**托管块**（按标记增删），
   未手改 `.git/hooks/pre-commit`；回滚一条命令；分域设计保证他线提交不被阻断。
+
+---
+
+## 十一、采集新鲜度 SLA 视图（方案 R-03 / 现场发现 D7）· 2026-11-13
+
+### 11.0 先说编号：执行批次号 ≠ 方案编号（口径订正）
+
+此前提交信息里出现过「R-01 / R-02 / R-03」三批，与研发方案 v1 的 R-01~R-06 **不是一一对应**。
+以本表为准，避免后续引用串号：
+
+| 方案编号（`docs/2026-11-12_OSINT1采集治理研发方案_v1.md`） | 落地提交/批次 | 状态 |
+|---|---|---|
+| R-01 全库 id 稳定性治理 + 静态护栏 | 批次 R-01（lint+迁移）、批次 R-03（分域 enforce 上线） | ✅ 已完成（存量 14 处待归属线） |
+| R-02 注册表—桥文件一致性守卫 | 批次 R-02 | ✅ 已完成 |
+| **R-03 采集新鲜度 SLA 视图** | **本章 §十一** | ✅ 本次完成 |
+| R-04 治理动作可复现化（ACPO） | — | ⬜ 未启动（需上级同意台账 schema 增补） |
+| R-05 维度覆盖矩阵 | — | ⬜ 未启动（需研判线确认维度标准） |
+| R-06 WAF 自适应节流 | — | ⬜ 未启动（需风控裁定） |
+
+### 11.1 做了什么
+新增只读监控 `news_collector/collect_sla.py`（+ 测试 `news_collector/tests/test_collect_sla.py`），
+一屏回答 D7 的四个问题：**各源最后成功时间 / 滞后时长 / 队列覆盖缺口 / 积压与连续不达标**，
+替代人工 `ls -lt`。产物：`data/collect_sla.json`（机读）、`data/collect_sla_state.json`
+（跨轮记忆）、`logs/collect_sla.md`（人读表）。
+
+### 11.2 首跑读数（2026-11-13 00:30，实跑非示例）
+```
+新闻流(自采)   GREEN  11-13 00:17   滞后0.2h   —                       新鲜
+互动易         GREEN  11-12 16:41   滞后7.8h   28/65 (all 216/465)     新鲜
+上证e互动      GREEN  11-12 16:41   滞后7.8h   15/28 (all 47/212)      新鲜
+淘股吧         AMBER  11-11 11:30   滞后37.0h  56/65 (all 436/465)     内容未新增但运行日志 11-12 09:56（见 11.4）
+东财股吧       GREEN  11-12 23:26   滞后1.1h   65/65 (all 109/465)     新鲜
+雪球timeline   GREEN  11-12 21:13   滞后3.3h   624/647                新鲜
+千股千评       GREEN  11-12 08:08   滞后16.4h  57/65                  新鲜
+判定=AMBER（RED=0 / AMBER=1 / NODATA=0），阈值来源 DEFAULT，周末放宽 0h
+```
+三条**读数级**观察（不下结论、不裁阈值）：
+1. **淘股吧内容 37h 未新增，但运行日志 11-12 09:56 有 `[tgb] 完成: 25 标的, 新增 0 条`**
+   → 更像「跑了、源端无新帖」而非断供；真伪需人工确认，本表只降级解释不洗白。
+2. **覆盖缺口集中在 irm 28/65（37 缺）与 sse 15/28（13 缺）**，二者都是当日 actionable 池；
+   是「无该票互动页」还是「采集漏取」，需逐码复核（本轮未做）。
+3. **千股千评 57/65（缺 8）**：`latest.json` 记录 `n_queue=57`，与 actionable 65 的差 8
+   属源口径还是漏取，同样待复核。
+
+### 11.3 判据与阈值
+- `stale ≤ 26h+slack` → GREEN；`≤ 48h+slack` → AMBER；`> 48h+slack` → RED；
+  `consecutive_bad ≥ 3` 时非 GREEN 一律提级 RED。
+- `slack`：过去 3 天每含一个周末日 +24h（同 `sched_heartbeat._line_days` 判例），防周末必然误报。
+- 阈值全部标 **DEFAULT 经验值**，`--thresholds <json>` 可覆盖；**正式调参归 11-15 微调日**，
+  本席不定死、不裁标准。
+- 覆盖分母取**采集器真实范围**：irm/sse/taoguba/guba/qianping = `actionable`（不是 465 只的 `all`）；
+  sse 再按沪市 `60/68` 过滤（28 只）——用 65 只全市场当分母属分母错误，会虚报缺口。
+
+### 11.4 口径限制（必须随读数一起看）
+- **`last_ok` 是「内容最后新增」，不是「运行成功」**：四源均 append-on-new 写盘，当天 0 新帖则
+  mtime 不动。故带 `runlog` 的源另报 `last_run_ts`，且**只允许把 RED 降级解释为 AMBER，不允许洗成 GREEN**。
+- `runlog` 是**共享日志**（`logs/target_queue_intel_daily.log`，含 irm/sse/tgb 三家），
+  日志行无日期、无法区分源级时刻，故只能给「该日志最近落笔时间」，**不可当源级心跳**。
+- 覆盖比对是「文件是否存在」，**不校验内容是否为空/过旧**；空文件单列 `empty_files`
+  （当前四源均 0）。
+- 新闻流行的 `last_ok` 取 `news.db max(ts)`，是内容时间；子源 ok/got/new 读 `status.json`，
+  显式 `skipped`（有裁定依据的降级）不计失败。
+
+### 11.5 验收判据兑现
+- [x] 停更源可被识别：cohorts 类停更在首跑中体现为 AMBER/RED 并给出 stale 小时（本表淘股吧即例）
+- [x] 正常源呈 GREEN：k_stock/guba/新闻流/雪球 均 GREEN
+- [x] 重跑幂等：连跑两次读数一致（除滞后小时随时间推移），JSON 结构稳定
+- [x] 只读：`git status` 仅新增本脚本/测试/产物；不碰任何采集产物、不触网、不启浏览器
+- [x] 7 条单测全过，**3.11 与 3.13 双解释器一致**（`7 passed`）
+
+### 11.6 复现命令
+```
+python news_collector/collect_sla.py                        # 表格 + 落 json/state
+python news_collector/collect_sla.py --json                  # 只打 JSON
+python news_collector/collect_sla.py --md logs/collect_sla.md
+python news_collector/collect_sla.py --no-state --no-write    # 纯快照（无跨轮记忆）
+python news_collector/collect_sla.py --now "2026-11-13T09:00:00"   # 时点回放
+python -m pytest news_collector/tests/test_collect_sla.py -q
+```
+
+### 11.7 边界声明（§十一）
+- **只读**：不改任何采集产物；唯一写入是脚本自己的 json/state/md。
+- **不裁阈值、不裁扩源、不做研判**：阈值为 DEFAULT，读数不含买卖/方向/结论。
+- **未接入计划任务**：如后续注册，**必须**用固定 `exit 0` 的 wrapper——本脚本 rc=1 表示
+  「有 RED」，属业务告警，直接注册会让任务计划程序把「正常有告警」记成失败（判例：
+  退出码语义是任务跑完了吗，不是业务结论好不好）。
+- **未接门户页**：`data/collect_sla.json` 已按机读设计，门户接线属下一阶段，本批不动 portal。
+
