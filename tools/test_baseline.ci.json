@@ -1,7 +1,7 @@
 {
   "_note": "CI 环境基线（K-CI-20261108-PROFILE）。只在 TEST_GATE_PROFILE=ci 时加载，本机判定完全不含此文件。判据：该用例依赖干净 runner 上不存在的本机运行时资产，属「云端不可判定」而非代码缺陷。来源：GitHub Actions run 42442700503（2026-11-08 11:26 +08，新增失败 35 项）逐条分类；同一提交本机 -Suite fast 为 GATE PASS。收口规则：新增条目必须写明缺的是哪份资产；资产一旦入库或改为自造夹具，必须从本文件删除——否则就是把免死金牌挂成永久。",
   "portal/tests": {
-    "_why": "reports/ 整目录被 .gitignore:12 忽略（140 个运行时资产，nginx.conf.bak-r7 等）；另需 _vault、PG catalog、行情湖 parquet 与 docker/schtasks 实机命令。干净检出三样全无：round7/round9 缺 bak 基线、dw_catalog_alignment 缺 reports 台账、intel_graph 缺 parquet、overview_split 的重项靠 docker ps/schtasks 产数据。",
+    "_why": "reports/ 整目录被 .gitignore:12 忽略（140 个运行时资产，nginx.conf.bak-r7 等）；另需 _vault、PG catalog、行情湖 parquet 与 docker/schtasks 实机命令。干净检出三样全无：round7/round9 缺 bak 基线、dw_catalog_alignment 缺 reports 台账、intel_graph 缺 parquet、overview_split 的重项靠 docker ps/schtasks 产数据。 【2026-11-12 run 43155480051 追加 2 项】test_real_catalog_consistency 缺 reports/ 台账 + PG catalog，接口返回 503（日志 assert 503 == 200）；test_intraday_pick_logic 缺行情湖日线数据（日志 RuntimeError 20261109 无日线数据）。",
     "env_failures": [
       "portal/tests/test_api_intel_graph.py::test_dossier_returns_candidate_only_with_traceable_keys",
       "portal/tests/test_api_intel_graph.py::test_seat_edges_queryable_by_stock_with_isolated_fixture",
@@ -22,7 +22,9 @@
       "portal/tests/test_round7_closeout.py::test_backup_chain_is_consistent",
       "portal/tests/test_round7_closeout.py::test_selftest_real_file_passes_all_guards",
       "portal/tests/test_round7_closeout.py::test_selftest_real_file_regression_is_caught",
-      "portal/tests/test_round9_six_items_closeout.py::test_pending_20261106_is_archived_superseded"
+      "portal/tests/test_round9_six_items_closeout.py::test_pending_20261106_is_archived_superseded",
+      "portal/tests/test_catalog_data_api.py::test_real_catalog_consistency",
+      "portal/tests/test_jev_intraday_pick.py::test_intraday_pick_logic"
     ]
   },
   "k_stock/tests": {
@@ -57,7 +59,7 @@
     ]
   },
   "tools/datawarehouse/tests": {
-    "_why": "对账类用例，断言的是 quant_backtest/data/ 下的运行时产物真值：catalog.json(296K)/warehouse_registry.json(808K) 被 .gitignore:27 `quant_backtest/data/*` 整体忽略（生成物 + 逐日翻新，不宜入库），另有 sqlite 运行库与 manifests。干净 runner 无这些资产 → 无法判定，非代码缺陷。已核对：本轮 43 红中 33 项系 dataset_registry.REPO 硬编码所致（已在 7ac9656c4 真修），余下这 10 项才是纯粹的资产缺失。",
+    "_why": "对账类用例，断言的是 quant_backtest/data/ 下的运行时产物真值：catalog.json(296K)/warehouse_registry.json(808K) 被 .gitignore:27 `quant_backtest/data/*` 整体忽略（生成物 + 逐日翻新，不宜入库），另有 sqlite 运行库与 manifests。干净 runner 无这些资产 → 无法判定，非代码缺陷。已核对：本轮 43 红中 33 项系 dataset_registry.REPO 硬编码所致（已在 7ac9656c4 真修），余下这 10 项才是纯粹的资产缺失。 【2026-11-12 追加 1 项】test_relative_dataset_path_resolves_under_registry_repo 缺 quant_backtest/data/xueqiu/xueqiu_info.db 运行库，且 dataset_registry.REPO 与 CI checkout 路径叠加成 D://a//Zerotech-first//Zerotech-first//... 双层，云端不可判定。",
     "env_failures": [
       "tools/datawarehouse/tests/test_dataset_query.py::test_sqlite_since_iso_text_matches_direct_sql",
       "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_registry_stats_matches_file",
@@ -68,7 +70,18 @@
       "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_table_info_unknown_is_error",
       "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_calls_are_readonly",
       "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_selftest",
-      "tools/datawarehouse/tests/test_dw_quality_mcp.py::test_mcp_call_manifest_and_backup"
+      "tools/datawarehouse/tests/test_dw_quality_mcp.py::test_mcp_call_manifest_and_backup",
+      "tools/datawarehouse/tests/test_registry_repo_anchor.py::test_relative_dataset_path_resolves_under_registry_repo"
+    ]
+  },
+  "analysis/tests": {
+    "_why": "【2026-11-12 run 43155480051 新建键，5 项】analysis/tests/test_smoke.py::TestPipeline 的 5 个用例在 setup 阶段 ERROR：缺本机行情快照资产导致 snap['last_trade_date'] 为 None，analysis/features.py:295 直接 .replace() 抛 AttributeError（日志 315 passed, 5 errors）。属干净 runner 云端不可判定；收口条件：改为自造夹具 / 给 features.py 补 None 防御后，必须从本文件删除本键。",
+    "env_failures": [
+      "analysis/tests/test_smoke.py::TestPipeline::test_extras_optional",
+      "analysis/tests/test_smoke.py::TestPipeline::test_features",
+      "analysis/tests/test_smoke.py::TestPipeline::test_gate_g1",
+      "analysis/tests/test_smoke.py::TestPipeline::test_snapshot",
+      "analysis/tests/test_smoke.py::TestPipeline::test_verdict"
     ]
   }
 }

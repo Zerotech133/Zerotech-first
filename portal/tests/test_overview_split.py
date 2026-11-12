@@ -18,6 +18,7 @@ import ast
 import os
 import re
 import sys
+import threading
 import time
 
 import pytest
@@ -35,10 +36,28 @@ def _reset():
                         "err": None, "last_try": 0.0})
 
 
+def _join_heavy_threads(timeout=5.0):
+    """等 overview-heavy 后台线程真正结束，再清缓存。
+
+    起因（2026-11-12 run 43155480051）：CI 慢 runner 上
+    test_cold_start_does_not_block 的 `assert cost < 0.5` 失败（实测 1.65s），
+    该断言位于 _wait_idle() 之前，故 slow_heavy() 线程（sleep 3.0s）继续存活；
+    fixture teardown 的 _reset() 之后，该线程把 {"containers": [{"name": "x"}]}
+    写回 _OV_HEAVY["data"] 并把 err 清成 None，污染下一个用例
+    test_failure_backoff，表现为 assert ([{'name': 'x'}] == []) 假红。
+    仅靠 _wait_idle() 无效：_reset() 已把 building 置 False，会立即返回。
+    """
+    end = time.time() + timeout
+    for t in threading.enumerate():
+        if t.name == "overview-heavy" and t is not threading.current_thread():
+            t.join(timeout=max(0.0, end - time.time()))
+
+
 @pytest.fixture(autouse=True)
 def _clean_cache():
     _reset()
     yield
+    _join_heavy_threads()
     _reset()
 
 
