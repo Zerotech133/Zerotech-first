@@ -1653,7 +1653,8 @@
         "DATA1",
         "FACTOR1",
         "DATA2",
-        "DATA3"
+        "DATA3",
+        "MADAI1"
       ],
       "agent_profiles": [
         {
@@ -1930,6 +1931,21 @@
               "danger": "deny"
             }
           }
+        },
+        {
+          "agent_id": "MADAI1",
+          "role_profile": "数据仓主办席",
+          "analysis_type": "",
+          "charter_detail": "兰台·数据仓主办席（挂 DATA1 张松麾下）：数据仓一等数据产品建设——情绪数据产品 ZB-DATA-SENT-20261112-T01 主办（建表/视图、loader、回填、质检、目录登记、验收），KG 只读接入前置工程；原马家军 roster 备选（2026-11-10 落选「执行/传令无结构化语义」），2026-11-12 情绪产品线起用为数据仓主办；签收闸门纪律：签收未完成禁止建表、不发布 KG、不写生产图",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "老田 2026-11-12 09:03 裁定「内部员工在组织架构内」补登；此前无 hr 独立席位，任务经 DATA1 席位送达（deliverables/2026-11-12_情绪数据产品_看板状态.json note 在案）",
+          "tools": [],
+          "tools_note": "入编初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E1",
+          "grade_note": "初立待调档（情绪产品 T01 验收为观察期 KPI）",
+          "attributes": {},
+          "cn_name": "马岱·兰台"
         }
       ],
       "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属",
@@ -3469,7 +3485,8 @@
         "WORDC1",
         "LINEAGE1",
         "OSINT1",
-        "ANALYST1"
+        "ANALYST1",
+        "MAJUN1"
       ],
       "teams": [],
       "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口 | 2026-11-10 OSINT 线马良 OSINT1 入编（老田会话定版「定版了你叫马良」：开源情报收集者+治理者，五源采集+情绪管线+数据册治理，supervisor=INTEL0，不产生研判）",
@@ -3647,6 +3664,21 @@
           "grade_note": "初立待调档（632 code 存量消化与首批 track record 回填为观察期 KPI）",
           "attributes": {},
           "cn_name": "马谡·军情司"
+        },
+        {
+          "agent_id": "MAJUN1",
+          "role_profile": "KG图谱枢纽席",
+          "analysis_type": "",
+          "charter_detail": "马超编制（马家军）·KG图谱枢纽席：本体主家族（MarketEvent/HotMoney/Seat/SwL1Industry/EXP_IntelItem）图谱构建与维护、池内知识完备度通报（kg_pool_daily+五问契约缺口通报）、F2验证报告；kg_ 表族/文件契约不占端口；upstream=马良OSINT1五源只读指针（不迁库）、downstream=马超+量化因子层(kg_factor_lab)；因子工程执行（2026-11-12 R1-R4：批级样本量/40日口径/事件通道上线）；只呈现事实关联不做因果推断",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "老田 2026-11-12 09:03 裁定「内部员工在组织架构内」，地方册升正册；原 zerobound-kg/agents/majun_kg/identity.yaml（2026-11-10 注册，owner_session=WorkBuddy）为身份档案母本，charter=docs/planning/ma-command-roster-2026-11-10.md",
+          "tools": [],
+          "tools_note": "入编初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E2",
+          "grade_note": "KG 仓既有产出在案（因子工程 R1-R4），观察期后议调档",
+          "attributes": {},
+          "cn_name": "马钧·军情司"
         }
       ],
       "lead_appointed": {
