@@ -18,20 +18,41 @@ def load_top_list(day: str):
     return [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
-def turnover_prompt(day: str, threshold: int = 20) -> str:
-    rows = [r for r in load_top_list(day)
-            if "换手率" in (r.get("reason") or "")
-            and ("%d%%" % threshold) in (r.get("reason") or "").replace("％", "%")]
+def turnover_prompt(day: str, threshold: int = 20, rows=None) -> str:
+    if rows is None:
+        rows = [r for r in load_top_list(day)
+                if "换手率" in (r.get("reason") or "")
+                and ("%d%%" % threshold) in (r.get("reason") or "").replace("％", "%")]
     if not rows:
         raise SystemExit("该日无换手率榜：%s" % day)
 
     rows.sort(key=lambda r: r["net_amount"])
     sell = [r for r in rows if r["net_amount"] < 0]
     buy = [r for r in rows if r["net_amount"] > 0]
+    flat_net = [r for r in rows if r["net_amount"] == 0]
     up = [r for r in rows if r["pct_change"] > 0]
     down = [r for r in rows if r["pct_change"] < 0]
+    flat_px = [r for r in rows if r["pct_change"] == 0]
     sell_up = [r for r in sell if r["pct_change"] > 0]
     buy_up = [r for r in buy if r["pct_change"] > 0]
+    sell_down = [r for r in sell if r["pct_change"] <= 0]
+    # 判例 #37 判据②：互斥集恒等式自校验。任一不成立即拒绝出题——
+    # 宁可不判，不可拿一张加不起来的表去判。
+    checks = {
+        "行数与净额方向": len(sell) + len(buy) + len(flat_net) == len(rows),
+        "行数与涨跌": len(up) + len(down) + len(flat_px) == len(rows),
+        "净卖 = 净卖且涨 + 净卖且不涨": len(sell_up) + len(sell_down) == len(sell),
+        "上涨 = 净卖且涨 + 净买且涨 + 净额为零且涨": (
+            len(sell_up) + len(buy_up) + len([r for r in flat_net if r["pct_change"] > 0])
+            == len(up)),
+    }
+    bad = [k for k, v in checks.items() if not v]
+    if bad:
+        raise SystemExit("题面自校验失败，拒绝出题：%s | 明细 rows=%d sell=%d buy=%d flat=%d "
+                         "up=%d down=%d flat_px=%d sell_up=%d sell_down=%d buy_up=%d"
+                         % (bad, len(rows), len(sell), len(buy), len(flat_net),
+                            len(up), len(down), len(flat_px),
+                            len(sell_up), len(sell_down), len(buy_up)))
 
     d = day
     date_cn = "%d 月 %d 日" % (int(d[4:6]), int(d[6:8]))
