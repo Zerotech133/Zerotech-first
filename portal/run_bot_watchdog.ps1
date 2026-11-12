@@ -4,7 +4,8 @@
 $ErrorActionPreference = "Continue"
 
 # 用字面量先找 Python（Get-Item 自动处理编码）
-$py_src = "C:\项目\老田的AI助手\CowAgent\venv\Scripts\python.exe"
+# 2026-11-12 FIX: 中文路径改 ASCII (PS5 GBK 读脚本会乱码崩)
+$py_src = "C:\aios\CowAgent\venv\Scripts\python.exe"
 $bot    = "C:\aios\portal\feishu_bot_ws.py"
 $log    = "C:\aios\portal\logs\feishu_bot_task.log"
 $ts     = Get-Date -Format "MM-dd HH:mm:ss"
