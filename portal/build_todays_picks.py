@@ -1293,9 +1293,10 @@ def main():
             "t2_sig_stale_demoted": n_sig_stale,
             "sig_max_trade_days": SIG_MAX_TRADE_DAYS,
             "note": (
-                "盘前 score<=%(score_max)d 或 prob>=%(prob_min)d → 名单缩至 T1+T2；"
+                "盘前 score<=%d 或 prob>=%d → 名单缩至 T1+T2；"
                 "T2 收口为 bull=1 且信号龄<=%d 交易日"
-                % dict(WEAK_DAY, d=SIG_MAX_TRADE_DAYS)
+                % (WEAK_DAY["score_max"], WEAK_DAY["prob_min"],
+                   SIG_MAX_TRADE_DAYS)
             ),
         },
         "counts": {
