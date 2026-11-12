@@ -197,12 +197,18 @@ def _write_cache(root: str, data: dict) -> None:
         pass
 
 
-def probe_visibility(root: str, owner: str, repo: str) -> tuple[str, str]:
-    """-> (visibility, evidence). visibility in {public, private, unknown}."""
+def probe_visibility(root: str, owner: str, repo: str, force: bool = False) -> tuple[str, str]:
+    """-> (visibility, evidence). visibility in {public, private, unknown}.
+
+    force=True 绕过缓存。可见性会变（转私有就是一个开关），而缓存有 6 小时
+    寿命：不绕过就会在「刚转私有」的窗口里继续按 public 判定，让 --status
+    验收报出与实际相反的结论。阻断前也必须 force 复核一次——凭过期缓存
+    拦人，和凭过期缓存放人一样，都是拿记忆当事实。
+    """
     slug = "%s/%s" % (owner, repo)
     cache = _read_cache(root)
     entry = cache.get(slug) or {}
-    if entry.get("visibility") in ("public", "private"):
+    if not force and entry.get("visibility") in ("public", "private"):
         if time.time() - float(entry.get("ts", 0)) < CACHE_TTL:
             return entry["visibility"], "cache(%s)" % entry.get("evidence", "")
 
@@ -248,7 +254,7 @@ def main() -> int:
         print("[public-surface] 未提供 --remote-url，跳过（无法判定公开面）")
         return 0
 
-    vis, evidence = probe_visibility(root, *slug)
+    vis, evidence = probe_visibility(root, *slug, force=args.status)
     if args.status:
         print("[public-surface] %s/%s -> %s (%s)" % (slug[0], slug[1], vis, evidence))
         return 0
@@ -283,6 +289,17 @@ def main() -> int:
     if not problems:
         print("[public-surface] 公开面增量检查通过 ✓（%s 为 public，存量已冻结）" % ("%s/%s" % slug))
         return 0
+
+    # 阻断前强制复核一次：上面那次判定可能来自 6 小时缓存。可见性是一个
+    # 开关，转私有后就该放行；凭过期缓存拦人，和凭过期缓存放人一样，都是
+    # 拿记忆当事实。复核代价是 2 次 API 调用，只在真要拦的时候付。
+    vis2, evidence2 = probe_visibility(root, *slug, force=True)
+    if vis2 == "private":
+        print("[public-surface] 复核：%s/%s 现为私有（%s），放行" % (slug[0], slug[1], evidence2))
+        return 0
+    if vis2 == "unknown":
+        print("[public-surface] 复核：判不了可见性（%s）→ fail-open 放行，请手工确认" % evidence2)
+        return 2
 
     problems.sort(key=lambda t: (t[2] - t[3]), reverse=True)
     print("[public-surface] ⚠ 公开面出现 %d 处新增暴露，目标远端是 public：" % len(problems))
