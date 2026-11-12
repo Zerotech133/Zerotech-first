@@ -13,6 +13,7 @@ import html
 import json
 import math
 import os
+import tempfile
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -3691,7 +3692,12 @@ def _doc_sync(md):
 
     cfg = load_config()
     doc = (cfg.get("report") or {}).get("premarket_doc_url", "")
-    tmp = os.path.join(HERE, "_pre_doc.md")
+    # 2026-11-12 修 DOC_SYNC UPDATE FAIL（11-10 起连败）：原写 HERE（中文路径）
+    # + 传相对路径 @./_pre_doc.md，lark-cli 解析报 "cannot resolve symlinks:
+    # The system cannot find the path specified"。改写无中文的系统临时目录 +
+    # 传绝对路径，@file 解析不再依赖 cwd 与路径编码。
+    _tmp_dir = os.environ.get("TEMP") or tempfile.gettempdir()
+    tmp = os.path.join(_tmp_dir, "_pre_doc.md")
     try:
         with open(tmp, "w", encoding="utf-8") as f:
             f.write(md)
@@ -3710,7 +3716,7 @@ def _doc_sync(md):
                     "--doc-format",
                     "markdown",
                     "--content",
-                    "@./_pre_doc.md",
+                    "@" + tmp,
                     "--format",
                     "json",
                 ],
@@ -3739,7 +3745,7 @@ def _doc_sync(md):
                 "--doc-format",
                 "markdown",
                 "--content",
-                "@./_pre_doc.md",
+                "@" + tmp,
                 "--format",
                 "json",
             ],
