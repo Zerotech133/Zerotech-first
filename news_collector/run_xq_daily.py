@@ -15,6 +15,16 @@ sys.stdout = open(LOG, "a", buffering=1, encoding="utf-8", errors="replace")
 sys.stderr = sys.stdout
 print("\n===== %s XqTimelineDaily start =====" % time.strftime("%Y-%m-%d %H:%M:%S"),
       flush=True)
+
+# R-02 注册表—桥文件一致性自检：只告警、绝不阻断采集（守卫自身故障也只打印）
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(HERE), "tools"))
+    import registry_guard
+
+    registry_guard.check_and_report(root=os.path.dirname(HERE), quiet_ok=True)
+except Exception as _e:  # noqa: BLE001
+    print("[registry_guard] WARN 自检跳过: %s" % str(_e)[:120], flush=True)
+
 os.chdir(HERE)
 sys.argv = ["xq_stock_timeline.py", "--queue", "all", "--pages", "1"]
 try:

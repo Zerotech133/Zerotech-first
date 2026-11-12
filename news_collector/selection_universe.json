@@ -23,14 +23,16 @@
       "scope": "all",
       "label": "侯风164候选池",
       "xq_include": true,
+      "bridge_flag_field": "xq_include_candidates",
       "signal_date": "20261106",
-      "note": "R8 批准扩容：489→593(+104 有头采集)；为 20261106 冻结快照，非每日重算"
+      "note": "R8 批准扩容：489→593(+104 有头采集)；为 20261106 冻结快照，非每日重算。bridge_flag_field 供 tools/registry_guard.py 比对（R-02）：桥脚本重生成时会把该字段写回 false，与本表权威值漂移"
     },
     "cohorts": {
       "file": "target_queue_cohorts.json",
       "scope": "all",
       "label": "两池影子池59（主选+auto）",
       "xq_include": true,
+      "bridge_flag_field": "xq_include_cohorts",
       "note": "R10 批准并入：+59，逐日滚动换仓，有头管线负载归运营裁定"
     },
     "s12": {

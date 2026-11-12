@@ -202,3 +202,56 @@
 - **G3 冗余 flag 不一致**：`target_queue_houfeng.json`/`target_queue_cohorts.json` 内 `xq_include_candidates=False`/`xq_include_cohorts=False`，与 `selection_universe.json` 权威 `True` 冲突——桥脚本每日重生成时写回 False。**不影响功能（活路径读 registry），属一致性瑕疵；建议清理（桥脚本携带标志 或 删冗余字段）。**
 
 **结论**：7 线数据本身除 G1/G2 两处外均完整闭合；G1 为策略管线断档、G2 缺老田原始输入，均非采集侧可独立补齐——需上级裁定/输入。
+
+---
+
+## §九 R-01 id 稳定性治理 + R-02 注册表一致性守卫（2026-11-12 老田批准 P0 两项）
+
+> 依据 `docs/2026-11-12_OSINT1采集治理研发方案_v1.md` §三 R-01/R-02。老田 23:41 指令：「执行 P0 两项，按 R-01 → R-02 顺序落地」。
+
+### R-01 · 全库 id 稳定性治理 + 静态回归护栏
+
+- **修复** `news_collector/obs_bridge.py`：`snapshot_id` 由 `abs(hash((source_id,now)))%10**8` 改为 `sha256("source_id|now")[:16]`（新函数 `_stable_snapshot_digest`）。
+  - 实证：旧实现两次独立进程 `21574954` / `75500748`（**不一致**）；新实现恒 `878480759d67ef43`。
+  - 定级：该 `snapshot_id` 当前不参与去重（每次 run 的 `now` 本就不同），故未造成数据膨胀，属「未爆技术债」；但它是观测回溯的唯一锚点，一旦将来用于幂等/对账即失效。
+- **新建** `tools/id_stability_lint.py`：用 `tokenize` 精确判定（只认 NAME token 恰为 `hash` 且后接 `(`），天然排除 `hashlib.*` / 注释 / 字符串 / 属性调用 `xx.hash()`；支持行级 `# noqa: unstable-hash` 豁免；`audit`（默认）与 `--enforce` 双模式；`--all` 扫全仓、`--paths` 指定文件。
+- **新建** `tools/git-hooks/pre-commit-id-guard.sh`，并在 `tools/git-hooks/install_guard.py` 的 `BLOCKS` 注册 `idguard` 块。默认 **audit（只告警）**，`WB_ID_GUARD_ENFORCE=1` 才阻断；python 缺失时 fail-open。
+  - **当前状态：`--status` 显示 `idguard 块 : 未安装`**。理由：三目录尚有 5 处他线命中，装 audit 会给所有线每次提交打告警噪音、装 enforce 会直接阻断他线提交（越界）。安装时点归老田裁定。
+- **审计报告** `docs/id_stability_audit.md`：10 模块普查（7 采集 + obs_bridge + 2 portal 快照）；5 处他线遗留命中分级——`tools/kb_corpus/phase1_dq.py:49`（P2，疑分片键）、`tools/tests/test_kb_qa_bank_v2.py:63/71`、`test_kb_qa_bank_v3.py:68`、`test_r1_daily_check.py:113`（P3，测试参数/临时名）。**均未代改**（归属线处理）。
+
+**复现命令**
+```
+python tools/id_stability_lint.py                                  # 预期：命中 5 处（全为他线），本线 news_collector/ 0
+python tools/id_stability_lint.py --paths <含hash的.py> --enforce   # 预期 rc=1
+python tools/id_stability_lint.py --paths news_collector/obs_bridge.py --enforce  # 预期 rc=0
+```
+
+### R-02 · 注册表—桥文件一致性守卫
+
+- **新建** `tools/registry_guard.py`：以 `selection_universe.json` 为权威，按各源声明的 `bridge_flag_field` 比对桥文件；漂移/缺字段/缺文件均报 ALERT + 处置建议。**只读、不改文件**——桥脚本每日重生成会再次覆盖，自动改等于每天打架，正解在桥生成器一侧（归归属线）。
+- `selection_universe.json` 新增**声明式**字段 `bridge_flag_field`：`houfeng_candidates164 → xq_include_candidates`、`cohorts → xq_include_cohorts`。未来加源只需在注册表加字段，无需改守卫代码。
+- `run_xq_daily.py` 启动自检接入（`try/except` 全包，守卫故障也只打印，**绝不阻断采集**）。
+- 实测：`load_queue('all')` 仍 = **647**（加字段未破坏并集）。
+
+**验收（实测）**
+- `--selftest` 5/5 通过（真/假→DRIFT、真/真→OK、缺字段→ABSENT、缺文件→MISSING、无关卡→跳过）
+- 影子根（副本）注入 `xq_include_candidates=false` → `[ALERT] houfeng_candidates164 DRIFT`，明确指出 `registry=True` vs `bridge=False`；`--enforce` **rc=1**；audit **rc=0**；生产文件零改动。
+- 真实环境当前 **0 问题**（检查 2 源）：两处 flag 均为 `True`（mtime 11-12 16:41），与 registry 一致。
+
+**重要订正（对本台账 §八）**：§八 记「xq 并集（开启源去重）= 562，R22 记 647 为未去重粗加」——**该结论有误**。本次以权威函数实测 `X.load_queue('all') = 647`，与 R22 一致；562 系 R27 探针口径误算。**以 647 为准**。
+另：§八 的 **G3 漂移当前已消解**（两处 flag 均已 `True`），但**漂移机制仍在**（桥脚本每日重生成），故守卫的价值是持续监测而非一次性修复。
+
+**复现命令**
+```
+python tools/registry_guard.py --selftest    # 预期 5/5 PASS
+python tools/registry_guard.py               # 预期：检查 2 源，问题 0
+python -c "import sys;sys.path.insert(0,'news_collector');import xq_stock_timeline as X;print(len(X.load_queue('all')))"   # 预期 647
+```
+
+### 待裁定（3 项）
+1. `idguard` 钩子块**何时安装**（建议先清 5 处他线存量，再装 audit，观察一周转 enforce）。
+2. 5 处他线命中**是否由本席代改**（默认不代改，等归属线）。
+3. 全仓 `--all` 另 37 处是否纳入下阶段治理（须先划目录归属）。
+
+### 边界声明
+本席只做采集/治理工程：**未改任何他线代码、未裁任何阈值、未动扩源决策、未安装共享 git 钩子**（仅注册块代码，`--status` 确认未安装）。
