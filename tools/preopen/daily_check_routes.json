@@ -1,0 +1,68 @@
+{
+  "schema": "preopen/daily_check_routes/v1",
+  "note": "05:30 每日检查的问题分派表。改本文件即可改派单对象，无需改代码；部门名与负责人席码来自 agent_platform/registry/org.json。",
+  "effective_from": "2026-11-13",
+  "sla": {
+    "blocker": "立即处理：当日 08:10 盘前截止前必须回执，否则当日名单可能被阻断",
+    "warning": "当日盘前处理：不阻断名单，但必须写进当日报告，收盘前给出处理结论"
+  },
+  "reply": {
+    "how": "inbox_gateway.consume(msg_id, answered_by=席码, answer_ref=修复证据路径)",
+    "note": "入箱不等于已处理；未回执视同未处理，当日盘前链路按当前数据继续，问题照实写进当日报告。"
+  },
+  "departments": {
+    "data": {
+      "name": "数据智能部",
+      "target": "DATA1",
+      "duty": "行情主源与采集链路、源端接口、分片落盘"
+    },
+    "proj_data": {
+      "name": "数据治理部",
+      "target": "DATA1",
+      "duty": "增量分片链路、逐表新鲜度、上游与本地职责切分"
+    },
+    "quality": {
+      "name": "质量工程部",
+      "target": "QA1",
+      "duty": "坏价与结构异常、统计口径差异、交叉验证"
+    },
+    "invest": {
+      "name": "量化交易部",
+      "target": "D1",
+      "duty": "共识池推送包与候选池时效"
+    },
+    "ops_runtime": {
+      "name": "运行体部",
+      "target": "A0A",
+      "duty": "检查脚本自身、计划任务、投递与告警通道故障"
+    }
+  },
+  "by_source": {
+    "ts_daily": "data",
+    "ts_adj_factor": "data",
+    "ts_index_daily": "data",
+    "ts_top_inst": "data",
+    "limit_list_d": "proj_data",
+    "margin_detail": "proj_data"
+  },
+  "by_keyword": [
+    {"match": "共识池", "dept": "invest"},
+    {"match": "交叉验证", "dept": "quality"},
+    {"match": "价格自相矛盾", "dept": "quality"},
+    {"match": "涨跌幅越界", "dept": "quality"},
+    {"match": "前收盘", "dept": "quality"},
+    {"match": "零成交", "dept": "quality"},
+    {"match": "自算", "dept": "quality"}
+  ],
+  "fallback": "ops_runtime",
+  "aux_chain": {
+    "dept": "proj_data",
+    "priority": "warning",
+    "note": "盘后增量链路逐表巡检结果作为独立观测派单；该链路含 T+1 正常项，必须按三件齐（产物最新日 / 上游起始日探测 / 写入链路）复核，不得直接判成上游断供。"
+  },
+  "feishu": {
+    "only_on_verdict": "fail",
+    "tool": "preopen_daily_check",
+    "note": "仅阻断级判定经 notify_hub 红告警到人；告警项只进部门工单，避免告警疲劳。"
+  }
+}

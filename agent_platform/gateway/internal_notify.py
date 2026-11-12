@@ -26,8 +26,15 @@ def _digest(target: str, source: str, title: str, body: str) -> str:
 
 def emit(target: str, title: str, body: str = "", *, kind: str = "task_request",
          source: str = "internal", link: str = "", actor: str = "",
-         dedupe_key: str | None = None) -> dict:
-    """投递一条内部通知；返回 inbox_gateway 信封。"""
+         dedupe_key: str | None = None, created_at: str | None = None) -> dict:
+    """投递一条内部通知；返回 inbox_gateway 信封。
+
+    created_at 可由调用方固定（例如按数据日 + 检查时点）。
+    2026-11-13 判例：显式传 dedupe_key 做「同问题不重复派单」时，
+    秒级时间戳会让第二次投递的 payload 与首次不同，被 inbox_gateway
+    判成 idempotency_conflict —— 本该 replayed 的催办信反而投不出去。
+    需要幂等复用的调用方必须固定此字段；缺省行为（每次新戳）保持不变。
+    """
     t = str(target or "").strip()
     if not _TARGET_RE.match(t):
         return {"ok": False, "error": {"code": "bad_target",
@@ -38,7 +45,7 @@ def emit(target: str, title: str, body: str = "", *, kind: str = "task_request",
     body = str(body or "")[:MAX_BODY]
     payload = {"schema": SCHEMA, "target": t, "title": title, "body": body,
                "link": str(link or "")[:400], "actor": str(actor or "")[:80],
-               "created_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+               "created_at": str(created_at) if created_at else time.strftime("%Y-%m-%dT%H:%M:%S%z")}
     key = dedupe_key or _digest(t, source, title, body)
     if not re.match(r"^[A-Za-z0-9_-]{1,64}$", key):
         key = _digest(t, source, title, body)
