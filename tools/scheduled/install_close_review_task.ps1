@@ -13,16 +13,19 @@
 # ② 影响面：
 #    - 新增一个计划任务 close_review_daily，不改动已有任务
 #      （preopen_daily / houfeng_settle_daily / FactorDaily 等一律不动）；
-#    - 每个交易日 15:40 读 deliverables 下当日篮子与选票产物（只读），
-#      写 3 处：deliverables\close_review_<day>.md / .json
-#               var\preopen\close_review\ledger.jsonl（append-only 累计台账）
+#    - 每个交易日 15:40 读当日篮子与选票产物（只读），
+#      写 3 处：C:\项目\deliverables\close_review_<day>.md / .json
+#               ← 是**平台级集散地**（见 CONTRIBUTING.md「交付物/审计」条），
+#                 不是仓库内的 老田的AI助手\deliverables\ —— 别再按仓内相对路径找
+#               var\preopen\close_review\ledger.jsonl（按 exec_day 覆盖，一天一行）
 #               C:\Temp\close_review_task.log 与 close_review_launch.jsonl（落痕）；
 #    - 会访问外网行情（hq.sinajs.cn）取当日收盘快照；本地已有当日数据时优先用本地，
 #      不外发任何本地数据（只发股票代码）。
 # ③ 不可逆点：
 #    - 同一天重跑会覆盖当日 md/json（可由当日数据重生，无长期损失）；
-#    - ledger.jsonl 是 append-only，重跑会**追加**一行同日记录（读取时按 exec_day
-#      取最后一条，不会重复计数），但历史行不会消失 —— 这是刻意的：账要留痕。
+#    - ledger.jsonl 按 exec_day **就地覆盖**（同日重跑只留一行，跨日历史不丢）：
+#      早先是纯追加，同一天跑 4 次就留 4 行 20261112，于是「文件几行」与「攒了
+#      几天」脱钩 —— 而人第一眼看到的是文件。现为一天一行，账仍留痕。
 #    - 计划任务本身可 Unregister-ScheduledTask 撤销，无残留。
 # ④ 替代方案：
 #    - 不注册，手工跑 python tools\review\close_review.py（一样一条命令，只是要人记得）；
