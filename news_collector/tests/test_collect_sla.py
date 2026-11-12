@@ -91,6 +91,8 @@ def sandbox(tmp_path, monkeypatch):
     monkeypatch.setattr(cs, "ROOT", str(root))
     monkeypatch.setattr(cs, "OUT_F", str(data / "collect_sla.json"))
     monkeypatch.setattr(cs, "STATE_F", str(data / "collect_sla_state.json"))
+    # 默认不读仓库真白名单，避免测试结果随真实白名单/日期漂移
+    monkeypatch.setattr(cs, "GAPWL_F", str(news / "no_whitelist.json"))
     return root
 
 
@@ -119,16 +121,63 @@ def test_stale_thresholds_and_exit_code(sandbox):
                     NOW.strftime("%Y-%m-%dT%H:%M:%S")]) == 1
 
 
-def test_coverage_denominator_actionable_and_sh_only(sandbox):
+def test_coverage_denominator_actionable_and_market_filters(sandbox):
+    """分母必须是采集器真实范围：irm=深市、sse=沪市、qianping=非北交所。
+
+    沙箱队列 = 600000/600001(沪) + 000001/300001(深) + 920001(北交所)，共 5 只。
+    若用 5 当分母，会凭空造出 3 个假缺口（这正是 2026-11-13 首版犯的错）。
+    """
     rep = cs.build_report(now=NOW, state={})
     irm = _row(rep, "irm")
-    # 分母=actionable(5)，不是 all(7)
-    assert irm["expected"] == 5 and irm["covered"] == 5 and irm["gap"] == 0
-    assert irm["expected_all"] == 7
+    assert irm["expected"] == 2, irm["expected"]      # 深市 000001/300001
+    assert irm["covered"] == 2 and irm["gap"] == 0
     sse = _row(rep, "sse")
-    # 上证 e 互动只算沪市：actionable 里 60x 两只
-    assert sse["expected"] == 2, sse["expected"]
-    assert "仅沪市" in sse["expected_from"]
+    assert sse["expected"] == 2, sse["expected"]      # 沪市 600000/600001
+    assert "沪市 60/68" in sse["expected_from"]
+    qp = _row(rep, "qianping")
+    assert qp["expected"] == 4, qp["expected"]        # 非北交所
+    assert "非北交所" in qp["expected_from"]
+
+
+def test_whitelist_splits_known_vs_open_gap(sandbox, monkeypatch):
+    """白名单只标注、不删缺口：no_content 计入「已核验」，pending_fix 仍算待查。"""
+    (sandbox / "data/irm/300001.jsonl").unlink()
+    (sandbox / "data/sse/600001.jsonl").unlink()
+    wl = {"entries": [
+        {"source": "sse", "codes": ["600001"], "kind": "no_content",
+         "reason": "探针 0 条", "expires": (NOW + timedelta(days=10)).strftime("%Y-%m-%d")},
+        {"source": "irm", "prefixes": ["30"], "kind": "pending_fix",
+         "reason": "前缀映射缺陷", "expires": (NOW + timedelta(days=10)).strftime("%Y-%m-%d")},
+    ]}
+    p = sandbox / "news_collector" / "wl.json"
+    p.write_text(json.dumps(wl, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(cs, "GAPWL_F", str(p))
+    rep = cs.build_report(now=NOW, state={})
+
+    sse = _row(rep, "sse")
+    assert sse["missing"] == ["600001"], sse["missing"]
+    assert sse["gap"] == 1 and sse["gap_known"] == 1 and sse["gap_open"] == 0
+
+    irm = _row(rep, "irm")
+    assert irm["missing"] == ["300001"], irm["missing"]
+    assert irm["gap_pending_fix"] == 1
+    assert irm["gap_known"] == 0
+    assert irm["gap_open"] == irm["missing_n"]      # pending_fix 不洗白
+
+
+def test_whitelist_expired_entries_fail_closed(sandbox, monkeypatch):
+    """过期条目必须失效——防白名单变成永久垃圾桶。"""
+    (sandbox / "data/irm/300001.jsonl").unlink()
+    wl = {"entries": [{"source": "irm", "prefixes": ["30"], "kind": "no_content",
+                       "reason": "x", "expires": (NOW - timedelta(days=1)).strftime("%Y-%m-%d")}]}
+    p = sandbox / "news_collector" / "wl.json"
+    p.write_text(json.dumps(wl, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(cs, "GAPWL_F", str(p))
+    rep = cs.build_report(now=NOW, state={})
+    assert rep["summary"]["gap_whitelist_expired"] == 1
+    irm = _row(rep, "irm")
+    assert irm["gap_known"] == 0
+    assert irm["gap_open"] == 1
 
 
 def test_weekend_slack_prevents_false_red(sandbox):

@@ -66,7 +66,7 @@ SOURCES = [
     },
     {
         "id": "irm", "label": "互动易", "kind": "jsonl_dir",
-        "rel": "data/irm", "expected": "chanlun_actionable",
+        "rel": "data/irm", "expected": "chanlun_actionable", "market": "sz",
         "runlog_rel": "news_collector/logs/target_queue_intel_daily.log",
         "evidence": "irm_collector.py:42 OUT_DIR=dirname(HERE)/data/irm",
     },
@@ -95,7 +95,7 @@ SOURCES = [
     },
     {
         "id": "qianping", "label": "千股千评", "kind": "qianping",
-        "rel": "news_collector/data/qianping", "expected": "chanlun_actionable",
+        "rel": "news_collector/data/qianping", "expected": "chanlun_actionable", "market": "non_bj",
         "evidence": "qianping_collector.py:30 OUT_DIR=HERE/data/qianping；latest.json 带 generated_at/n_queue",
     },
 ]
@@ -124,6 +124,76 @@ def _codes6(items, field="code"):
         if v:
             out.add(v.zfill(6))
     return out
+
+
+# 市场口径 = **采集器真实覆盖范围**，不是我们希望覆盖的范围。
+# 依据 2026-11-13 实测证据：
+#   * irm  ：target_queue_intel_daily.log `→ irm_collector.py 29 只`（SZ 00/30）
+#   * sse  ：同日 `→ sse_collector.py 28 只`，且 sse_collector.py:_load_queue 只收 60/68
+#   * qianping：latest.json `n_queue=57` = 65 - 8(北交所)，设计上不采 92xxxx
+# 用 65 当分母会凭空造出 30+ 个假缺口。
+MARKET_FILTERS = {"sh": ("60", "68"), "sz": ("00", "30")}
+MARKET_LABEL = {"sh": "沪市 60/68", "sz": "深市 00/30",
+                "non_bj": "非北交所（93/92 排除）"}
+
+
+def _filter_market(codes, market):
+    codes = set(codes)
+    if market == "non_bj":
+        return {c for c in codes if not c.startswith("92")}
+    pref = MARKET_FILTERS.get(market)
+    if not pref:
+        return codes
+    return {c for c in codes if c[:2] in pref}
+
+
+GAPWL_F = os.path.join(HERE, "collect_gap_whitelist.json")
+
+
+def _load_gap_whitelist(now=None):
+    """已核验的「合法缺口」标注表。**只标注、不删缺口、不改采集行为**。
+
+    结构：{"entries": [{source, codes[] | prefixes[], kind, reason, method,
+                        verified_at, expires}]}
+    kind：`no_content`（探针证实源端确无内容）/ `structural`（源端结构不支持）/
+          `pending_fix`（已定位为代码缺陷、待修，仍计入待查）。
+    返回 {source: {"exact": {code: entry}, "prefix": [(prefix, entry)]}}。
+    `expires` 到期即失效——防白名单变成垃圾桶；过期条目在输出里单列计数。
+    """
+    now = now or datetime.now()
+    today = now.date()
+    out, expired = {}, 0
+    if not os.path.exists(GAPWL_F):
+        return out, expired
+    try:
+        with open(GAPWL_F, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return out, expired
+    for e in data.get("entries") or []:
+        exp = _parse_dt(e.get("expires"))
+        if exp is not None and exp.date() < today:
+            expired += 1
+            continue
+        slot = out.setdefault(e.get("source"), {"exact": {}, "prefix": []})
+        for c in e.get("codes") or []:
+            slot["exact"][str(c).zfill(6)] = e
+        for p in e.get("prefixes") or []:
+            slot["prefix"].append((str(p), e))
+    return out, expired
+
+
+def _wl_lookup(slot, code):
+    """先精确码、后前缀规则。"""
+    if not slot:
+        return None
+    ent = slot["exact"].get(code)
+    if ent:
+        return ent
+    for pref, e in slot["prefix"]:
+        if code.startswith(pref):
+            return e
+    return None
 
 
 def _load_chanlun(actionable=True):
@@ -241,13 +311,14 @@ def _scan_jsonl_dir(path):
 def _scan_qianping(path):
     fp = os.path.join(path, "latest.json")
     if not os.path.exists(fp):
-        return None, 0, None, None
+        return None, 0, None, set()
     try:
         with open(fp, encoding="utf-8") as f:
             d = json.load(f)
     except Exception:
-        return None, 0, None, None
-    return _parse_dt(d.get("generated_at")), int(d.get("n_queue") or 0), d.get("trade_day"), None
+        return None, 0, None, set()
+    qset = _codes6(d.get("queue") or [])
+    return _parse_dt(d.get("generated_at")), int(d.get("n_queue") or 0), d.get("trade_day"), qset
 
 
 def _scan_news(db_path, status_path):
@@ -315,6 +386,7 @@ def build_report(now=None, thresholds=None, state=None):
     chanlun_act, chanlun_act_src = _load_chanlun(True)
     chanlun_all, _chanlun_all_src = _load_chanlun(False)
     registry_all, registry_how = _load_registry_all()
+    whitelist, wl_expired = _load_gap_whitelist(now)
     state = state or {}
 
     rows = []
@@ -330,12 +402,13 @@ def build_report(now=None, thresholds=None, state=None):
         if spec.get("expected") == "chanlun_actionable":
             expect = chanlun_act
             expect_all = chanlun_all
-            extra = ""
-            if spec.get("market") == "sh":
-                # 上证 e 互动只覆盖沪市（60/68），拿 65 只全市场当分母是分母错误
-                expect = {c for c in chanlun_act if c[:2] in ("60", "68")}
-                expect_all = {c for c in chanlun_all if c[:2] in ("60", "68")}
-                extra = "；本源仅沪市(60/68)"
+            market = spec.get("market")
+            if market:
+                expect = _filter_market(expect, market)
+                expect_all = _filter_market(expect_all, market)
+                extra = "；本源仅 %s" % MARKET_LABEL[market]
+            else:
+                extra = ""
             row["expected_from"] = "%s（采集器默认 actionable）%s；副口径 all=%d" % (
                 chanlun_act_src, extra, len(expect_all))
         elif spec.get("expected") == "registry_all":
@@ -346,6 +419,7 @@ def build_report(now=None, thresholds=None, state=None):
 
         covered = None
         covered_all = None
+        missing = []
         kind = spec["kind"]
         if kind == "news":
             last, total, sub_ok, sub_bad, sub_fail = _scan_news(
@@ -354,8 +428,10 @@ def build_report(now=None, thresholds=None, state=None):
                         "n_rows": total, "sub_ok": sub_ok, "sub_fail_n": sub_bad,
                         "sub_fail": sub_fail})
         elif kind == "qianping":
-            last, n_q, trade_day, _ = _scan_qianping(path)
+            last, n_q, trade_day, qset = _scan_qianping(path)
             covered = n_q if expect else None
+            if expect:
+                missing = sorted(expect - qset)
             row.update({"last_ok_src": "latest.json generated_at",
                         "covered": covered, "trade_day": trade_day,
                         "n_files": len([x for x in (os.listdir(path) if os.path.isdir(path) else [])
@@ -364,6 +440,8 @@ def build_report(now=None, thresholds=None, state=None):
             last, n_files, codes, n_empty, empties = _scan_jsonl_dir(path)
             covered = len(codes & expect) if expect else len(codes)
             covered_all = len(codes & expect_all) if expect_all else None
+            if expect:
+                missing = sorted(expect - codes)
             row.update({"last_ok_src": "max(*.jsonl mtime)", "n_files": n_files,
                         "empty_files": n_empty, "empty_sample": empties})
             if spec.get("deferred_rel"):
@@ -391,6 +469,30 @@ def build_report(now=None, thresholds=None, state=None):
         else:
             row["gap"] = None
             row["coverage_pct"] = None
+
+        # 缺口拆成「已核验合法」与「待查」两截：只标注、不删缺口。
+        # 只有 no_content / structural 算「合法」；pending_fix 是已定位缺陷，
+        # 仍计入待查（gap_open），单独计数以便催办——不许用它把债洗掉。
+        wl = whitelist.get(sid)
+        known, pending, kinds_seen = [], [], set()
+        for c in missing:
+            e = _wl_lookup(wl, c)
+            if not e:
+                continue
+            k = e.get("kind")
+            if k in ("no_content", "structural"):
+                known.append(c)
+                kinds_seen.add(k)
+            elif k == "pending_fix":
+                pending.append(c)
+        row["missing_n"] = len(missing)
+        row["missing"] = missing
+        row["gap_known"] = len(known)
+        row["gap_pending_fix"] = len(pending)
+        row["gap_open"] = len(missing) - len(known)
+        row["gap_known_sample"] = known[:8]
+        row["gap_pending_sample"] = pending[:8]
+        row["gap_known_kinds"] = sorted(kinds_seen)
 
         prev = (state.get(sid) or {})
         prev_state = prev.get("state")
@@ -440,9 +542,14 @@ def build_report(now=None, thresholds=None, state=None):
         "weekend_slack_hours": slack,
         "summary": {"n_red": n_red, "n_amber": n_amber, "n_nodata": n_nodata,
                     "n_sources": len(rows),
+                    "gap_total": sum(r.get("gap") or 0 for r in rows),
+                    "gap_known": sum(r.get("gap_known") or 0 for r in rows),
+                    "gap_open": sum(r.get("gap_open") or 0 for r in rows),
+                    "gap_whitelist_expired": wl_expired,
                     "verdict": "RED" if n_red else ("AMBER" if (n_amber or n_nodata) else "GREEN")},
         "rows": rows,
-        "note": "只读快照；state=GREEN/AMBER/RED/NODATA；阈值为 DEFAULT 经验值，调参归 11-15 微调日",
+        "note": "只读快照；state=GREEN/AMBER/RED/NODATA；阈值为 DEFAULT 经验值，调参归 11-15 微调日；"
+                "gap=分母内缺文件数，gap_known=已核验合法缺口（见 collect_gap_whitelist.json），gap_open=待查",
     }
 
 
@@ -450,49 +557,58 @@ def render_md(rep):
     lines = [
         "# 采集新鲜度 SLA · %s" % rep["generated_at"],
         "",
-        "判定：%s（RED=%d / AMBER=%d / NODATA=%d，共 %d 源）；阈值来源 `%s`，周末放宽 %.0fh。"
+        "判定：%s（RED=%d / AMBER=%d / NODATA=%d，共 %d 源）；阈值来源 `%s`，周末放宽 %.0fh；"
+        "缺口合计 %d（已核验合法 %d / 待查 %d）。"
         % (rep["summary"]["verdict"], rep["summary"]["n_red"], rep["summary"]["n_amber"],
            rep["summary"]["n_nodata"], rep["summary"]["n_sources"],
-           rep["thresholds_source"], rep["weekend_slack_hours"]),
+           rep["thresholds_source"], rep["weekend_slack_hours"],
+           rep["summary"]["gap_total"], rep["summary"]["gap_known"],
+           rep["summary"]["gap_open"]),
         "",
-        "| 源 | 判定 | 最后成功 | 滞后(h) | 覆盖/期望 | 缺口 | 连续不达标 | 备注 |",
-        "|---|---|---|---|---|---|---|---|",
+        "| 源 | 判定 | 最后成功 | 滞后(h) | 覆盖/期望 | 缺口 | 待查 | 连续不达标 | 备注 |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rep["rows"]:
         cov = "-" if r.get("expected") is None else "%s/%s" % (r.get("covered"), r["expected"])
         if r.get("covered_all") is not None:
             cov += "（all %s/%s）" % (r["covered_all"], r["expected_all"])
-        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
             r["label"], r["state"], r.get("last_ok_ts") or "-",
             "-" if r.get("stale_hours") is None else r["stale_hours"],
             cov, "-" if r.get("gap") is None else r["gap"],
+            "-" if r.get("gap_open") is None else r["gap_open"],
             r.get("consecutive_bad"), r.get("note")))
     lines += [
         "",
         "口径：最后成功 = 各源产物落盘时间/库内 max(ts)（非日志行）；覆盖分母见各行 `expected_from`。",
+        "缺口已拆两截：**缺口**=分母内缺文件数；**待查**=缺口减去已核验合法的部分"
+        "（白名单 `collect_gap_whitelist.json`，到期自动失效，防止清单只增不减）。",
         "本表只给读数与判据，不含任何研判结论。",
     ]
     return "\n".join(lines) + "\n"
 
 
 def render_table(rep):
-    head = "%-12s %-6s %-16s %8s %10s %6s %5s  %s" % (
-        "源", "判定", "最后成功", "滞后h", "覆盖/期望", "缺口", "连坏", "备注")
+    head = "%-12s %-6s %-16s %7s %10s %6s %5s %5s  %s" % (
+        "源", "判定", "最后成功", "滞后h", "覆盖/期望", "缺口", "待查", "连坏", "备注")
     out = [head, "-" * len(head)]
     for r in rep["rows"]:
         cov = "-" if r.get("expected") is None else "%s/%s" % (r.get("covered"), r["expected"])
         if r.get("covered_all") is not None:
             cov += "(all %s/%s)" % (r["covered_all"], r["expected_all"])
-        out.append("%-12s %-6s %-16s %8s %10s %6s %5s  %s" % (
+        out.append("%-12s %-6s %-16s %7s %10s %6s %5s %5s  %s" % (
             r["label"], r["state"], r.get("last_ok_ts") or "-",
             "-" if r.get("stale_hours") is None else r["stale_hours"],
             cov, "-" if r.get("gap") is None else r["gap"],
+            "-" if r.get("gap_open") is None else r["gap_open"],
             r.get("consecutive_bad"), r.get("note")))
     s = rep["summary"]
     out.append("")
     out.append("判定=%s  RED=%d AMBER=%d NODATA=%d  阈值来源=%s  周末放宽=%.0fh"
                % (s["verdict"], s["n_red"], s["n_amber"], s["n_nodata"],
                   rep["thresholds_source"], rep["weekend_slack_hours"]))
+    out.append("缺口合计=%d（已核验合法 %d / 待查 %d；白名单过期 %d 条）"
+               % (s["gap_total"], s["gap_known"], s["gap_open"], s["gap_whitelist_expired"]))
     return "\n".join(out)
 
 

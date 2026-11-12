@@ -1,0 +1,79 @@
+{
+ "schema": "collect_gap_whitelist/v1",
+ "note": "已核验合法缺口标注表。只标注、不删缺口、不改采集行为。kind: no_content(源端确无内容)/structural(源端结构不支持)/pending_fix(已定位代码缺陷，仍计入待查)。支持 codes(精确码) 与 prefixes(前缀规则)。过期自动失效，防白名单变垃圾桶。",
+ "updated": "2026-11-13",
+ "entries": [
+  {
+   "source": "sse",
+   "codes": [
+    "600930",
+    "688235",
+    "600055",
+    "601916",
+    "600998",
+    "601607",
+    "688475",
+    "601000",
+    "603288",
+    "600718",
+    "600699",
+    "600050",
+    "600085"
+   ],
+   "kind": "no_content",
+   "reason": "上证e互动该 13 只均已在 uid_map 收录（页面存在），单点探针逐个返回「拉 0 条」；同批有内容票解析正常（603348 拉 4 条 / 600587 拉 5 条），故判源端确无问答，非漏取",
+   "method": "python news_collector/collect_gap_probe.py sse <13 codes>（只读探针，不写盘）",
+   "verified_at": "2026-11-13",
+   "expires": "2026-12-13",
+   "verified_by": "OSINT1 马良"
+  },
+  {
+   "source": "irm",
+   "codes": [
+    "300984"
+   ],
+   "kind": "no_content",
+   "reason": "secid 解析成功（9900044779），fetch_company(total=0) 抓 0 条；同轮 irm 29 只 secid 解析 29/29、失败 0，故判该票无问答，非漏取",
+   "method": "python news_collector/collect_gap_probe.py irm 300984",
+   "verified_at": "2026-11-13",
+   "expires": "2026-12-13",
+   "verified_by": "OSINT1 马良"
+  },
+  {
+   "source": "taoguba",
+   "prefixes": [
+    "92"
+   ],
+   "kind": "no_content",
+   "reason": "本轮 tgb 实跑含 920xxx（40 只 + 25 只两批），`[tgb] 920690 新增 0`、失败 0，返回空；未能区分「无帖」与「源不支持 BJ」，按实测空处理，到期须复核",
+   "method": "news_collector/logs/target_queue_intel_daily.log 11-12 09:43/09:44 实跑记录",
+   "verified_at": "2026-11-13",
+   "expires": "2026-12-13",
+   "verified_by": "OSINT1 马良"
+  },
+  {
+   "source": "taoguba",
+   "codes": [
+    "688475"
+   ],
+   "kind": "no_content",
+   "reason": "该票在 tgb 实跑批次内，返回 0 新增；同期 sse 亦 0 条，交叉印证源端低活跃",
+   "method": "同上实跑记录 + sse 探针 688475 拉 0 条",
+   "verified_at": "2026-11-13",
+   "expires": "2026-12-13",
+   "verified_by": "OSINT1 马良"
+  },
+  {
+   "source": "xq",
+   "prefixes": [
+    "92"
+   ],
+   "kind": "pending_fix",
+   "reason": "xq 缺口 23 只全部是 920xxx（北交所），非零散漏取。根因：xq_stock_timeline.py:264 symbol=(SH if code.startswith((6,9)) else SZ)，92xxxx 被映射成 SH920870（北交所应为 BJ），xueqiu 返回空列表且 HTTP 200，故静默无文件、也不进 deferred（_deferred.json 为空即反证）。属代码缺陷；是否把北交所纳入 xq 采集需上级裁定（既有口径：BJ 仅入 taoguba），故本轮只出工单不改代码",
+   "method": "代码定位 news_collector/xq_stock_timeline.py:264 + collect_sla.json rows[xq].missing 全为 92 前缀 + _deferred.json 为空",
+   "verified_at": "2026-11-13",
+   "expires": "2026-12-13",
+   "verified_by": "OSINT1 马良"
+  }
+ ]
+}
