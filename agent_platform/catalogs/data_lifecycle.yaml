@@ -141,3 +141,9 @@ tables:
     reason: >-
       盘中板块表 catalog 仍为 placeholder_empty（files=0、manifest missing），
       采集未接入；落盘后删除本条。
+
+  ts_rt_min_roll:
+    lifecycle: planned
+    reason: >-
+      catalog v46 新增 ts_rt_min_roll 为 placeholder_empty（files=0、manifest missing），
+      采集未接入；落盘后删除本条（2026-11-13 元数据门热修）。
