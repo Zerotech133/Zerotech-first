@@ -454,3 +454,11 @@ portal/daily_report/registry_state/
 quant_backtest/logs_*.txt
 portal/_social_fetch_run_log.md
 tools/social_task_install.result
+
+# 2026-11-12 内部架构审计（不入 public 仓）
+# 理由：这类文档的价值恰在于逐条点名弱点，所以它同时就是一张攻击面地图。
+# 已实测确认其含**带行号的鉴权缺陷描述**与完整端口表 —— 那是操作指引，不是设计说明。
+# 注意与设计文档区分：ARCHITECTURE.md / SECURITY.md 是公开约定，改动无意义也不必要。
+# 处理方式：整份文档不进版本库，本地文件保留原地（路径引用不破）。
+deliverables/*_文档通读*
+deliverables/*_文档通读*/**
