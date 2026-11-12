@@ -7,6 +7,9 @@ include）+ WAF 挑战自愈（reload 重武装）+ 405/WAF 停轮 + 只读 GET 
 sortId=2 最新优先）。
 
 产物：data/xq_timeline/{code}.jsonl（append，按 status_id 去重）。
+覆盖：沪(6/9/5) / 深(0/3/2) / **北(43/83/87/92)** 三市——北交所支持见
+`to_symbol()`，2026-11-13 OPS-1113-01 修（旧写法把 92xxxx 拼成 SH920870，
+雪球回空列表且 HTTP 200，静默丢 23 只）。
 字段：id/code/symbol/ts/text/title/user_id/view/like/reply/link/src
 （link 为雪球 permalink 溯源字段，2026-11-11 L3 补；存量由 xq_backfill_link.py 幂等回填）。
 
@@ -114,6 +117,25 @@ def _codes_from_source(src):
         scope = src.get("scope")
         items = cfg.get(scope) or cfg.get("all") or []
     return {str(i.get("code", "")).split(".")[0] for i in items if i.get("code")}
+
+
+def to_symbol(code):
+    """6 位代码 → 雪球 symbol（市场前缀 + 代码）。
+
+    判据按交易所代码段，**不再用「6 或 9 开头即沪市」**——该口径把北交所 92xxxx
+    也拼成 SH（详见工单 OPS-1113-01）：雪球对 SH920870 返回空列表且 HTTP 200，
+    静默无内容、不进 deferred，SLA 上线前完全不可见。
+
+      43/83/87/92 → BJ（北交所，含新代码段 920）
+      6/9/5       → SH（沪主板、沪 B 900、沪基金 5xx）
+      其余        → SZ（深主板 00、创业板 30、深 B 200）
+    """
+    code = str(code).split(".")[0].zfill(6)
+    if code.startswith(("43", "83", "87", "92")):
+        return "BJ" + code
+    if code.startswith(("6", "9", "5")):
+        return "SH" + code
+    return "SZ" + code
 
 
 def load_queue(scope="all", sources=None):
@@ -261,7 +283,7 @@ def main():
         for i, code in enumerate(codes):
             if halted:
                 break
-            symbol = ("SH" if code.startswith(("6", "9")) else "SZ") + code
+            symbol = to_symbol(code)
             path = os.path.join(OUT_DIR, "%s.jsonl" % code)
             seen = load_seen(path)
             new = 0

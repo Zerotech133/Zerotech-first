@@ -1,6 +1,6 @@
 {
  "schema": "collect_gap_whitelist/v1",
- "note": "已核验合法缺口标注表。只标注、不删缺口、不改采集行为。kind: no_content(源端确无内容)/structural(源端结构不支持)/pending_fix(已定位代码缺陷，仍计入待查)。支持 codes(精确码) 与 prefixes(前缀规则)。过期自动失效，防白名单变垃圾桶。",
+ "note": "已核验合法缺口标注表。只标注、不删缺口、不改采集行为。kind: no_content(源端确无内容)/structural(源端结构不支持)/pending_fix(已定位代码缺陷，仍计入待查)。支持 codes(精确码) 与 prefixes(前缀规则)。过期自动失效，防白名单变垃圾桶。2026-11-13 OPS-1113-01 修复后，原 xq/92 前缀的 pending_fix 条目已删除（23 只全部抓到内容，缺口归零）；今后若再现 xq 缺口须按新证据重新核验，不得沿用本表。",
  "updated": "2026-11-13",
  "entries": [
   {
@@ -59,18 +59,6 @@
    "kind": "no_content",
    "reason": "该票在 tgb 实跑批次内，返回 0 新增；同期 sse 亦 0 条，交叉印证源端低活跃",
    "method": "同上实跑记录 + sse 探针 688475 拉 0 条",
-   "verified_at": "2026-11-13",
-   "expires": "2026-12-13",
-   "verified_by": "OSINT1 马良"
-  },
-  {
-   "source": "xq",
-   "prefixes": [
-    "92"
-   ],
-   "kind": "pending_fix",
-   "reason": "xq 缺口 23 只全部是 920xxx（北交所），非零散漏取。根因：xq_stock_timeline.py:264 symbol=(SH if code.startswith((6,9)) else SZ)，92xxxx 被映射成 SH920870（北交所应为 BJ），xueqiu 返回空列表且 HTTP 200，故静默无文件、也不进 deferred（_deferred.json 为空即反证）。属代码缺陷；是否把北交所纳入 xq 采集需上级裁定（既有口径：BJ 仅入 taoguba），故本轮只出工单不改代码",
-   "method": "代码定位 news_collector/xq_stock_timeline.py:264 + collect_sla.json rows[xq].missing 全为 92 前缀 + _deferred.json 为空",
    "verified_at": "2026-11-13",
    "expires": "2026-12-13",
    "verified_by": "OSINT1 马良"
