@@ -1,0 +1,308 @@
+{
+  "schema": "reason_norm/v1",
+  "updated_at": "2026-11-12",
+  "purpose": "龙虎榜上榜原因（ts_top_list.reason）写法归一。远端同一口径存在多种表述，按字符串硬映射会在新写法出现时静默漏判，故改为维度解析。",
+  "dimensions": {
+    "window": {
+      "d1": "单日",
+      "d3": "连续3个交易日",
+      "d30": "连续30个交易日",
+      "special": "非周期性特殊情形（退市整理期等）"
+    },
+    "metric": {
+      "chg_dev": "涨幅偏离值（相对基准指数，非绝对涨幅）",
+      "drop_dev": "跌幅偏离值（相对基准指数）",
+      "chg": "涨幅绝对值（不带“偏离值”三字）",
+      "drop": "跌幅绝对值",
+      "turnover": "换手率",
+      "amplitude": "价格振幅",
+      "delist": "退市整理期"
+    },
+    "instrument": {
+      "stock": "股票（含沪深主板/创业板/科创板/北交所）",
+      "cb": "可转债"
+    }
+  },
+  "canonical_code": "{instrument}_{window}_{metric}_{threshold}",
+  "canonical_examples": [
+    "stock_d1_turnover_20",
+    "stock_d1_chg_dev_7",
+    "stock_d3_chg_dev_20",
+    "cb_d1_chg_15",
+    "stock_special_delist_0"
+  ],
+  "cn_numeral": {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+    "十": 10,
+    "二十": 20,
+    "三十": 30,
+    "六十": 60
+  },
+  "special_cases": [
+    {
+      "id": "delist",
+      "match": "退市整理期",
+      "metric": "delist",
+      "instrument": null
+    },
+    {
+      "id": "new_listing",
+      "match": "上市首日",
+      "metric": "new_listing",
+      "instrument": null
+    },
+    {
+      "id": "no_price_limit",
+      "match": "无价格涨跌幅限制",
+      "metric": "no_price_limit",
+      "instrument": null
+    }
+  ],
+  "noise_patterns": [
+    {
+      "id": "neg_new_listing",
+      "pattern": "非上市首日",
+      "note": "必须排在 special_cases 之前去噪，否则“非上市首日,当日收盘价涨幅达15%”会被误判成上市首日特殊情形"
+    },
+    {
+      "id": "prefix_non_s",
+      "pattern": "非S证券",
+      "note": "排除未股改S股的前缀，不改变口径"
+    },
+    {
+      "id": "prefix_price_limited",
+      "pattern": "有价格涨跌幅限制的",
+      "note": "与“当日”“日”同义，仅表述差异"
+    },
+    {
+      "id": "word_close_price",
+      "pattern": "收盘价格",
+      "note": "与“价格”“收盘价”同义"
+    },
+    {
+      "id": "word_count",
+      "pattern": "前[0-9一二三四五六七八九十]+只(证券|股票|可转债)?",
+      "note": "榜位数量，不影响上榜口径"
+    },
+    {
+      "id": "punct_comma",
+      "pattern": "[，,]",
+      "note": "逗号有无属排版差异"
+    }
+  ],
+  "rules": [
+    {
+      "id": "delist",
+      "match": "退市整理期",
+      "window": "special",
+      "metric": "delist",
+      "threshold": 0,
+      "note": "无阈值，命中即特殊情形"
+    },
+    {
+      "id": "metric_dev",
+      "match": "(涨幅|跌幅)偏离值",
+      "note": "必须最先判，否则会被下面的绝对涨跌幅规则吃掉"
+    },
+    {
+      "id": "metric_amplitude",
+      "match": "振幅"
+    },
+    {
+      "id": "metric_turnover",
+      "match": "换手率"
+    },
+    {
+      "id": "metric_abs",
+      "match": "(涨幅|跌幅)达",
+      "note": "不带偏离值；科创板/创业板 15%、20% 档走这条。只写“达”不写“达到”——8 天实测存在“涨幅达15%”漏“到”字的写法，写死“达到”会整条漏判"
+    }
+  ],
+  "discipline": [
+    "涨与跌是两个独立 reason，不得用绝对值合并——同一标的昨日涨停今日跌停会分别出现在两个榜里，合并会把方向抹掉。",
+    "chg_dev 与 chg 不可混算：前者相对基准指数，后者是绝对涨幅；把 15% 与 7% 放同一个阈值列里做统计即口径错误。",
+    "阈值一律取绝对值，负号不参与编码：实测存在「跌幅达到-20%」「累计达到-50%」写法，方向已由 metric（drop_dev/drop）承载；若把符号并入 threshold，同一规则会分裂成 drop_20 与 drop_-20 两个 code，统计时被当成两件事。",
+    "同一标的同一日可能同时命中多条 reason（实测 11-11 为 75 行 75 只，未出现），出现时不得去重合并，应保留多行并标记 multi_reason。",
+    "本表只做写法归一，不改变阈值语义、不做任何筛选，输出必须保留原文 reason。"
+  ],
+  "regression_fixture": {
+    "source": "data/top_list/20261101-20261111 全部快照（8 个交易日 535 行）",
+    "distinct_raw": 33,
+    "note": "改动 rules 或 noise_patterns 后必须重跑 tools/reason_norm.py --check，本清单即回归夹具",
+    "cases": [
+      {
+        "raw": "非S证券连续三个交易日内收盘价格涨幅偏离值累计达到20%的证券",
+        "code": "stock_d3_chg_dev_20",
+        "n": 60
+      },
+      {
+        "raw": "连续三个交易日内，涨幅偏离值累计达到20%的证券",
+        "code": "stock_d3_chg_dev_20",
+        "n": 42
+      },
+      {
+        "raw": "当日换手率达到20%的前5只股票",
+        "code": "stock_d1_turnover_20",
+        "n": 36
+      },
+      {
+        "raw": "日跌幅偏离值达到7%的前5只证券",
+        "code": "stock_d1_drop_dev_7",
+        "n": 36
+      },
+      {
+        "raw": "有价格涨跌幅限制的日收盘价格涨幅偏离值达到7%的前五只证券",
+        "code": "stock_d1_chg_dev_7",
+        "n": 35
+      },
+      {
+        "raw": "有价格涨跌幅限制的日换手率达到20%的前五只证券",
+        "code": "stock_d1_turnover_20",
+        "n": 33
+      },
+      {
+        "raw": "日换手率达到30%的前5只证券",
+        "code": "stock_d1_turnover_30",
+        "n": 33
+      },
+      {
+        "raw": "日涨幅达到15%的前5只证券",
+        "code": "stock_d1_chg_15",
+        "n": 33
+      },
+      {
+        "raw": "日换手率达到20%的前5只证券",
+        "code": "stock_d1_turnover_20",
+        "n": 31
+      },
+      {
+        "raw": "日涨幅偏离值达到7%的前5只证券",
+        "code": "stock_d1_chg_dev_7",
+        "n": 29
+      },
+      {
+        "raw": "有价格涨跌幅限制的日收盘价格跌幅偏离值达到7%的前五只证券",
+        "code": "stock_d1_drop_dev_7",
+        "n": 27
+      },
+      {
+        "raw": "有价格涨跌幅限制的日收盘价格涨幅达到15%的前五只证券",
+        "code": "stock_d1_chg_15",
+        "n": 23
+      },
+      {
+        "raw": "有价格涨跌幅限制的日价格振幅达到15%的前五只证券",
+        "code": "stock_d1_amplitude_15",
+        "n": 22
+      },
+      {
+        "raw": "日振幅值达到15%的前5只证券",
+        "code": "stock_d1_amplitude_15",
+        "n": 17
+      },
+      {
+        "raw": "连续三个交易日内，涨幅偏离值累计达到30%的证券",
+        "code": "stock_d3_chg_dev_30",
+        "n": 15
+      },
+      {
+        "raw": "非S证券连续三个交易日内收盘价格跌幅偏离值累计达到20%的证券",
+        "code": "stock_d3_drop_dev_20",
+        "n": 8
+      },
+      {
+        "raw": "退市整理期",
+        "code": "stock_special_delist_0",
+        "n": 8
+      },
+      {
+        "raw": "连续三个交易日内，跌幅偏离值累计达到20%的证券",
+        "code": "stock_d3_drop_dev_20",
+        "n": 6
+      },
+      {
+        "raw": "当日收盘价涨幅达到20%的前5只股票",
+        "code": "stock_d1_chg_20",
+        "n": 6
+      },
+      {
+        "raw": "日涨幅达到15%的前5只可转债",
+        "code": "cb_d1_chg_15",
+        "n": 6
+      },
+      {
+        "raw": "日跌幅达到15%的前5只证券",
+        "code": "stock_d1_drop_15",
+        "n": 5
+      },
+      {
+        "raw": "有价格涨跌幅限制的日收盘价格跌幅达到15%的前五只证券",
+        "code": "stock_d1_drop_15",
+        "n": 4
+      },
+      {
+        "raw": "有价格涨跌幅限制的连续3个交易日内收盘价格涨幅偏离值累计达到30%的证券",
+        "code": "stock_d3_chg_dev_30",
+        "n": 4
+      },
+      {
+        "raw": "上市首日可转债",
+        "code": "cb_special_new_listing_0",
+        "n": 3
+      },
+      {
+        "raw": "有价格涨跌幅限制的连续3个交易日内收盘价格跌幅偏离值累计达到30%的证券",
+        "code": "stock_d3_drop_dev_30",
+        "n": 3
+      },
+      {
+        "raw": "非上市首日,当日收盘价涨幅达15%的前五只可转债",
+        "code": "cb_d1_chg_15",
+        "n": 3
+      },
+      {
+        "raw": "日振幅值达到30%的前5只证券",
+        "code": "stock_d1_amplitude_30",
+        "n": 1
+      },
+      {
+        "raw": "当日收盘价跌幅达到-20%的前5只股票",
+        "code": "stock_d1_drop_20",
+        "n": 1
+      },
+      {
+        "raw": "日跌幅达到15%的前5只可转债",
+        "code": "cb_d1_drop_15",
+        "n": 1
+      },
+      {
+        "raw": "无价格涨跌幅限制的证券",
+        "code": "stock_special_no_price_limit_0",
+        "n": 1
+      },
+      {
+        "raw": "有价格涨跌幅限制的连续10个交易日内收盘价格跌幅偏离值累计达到-50%的证券",
+        "code": "stock_d10_drop_dev_50",
+        "n": 1
+      },
+      {
+        "raw": "连续三个交易日内，跌幅偏离值累计达到30%的证券",
+        "code": "stock_d3_drop_dev_30",
+        "n": 1
+      },
+      {
+        "raw": "连续30个交易日内收盘价格涨幅偏离值累计达到200%的可转债",
+        "code": "cb_d30_chg_dev_200",
+        "n": 1
+      }
+    ]
+  }
+}
