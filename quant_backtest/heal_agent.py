@@ -176,13 +176,60 @@ def _run(cmd, timeout=900):
         return {"rc": "exc", "err": str(e)[:300], "sec": 0}
 
 
+def _snap(tbl):
+    """(数据日, manifest 记的行数)：判「跑完了到底有没有前进」的两个独立证据。
+
+    只看 asof 会误判 —— 分片不按日期排序，新行可能 append 进旧分片，末片 max 不动。
+    只看 rows 会误判 —— 覆盖写不会让 rows 涨。
+    两个一起看，任一前进就算前进。
+    """
+    asof = None
+    try:
+        import contract_health as H        # 延迟导入：pandas 不在本模块的启动路径上
+        cols = H._schema(tbl)
+        if cols:
+            dcol, _ = H._resolve_dcol(tbl, cols)
+            if dcol:
+                asof = H._fast_asof(tbl, dcol)
+    except Exception:
+        pass
+    rows = None
+    try:
+        rows = (json.load(open(MANIFEST, encoding="utf-8")).get(tbl) or {}).get("rows")
+    except Exception:
+        pass
+    return {"asof": asof, "rows": rows}
+
+
+def _verdict(before, after, rc):
+    """rc=0 不等于修好了。
+
+    这条判据专门挡「跑完了、数据没动」——2026-11-12 的教训是：任务显示成功、
+    rc=0、日志一行不少，但目标状态没变，比报错更难发现（报错会重试，成功不会）。
+    返回 (ok, note)：
+      rc!=0               -> (False, None)
+      有前进              -> (True,  "advanced")
+      rc=0 但原地不动      -> (None,  "ran_no_progress")  不记成功，也不记失败
+    """
+    if rc != 0:
+        return False, None
+    moved = ((after.get("asof") or "") > (before.get("asof") or "")
+             or (after.get("rows") or 0) > (before.get("rows") or 0))
+    return (True if moved else None), ("advanced" if moved else "ran_no_progress")
+
+
 def do_resync(rec, apply):
     """重跑增量：tdx_sync 自带进程锁，重复调用会静默退 0，安全。"""
     cmd = [sys.executable, SYNC, "--tables", rec["table"]]
     if not apply:
         return {"action": "resync", "ok": None, "cmd": " ".join(cmd), "skipped": "dry-run"}
+    before = _snap(rec["table"])
     r = _run(cmd)
-    return {"action": "resync", "ok": r.get("rc") == 0, "cmd": " ".join(cmd), **r}
+    after = _snap(rec["table"])
+    ok, note = _verdict(before, after, r.get("rc"))
+    return {"action": "resync", "ok": ok, "note": note,
+            "asof_before": before.get("asof"), "asof_after": after.get("asof"),
+            "cmd": " ".join(cmd), **r}
 
 
 def do_backfill(rec, apply):
@@ -213,9 +260,13 @@ def do_backfill(rec, apply):
     except Exception as e:
         return {"action": "backfill", "ok": False, "err": "改账失败: %s" % str(e)[:200],
                 "manifest_bak": bak}
+    before = _snap(tbl)          # 此时账已重置为 rows=0，拉成功就一定有前进
     r = _run(cmd)
-    return {"action": "backfill", "ok": r.get("rc") == 0, "cmd": " ".join(cmd),
-            "manifest_bak": bak, **r}
+    after = _snap(tbl)
+    ok, note = _verdict(before, after, r.get("rc"))
+    return {"action": "backfill", "ok": ok, "note": note,
+            "asof_before": before.get("asof"), "asof_after": after.get("asof"),
+            "cmd": " ".join(cmd), "manifest_bak": bak, **r}
 
 
 def do_switch(rec, apply):
@@ -321,7 +372,9 @@ def main(argv=None):
         res = DOERS[t["action"]]({"table": t["table"]}, apply)
         rec = {"at": now.strftime("%Y-%m-%d %H:%M:%S"), "table": t["table"],
                "cause": t["cause"], "action": t["action"], "apply": apply,
-               "ok": res.get("ok"), "skipped": res.get("skipped"),
+               "ok": res.get("ok"), "note": res.get("note"),
+               "asof_after": res.get("asof_after"),
+               "skipped": res.get("skipped"),
                "err": res.get("err") or (res.get("out") or "")[-200:] or res.get("proposal"),
                "sec": res.get("sec")}
         if apply:
@@ -329,7 +382,7 @@ def main(argv=None):
         applied.append(rec)
         print("  %-8s %-22s cause=%-15s ok=%-5s %s"
               % (t["action"], t["table"], t["cause"], res.get("ok"),
-                 (res.get("skipped") or res.get("err") or "")[:56]))
+                 (res.get("skipped") or res.get("note") or res.get("err") or "")[:56]))
 
     if deferred:
         print("\n留给下一轮 %d 项（防抖 / 超单轮上限 %d）："
