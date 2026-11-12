@@ -24,6 +24,11 @@ USAGE
     python tools/check_public_surface.py --remote-url <url> [--warn]
     python tools/check_public_surface.py --status --remote-url <url>
 
+    The baseline file is git-ignored on purpose. It is an index of which file
+    hits which rule, so publishing it would hand out the very map this gate
+    exists to withhold -- the tool must not become the leak. It is generated
+    from HEAD automatically the first time it is missing.
+
 EXIT
     0  no new exposure (or remote not public / not applicable)
     1  new exposure found -> block push
@@ -257,12 +262,15 @@ def main() -> int:
               % (slug[0], slug[1]))
         return 2
 
-    # 「文件不存在」和「存在但 0 条」是两件事：前者判不了（rc=2），后者是
-    # 干净仓库的合法状态——所有命中都算新增即可。把两者混起来会让一个新
-    # 建仓永远无法通过门禁。
-    if not os.path.exists(os.path.join(root, BASELINE_REL)):
-        print("[public-surface] ⚠ 基线缺失（%s），无法比对。先跑 --write-baseline" % BASELINE_REL)
-        return 2
+    # 基线不入库（见 .gitignore）：它是一份「哪些文件命中哪类规则」的索引，
+    # 推上 public 面等于把检索地图直接发出去——比原本的分散暴露更糟。缺失
+    # 时按当前 HEAD 自动生成，语义就是「接受此刻的存量」，与存量冻结的初衷
+    # 一致；新机器第一次 push 会走到这里，不必手工干预。
+    baseline_path = os.path.join(root, BASELINE_REL)
+    if not os.path.exists(baseline_path):
+        write_baseline(root, scan(root))
+        print("[public-surface] 基线不存在，已按当前 HEAD 生成（存量冻结）：%s" % BASELINE_REL)
+        print("[public-surface]   若当前 HEAD 本就不该含这些内容，请先清理再重建基线。")
     base = load_baseline(root)
 
     current = scan(root)

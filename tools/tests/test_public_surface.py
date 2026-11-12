@@ -41,22 +41,24 @@ def _git(cwd: Path, *args: str) -> None:
                    capture_output=True)
 
 
-def _make_repo(tmp: Path, files: dict[str, str], baseline_rows: list[tuple[str, str, int]]) -> Path:
+def _make_repo(tmp: Path, files: dict[str, str], baseline_rows) -> Path:
     _git(tmp, "init")
     _git(tmp, "config", "user.email", "t@example.invalid")
     _git(tmp, "config", "user.name", "t")
     (tmp / "tools").mkdir(exist_ok=True)
     shutil.copy2(SCRIPT, tmp / "tools" / "check_public_surface.py")
 
-    head = [
-        "# public-surface baseline - test fixture",
-        "# generated: fixture",
-        "#",
-        "path\trule\tcount",
-    ]
-    body = ["%s\t%s\t%d" % row for row in baseline_rows]
-    (tmp / "tools" / "public_surface_baseline.tsv").write_text(
-        "\n".join(head + body) + "\n", encoding="utf-8", newline="\n")
+    # baseline_rows=None 表示「不预置基线」，用于验证自动生成分支。
+    if baseline_rows is not None:
+        head = [
+            "# public-surface baseline - test fixture",
+            "# generated: fixture",
+            "#",
+            "path\trule\tcount",
+        ]
+        body = ["%s\t%s\t%d" % row for row in baseline_rows]
+        (tmp / "tools" / "public_surface_baseline.tsv").write_text(
+            "\n".join(head + body) + "\n", encoding="utf-8", newline="\n")
 
     for rel, text in files.items():
         p = tmp / rel
@@ -150,6 +152,19 @@ def case_rules_actually_match() -> None:
             assert rule in out, "规则 %s 未命中，转义写法可能失效\n%s" % (rule, out)
 
 
+def case_missing_baseline_autogenerates() -> None:
+    """基线不入库，新机器第一次 push 必须能自举，否则门禁形同虚设。"""
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d)
+        _make_repo(tmp, {"docs/old.md": "存量 %s\n" % IP}, None)
+        assert not (tmp / "tools" / "public_surface_baseline.tsv").exists()
+        rc, out = _run(tmp)
+        assert (tmp / "tools" / "public_surface_baseline.tsv").exists(), \
+            "基线缺失时应自动生成\n%s" % out
+        assert rc == 0, "自动生成后应按存量放行，实际 rc=%s\n%s" % (rc, out)
+        assert "生成" in out, out
+
+
 CASES = [
     ("新文件带敏感特征 -> 阻断", case_new_file_blocked),
     ("已有文件命中增加 -> 阻断", case_count_increase_blocked),
@@ -157,6 +172,7 @@ CASES = [
     ("--warn -> 放行但告警", case_warn_mode_passes),
     ("非 github 远端 -> 跳过", case_non_github_skipped),
     ("规则值转义后仍匹配", case_rules_actually_match),
+    ("基线缺失 -> 自动生成并按存量放行", case_missing_baseline_autogenerates),
 ]
 
 

@@ -462,3 +462,9 @@ tools/social_task_install.result
 # 处理方式：整份文档不进版本库，本地文件保留原地（路径引用不破）。
 deliverables/*_文档通读*
 deliverables/*_文档通读*/**
+
+# 2026-11-12 公开面门禁基线（不入库）
+# 理由：文件内容是「哪个文件命中哪类规则、命中几条」，等于一份检索索引。
+#       推上公开面比它本来要防的分散暴露更集中 —— 门禁的工具不能自己变成地图。
+# 生成：tools/check_public_surface.py 在基线缺失时按当前 HEAD 自动生成。
+tools/public_surface_baseline.tsv
