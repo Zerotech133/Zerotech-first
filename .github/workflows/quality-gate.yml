@@ -10,7 +10,13 @@ name: quality-gate
 
 on:
   push:
-    branches: [main, master]
+    # 2026-11-12（P0-1 补完）：main/master 是同 SHA 镜像，双推会创建两个 run；
+    # 二者同属 quality-gate-${{ github.sha }} 组，master 的空跑（job 全 skipped）
+    # 仍会按 cancel-in-progress 取消 main 的实跑（实测 run 43189137796 被
+    # 43189148228 取消，status=cancelled），导致闸根本跑不完。
+    # 收敛到默认分支 main：每笔提交只创建一个 run。同一笔提交双推时 main 必触发，
+    # 严格性零放宽、无漏检；PR / 手动 / 定时不受影响。
+    branches: [main]
   pull_request:
     branches: [main, master]
   # 2026-11-08：下面状态块写着"合入后手动触发一次"，但原文本没配 workflow_dispatch，
@@ -37,9 +43,9 @@ concurrency:
 
 jobs:
   fast-gate:
-    # 2026-11-12（P0-1 通知洪水修复）：master 是 main 的镜像分支（同一 commit 双推），
-    # push 到 master 的那次 run 不再重复执行质量闸 —— run 仍会创建，但两个 job 均
-    # skipped，结论不再是 failure，从源头砍掉一半失败通知。因 main 上同一 SHA 已跑过
+    # 2026-11-12（P0-1）：master 是 main 的镜像分支（同一 commit 双推）。
+    # push 触发器已收敛到 [main]，此 if 作为第二道保险：万一有其它 push 事件落到
+    # master，job 直接 skipped，不再产生 failure 通知。因 main 上同一 SHA 已跑过
     # 完全相同的闸，严格性零放宽、无漏检。
     # PR / schedule / workflow_dispatch 不受影响，仍照常执行。
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
