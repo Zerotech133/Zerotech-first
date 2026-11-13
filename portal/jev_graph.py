@@ -817,6 +817,11 @@ def load_events(day: str, codes=None) -> dict:
             j = json.loads(jev)
         except Exception:  # noqa: BLE001
             continue
+        # 2026-11-13 口径豁免行（bias=na / src=notice_exempt）不是判读结果，
+        # 不进图谱。它们的 companies 恒为空本来就会被下面 continue 掉，但
+        # 「靠巧合成立」的安全不算安全——显式排除，防以后有人往豁免载荷加字段。
+        if str(j.get("src") or "") == "notice_exempt":
+            continue
         hit_codes = set()
         for c in (j.get("companies") or []):
             s = str(c).strip()

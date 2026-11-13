@@ -444,6 +444,23 @@ def main():
     _added = jev_schema.ensure_news_meta(db)
     if _added:
         print("BACKFILL schema added=%s" % ",".join(_added), flush=True)
+    # ── 2026-11-13 老田裁定 B 案：公告类口径豁免（先止消耗）────────────
+    # 必须跑在 remaining / batch_n 之前：这样取批量与批次估算看到的都是
+    # 豁免后的真实待判量，不会把 2,000 条公告算进 tonight 的预算里。
+    # 幂等：已豁免的行 jev 非空，WHERE 自然不命中。
+    try:
+        import jev_prefilter as _jp_ex
+
+        _n_ex = _jp_ex.apply_notice_exempt(db)
+        if _n_ex:
+            print(
+                "BACKFILL notice_exempt=%d src=%s"
+                % (_n_ex, ",".join(_jp_ex.exempt_sources())),
+                flush=True,
+            )
+    except Exception as e:  # noqa: BLE001
+        # 豁免失败不能阻断夜批主链，但必须吼出来（静默降级 = 假绿）
+        print("BACKFILL notice_exempt FAIL: %s" % str(e)[:120], flush=True)
     remaining = db.execute(
         "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''"
     ).fetchone()[0]

@@ -517,6 +517,25 @@ def judge_pending(kind, cap, dryrun=False):
         return res
     db = sqlite3.connect(DB)
     try:
+        # ── 2026-11-13 老田裁定 B 案：公告类不进 LLM ────────────────────
+        # 必须在 SELECT 之前拦：否则下面的 LIMIT cap 照样会把 500 条公告
+        # 排进批次、照样跑 9B。采集到就地标口径豁免，jev 写 "na" 不写 neutral。
+        _src_ex = "xd_%s" % kind
+        if not dryrun:
+            try:
+                import jev_prefilter as _jp_exempt
+
+                if _src_ex in _jp_exempt.exempt_sources():
+                    _n_ex = _jp_exempt.apply_notice_exempt(db, (_src_ex,))
+                    if _n_ex:
+                        res["exempted"] = _n_ex
+                        print(
+                            "  EXEMPT judge %s: %d 条按口径豁免，不进 LLM"
+                            % (kind, _n_ex)
+                        )
+                    return res
+            except Exception as e:  # noqa: BLE001
+                print("  EXEMPT judge %s FAIL: %s" % (kind, str(e)[:120]))
         rows = db.execute(
             "SELECT id, title, stocks FROM news "
             "WHERE source=? AND (jev IS NULL OR jev='') "

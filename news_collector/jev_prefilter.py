@@ -277,3 +277,99 @@ def is_prefilter_judgment(jev_text: str) -> bool:
         return False
     return isinstance(d, dict) and str(d.get("src") or "") == "prefilter"
 
+
+# ══════════════════════════════════════════════════════════════════════════
+# 公告类口径豁免（2026-11-13 老田裁定 B 案：先止消耗）
+#
+# 为什么豁免
+#   datamart 的 `notice` 别名只有 8 列，xtcloud 的 `stock_notice` 字段并集也
+#   只有 notice_date —— 两者都没有发布时间。news.ts 因此恒为 00:00，被
+#   jev_graph._ts_kind 判为 batch，本就不参与 Δmin 与 hit 边。日增 1,127 条
+#   （约占新增三分之一）却要逐条跑 9B，价值密度最低。
+#
+# 三条硬约束（别改，改了就是造假）
+#   1. bias 必须是 "na"，**绝不能写 neutral**。写 neutral 等于让下游把「没判读」
+#      当成「判过了且中性」，正是判例 #43 禁止的自安慰。
+#   2. 不写 judged_at。judged_at 是「LLM 真判过」的证据；豁免行若写它，
+#      每日判读量统计会虚高 1,127，把真实产能缺口盖住。
+#      ↑ 2026-11-13 实测：按 judged_at 算的逐日平衡表是发现入不敷出的唯一凭据。
+#   3. 不带 prob / bias_probs。没有概率就是没有，不编 0.25/0.25/0.5。
+#
+# 回退（单条 SQL，幂等可逆）
+#   UPDATE news SET jev=NULL, model=NULL WHERE model='notice_exempt';
+#
+# 开关
+#   JEV_NOTICE_EXEMPT=0            全关，退回逐条判读
+#   JEV_NOTICE_EXEMPT_SOURCES=a,b  改豁免源，默认 xd_notice
+# ══════════════════════════════════════════════════════════════════════════
+EXEMPT_SRC = "notice_exempt"
+EXEMPT_ENV = "JEV_NOTICE_EXEMPT"
+EXEMPT_SOURCES_ENV = "JEV_NOTICE_EXEMPT_SOURCES"
+EXEMPT_SOURCES_DEFAULT = "xd_notice"
+
+
+def exempt_on():
+    """豁免总开关，默认开（老田 2026-11-13 已裁定）。"""
+    return _env_on(EXEMPT_ENV, "1")
+
+
+def exempt_sources():
+    """豁免源元组。未设该 env → 默认 xd_notice；**显式设为空串 → 空元组（禁用）**。
+
+    别写成 `os.environ.get(K) or DEFAULT`：那样空串会落回默认值，
+    「设空来禁用」这个动作会静默失效（2026-11-13 测试抓到过一次）。
+    """
+    raw = os.environ.get(EXEMPT_SOURCES_ENV)
+    if raw is None:
+        raw = EXEMPT_SOURCES_DEFAULT
+    return tuple(s.strip() for s in str(raw).split(",") if s.strip())
+
+
+def exempt_jev(source=""):
+    """豁免载荷：是「不判读」的显式标记，不是判读结果。"""
+    return {
+        "bias": "na",
+        "bias_cn": "不适用",
+        "conf": 0.0,
+        "scope": "",
+        "scope_cn": "",
+        "event_type": "other",
+        "event_cn": "其他",
+        "impact": "none",
+        "impact_cn": "无",
+        "companies": [],
+        "src": EXEMPT_SRC,
+        "exempt": {
+            "policy": "JEV_NOTICE_EXEMPT",
+            "reason": "公告上游只有日期粒度，无发布时间；ts 恒 00:00 → ts_kind=batch",
+            "source": source,
+        },
+        "reason": "口径豁免：公告仅日粒度，不参与 LLM 判读（判例#42 降为附表）",
+        "horizon": "unknown",
+        "meter": {"ms": 0, "model": EXEMPT_SRC, "src": EXEMPT_SRC},
+    }
+
+
+def apply_notice_exempt(db, sources=None):
+    """把指定源的未判行批量标为豁免（幂等）。返回受影响行数。
+
+    db 为已连接的 sqlite3.Connection；本函数自行 commit。
+    只写 jev 与 model，**不写 judged_at**（见上方约束 2）。
+    """
+    import json as _json
+
+    if not exempt_on():
+        return 0
+    srcs = tuple(sources) if sources else exempt_sources()
+    if not srcs:
+        return 0
+    payload = _json.dumps(exempt_jev(srcs[0]), ensure_ascii=False)
+    placeholders = ",".join("?" * len(srcs))
+    cur = db.execute(
+        "UPDATE news SET jev=?, model=? "
+        "WHERE source IN (%s) AND (jev IS NULL OR jev='')" % placeholders,
+        (payload, EXEMPT_SRC) + srcs,
+    )
+    db.commit()
+    return cur.rowcount
+
