@@ -142,6 +142,9 @@ try {
         @{name='candle_sync';      script='kg_candle.py';           arg='sync'},
         @{name='bclass_sync';      script='kg_bclass.py';           arg='sync'},
         @{name='seat_winrate';     script='kg_seat_winrate.py';     arg=''},
+        # P3-2 (2026-11-13): 对倒嫌疑时序回放。软步骤：rc=3（缺
+        # seat_syndicate 依赖）只记日志不阻断链（wrapper 下方 soft 分支）。
+        @{name='seat_replay';      script='seat_replay.py';         arg=''; soft=$true},
         @{name='dt_gap';           script='kg_dt_gap.py';           arg=''},
         @{name='sim_k';            script='kg_sim_k.py';            arg=''},
         @{name='tradedate';        script='kg_tradedate.py';        arg=''},
@@ -165,10 +168,15 @@ try {
         $code = $p.ExitCode
         ($step.name + ' exit=' + $code + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
         if ($code -ne 0) {
-            ('kg_sync ABORT at ' + $step.name) | Out-File $log -Append -Encoding utf8
-            $errL = "C:\Temp\kg_" + $step.name + "_err.log"
-            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py ("kg_sync_" + $step.name) $code $errL 1>$null 2>$null
-            exit 1
+            # P3-2 soft step: missing-dependency (rc=3) only logs, never aborts
+            if ($step.soft -and $code -eq 3) {
+                ($step.name + ' soft-skip rc=3 (dependency missing)') | Out-File $log -Append -Encoding utf8
+            } else {
+                ('kg_sync ABORT at ' + $step.name) | Out-File $log -Append -Encoding utf8
+                $errL = "C:\Temp\kg_" + $step.name + "_err.log"
+                & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py ("kg_sync_" + $step.name) $code $errL 1>$null 2>$null
+                exit 1
+            }
         }
     }
     # P0-1（2026-11-03 计划 v4）：catalog -> registry 自动对齐（KgDaily 链尾，失败告警不静默）
