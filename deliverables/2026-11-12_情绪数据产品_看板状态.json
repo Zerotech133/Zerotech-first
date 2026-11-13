@@ -2,7 +2,7 @@
   "task_id": "ZB-DATA-SENT-20261112-T01",
   "title": "情绪数据产品化",
   "subtitle": "数据仓一等数据产品 · KG 只读接入的前置工程",
-  "generated_at": "2026-11-12 18:01:05",
+  "generated_at": "2026-11-13 18:03:27",
   "signoffs": [
     {
       "id": "mada",
@@ -65,10 +65,10 @@
       "date": "2026-11-13 18:00",
       "title": "建表 + loader 干跑",
       "owner": "马岱",
-      "status": "pending",
+      "status": "blocked",
       "gate": true,
       "evidence": "DDL、dry-run 日志、manifest 样例行",
-      "_state": "pending"
+      "_state": "blocked"
     },
     {
       "id": "m3",
@@ -169,6 +169,10 @@
     {
       "at": "2026-11-12 18:00",
       "text": "18:00 签收未完成：马岱/张松无回复，已向 A0 报告（MSG-20261112180041-87b8fc），不建表。"
+    },
+    {
+      "at": "2026-11-13 18:00",
+      "text": "dry-run 缺口：无 DDL、无 loader、无 dry-run 日志、无 manifest 样例行；未替代马岱写生产表。"
     }
   ]
 }

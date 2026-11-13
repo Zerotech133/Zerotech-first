@@ -82,7 +82,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
     </div>
     <div class="meta">
       <div>任务 <b>ZB-DATA-SENT-20261112-T01</b></div>
-      <div>生成 <b>2026-11-12 18:01:05</b></div>
+      <div>生成 <b>2026-11-13 18:03:27</b></div>
       <div>数据源 <b>看板状态 JSON</b></div>
     </div>
   </div>
@@ -93,7 +93,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
   </div>
 
   <div class="focus">
-    <div><b>今日焦点</b><span><b>马岱签收</b><span>数据仓主办 · 11-12 18:00 · 今天</span></span></div>
+    <div><b>今日焦点</b><span><b>马岱签收</b><span>数据仓主办 · 11-12 18:00 · 逾期 1 天</span></span></div>
     <div style="color:var(--muted);font-size:12px">闸门完成度 0%</div>
   </div>
 
@@ -103,7 +103,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
           <div class="sign-top"><span class="sign-icon">!</span><span class="pill bad">逾期</span></div>
           <h3>马岱</h3>
           <div class="role">数据仓主办</div>
-          <div class="due">截止 <b>11-12 18:00</b> · 今天</div>
+          <div class="due">截止 <b>11-12 18:00</b> · 逾期 1 天</div>
           <div class="ev">任务单 ZB-DATA-SENT-20261112-T01；MSG-20261112052759-463970</div>
           <div class="note">经 DATA1 席位送达；hr 下暂无马岱独立席位</div>
         </article>
@@ -111,7 +111,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
           <div class="sign-top"><span class="sign-icon">!</span><span class="pill bad">逾期</span></div>
           <h3>张松</h3>
           <div class="role">DATA1 / Owner</div>
-          <div class="due">截止 <b>11-12 18:00</b> · 今天</div>
+          <div class="due">截止 <b>11-12 18:00</b> · 逾期 1 天</div>
           <div class="ev">契约 §13 签收请求；MSG-20261112053642-2b3b14</div>
           <div class="note">确认 e互动缺口、个股 forward-only、市场 60 天回填</div>
         </article>
@@ -119,7 +119,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
           <div class="sign-top"><span class="sign-icon">…</span><span class="pill warn">HOLD·待需求</span></div>
           <h3>马钧</h3>
           <div class="role">DEV1 / KG</div>
-          <div class="due">截止 <b>11-14 18:00</b> · 2 天后</div>
+          <div class="due">截止 <b>11-14 18:00</b> · 1 天后</div>
           <div class="ev">只读消费通知 ZB-DATA-SENT-20261112-N01；MSG-20261112052759-dda750</div>
           <div class="note">只交查询需求，不写代码、不建节点、不写图</div>
         </article>
@@ -127,7 +127,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
           <div class="sign-top"><span class="sign-icon">…</span><span class="pill muted">未开始</span></div>
           <h3>老田</h3>
           <div class="role">A0 / 发布批准</div>
-          <div class="due">截止 <b>11-18 18:00</b> · 6 天后</div>
+          <div class="due">截止 <b>11-18 18:00</b> · 5 天后</div>
           <div class="ev">发布闸门：验收回执齐备后提交批准</div>
           <div class="note">不代替批准；发布前必须显式确认</div>
         </article>
@@ -141,49 +141,49 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
         <tr class="row-bad">
           <td class="num">01</td>
           <td><div class="m-title">签收：马岱 / 张松</div><div class="m-owner">马岱 / 张松 · 闸门</div></td>
-          <td class="m-date">11-12 18:00<div class="m-left">今天</div></td>
+          <td class="m-date">11-12 18:00<div class="m-left">逾期 1 天</div></td>
           <td><span class="pill bad">阻塞</span></td>
           <td class="m-ev">签收回复 + 契约 §13 确认</td>
         </tr>
-        <tr class="row-muted">
+        <tr class="row-bad">
           <td class="num">02</td>
           <td><div class="m-title">建表 + loader 干跑</div><div class="m-owner">马岱 · 闸门</div></td>
-          <td class="m-date">11-13 18:00<div class="m-left">1 天后</div></td>
-          <td><span class="pill muted">未开始</span></td>
+          <td class="m-date">11-13 18:00<div class="m-left">今天</div></td>
+          <td><span class="pill bad">阻塞</span></td>
           <td class="m-ev">DDL、dry-run 日志、manifest 样例行</td>
         </tr>
         <tr class="row-muted">
           <td class="num">03</td>
           <td><div class="m-title">KG 只读查询需求</div><div class="m-owner">马钧 · 并行</div></td>
-          <td class="m-date">11-14 18:00<div class="m-left">2 天后</div></td>
+          <td class="m-date">11-14 18:00<div class="m-left">1 天后</div></td>
           <td><span class="pill muted">未开始</span></td>
           <td class="m-ev">一页查询需求 + 查询草案；不写代码</td>
         </tr>
         <tr class="row-muted">
           <td class="num">04</td>
           <td><div class="m-title">市场 60 天回填 + 个股首日</div><div class="m-owner">马岱 · 闸门</div></td>
-          <td class="m-date">11-16 18:00<div class="m-left">4 天后</div></td>
+          <td class="m-date">11-16 18:00<div class="m-left">3 天后</div></td>
           <td><span class="pill muted">未开始</span></td>
           <td class="m-ev">回填 manifest、行数、覆盖率、异常清单</td>
         </tr>
         <tr class="row-muted">
           <td class="num">05</td>
           <td><div class="m-title">契约 §13 验收</div><div class="m-owner">张松 / 陈群 · 闸门</div></td>
-          <td class="m-date">11-17 18:00<div class="m-left">5 天后</div></td>
+          <td class="m-date">11-17 18:00<div class="m-left">4 天后</div></td>
           <td><span class="pill muted">未开始</span></td>
           <td class="m-ev">验收记录 + 质量查询结果</td>
         </tr>
         <tr class="row-muted">
           <td class="num">06</td>
           <td><div class="m-title">回执 + 数据仓发布</div><div class="m-owner">马岱 / 张松 · 闸门</div></td>
-          <td class="m-date">11-18 18:00<div class="m-left">6 天后</div></td>
+          <td class="m-date">11-18 18:00<div class="m-left">5 天后</div></td>
           <td><span class="pill muted">未开始</span></td>
           <td class="m-ev">发布回执、catalog 登记、回滚点</td>
         </tr>
         <tr class="row-muted">
           <td class="num">07</td>
           <td><div class="m-title">老田批准发布</div><div class="m-owner">老田 · 闸门</div></td>
-          <td class="m-date">11-18 18:00<div class="m-left">6 天后</div></td>
+          <td class="m-date">11-18 18:00<div class="m-left">5 天后</div></td>
           <td><span class="pill muted">未开始</span></td>
           <td class="m-ev">显式批准记录</td>
         </tr>
@@ -199,7 +199,7 @@ code{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius
 
   <div class="two">
     <div class="panel"><h2>阻断项 / 边界</h2><ul class="blockers"><li class="block-high"><span>签收未完成：马岱、张松均未签收，禁止建表。</span></li><li class="block-medium"><span>e互动当前无生产者：权重 0.10 但 sentiment_card.py 无采集；允许空，不补 0 行。</span></li><li class="block-medium"><span>个股/来源历史无法回填：只能从 2026-11-12 起 forward-only；市场级最多回填 60 天。</span></li><li class="block-low"><span>马岱无独立 hr 席位：任务经 DATA1 送达，标题/正文明确主办。</span></li></ul></div>
-    <div class="panel"><h2>最近动作</h2><ul class="notes"><li><time>2026-11-12 18:00</time><span>18:00 签收未完成：马岱/张松无回复，已向 A0 报告（MSG-20261112180041-87b8fc），不建表。</span></li><li><time>2026-11-12 17:30</time><span>签收检查：马岱/张松消息仍为 inbox，无回复；未伪造签收，未进入建表</span></li><li><time>2026-11-12 05:46</time><span>执行跟踪表建立并提交：e549f28d6；五个检查点已设。</span></li><li><time>2026-11-12 05:36</time><span>张松签收请求送达 DATA1：MSG-20261112053642-2b3b14。</span></li><li><time>2026-11-12 05:28</time><span>三份文书 + 回执提交：136359878 / 7e2506e45。</span></li></ul></div>
+    <div class="panel"><h2>最近动作</h2><ul class="notes"><li><time>2026-11-13 18:00</time><span>dry-run 缺口：无 DDL、无 loader、无 dry-run 日志、无 manifest 样例行；未替代马岱写生产表。</span></li><li><time>2026-11-12 18:00</time><span>18:00 签收未完成：马岱/张松无回复，已向 A0 报告（MSG-20261112180041-87b8fc），不建表。</span></li><li><time>2026-11-12 17:30</time><span>签收检查：马岱/张松消息仍为 inbox，无回复；未伪造签收，未进入建表</span></li><li><time>2026-11-12 05:46</time><span>执行跟踪表建立并提交：e549f28d6；五个检查点已设。</span></li><li><time>2026-11-12 05:36</time><span>张松签收请求送达 DATA1：MSG-20261112053642-2b3b14。</span></li><li><time>2026-11-12 05:28</time><span>三份文书 + 回执提交：136359878 / 7e2506e45。</span></li></ul></div>
   </div>
 
   <div class="footer">
