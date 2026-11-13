@@ -8,7 +8,7 @@ $env:JEV_PREFILTER = 'safe'
 $log = 'C:\Temp\jev_feed_task.log'
 try {
     $p = Start-Process -FilePath 'C:\Program Files\Python311\python.exe' `
-        -ArgumentList '-X','utf8','C:\aios\news_collector\jev_feed.py' `
+        -ArgumentList '-X','utf8','-u','C:\aios\news_collector\jev_feed.py' `
         -WorkingDirectory 'C:\aios\news_collector' `
         -RedirectStandardOutput 'C:\Temp\jev_feed_out.log' `
         -RedirectStandardError 'C:\Temp\jev_feed_err.log' `
