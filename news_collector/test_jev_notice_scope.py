@@ -308,8 +308,15 @@ def _arm_night(monkeypatch, jf, db):
 
 
 def test_feed_night_prefilter_skips_routine_notice(monkeypatch, tmp_path):
+    """粗筛机制：例行公告不调 Ollama、只写可回退的 neutral。
+
+    2026-11-13 B 案后 xd_notice 默认是豁免源，夜窗会让位（见
+    test_feed_night_prefilter_yields_to_exempt_source）。本用例守的是粗筛
+    机制本身，故显式清空豁免名单，把豁免摘掉再验。
+    """
     import jev_feed as jf
 
+    monkeypatch.setenv("JEV_NOTICE_EXEMPT_SOURCES", "")
     db = _feed_night_db(tmp_path, [
         ("n1", "xd_notice", "2026-11-07 00:00", T_NOTICE, "[]", None),
         ("n2", "xd_notice", "2026-11-07 00:01", "富临精工:关于中标重大合同的公告", "[]", None),
@@ -385,6 +392,7 @@ def test_feed_night_prefilter_never_overwrites_existing_jev(monkeypatch, tmp_pat
     import jev_feed as jf
 
     prior = json.dumps({"src": "jev_night", "bias": "bull"}, ensure_ascii=False)
+    monkeypatch.setenv("JEV_NOTICE_EXEMPT_SOURCES", "")   # 摘掉豁免再验粗筛机制
     db = _feed_night_db(tmp_path, [
         ("n1", "xd_notice", "2026-11-07 00:00", T_NOTICE, "[]", prior),
         ("n2", "xd_notice", "2026-11-07 00:01", T_NOTICE, "[]", None),
@@ -400,6 +408,71 @@ def test_feed_night_prefilter_never_overwrites_existing_jev(monkeypatch, tmp_pat
     con.close()
     assert j1 == prior
     assert json.loads(j2)["src"] == "prefilter"
+
+
+def test_feed_night_prefilter_yields_to_exempt_source(monkeypatch, tmp_path):
+    """2026-11-13 B 案：豁免源在夜窗里连 neutral 都不许写，且不得连库。
+
+    背景：jev_feed 21:00 起跑数小时，公告源可能过了 21:45 才轮到；若落进
+    夜窗粗筛，JEV_PREFILTER 打开时会给公告写 neutral——那正是 B 案要消灭的
+    「把没判读伪装成已判且中性」。此处判断只读 env，夜窗零连库契约不破。
+    """
+    import jev_feed as jf
+
+    db = _feed_night_db(tmp_path, [
+        ("n1", "xd_notice", "2026-11-07 00:00", T_NOTICE, "[]", None),
+    ])
+    _arm_night(monkeypatch, jf, db)
+    monkeypatch.setenv("JEV_PREFILTER", "safe")
+    monkeypatch.delenv("JEV_NOTICE_EXEMPT_SOURCES", raising=False)
+    monkeypatch.delenv("JEV_NOTICE_EXEMPT", raising=False)
+
+    connects = []
+    real_connect = sqlite3.connect
+
+    def _spy(*a, **k):
+        connects.append(a)
+        return real_connect(*a, **k)
+
+    monkeypatch.setattr(jf.sqlite3, "connect", _spy)
+    res = jf.judge_pending("notice", 500)
+    assert res["skipped_night"] is True
+    assert res["pref_skipped"] == 0
+    assert connects == [], "豁免源在夜窗里不得连库"
+    con = sqlite3.connect(str(db))
+    j1 = con.execute("SELECT jev FROM news WHERE id='n1'").fetchone()[0]
+    con.close()
+    assert j1 is None, "公告不得被写成 neutral，必须留空交给 JevNight 豁免"
+
+
+def test_feed_exempt_line_prints_even_when_zero(monkeypatch, tmp_path, capsys):
+    """明早判据：N=0 也要留下 enabled，否则分不清「没新公告」与「没生效」。"""
+    import jev_feed as jf
+
+    db = tmp_path / "feed_ex.db"
+    con = sqlite3.connect(str(db))
+    con.execute(
+        "CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, "
+        "title TEXT, stocks TEXT, jev TEXT, model TEXT)"
+    )
+    con.commit()
+    con.close()
+
+    monkeypatch.setattr(jf, "DB", str(db))
+    monkeypatch.setattr(jf, "_in_night_window", lambda: False)
+    monkeypatch.setattr(jf, "_in_day_guard", lambda: False)
+    monkeypatch.delenv("JEV_NOTICE_EXEMPT_SOURCES", raising=False)
+    monkeypatch.delenv("JEV_NOTICE_EXEMPT", raising=False)
+
+    def _boom(items):
+        raise AssertionError("豁免源不得进 LLM")
+
+    monkeypatch.setattr(jf.news_ai, "jev_judge_batch", _boom)
+    res = jf.judge_pending("notice", 500)
+    out = capsys.readouterr().out
+    assert res["exempted"] == 0
+    assert "EXEMPT judge notice: 0 条按口径豁免，不进 LLM" in out
+    assert "pending_before=0 pending_after=0 enabled=1" in out
 
 
 def test_feed_night_prefilter_keeps_other_sources(monkeypatch, tmp_path):
@@ -425,6 +498,7 @@ def test_feed_night_prefilter_respects_cap(monkeypatch, tmp_path):
     """夜窗粗筛同样受 --cap 截断（P0 丢数未修前，覆盖仅限最近 cap 行）。"""
     import jev_feed as jf
 
+    monkeypatch.setenv("JEV_NOTICE_EXEMPT_SOURCES", "")   # 摘掉豁免再验 cap 截断
     db = _feed_night_db(tmp_path, [
         ("n1", "xd_notice", "2026-11-07 00:00", T_NOTICE, "[]", None),
         ("n2", "xd_notice", "2026-11-07 00:01", T_NOTICE, "[]", None),

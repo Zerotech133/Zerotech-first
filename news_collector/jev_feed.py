@@ -447,6 +447,17 @@ def _night_prefilter(kind, cap):
     if str(os.environ.get("JEV_PREFILTER", "0")).strip().lower() not in _PREFILTER_ON_VALUES:
         return 0
     source = "xd_%s" % kind
+    # 2026-11-13 B 案兜底：豁免源在夜窗里也不许写 neutral——写 neutral 等于把
+    # 「不判读」伪装成「判过了且中性」。jev_feed 21:00 起跑数小时，公告源可能
+    # 过了 21:45 才轮到；本判断只读 env、不连库，夜窗「零连库」契约不受影响。
+    try:
+        import jev_prefilter as _jp_ng
+
+        if source in _jp_ng.exempt_sources():
+            print("  NIGHT-PREFILTER %s skip=0（口径豁免源，不写 neutral）" % kind)
+            return 0
+    except Exception:  # noqa: BLE001
+        pass
     db = None
     n = 0
     try:
@@ -518,21 +529,31 @@ def judge_pending(kind, cap, dryrun=False):
     db = sqlite3.connect(DB)
     try:
         # ── 2026-11-13 老田裁定 B 案：公告类不进 LLM ────────────────────
-        # 必须在 SELECT 之前拦：否则下面的 LIMIT cap 照样会把 500 条公告
-        # 排进批次、照样跑 9B。采集到就地标口径豁免，jev 写 "na" 不写 neutral。
+        # 必须在 SELECT 之前拦：否则下面的 LIMIT cap 照样把 500 条公告排进批次、
+        # 照样跑 9B。采集到就地标口径豁免，jev 写 "na" 不写 neutral。
+        # 位置仍在夜窗/白天守卫之后：那两条路径有「零连库、锁争用静默降级」的
+        # 既有契约（test_jev_notice_scope 锁死），且夜窗内公告由 JevNight 自己豁免。
+        # 跨过 21:45 的漏网情形由 _night_prefilter 对豁免源直接返 0 兜住。
         _src_ex = "xd_%s" % kind
         if not dryrun:
             try:
                 import jev_prefilter as _jp_exempt
 
                 if _src_ex in _jp_exempt.exempt_sources():
-                    _n_ex = _jp_exempt.apply_notice_exempt(db, (_src_ex,))
-                    if _n_ex:
-                        res["exempted"] = _n_ex
-                        print(
-                            "  EXEMPT judge %s: %d 条按口径豁免，不进 LLM"
-                            % (kind, _n_ex)
+                    _rep = _jp_exempt.notice_exempt_report(db, (_src_ex,))
+                    res["exempted"] = _rep["exempted"]
+                    # 0 也必须打：否则明早分不清「无新公告」与「豁免没生效」
+                    print(
+                        "  EXEMPT judge %s: %d 条按口径豁免，不进 LLM"
+                        "（pending_before=%d pending_after=%d enabled=%d）"
+                        % (
+                            kind,
+                            _rep["exempted"],
+                            _rep["pending_before"],
+                            _rep["pending_after"],
+                            1 if _rep["enabled"] else 0,
                         )
+                    )
                     return res
             except Exception as e:  # noqa: BLE001
                 print("  EXEMPT judge %s FAIL: %s" % (kind, str(e)[:120]))

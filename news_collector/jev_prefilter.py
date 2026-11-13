@@ -373,3 +373,40 @@ def apply_notice_exempt(db, sources=None):
     db.commit()
     return cur.rowcount
 
+
+def _pending_count(db, srcs):
+    """指定源的未判行数。WHERE 与 apply_notice_exempt 逐字同口径。"""
+    if not srcs:
+        return 0
+    placeholders = ",".join("?" * len(srcs))
+    return db.execute(
+        "SELECT COUNT(*) FROM news "
+        "WHERE source IN (%s) AND (jev IS NULL OR jev='')" % placeholders,
+        tuple(srcs),
+    ).fetchone()[0]
+
+
+def notice_exempt_report(db, sources=None):
+    """跑一轮豁免，同时产出「能分清三种 0」的台账。
+
+    为什么需要它：apply_notice_exempt 在三种情况下都返回 0——
+    开关关闭、源白名单为空、今晚确实没有新公告行。夜里只看这一个 0，
+    分不清「没活」和「没生效」，而这正是 2026-11-13 老田定下的明早
+    判据卡住的地方。故把 enabled / sources / pending_before / pending_after
+    一并带出来：pending_after 非 0 才是「豁免失灵」的硬信号。
+
+    幂等：已豁免的行 jev 非空，WHERE 不再命中，重复调用只读不写。
+    """
+    srcs = tuple(sources) if sources else exempt_sources()
+    enabled = bool(exempt_on() and srcs)
+    before = _pending_count(db, srcs)
+    exempted = apply_notice_exempt(db, srcs) if enabled else 0
+    after = _pending_count(db, srcs)
+    return {
+        "enabled": enabled,
+        "sources": srcs,
+        "pending_before": before,
+        "exempted": exempted,
+        "pending_after": after,
+    }
+

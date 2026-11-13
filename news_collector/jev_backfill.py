@@ -451,13 +451,20 @@ def main():
     try:
         import jev_prefilter as _jp_ex
 
-        _n_ex = _jp_ex.apply_notice_exempt(db)
-        if _n_ex:
-            print(
-                "BACKFILL notice_exempt=%d src=%s"
-                % (_n_ex, ",".join(_jp_ex.exempt_sources())),
-                flush=True,
-            )
+        _rep = _jp_ex.notice_exempt_report(db)
+        # 即使 0 也要打：明早要能分清「今晚确实没有新公告」与
+        # 「豁免没生效 / 被 env 关掉」——后者 pending_after 会大于 0。
+        print(
+            "BACKFILL notice_exempt=%d src=%s pending_before=%d pending_after=%d enabled=%d"
+            % (
+                _rep["exempted"],
+                ",".join(_rep["sources"]) or "-",
+                _rep["pending_before"],
+                _rep["pending_after"],
+                1 if _rep["enabled"] else 0,
+            ),
+            flush=True,
+        )
     except Exception as e:  # noqa: BLE001
         # 豁免失败不能阻断夜批主链，但必须吼出来（静默降级 = 假绿）
         print("BACKFILL notice_exempt FAIL: %s" % str(e)[:120], flush=True)

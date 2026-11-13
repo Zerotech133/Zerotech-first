@@ -167,3 +167,41 @@ def test_payload_excluded_by_bias_whitelist():
 def test_payload_is_valid_json():
     s = json.dumps(jp.exempt_jev("xd_notice"), ensure_ascii=False)
     assert json.loads(s)["bias"] == "na"
+
+
+# ── 可观测性：三种 0 必须能分清（明早的验收判据靠它）──────────────────
+def test_report_distinguishes_disabled_from_no_work(db, monkeypatch):
+    """exempted=0 有三种成因：没活 / 被关 / 白名单空。只看 0 会误判成「已生效」。"""
+    monkeypatch.delenv(jp.EXEMPT_SOURCES_ENV, raising=False)
+    monkeypatch.delenv(jp.EXEMPT_ENV, raising=False)
+
+    rep = jp.notice_exempt_report(db)
+    assert rep["enabled"] is True
+    assert rep["exempted"] == 0 and rep["pending_before"] == 0
+
+    _ins(db, 1, "xd_notice")
+    monkeypatch.setenv(jp.EXEMPT_ENV, "0")
+    rep2 = jp.notice_exempt_report(db)
+    assert rep2["enabled"] is False and rep2["exempted"] == 0
+    assert rep2["pending_before"] == 1 and rep2["pending_after"] == 1, (
+        "关掉时必须能看出积压还在——这正是只看 exempted=0 会漏掉的情况"
+    )
+
+
+def test_report_pending_after_zero_on_success(db, monkeypatch):
+    monkeypatch.delenv(jp.EXEMPT_SOURCES_ENV, raising=False)
+    monkeypatch.delenv(jp.EXEMPT_ENV, raising=False)
+    for i in range(3):
+        _ins(db, i, "xd_notice")
+    rep = jp.notice_exempt_report(db)
+    assert (rep["exempted"], rep["pending_before"], rep["pending_after"]) == (3, 3, 0)
+
+
+def test_report_is_idempotent_and_reads_after_state(db, monkeypatch):
+    monkeypatch.delenv(jp.EXEMPT_SOURCES_ENV, raising=False)
+    monkeypatch.delenv(jp.EXEMPT_ENV, raising=False)
+    _ins(db, 1, "xd_notice")
+    assert jp.notice_exempt_report(db)["exempted"] == 1
+    rep2 = jp.notice_exempt_report(db)
+    assert rep2["exempted"] == 0 and rep2["pending_after"] == 0
+    assert rep2["enabled"] is True, "第二轮 0 是「没活」，不是「没生效」"
