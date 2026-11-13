@@ -615,11 +615,32 @@ def judge_pending(kind, cap, dryrun=False):
                     "jev_judge_batch(%s) 异常: %s" % (kind, str(e)[:200])
                 )
                 continue
-            for nid, j in got.items():
-                db.execute(
-                    "UPDATE news SET jev=? WHERE id=?",
-                    (json.dumps(j, ensure_ascii=False), nid),
+            # 2026-11-14: 补判读时间戳。此前只写 jev，feed 每晚判的 500 条在
+            # judged_at 上完全不可见（全库 jev 非空 113,554 行 judged_at 为空），
+            # 按 judged_at 统计产能会系统性少算 500/夜 —— 11-13 那张平衡表就是
+            # 这么算错第一版的。只写时间戳，不动 model（feed 拿不到模型名，
+            # 不编造），不动 attempt/last_error。
+            # 列存在性按库探测：生产库由 jev_schema 确保有 judged_at；单测的
+            # 最小建表没有它时降级为只写 jev（不因审计字段缺失让整轮判读崩）。
+            _ja = _news_has_column(db, "judged_at")
+            if not _ja:
+                print(
+                    "  WARN news 表无 judged_at 列，本轮判读不记时间戳"
+                    "（生产库应由 jev_schema 补齐）",
+                    file=sys.stderr,
                 )
+            _stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for nid, j in got.items():
+                if _ja:
+                    db.execute(
+                        "UPDATE news SET jev=?, judged_at=? WHERE id=?",
+                        (json.dumps(j, ensure_ascii=False), _stamp, nid),
+                    )
+                else:
+                    db.execute(
+                        "UPDATE news SET jev=? WHERE id=?",
+                        (json.dumps(j, ensure_ascii=False), nid),
+                    )
             db.commit()
             res["judged"] += len(got)
             res["missing"] += len(items) - len(got)
@@ -635,6 +656,17 @@ def judge_pending(kind, cap, dryrun=False):
 
 
 CAP_HIT_ALERT_ENV = "JEV_CAP_HIT_ALERT"  # 缺省开；=0 关告警（排障用）
+
+
+def _news_has_column(db, col):
+    """news 表是否有该列。生产库由 jev_schema 迁移确保；单测最小建表可能没有。
+
+    用于「审计字段可缺、判读不可崩」：缺列时降级为只写 jev，并打 WARN 留痕。
+    """
+    try:
+        return col in [r[1] for r in db.execute("PRAGMA table_info(news)")]
+    except sqlite3.Error:
+        return False
 
 
 def _write_run(ok_flag, detail, new_count=0, dryrun=False, run_id=None):
