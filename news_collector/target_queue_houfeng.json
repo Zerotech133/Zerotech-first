@@ -1,6 +1,6 @@
 {
   "asof": "houfeng_pick",
-  "generated_at": "2026-11-11T07:58:33",
+  "generated_at": "2026-11-13T11:15:30",
   "regime": "houfeng_strategy_picks",
   "total": 30,
   "all": [
@@ -683,5 +683,5 @@
   ],
   "candidate_pool_signal_date": "20261106",
   "xq_include_candidates": true,
-  "xq_expand_note": "R8 已批准：开关置 true，selection_universe.json 中 houfeng_candidates164.xq_include=true，07:00 有头管线 489→并入候选池后并集 647（含两池）"
+  "xq_expand_note": "本开关与 selection_universe.json:sources.houfeng_candidates164.xq_include 同源（由 reg_flag 读取并回写），不在此处硬编码——要改开关请改注册表。候选池为 20261106 冻结快照，并入后并集净增约 104 只，扩缩容决策归上级"
 }

@@ -25,6 +25,8 @@ import time
 import glob
 import subprocess
 
+import reg_flag          # 桥文件开关唯一取值入口（从权威注册表读，不写死）
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 COHORT_DIR = os.path.join(REPO, "portal", "daily_report", "cohorts")
@@ -125,10 +127,11 @@ def write_xq_queue(all_codes):
         "total": len(all_codes),
         "all": [{"code": c} for c in all_codes],
         "actionable": [],
-        "xq_include_cohorts": False,
+        "xq_include_cohorts": reg_flag.xq_include("cohorts"),
         "xq_expand_note": (
-            "开关置 true 后需在 xq_stock_timeline.load_queue 增加本文件并集；"
-            "两池每日滚动换仓，并入 07:00 有头管线前须评估负载，属运营裁定，归上级"
+            "本开关与 selection_universe.json:sources.cohorts.xq_include 同源"
+            "（由 reg_flag 读取并回写），不在此处硬编码——要改开关请改注册表。"
+            "两池每日滚动换仓，并集规模会随批次变化，扩缩容决策归上级"
         ),
     }
     with open(XQ_CQ, "w", encoding="utf-8") as f:
@@ -184,8 +187,8 @@ def main():
         "breakdown": {"SZ": sz, "SH": sh, "BJ": bj},
         "coverage_note": (
             "自动覆盖 A股 irm/sse/taoguba（三源 requests 无头）；"
-            "xq 雪球仅登记 target_queue_cohorts.json，开关 xq_include_cohorts=false，"
-            "是否并入 07:00 有头管线待上级裁定"
+            "xq 雪球经 target_queue_cohorts.json 并入 07:00 有头管线——"
+            "当前状态：%s（开关值由 reg_flag 从注册表读取）" % reg_flag.xq_note("cohorts")
         ),
     }
     with open(WATCHLIST, "w", encoding="utf-8") as f:

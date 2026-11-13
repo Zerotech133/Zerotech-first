@@ -48,6 +48,9 @@ CONSEC_FAIL_COOLDOWN = 60    # 近期已出现失败后的快冷却秒数（长�
 SESSION_WINDOW = 20          # 会话健康度滑动窗口（只数）
 SESSION_MIN_SAMPLES = 10     # 窗口样本不足不做坏率判定
 SESSION_BAD_RATIO = 0.30     # 窗口坏率 ≥ 此值 → 判限流态，整轮停（换时段再跑，不硬刚）
+RATE_FLOOR = 5.0             # 首次撞限流后启用的额外间隔（秒）
+RATE_CAP = 30.0              # 额外间隔上限（秒）——再慢也不会无限拖
+RATE_DECAY = 1.0             # 成功后每只回调的秒数（逐步恢复原速）
 DEFERRED_F = os.path.join(OUT_DIR, "_deferred.json")  # 跨日自愈 ledger
 CURSOR_F = os.path.join(OUT_DIR, "_cursor.json")      # 断点游标（尾部饥饿治理）
 
@@ -275,6 +278,26 @@ def retry_policy(recent_fail):
     return 1, CONSEC_FAIL_COOLDOWN
 
 
+def next_interval(cur, waf_hit):
+    """礼貌降速：撞限流后主动放慢，而不是换会话绕过去。
+
+    语义（判例 2026-11-13 §16.6，老田裁定「不把撞墙就换会话固化成策略」）：
+      - 首次撞墙：额外间隔从 `RATE_FLOOR`（5 秒）起；
+      - 再撞：翻倍（5→10→20→30），上限 `RATE_CAP`；
+      - 成功后每只回调 `RATE_DECAY`（1 秒），回落到 0 即恢复原速。
+
+    单位是「每只额外等待秒数」，与既有的 2~4 秒随机 sleep 叠加。
+    降速是**降速自律**，与「换会话规避」是两件事：后者会让对方看到持续高压，
+    本函数让对方看到的是我们主动减速。
+    """
+    if waf_hit:
+        nxt = RATE_FLOOR if cur <= 0 else cur * 2
+        return min(RATE_CAP, nxt)
+    if cur > 0:
+        return max(0.0, cur - RATE_DECAY)
+    return 0.0
+
+
 def should_halt(outcomes):
     """轮内自停判据，返回停止原因（空串=继续）。
 
@@ -397,6 +420,7 @@ def main():
     halted = ""
     waf_hits = 0
     outcomes = []              # 最近 N 只成败（1/0），用于会话健康度判定
+    rate_sleep = 0.0           # 限流自适应额外间隔（秒/只），0=原速
     deferred_now = {}          # {code: 已重试次数}，结束写回 ledger
     with sync_playwright() as p:
         ctx = None
@@ -437,7 +461,7 @@ def main():
                         break
                     with open(path, "a", encoding="utf-8") as f:
                         new += _append_items(f, seen, code, symbol, items)
-                    time.sleep(2 + random.random() * 2)
+                    time.sleep(2 + random.random() * 2 + rate_sleep)
                     continue
                 # 非 ok
                 if "WAF_CHALLENGE" in err or err.startswith("HTTP 4"):
@@ -462,7 +486,7 @@ def main():
                             break
                         err = err2
                     if recovered:
-                        time.sleep(2 + random.random() * 2)
+                        time.sleep(2 + random.random() * 2 + rate_sleep)
                         continue
                     # 重试耗尽：本码 defer，续跑下一码（不整轮停）
                     code_dead = True
@@ -482,6 +506,12 @@ def main():
                 waf_hits += 1
             outcomes.append(0 if code_dead else 1)
             del outcomes[:-SESSION_WINDOW]
+            # 限流自适应降速：撞一次放慢一档，连续成功再逐步回调（不换会话提速重冲）
+            prev_rate = rate_sleep
+            rate_sleep = next_interval(rate_sleep, waf_this)
+            if abs(rate_sleep - prev_rate) >= 1e-6:
+                print("[xq_tl] 降速档位 %.0f → %.0f 秒/只（每只额外等待）"
+                      % (prev_rate, rate_sleep), flush=True)
             total_new += new
             # 逐码落游标：被强杀（含关机）时下一轮从此码之后继续，尾部不再饿死
             if cursor_on and code:

@@ -1,188 +1,260 @@
 {
   "asof": "cohorts_two_pools",
-  "generated_at": "2026-11-11T07:58:06",
+  "generated_at": "2026-11-13T11:15:30",
   "regime": "two_pools_shadow_entries",
-  "total": 59,
+  "total": 83,
   "all": [
     {
-      "code": "000425.SZ"
+      "code": "000058.SZ"
     },
     {
-      "code": "000498.SZ"
+      "code": "000558.SZ"
     },
     {
-      "code": "000505.SZ"
+      "code": "000600.SZ"
     },
     {
-      "code": "000543.SZ"
+      "code": "000818.SZ"
     },
     {
-      "code": "000617.SZ"
+      "code": "000875.SZ"
     },
     {
-      "code": "000685.SZ"
+      "code": "000957.SZ"
     },
     {
-      "code": "000830.SZ"
+      "code": "000998.SZ"
     },
     {
-      "code": "000988.SZ"
+      "code": "001286.SZ"
     },
     {
-      "code": "000999.SZ"
+      "code": "001324.SZ"
     },
     {
-      "code": "002003.SZ"
+      "code": "002026.SZ"
     },
     {
-      "code": "002017.SZ"
+      "code": "002130.SZ"
     },
     {
-      "code": "002019.SZ"
+      "code": "002171.SZ"
     },
     {
-      "code": "002031.SZ"
+      "code": "002203.SZ"
     },
     {
-      "code": "002115.SZ"
+      "code": "002233.SZ"
     },
     {
-      "code": "002152.SZ"
+      "code": "002290.SZ"
     },
     {
-      "code": "002304.SZ"
+      "code": "002303.SZ"
     },
     {
-      "code": "002353.SZ"
+      "code": "002413.SZ"
     },
     {
-      "code": "002361.SZ"
+      "code": "002437.SZ"
+    },
+    {
+      "code": "002449.SZ"
+    },
+    {
+      "code": "002532.SZ"
     },
     {
       "code": "002537.SZ"
     },
     {
-      "code": "002737.SZ"
+      "code": "002572.SZ"
     },
     {
-      "code": "002840.SZ"
+      "code": "002603.SZ"
     },
     {
-      "code": "002930.SZ"
+      "code": "002657.SZ"
     },
     {
-      "code": "300078.SZ"
+      "code": "002675.SZ"
     },
     {
-      "code": "300548.SZ"
+      "code": "002851.SZ"
     },
     {
-      "code": "300587.SZ"
+      "code": "002984.SZ"
     },
     {
-      "code": "300663.SZ"
+      "code": "003022.SZ"
     },
     {
-      "code": "301020.SZ"
+      "code": "300035.SZ"
+    },
+    {
+      "code": "300110.SZ"
+    },
+    {
+      "code": "300149.SZ"
+    },
+    {
+      "code": "300271.SZ"
+    },
+    {
+      "code": "300776.SZ"
+    },
+    {
+      "code": "300939.SZ"
+    },
+    {
+      "code": "300941.SZ"
+    },
+    {
+      "code": "300951.SZ"
+    },
+    {
+      "code": "300972.SZ"
+    },
+    {
+      "code": "300979.SZ"
     },
     {
       "code": "301073.SZ"
     },
     {
-      "code": "301153.SZ"
+      "code": "301165.SZ"
     },
     {
-      "code": "301312.SZ"
+      "code": "301188.SZ"
+    },
+    {
+      "code": "301345.SZ"
+    },
+    {
+      "code": "301369.SZ"
+    },
+    {
+      "code": "301560.SZ"
     },
     {
       "code": "301629.SZ"
     },
     {
-      "code": "600059.SH"
+      "code": "600063.SH"
     },
     {
-      "code": "600098.SH"
+      "code": "600072.SH"
     },
     {
-      "code": "600162.SH"
+      "code": "600100.SH"
     },
     {
-      "code": "600373.SH"
+      "code": "600126.SH"
     },
     {
-      "code": "600481.SH"
+      "code": "600354.SH"
     },
     {
-      "code": "600536.SH"
+      "code": "600369.SH"
     },
     {
-      "code": "600589.SH"
+      "code": "600515.SH"
+    },
+    {
+      "code": "600552.SH"
     },
     {
       "code": "600619.SH"
     },
     {
-      "code": "600765.SH"
+      "code": "600664.SH"
     },
     {
       "code": "600779.SH"
     },
     {
-      "code": "600820.SH"
+      "code": "600839.SH"
     },
     {
-      "code": "600850.SH"
+      "code": "600998.SH"
     },
     {
-      "code": "601009.SH"
+      "code": "601088.SH"
     },
     {
-      "code": "601377.SH"
+      "code": "601117.SH"
     },
     {
-      "code": "601399.SH"
+      "code": "601168.SH"
     },
     {
-      "code": "601702.SH"
+      "code": "601229.SH"
     },
     {
-      "code": "603387.SH"
+      "code": "601600.SH"
     },
     {
-      "code": "603833.SH"
+      "code": "601800.SH"
     },
     {
-      "code": "603995.SH"
+      "code": "601990.SH"
     },
     {
-      "code": "605208.SH"
+      "code": "603042.SH"
     },
     {
-      "code": "688016.SH"
+      "code": "603105.SH"
     },
     {
-      "code": "688023.SH"
+      "code": "603507.SH"
     },
     {
-      "code": "688100.SH"
+      "code": "603599.SH"
     },
     {
-      "code": "688179.SH"
+      "code": "603686.SH"
+    },
+    {
+      "code": "603730.SH"
+    },
+    {
+      "code": "603803.SH"
+    },
+    {
+      "code": "688002.SH"
+    },
+    {
+      "code": "688037.SH"
+    },
+    {
+      "code": "688159.SH"
+    },
+    {
+      "code": "688183.SH"
     },
     {
       "code": "688213.SH"
     },
     {
-      "code": "688266.SH"
+      "code": "688256.SH"
     },
     {
-      "code": "688513.SH"
+      "code": "688268.SH"
     },
     {
-      "code": "688600.SH"
+      "code": "688356.SH"
+    },
+    {
+      "code": "688361.SH"
+    },
+    {
+      "code": "688410.SH"
+    },
+    {
+      "code": "688621.SH"
     }
   ],
   "actionable": [],
   "xq_include_cohorts": true,
-  "xq_expand_note": "R10 已批准：selection_universe.json 中 cohorts.xq_include=true，load_queue 经 B 注册表重构已并集合并；07:00 有头管线 +59；逐日滚动换仓，负载归运营裁定（已批）"
+  "xq_expand_note": "本开关与 selection_universe.json:sources.cohorts.xq_include 同源（由 reg_flag 读取并回写），不在此处硬编码——要改开关请改注册表。两池每日滚动换仓，并集规模会随批次变化，扩缩容决策归上级"
 }

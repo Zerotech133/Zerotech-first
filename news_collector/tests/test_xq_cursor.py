@@ -159,3 +159,49 @@ def test_halt_latency_bounded_after_threshold():
     cost = m.recent_fail_count(outs) * 0 + m.CONSEC_FAIL_COOLDOWN
     assert cost == 60 and cost < m.WAF_COOLDOWN
 
+
+# ---------------------------------------------------------------- 限流自适应降速
+# 老田 2026-11-13 裁定：不把「撞墙就换会话」固化成策略。撞限流后应主动放慢
+# （降速自律），而不是换个会话按原速重冲（规避）。
+
+
+def test_interval_starts_at_floor_on_first_hit():
+    assert m.next_interval(0.0, True) == m.RATE_FLOOR
+    assert m.next_interval(0.0, True) == 5.0
+
+
+def test_interval_doubles_then_caps():
+    cur = 0.0
+    seq = []
+    for _ in range(6):
+        cur = m.next_interval(cur, True)
+        seq.append(cur)
+    assert seq == [5.0, 10.0, 20.0, 30.0, 30.0, 30.0]
+    assert max(seq) == m.RATE_CAP
+
+
+def test_interval_decays_on_success_back_to_zero():
+    cur = 20.0
+    for _ in range(20):
+        cur = m.next_interval(cur, False)
+    assert cur == 0.0            # 20 秒经 20 只回调归零
+    assert m.next_interval(0.0, False) == 0.0   # 已归零则保持
+
+
+def test_interval_never_negative():
+    assert m.next_interval(1.0, False) == 0.0
+    assert m.next_interval(0.4, False) == 0.0
+
+
+def test_interval_is_bounded_so_run_cannot_drag_forever():
+    """降速不等于放任长跑：慢档之上还有停轮兜底，浪费量被「窗口样本数」封顶。
+
+    单纯算「666 只全程最慢档」= 6.3 小时，那不是真实上界——因为坏率一超阈值就停轮。
+    真实上界 = 停轮窗口内最多再走 SESSION_MIN_SAMPLES 只。
+    """
+    assert m.RATE_CAP <= 30.0
+    waste = m.SESSION_MIN_SAMPLES * (m.RATE_CAP + 4)
+    assert waste < 15 * 60          # 最多再耗 10 分钟，而不是按队列长度线性拖长
+    assert m.SESSION_MIN_SAMPLES < 666
+
+

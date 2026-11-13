@@ -33,6 +33,8 @@ import time
 import glob
 import subprocess
 
+import reg_flag          # 桥文件开关唯一取值入口（从权威注册表读，不写死）
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 HOUFENG_DIR = os.path.join(REPO, "portal", "houfeng")
@@ -162,13 +164,14 @@ def write_xq_queue(pick_codes, cand_codes):
         "total": len(pick_codes),
         "all": [{"code": c} for c in pick_codes],
         "actionable": [{"code": c} for c in pick_codes],
-        # 候选池全量清单仅登记，默认不并入 07:00 有头采集（运营裁定归上级）
+        # 候选池全量清单登记；是否并入 07:00 有头采集由注册表开关决定（见下）
         "candidate_pool": [{"code": c} for c in cand_codes],
         "candidate_pool_signal_date": "20261106",
-        "xq_include_candidates": False,
+        "xq_include_candidates": reg_flag.xq_include("houfeng_candidates164"),
         "xq_expand_note": (
-            "开关置 true 后 load_queue 会并入 candidate_pool；"
-            "当前 all=489，并入后 593（净增 104 只有头采集），须上级裁定"
+            "本开关与 selection_universe.json:sources.houfeng_candidates164.xq_include"
+            " 同源（由 reg_flag 读取并回写），不在此处硬编码——要改开关请改注册表。"
+            "候选池为 20261106 冻结快照，并入后并集净增约 104 只，扩缩容决策归上级"
         ),
     }
     with open(XQ_HF_QUEUE, "w", encoding="utf-8") as f:
@@ -246,7 +249,11 @@ def main():
             "net_new_vs_picks": len(new_vs_pick),
             "gold_checks_passed": bool(cand),
             "note": "11-06 信号日冻结快照（只读复现），非每日重算；如需刷新须重跑 houfeng_cand164_replay.py",
-            "xq_queue_status": "已登记 target_queue_houfeng.json.candidate_pool，开关 xq_include_candidates=false（未并入 07:00，待上级裁定）",
+            "xq_queue_status": (
+                "已登记 target_queue_houfeng.json.candidate_pool；当前状态：%s"
+                "（开关值由 reg_flag 从注册表读取）"
+                % reg_flag.xq_note("houfeng_candidates164")
+            ),
         },
         "collected_ashare": ash6,
         "breakdown": {"SZ": sz, "SH": sh, "BJ": bj},

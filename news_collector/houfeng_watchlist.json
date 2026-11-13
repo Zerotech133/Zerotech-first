@@ -2,7 +2,7 @@
   "source": "portal/houfeng/houfeng_pick_*.json (pool_off.picks)",
   "pick_file": "houfeng_pick_20261106.json",
   "signal_date": "20261106",
-  "asof": "2026-11-11T07:58:33",
+  "asof": "2026-11-13T07:58:52",
   "gate_safe": false,
   "note": "关闸期影子池/观察名单，paper 模式只记录不下场，实持仓 0；补齐的是选股清单/候选池公开情报",
   "picks": [
@@ -224,7 +224,7 @@
     "net_new_vs_picks": 134,
     "gold_checks_passed": true,
     "note": "11-06 信号日冻结快照（只读复现），非每日重算；如需刷新须重跑 houfeng_cand164_replay.py",
-    "xq_queue_status": "已登记 target_queue_houfeng.json.candidate_pool，开关 xq_include_candidates=false（未并入 07:00，待上级裁定）"
+    "xq_queue_status": "已登记 target_queue_houfeng.json.candidate_pool；当前状态：已并入 07:00 有头管线（开关值由 reg_flag 从注册表读取）"
   },
   "collected_ashare": [
     "000156",
