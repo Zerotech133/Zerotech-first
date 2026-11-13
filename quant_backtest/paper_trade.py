@@ -455,6 +455,7 @@ def cmd_review(day=None):
         if sup:
             print("[review] 抑制日：不生成买入挂单（止损卖出判定保留，只减敞口不造信号）")
             pb = []
+            add_sigs = []   # 加仓同样是买入指令，抑制日一律不发
         acc["pending_buys"] = pb + add_sigs   # 首仓单+加仓单（open 分支区分）
     except Exception as e:  # noqa: BLE001
         print("[review] 名单读取失败（保留空挂单）：%s" % str(e)[:60])
