@@ -46,9 +46,21 @@ ACC = os.path.join(PAPER_DIR, "account.json")
 TRADES = os.path.join(PAPER_DIR, "trades.jsonl")
 EQUITY = os.path.join(PAPER_DIR, "equity.jsonl")
 
+# ── 决策时点定价 / 抑制令（v2）────────────────────────────────────────
+# 分钟行情：每根 K 的 time 是该分钟起点，close 要等这一分钟走完才可见。
+# 因此「决策时刻 T 可见」= time < T 的最后一根，绝不能取 time == T。
+MINUTE_ROOT = os.path.join(HERE, "data", "tdx", "ts_rt_min_roll")
+DELIVERABLES = os.environ.get("ZB_DELIVERABLES") or os.path.abspath(
+    os.path.join(HERE, "..", "..", "deliverables"))
+SUP_CONSUMER_ID = "quant_backtest/paper_trade.py"
+SUP_SCHEMA = "preopen_suppressed/v1"
+# 交易时段：不在时段内一律拒绝成交（封死「盘后补录开盘单」这条回填路径）
+SESSIONS = (("09:30", "11:30"), ("13:00", "15:00"))
+
+
 # ── 规则参数（rules_v1；改动必须 bump 并在 trades 记版本）──────────────
 RULES = {
-    "version": "v1",
+    "version": "v2",
     "capital": 10_000_000.0,        # 单策略上限 1000 万
     "init_pos_pct": 0.05,           # 首仓 5%
     "max_pos_pct": 0.30,            # 加仓后单票上限 30%
@@ -56,8 +68,8 @@ RULES = {
     "stop_loss_pct": None,          # 硬止损（未设；用户口径=浮亏即卖）
     "lose_next_day_sell": True,     # 持有次日收盘浮亏 → 卖（不达预期）
     "audit": {
-        "assumptions": "开盘价成交无滑点；浮亏即卖=不达预期；"
-                       "失守/下离枢=不在趋势上",
+        "assumptions": "成交价=严格早于决策时刻的最后一分钟收盘价；"
+                       "浮亏即卖=不达预期；失守/下离枢=不在趋势上",
         "falsifier": "实盘滑点>1%；口径过松/紧（后验胜率<基准）",
         "cost_if_wrong": "训练数据污染——rules_version 必须随档",
     },
@@ -94,8 +106,117 @@ def load_account():
     return acc
 
 
+def _now_hhmm():
+    return dt.datetime.now().strftime("%H:%M")
+
+
+def _resolve_day(day=None):
+    return day or dt.date.today().strftime("%Y%m%d")
+
+
+def _assert_session(decision_time):
+    """决策时刻必须落在交易时段内；否则直接阻断，不许补录。"""
+    if len(decision_time) != 5 or decision_time[2] != ":":
+        raise RuntimeError("decision_time 必须是 HH:MM，实际=%s" % decision_time)
+    if not any(lo <= decision_time <= hi for lo, hi in SESSIONS):
+        raise RuntimeError("决策时刻 %s 不在交易时段内，拒绝成交定价" % decision_time)
+
+
+def resolve_visible_prices(codes, day, decision_time):
+    """返回决策时点「已可见」的成交价，绝不回填更早或更晚的价格。
+
+    口径：分钟行情里 time 严格小于 decision_time 的最后一根 close。
+      · 无可见分钟数据的票直接不成交（不回退 open、不回退实时快照）；
+      · 同一 (day, decision_time) 永远得到同一结果 —— 可复算；
+      · 返回值带 price_visible_at，训练样本可独立审计 I1 时点单调。
+    """
+    import glob
+    import pandas as pd
+
+    _assert_session(decision_time)
+    iso = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+    cut = "%s %s:00" % (iso, decision_time)
+    parts = sorted(glob.glob(os.path.join(MINUTE_ROOT, "d_" + day,
+                                          "part_*.parquet")))
+    if not parts or not codes:
+        return {}
+    m = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
+    m["time"] = m["time"].astype(str)
+    m = m[m["time"].str.startswith(iso)]
+    m = m[m["ts_code"].isin(set(codes))]
+    if m.empty:
+        return {}
+    m = m.drop_duplicates(["ts_code", "time"]).sort_values(["ts_code", "time"])
+
+    # 09:30 集合竞价：开盘价在 09:30:00 即已确定，是此刻唯一可见价。
+    # 取当日第一根 K 的 open 并显式标注，不构成「用更早价格回填」。
+    if decision_time == "09:30":
+        auc = m[m["time"] == iso + " 09:30:00"]
+        out = {}
+        for c in codes:
+            rows = auc[auc["ts_code"] == c]
+            if rows.empty:
+                continue
+            p = float(rows.iloc[0]["open"])
+            if p > 0:
+                out[c] = {"price": p, "name": "",
+                          "price_source": "auction_open_0930",
+                          "price_visible_at": iso + " 09:30:00"}
+        return out
+
+    # 盘中：取 time 严格小于决策时刻的最后一根 close。
+    m = m[(m["time"] >= iso + " 09:30:00") & (m["time"] < cut)]
+    if m.empty:
+        return {}
+    g = m.groupby("ts_code", sort=False)
+    last_px = g["close"].last().to_dict()
+    last_t = g["time"].last().to_dict()
+    out = {}
+    for c in codes:
+        p = float(last_px.get(c, 0) or 0)
+        if p > 0:
+            out[c] = {"price": p, "name": "", "price_source": "minute_last_close",
+                      "price_visible_at": last_t[c]}
+    return out
+
+
+def _audit_meta(quote, day, decision_time):
+    """成交流水里必须留下的时点证据（训练样本可独立复核）。"""
+    return {
+        "decision_time": "%s-%s-%s %s:00" % (day[:4], day[4:6], day[6:],
+                                            decision_time),
+        "price_source": quote.get("price_source", "UNKNOWN"),
+        "price_visible_at": quote.get("price_visible_at", ""),
+        "exec_basis": "visible_minute_close_before_decision",
+    }
+
+
+def load_suppression(day):
+    """读人工抑制令。字段不符一律抛错阻断（失败关闭），绝不静默当「今日无抑制」。"""
+    p = os.path.join(DELIVERABLES, "preopen_suppressed_%s.json" % day)
+    if not os.path.isfile(p):
+        return None
+    j = json.load(open(p, encoding="utf-8"))
+    if j.get("schema") != SUP_SCHEMA:
+        raise RuntimeError("抑制令 schema 不符：%s" % j.get("schema"))
+    action = j.get("action")
+    if action not in ("suppress", "allow"):
+        raise RuntimeError("抑制令 action 无法识别：%s" % action)
+    if str(j.get("exec_day")) != str(day):
+        raise RuntimeError("抑制令 exec_day=%s 与执行日 %s 不符" % (j.get("exec_day"), day))
+    consumers = j.get("consumers")
+    if not isinstance(consumers, list) or SUP_CONSUMER_ID not in consumers:
+        raise RuntimeError("抑制令未登记本消费方 %s，失败关闭" % SUP_CONSUMER_ID)
+    return j if action == "suppress" else None
+
+
 def _today_open_prices(codes):
-    """新浪 L1 快照取当日开盘价（收盘后仍可取到当日 open）。"""
+    """[DEPRECATED / 仅展示] 新浪 L1 快照取当日开盘价。
+
+    禁止用于成交定价：无论何时调用都返回当日 09:30 开盘价，
+    盘中或盘后调用即形成「用更早价格回填成交」的前视。
+    成交一律走 resolve_visible_prices(codes, day, decision_time)。
+    """
     root = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
     if root not in sys.path:
         sys.path.insert(0, root)
@@ -141,23 +262,34 @@ def _cur_price_map(codes):
 
 
 # ── 开盘：执行买卖挂单 ─────────────────────────────────────────────
-def cmd_open():
+def cmd_open(day=None, decision_time=None):
+    day = _resolve_day(day)
+    decision_time = decision_time or _now_hhmm()
+    _assert_session(decision_time)
+
+    # 抑制令优先于一切：不建仓、不写账户、不写流水（按规则跳过，exit 0）
+    sup = load_suppression(day)
+    if sup:
+        print("[SKIP] %s 盘前已人工抑制：本链不建仓、不写流水、不生成挂单" % day)
+        print("       理由：%s" % str(sup.get("reason", ""))[:100])
+        return 0
+
     acc = load_account()
-    day = dt.date.today().strftime("%Y%m%d")
     picks = json.load(open(os.path.join(HERE, "..", "portal", "data",
                                         "todays_picks.json"),
                            encoding="utf-8"))
-    # 1) 执行隔夜卖出单（价=开盘价）
+    # 1) 执行隔夜卖出单（价=决策时点可见价）
     sells = [s["code"] for s in acc.get("pending_sells") or []]
     buy_codes = {b["code"] for b in acc.get("pending_buys") or []}
-    px = _today_open_prices(sorted(set(sells) | buy_codes))
+    px = resolve_visible_prices(sorted(set(sells) | buy_codes), day,
+                                decision_time)
     for s in acc.get("pending_sells") or []:
         c = s["code"]
         pos = acc["positions"].get(c)
         quote = px.get(c)
         if not pos or not quote:
             continue
-        price = quote["open"]
+        price = quote["price"]
         proceeds = pos["shares"] * price
         acc["cash"] += proceeds
         pnl = (price - pos["avg_cost"]) * pos["shares"]
@@ -168,6 +300,7 @@ def cmd_open():
             "name": pos.get("name", ""), "price": round(price, 3),
             "shares": pos["shares"], "pnl": round(pnl, 0),
             "why": s.get("why", ""), "rules": RULES["version"],
+            **_audit_meta(quote, day, decision_time),
             "ts": dt.datetime.now().isoformat(timespec="seconds"),
         })
         print("[open] 卖出 %s %s @%.2f 盈亏 %+.0f（%s）"
@@ -180,9 +313,9 @@ def cmd_open():
         c = b["code"]
         quote = px.get(c)
         if not quote:
-            print("[open] %s 无开盘价，跳过" % c)
+            print("[open] %s 决策时点无可见价，不成交" % c)
             continue
-        price = quote["open"]
+        price = quote["price"]
         pos = acc["positions"].get(c)
         cap_total = RULES["capital"] * RULES["max_pos_pct"]
         if pos:
@@ -205,6 +338,7 @@ def cmd_open():
                 "day": day, "action": "ADD", "code": c, "price": round(price, 3),
                 "shares": shares, "rules": RULES["version"],
                 "why": "买点加仓", "signal": b.get("sources"),
+                **_audit_meta(quote, day, decision_time),
                 "ts": dt.datetime.now().isoformat(timespec="seconds"),
             })
             print("[open] 加仓 %s +%d 股 @%.2f" % (c, shares, price))
@@ -233,6 +367,7 @@ def cmd_open():
                 "name": b.get("name", ""), "price": round(price, 3),
                 "shares": shares, "rules": RULES["version"],
                 "signal": snapshot,      # 训练样本：入场时的完整信号快照
+                **_audit_meta(quote, day, decision_time),
                 "ts": dt.datetime.now().isoformat(timespec="seconds"),
             })
             print("[open] 买入 %s %s %d 股 @%.2f（首仓 %.0f 万）"
@@ -245,9 +380,9 @@ def cmd_open():
 
 
 # ── 盘后评审：不达预期判定 + 明日卖出清单 + 次日买入挂单 ─────────────
-def cmd_review():
+def cmd_review(day=None):
     acc = load_account()
-    day = dt.date.today().strftime("%Y%m%d")
+    day = _resolve_day(day)
     codes = list(acc["positions"])
     if not codes:
         print("无持仓")
@@ -267,6 +402,10 @@ def cmd_review():
             continue
         # 规则②：不在趋势上（盘后结构筛选——失守/下离枢）
         # 数据源：当天 pool_live 最新快照 groups
+        # T+1 防护：当天开仓的票不进隔夜卖单（当日买入不可卖），
+        # 留到次日 review 再判——首版漏判例（2026-11-13 老田 T+1 检查）。
+        if pos.get("opened") == day:
+            continue
         try:
             import glob
             snaps = sorted(glob.glob(os.path.join(
@@ -296,20 +435,27 @@ def cmd_review():
                                encoding="utf-8"))
         t2 = [s for s in picks.get("stocks") or [] if s.get("tier") == "T2"]
         pb = []
+        add_sigs = []      # 已持仓票的新买点信号 → 次日 open 走加仓分支
         for s in t2:
-            if s["code"] in acc["positions"]:
-                continue   # 已持仓：加仓信号在 open 阶段处理
-            pb.append({"code": s["code"], "name": s.get("name"),
-                       "tier": "T2",
-                       "sources": [{"s": x.get("s"), "tag": x.get("tag"),
-                                    "dt": x.get("dt")}
-                                   for x in s.get("sources") or []]})
+            held = s["code"] in acc["positions"]
+            sig = {"code": s["code"], "name": s.get("name"), "tier": "T2",
+                   "sources": [{"s": x.get("s"), "tag": x.get("tag"),
+                                "dt": x.get("dt")}
+                               for x in s.get("sources") or []]}
+            if held:
+                add_sigs.append(sig)   # 加仓挂单：open 的 pos 分支消费
+                continue
+            pb.append(sig)
         # 弱势日仓位减半建仓（盘面联动；rules_v1 口径）
         rg = picks.get("risk_gate") or {}
         if rg.get("weak_day"):
             print("[review] 弱势日：明日建仓名单仅保留前 6 只（半仓试错）")
             pb = pb[:6]
-        acc["pending_buys"] = pb
+        sup = load_suppression(day)
+        if sup:
+            print("[review] 抑制日：不生成买入挂单（止损卖出判定保留，只减敞口不造信号）")
+            pb = []
+        acc["pending_buys"] = pb + add_sigs   # 首仓单+加仓单（open 分支区分）
     except Exception as e:  # noqa: BLE001
         print("[review] 名单读取失败（保留空挂单）：%s" % str(e)[:60])
 
@@ -319,9 +465,9 @@ def cmd_review():
 
 
 # ── 收盘净值 ───────────────────────────────────────────────────────
-def cmd_equity():
+def cmd_equity(day=None):
     acc = load_account()
-    day = dt.date.today().strftime("%Y%m%d")
+    day = _resolve_day(day)
     codes = list(acc["positions"])
     px = _cur_price_map(codes) if codes else {}
     mv = sum(pos["shares"] * px.get(c, pos["avg_cost"])
@@ -332,6 +478,7 @@ def cmd_equity():
         "market_value": round(mv, 0), "total": round(total, 0),
         "nav": round(total / RULES["capital"], 4),
         "n_pos": len(acc["positions"]),
+        "suppressed": bool(load_suppression(day)),
         "realized_pnl": round(acc["realized_pnl"], 0),
         "ts": dt.datetime.now().isoformat(timespec="seconds"),
     })
@@ -347,8 +494,9 @@ def cmd_status():
     mv = sum(pos["shares"] * px.get(c, pos["avg_cost"])
              for c, pos in acc["positions"].items())
     total = acc["cash"] + mv
-    print("模拟账户 %s（rules %s）" % (acc.get("created"),
-                                       acc["rules"]["version"]))
+    print("模拟账户 %s（账户 rules %s / 代码 rules %s）"
+          % (acc.get("created"), acc["rules"]["version"],
+             RULES["version"]))
     print("现金 %.0f 万 | 市值 %.0f 万 | 总资产 %.0f 万（nav %.4f）| 已实现盈亏 %+.0f"
           % (acc["cash"] / 1e4, mv / 1e4, total / 1e4,
              total / RULES["capital"], acc["realized_pnl"]))
@@ -363,11 +511,29 @@ def cmd_status():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="模拟盘 v0.1（规则调校+训练数据）")
+    ap = argparse.ArgumentParser(description="模拟盘 v2（决策时点定价+抑制令感知）")
     ap.add_argument("cmd", choices=["open", "review", "equity", "status"])
+    ap.add_argument("--date", default=None,
+                    help="数据日 YYYYMMDD；复算历史必须同时给 --decision-time")
+    ap.add_argument("--decision-time", default=None,
+                    help="成交决策时刻 HH:MM；决定「哪些价格已经可见」")
     a = ap.parse_args()
-    return {"open": cmd_open, "review": cmd_review,
-            "equity": cmd_equity, "status": cmd_status}[a.cmd]()
+    if a.date and a.date != dt.date.today().strftime("%Y%m%d") \
+            and not a.decision_time:
+        print("[BLOCK] 复算历史日必须显式给 --decision-time，"
+              "禁止用当前时刻冒充历史决策时刻")
+        return 2
+    if a.decision_time and a.cmd != "open":
+        print("[BLOCK] --decision-time 只对 open 有意义")
+        return 2
+    try:
+        return {"open": lambda: cmd_open(a.date, a.decision_time),
+                "review": lambda: cmd_review(a.date),
+                "equity": lambda: cmd_equity(a.date),
+                "status": cmd_status}[a.cmd]() or 0
+    except RuntimeError as e:
+        print("[BLOCK] %s" % e)
+        return 2
 
 
 if __name__ == "__main__":
