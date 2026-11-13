@@ -26,6 +26,9 @@ import pytest
 ROOT = r"C:\项目\老田的AI助手"
 PREOPEN = os.path.join(ROOT, "tools", "preopen")
 KG = os.path.join(ROOT, "zerobound-kg", "factor_proto")
+# 口径版本的下界（只增不减）。升级口径时只改这里和生产代码，不要改下面那些
+# 断言里的数字 —— 它们是「当前值相对量」（rp.POLICY_V ± 1），不写死。
+MIN_POLICY_V = 4
 sys.path.insert(0, PREOPEN)
 import audit_preopen as audit  # noqa: E402
 
@@ -62,7 +65,16 @@ def test_policy_version_consistent():
                      r'"chain_policy_v"\s*:\s*(\d+)')
     v_chain = _num_in(os.path.join(KG, "fg_daily_chain.py"),
                       r"REFINE_POLICY_V\s*=\s*(\d+)")
-    assert rp.POLICY_V == v_pick == v_chain == 3
+    # 三处一致才是本测试要守的规矩（防「只改一处」）。
+    #
+    # 不能写死 `== 3`：2026-11-13 pick15 真的升到 v4（新增 ratio>1.20 硬否决），
+    # 这条断言就红了 —— 而它红的原因是「数字变了」，不是「不一致」。一条会因为
+    # 正确变更而失败的断言，结局只有一种：被人顺手改成新数字，然后失去作用。
+    # 所以改成两条不随版本漂移的约束：一致 + 不得倒退。
+    assert rp.POLICY_V == v_pick == v_chain
+    assert rp.POLICY_V >= MIN_POLICY_V, (
+        "口径版本回退了：%d < %d —— 是不是有人回滚了产出方却留着消费方？"
+        % (rp.POLICY_V, MIN_POLICY_V))
 
 
 # ---------------------------------------------------------------------------
@@ -70,19 +82,23 @@ def test_policy_version_consistent():
 # ---------------------------------------------------------------------------
 def test_reuse_rejection_blocks_stale_day():
     rp = _run_preopen()
-    msg = rp.reuse_rejection({"data_day": STALE, "chain_policy_v": 3}, DAY)
+    # 用 POLICY_V 而不是字面量：本例要测的是「数据日不符」，口径值只是干扰项。
+    # 写死 3 时，一旦口径升到 4，这条会因**另一个原因**（口径不符）过了 ——
+    # 断言通过但测的不是它声称要测的东西。
+    msg = rp.reuse_rejection({"data_day": STALE, "chain_policy_v": rp.POLICY_V}, DAY)
     assert msg is not None and "数据日" in msg
 
 
 def test_reuse_rejection_blocks_stale_policy():
     rp = _run_preopen()
-    msg = rp.reuse_rejection({"data_day": DAY, "chain_policy_v": 2}, DAY)
+    msg = rp.reuse_rejection({"data_day": DAY, "chain_policy_v": rp.POLICY_V - 1}, DAY)
     assert msg is not None and "口径" in msg
 
 
 def test_reuse_rejection_allows_current_ticket():
     rp = _run_preopen()
-    assert rp.reuse_rejection({"data_day": DAY, "chain_policy_v": 3}, DAY) is None
+    assert rp.reuse_rejection({"data_day": DAY, "chain_policy_v": rp.POLICY_V},
+                              DAY) is None
 
 
 # ---------------------------------------------------------------------------

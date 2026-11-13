@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """盘前一键：校对 → 选票 → 出报告 → 记账。后峰盘前 Agent 的唯一入口。
 
 老田 2026-11-12 的要求是「每天盘前都要做这件事」。那么它就必须是**一条命令**，
@@ -42,6 +42,12 @@ ROOT = r"C:\项目\老田的AI助手"
 PY = sys.executable
 PICK_DIR = r"C:\项目\zerobound-kg\factor_proto"
 PICK = os.path.join(PICK_DIR, "_preopen_pick15_v2_adj.py")
+# 排序影子对照（只记录，不参与出票）。与 PICK 同目录、同解释器、同一份共识包。
+SHADOW = os.path.join(PICK_DIR, "shadow_rank.py")
+# 实测 12s（82 只候选）。给 240s 是留 20 倍余量：它要读全市场日线，
+# 万一磁盘被同步任务占满，慢到 3 分钟是可能的；但没有上限就等于让一个
+# 观测步骤能拖死出票链路。
+SHADOW_TIMEOUT = 240
 PKG_ROOT = os.path.join(PICK_DIR, "strategy_center_inbox")
 DELIV = r"C:\项目\deliverables"
 
@@ -54,9 +60,14 @@ LAUNCH = r"C:\Temp\preopen_launch.jsonl"
 #   fg_daily_chain.py 里的 REFINE_POLICY_V
 # 改动任何会改变名单的口径（过滤规则、复权、打分）三处一起 +1，否则旧产物
 # 会被当成当前口径复用。tools/tests/test_preopen_gate_fixes.py 会断言这一点。
-# 本轮（11-12 夜）修的是校对与运行器，没有改 rate() 的过滤/复权/打分，
-# 所以版本号与底层同为 3。曾误写成 4，会让所有合法产物被复用校验永久阻断。
-POLICY_V = 3
+# v4（2026-11-13）：pick15 新增偏离度硬否决（ratio > 1.20 剔除），会改变名单。
+# 这是**真实的口径升级**，不是笔误 —— 11-12 夜那次才是笔误（当时只改运行器、
+# 没动 rate()，版本号却写成 4，会让所有合法产物被复用校验永久阻断）。
+#
+# 三处必须同步改。只改产出方（这次漏的就是这一半）会让 --skip-pick 被自己的
+# 版本号挡住：产物写 v4、这边期望 v3 → 「产物口径 v4 与当前 v3 不符」→ 阻断。
+# 只改这一边则更糟：旧口径产物会被当成当前口径放行。方向不同，但都叫静默失效。
+POLICY_V = 4
 
 
 def reuse_rejection(pv: dict, day: str, policy_v: int = POLICY_V) -> str | None:
@@ -152,10 +163,73 @@ def latest_pkg() -> str | None:
     return ds[-1] if ds else None
 
 
-def run(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
-    p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
-    return p.returncode, (p.stdout or "") + (p.stderr or "")
+def _pkg_from_pick(path: str) -> str | None:
+    """从选票产物里取回它当时用的共识包名。
+
+    `--skip-pick` 不会重推 latest_pkg()，但影子排序必须用**同一份**包：
+    此刻再调 latest_pkg() 可能已经多出一个新包，那对照就换成了另一批候选，
+    差异里混进了「换了包」这个因素，而它不属于本次要检验的「换排序」。
+
+    所以只认产物自述，取不到就跳过 —— 跳过是诚实的，「拿个最新的顶上」
+    会让两套排序的候选集不同，却仍然被当成同一个对照。
+    """
+    try:
+        d = json.load(io.open(path, encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+    p = ((d.get("picker_args") or {}).get("pkg") or "")
+    name = os.path.basename(os.path.normpath(p)) if p else ""
+    # 只认 8 位纯数字目录名。别的形态（空、相对路径、拼错的盘符）一律当取不到，
+    # 而不是硬塞给 shadow_rank 让它自己报「包不存在」—— 那会变成一条假告警。
+    return name if name.isdigit() else None
+
+
+def shadow_step(pkg: str | None, day: str, pick_json: str, runner=None) -> dict:
+    """排序影子：跑一次对照，返回要记进 run json 的那条记录。
+
+    抽成函数（而不是写在 main 里）的理由和 reuse_rejection 一样：写在 main 的
+    分支里就只有「真跑一次全流程」才能验证，而那会覆盖当天产物、追加台账 ——
+    为了测一个观测步骤而改动生产数据，代价比 bug 本身还大。
+
+    **绝不抛异常、绝不改 rc**。runner 可注入，测试时传假的。
+    """
+    r = runner or (lambda cmd, cwd=None, timeout=None: run(cmd, cwd=cwd, timeout=timeout))
+    rec: dict = {"step": "shadow_rank"}
+    pkg_s = pkg or _pkg_from_pick(pick_json)
+    if not pkg_s:
+        rec.update({"skipped": True,
+                    "reason": "拿不到共识包名（复用路径且产物无 picker_args.pkg）"})
+        return rec
+    try:
+        rc_s, log_s = r([PY, "-X", "utf8", SHADOW, "--pkg", pkg_s, "--asof", day],
+                        cwd=PICK_DIR, timeout=SHADOW_TIMEOUT)
+    except Exception as e:                      # noqa: BLE001 —— 观测步骤不许炸主流程
+        rec.update({"rc": -1, "pkg": pkg_s, "asof": day,
+                    "error": "%s: %s" % (type(e).__name__, e)})
+        return rec
+    rec.update({"rc": rc_s, "pkg": pkg_s, "asof": day,
+                "out": "\n".join((log_s or "").strip().splitlines()[:4])})
+    return rec
+
+
+def run(cmd: list[str], cwd: str | None = None,
+        timeout: int | None = None) -> tuple[int, str]:
+    """跑子进程，返回 (rc, 输出)。
+
+    timeout 默认 None（沿用旧行为）—— 这是刻意的：给已有调用加超时会改变它们
+    的失败语义，而它们不在本次改动范围内。只有明确需要上限的新调用才传。
+    超时按 rc=124 返回（shell 惯例），并把原因写进输出，免得「超时」被读成「崩溃」。
+    """
+    try:
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=timeout)
+        return p.returncode, (p.stdout or "") + (p.stderr or "")
+    except subprocess.TimeoutExpired as e:
+        out = ((e.stdout or "") if isinstance(e.stdout, str)
+               else (e.stdout or b"").decode("utf-8", "replace"))
+        err = ((e.stderr or "") if isinstance(e.stderr, str)
+               else (e.stderr or b"").decode("utf-8", "replace"))
+        return 124, out + err + "\n[timeout] 超过 %ss 未结束，已中止" % timeout
 
 
 def main() -> int:
@@ -197,7 +271,7 @@ def main() -> int:
     au = audit.audit(day)
     out["audit"] = {"verdict": au["verdict"], "problems": au["problems"],
                     "warns": au["warns"]}
-    print("\n[1/5] 数据校对 → %s" % au["verdict"])
+    print("\n[1/6] 数据校对 → %s" % au["verdict"])
     for p in au["problems"]:
         print("      × %s" % p)
     for w in au["warns"]:
@@ -212,6 +286,10 @@ def main() -> int:
     # ── 2. 选票 ─────────────────────────────────────────────────────────
     pick_json = os.path.join(DELIV, "preopen_pick15_v2_adj_check_%s.json" % day)
     reused = bool(a.skip_pick and os.path.exists(pick_json))
+    # 必须在分支外初始化：复用路径不会给 pkg 赋值，第 6 步要读它。
+    # 放在 else 里当局部变量，会让「复用」那条路在末尾炸 NameError ——
+    # 而 NameError 发生在报告已出之后，看起来像「跑完了」，实际最后一步没跑。
+    pkg: str | None = None
     if reused:
         pv0 = pick_provenance(pick_json)
         # 复用前必须证明「这份票属于今天、且属于当前口径」。只看文件存在
@@ -227,7 +305,7 @@ def main() -> int:
             out["rc"] = 3
             _dump(out, a.json_out)
             return 3
-        print("\n[2/5] 选票 → 复用 %s（未重算）" % os.path.basename(pick_json))
+        print("\n[2/6] 选票 → 复用 %s（未重算）" % os.path.basename(pick_json))
         print("      这份票算于 %s（来源 %s）"
               % (pv0.get("picker_run_at"), pv0.get("picker_run_at_source")))
         print("      ⚠ 名单不是本次运行算的 —— 简报会带 reused=true，别和当天新算看成一样")
@@ -241,7 +319,7 @@ def main() -> int:
             out["rc"] = 3
             _dump(out, a.json_out)
             return 3
-        print("\n[2/5] 选票 → pkg=%s asof=%s" % (pkg, day))
+        print("\n[2/6] 选票 → pkg=%s asof=%s" % (pkg, day))
         rc, log = run([PY, "-X", "utf8", PICK, "--pkg", pkg, "--asof", day], cwd=PICK_DIR)
         tail = "\n".join(log.strip().splitlines()[-6:])
         print("      rc=%d\n%s" % (rc, "\n".join("      " + l for l in tail.splitlines())))
@@ -304,7 +382,7 @@ def main() -> int:
     # 先落一次盘再出报告：简报要读本次运行的选票溯源（picker_run_at / reused），
     # 读不到就退化成「来源未确认」。落盘顺序即数据依赖顺序。
     _dump(out, a.json_out)
-    print("\n[3/5] 简报 →")
+    print("\n[3/6] 简报 →")
     rc, log = run([PY, "-X", "utf8", os.path.join(HERE, "build_preopen_report.py"),
                    "--date", day, "--run-json", a.json_out])
     print("      " + log.strip().splitlines()[-1] if log.strip() else "      (无输出)")
@@ -318,7 +396,7 @@ def main() -> int:
     # 事件化必须读本次运行产物，所以先落一次盘再调 —— 否则 event_log
     # 读到的是上一次的结果，记的就不是今天这件事。
     _dump(out, a.json_out)
-    print("\n[4/5] 记账 →")
+    print("\n[4/6] 记账 →")
     rc_e, log_e = run([PY, "-X", "utf8", os.path.join(HERE, "event_log.py"),
                        "--from-run", "--run-json", a.json_out])
     tail_e = "\n".join(log_e.strip().splitlines()[:8])
@@ -336,7 +414,7 @@ def main() -> int:
     # 前四步都是给机器和报告用的。这一步是唯一一个"给老田翻一眼"的产物：
     # 今天观察到什么、累计到哪了、还差多少才够格提建议。
     # 失败不影响主流程 —— 台账是输出，不是关卡。
-    print("\n[5/5] 进化台账 →")
+    print("\n[5/6] 进化台账 →")
     # 文件名用执行日，不用数据日 —— 老田早上翻的是「今天这份台账」，
     # 写成 11-11 会让他以为是昨天那份（报告顶栏同一个坑，已经踩过一次）。
     # exec_day 在函数开头已算好（篮子落盘要用），此处复用，不再重复推导。
@@ -348,6 +426,33 @@ def main() -> int:
     print("\n".join("      " + l for l in tail_d.splitlines()))
     out["steps"].append({"step": "digest", "rc": rc_d,
                          "md": md_out, "html": html_out, "out": tail_d})
+
+    # ── 6. 排序影子（只记录，不参与出票）───────────────────────────────
+    # 为什么挂在盘前链上、而不是单开一个计划任务：
+    #   它需要的两样输入 —— 共识包名与精排日 —— 只有这里现成有。另开任务就得
+    #   再推一遍「最新包是哪个 / 数据日是哪天」，两处推导必然漂移，于是「影子
+    #   和实盘用的是同一份输入」这个前提就没了，而整个对照的意义就建立在它上面。
+    #
+    # 为什么放在最后：前面任何一步失败都已 return，走到这里说明报告、篮子、
+    #   台账全部落盘。影子整步崩掉，损失的只是「今天的对照没记上」。
+    #
+    # 为什么不改 rc：它是观测，不是关卡。同族于第 5 步 —— 计划任务的退出码
+    #   回答的是「跑完了吗」，把观测失败报成任务失败，会让人去修一个不存在的问题。
+    #
+    # 为什么 pkg 要取「产物自述」而不是重推 latest_pkg()：复用路径下后者可能
+    #   已经多出一个新包，那样两套排序的候选集就不同了，差异里混进「换了包」。
+    print("\n[6/6] 排序影子 →")
+    rec_s = shadow_step(pkg, day, pick_json)
+    if rec_s.get("skipped"):
+        print("      跳过：%s" % rec_s["reason"])
+    elif rec_s.get("error"):
+        print("      ⚠ 影子未入账：%s —— 不影响今天的票" % rec_s["error"])
+    else:
+        for l in (rec_s.get("out") or "(无输出)").splitlines():
+            print("      " + l)
+        if rec_s.get("rc") != 0:
+            print("      ⚠ 影子未入账（rc=%s）—— 不影响今天的票" % rec_s.get("rc"))
+    out["steps"].append(rec_s)
 
     _dump(out, a.json_out)
     print("\n完成：rc=%d（0 全绿 / 1 有告警 / 2 阻断 / 3 脚本失败）" % out["rc"])
