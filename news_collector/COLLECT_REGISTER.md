@@ -1109,6 +1109,53 @@ WAF 触发 0 次、deferred 0 次。落盘字段复核：`symbol=BJ920870`、`co
 - 未启用 quota（判断见 21.3）。
 - 未改 21:00 分片轮（队列固定 246、能跑完，暂无排序必要）。
 
+## §22 07:00 首次生产轮就绪核查（2026-11-14 05:26，只读）
+
+### 22.1 就绪读数
+
+| 项 | 读数 | 判据 |
+|---|---|---|
+| 任务状态 | `XqTimelineDaily` Ready，`NextRun=11-14 07:00:00`，`ExecutionTimeLimit=PT72H` | 调度在位 |
+| 生产参数 | `run_xq_daily.py` 实传 `--queue all --pages 1 --order mtime` | 排序已接 |
+| 干跑（`--plan-only`） | `scope=all quota=0 cursor=off queue_len=666 起=600929,600930,600962… 止=301165,301188,301218` | 顺序符合「最久未刷新」 |
+| 落盘 mtime 分布 | 714 个 jsonl，最老 **32.2h**、中位 18.5h、最新 7.7h；`>24h` 16 只（2.2%）、`>36h` **0**、`>48h` **0** | 排序依据当前健康 |
+| 21:00 分片轮 | `run_xq_daily_expanded.py` 传 `--sources ...`（不传 `--order`、用游标 v2 分域） | 与 07:00 轮无游标互写 |
+| 采集相关任务唯一性 | 全机仅 `XqTimelineDaily` 执行 `run_xq*.py` | 07:00 无同源并发 |
+
+### 22.2 提权脚本执行结果（未完成，卡在权限）
+
+- 本会话 `IsAdmin=False`，直接执行 `fix_battery_limits.ps1` → `NOT ELEVATED - run as administrator. Aborting.` exit=1（脚本自带前置断言，未做任何修改）。
+- 账号本身在 `BUILTIN\Administrators`，令牌为 `Medium Mandatory Level` → **右键「以管理员身份运行」可行**，需 UAC 确认一次。
+- 根路径仍受限 **24 条**（比 05:00 统计多 1，统计时点差异）：S4U 型 17 条（`GuojiaDaily`、`BootStackCheck`、`ChanlunLearnDaily`、`Legion*` 5 条、`ResticTrialDaily`、`TushareIncrementGuard`、`KgLeiden`、`CzscShadowDaily`、`CuratedDailyRefresh`、`A0Patrol`、`A3RotationCanary`、`datamart_api_keepalive`、`DbDumpDaily`(Interactive)、`AI工作站调优回测批次`、`PhoenixMaintenance`）+ Interactive 型 7 条（`AlertPushWatchdog`、`qengine_daily_0820/2100/2340`、`WpsUpdate*` 2 条、`DbDumpDaily`）。
+- 已放开 459 条（`DisallowStart` 与 `StopIfGoing` 双关）；`\Microsoft\Windows\...` 系统任务 49 条未动。基线 `C:\aios\_battery_baseline.csv` 可反向恢复。
+
+### 22.3 新发现：`--order mtime` 的排序依据不是「上次尝试时间」（B 级，未发作）
+
+排序键取本地 jsonl 的 **mtime = 内容最后一次新增的时间**，而不是「最后一次采集尝试的时间」。雪球 collector 是 append-on-new（无新帖不写盘），因此：
+
+- 若某票连续多日**确实没有新帖**，采过之后 mtime 不变 → 下次仍是「最老」→ **继续排队首**；
+- 冷票累积后会在队首形成固定占位，每轮被白采、挤掉后面真正待刷新的标的——与 11-12「尾部饥饿」是同一枚硬币的反面（这次是**头部拥堵**）。
+- 当前未发作：`>36h 未变 = 0`，714 个文件全在 32h 内更新过。
+
+判据（达到任一即需改）：① `>36h 未变` 文件数连续 3 日 > 队列 5%；② 连续两轮队首 10 只完全相同。
+治本方案：新增 attempt ledger（`_attempt.json`，记录每只最后一次尝试时间戳），排序键改读 ledger，缺记录回退 mtime。**不在今日 07:00 前改**（距触发 1.5 小时，新机制需测试，风险大于收益）。
+
+### 22.4 依赖时序风险：08:00 情绪快照 vs 雪球完成时刻
+
+`SentimentSnapshot` 固定 08:00 触发，读当日雪球产出。正常档（2–4 秒/只）666 只约 **37 分钟**，07:37 完成，余量 23 分钟；一旦触发降速档并维持（8 秒/只）→ 约 **89 分钟**，08:29 完成，**跨过 08:00**，快照将读到半截雪球数据。
+
+本席不裁调度，仅列选项供裁定：
+- A：雪球 07:00 提前至 06:30（周末/工作日一致）；
+- B：`SentimentSnapshot` 后移至 09:00；
+- C：接受低频不完整，快照侧标注「雪球未完成」标记；
+- D：不动（昨日 C 轮 666 只仅 1 次瞬时异常，降速概率低）。
+
+### 22.5 07:00 后要看的三个点（本席自查口径）
+
+1. 日志首行起点是否为 `600929`（陈旧第一）；
+2. 若撞限流，是否输出「降速档位」并在窗口坏率达 30% 时 `SESSION_DEGRADED/DEAD` 停轮，而非 900 秒/只空转；
+3. 完成时刻是否早于 08:00（对照 22.4）。
+
 
 
 
