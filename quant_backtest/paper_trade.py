@@ -50,6 +50,30 @@ def R_cal_after(d0, d1, n):
     except Exception:
         return None
 
+
+def is_trading_day(day):
+    """交易日历门：返回 (是否交易日, 日历来源)。
+
+    用 ts_trade_cal（SSE，覆盖 2020→2027，含未来日期与节假日），
+    而不是 strong_ts_window_research.trade_calendar()——后者由历史日线
+    生成、只到最新数据日，会把所有未来日误判成非交易日、永久停摆。
+    表不可读时 fail-open 回退「周一~周五」，绝不因日历缺失阻断交易。
+    """
+    try:
+        import pandas as pd
+        d = pd.read_parquet(os.path.join(HERE, "data", "tdx",
+                                        "ts_trade_cal", "part_0000.parquet"))
+        s = d["cal_date"].astype(str).str.replace("-", "", regex=False)
+        r = d[(s == day) & (d["exchange"] == "SSE")]
+        if r.empty:
+            r = d[s == day]
+        if not r.empty:
+            return float(r.iloc[0]["is_open"]) == 1.0, "ts_trade_cal"
+    except Exception:
+        pass
+    w = dt.date(int(day[:4]), int(day[4:6]), int(day[6:8])).weekday()
+    return w < 5, "weekday_fallback"
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
@@ -84,8 +108,14 @@ SESSIONS = (("09:30", "11:30"), ("13:00", "15:00"))
 #      后复权收益率 _ret_of()，除权日不产生假浮亏/假降级；
 #   ⑥ T2 通道收口：挂单必须有有效 chanlun 买点，剔除 strong/qpzm
 #      单独抬层票（回算该通道 -7.61%、胜率 16%，最大毒源）。
+# v2.2（2026-11-13 首次真实 open 前就绪性 dry-run 抓到的缺陷修复，
+#       非策略参数变更；样本单独分档）：
+#   ⑦ 换股护栏：同一次 open 里卖出的票不再从隔夜挂单买回；
+#   ⑧ 早盘触发早于 09:30 时明确报错（当天无可见分钟价），不再静默零成交；
+#   ⑨ 交易日历门（ts_trade_cal，覆盖未来）：周末/节假日 SKIP，
+#      不判定、不写账户、不写流水，防止非交易日净值点污染训练样本。
 RULES = {
-    "version": "v2.1",
+    "version": "v2.2",
     "capital": 10_000_000.0,        # 单策略上限 1000 万
     "init_pos_pct": 0.05,           # 首仓 5%
     "max_pos_pct": 0.30,            # 加仓后单票上限 30%
@@ -109,10 +139,12 @@ RULES = {
                        "原始成交口径；除权送股不调整 shares（模拟盘简化），"
                        "故除权日账面 pnl 与复权收益率可能不一致，卖出决策"
                        "以后者为准；复权因子取 <=day 最后可得日，缺数据回退"
-                       "原始口径（fail-open）",
+                       "原始口径（fail-open）；卖出与买入须隔夜分离——"
+                       "同一次 open 卖出的票当日不买回（换股护栏）",
         "falsifier": "实盘滑点>1%；口径过松/紧（后验胜率<基准）；"
                      "现金垫被击穿（连续弱势日卖单>现金垫）；"
-                     "除权日出现假浮亏卖单（查 trades 的 adj_asof 字段）",
+                     "除权日出现假浮亏卖单（查 trades 的 adj_asof 字段）；"
+                     "同一 open 内出现同票 SELL 后 BUY（查 rebound_blocked_last）",
         "cost_if_wrong": "训练数据污染——rules_version 必须随档",
     },
 }
@@ -380,6 +412,11 @@ from t2_channel_gate import gate_t2, gate_report, has_chanlun_buy  # noqa: E402
 def cmd_open(day=None, decision_time=None):
     day = _resolve_day(day)
     decision_time = decision_time or _now_hhmm()
+    if decision_time < "09:30":
+        raise RuntimeError(
+            "决策时刻 %s 早于开盘 09:30：当日分钟行情尚未产生、无可见价，"
+            "本次 open 不成交。请把 PaperTrade 早盘触发改到 09:31 之后。"
+            % decision_time)
     _assert_session(decision_time)
 
     # 抑制令优先于一切：不建仓、不写账户、不写流水（按规则跳过，exit 0）
@@ -404,6 +441,20 @@ def cmd_open(day=None, decision_time=None):
             print("[open] T2 通道收口：剔除 %d 单（%s）"
                   % (len(rej), "、".join(r["why"] for r in rej[:3])))
             acc["t2_gate_last"] = gate_report(orders, rej)
+    # ── v2.2 换股护栏：当日卖出的票，当日绝不买回 ──────────────────
+    # 11-13 就绪性 dry-run 实锤：卖出段 del positions[c] 后，同一只票
+    # 若仍在隔夜买入挂单里会被当作「首仓」重新建回 —— 走坏降级卖出的
+    # 4 只票当天又全数买回，规则⓪形同虚设。
+    # 边界：只拦「同一次 open 卖出→买回」。卖出后的冷却天数属策略参数，
+    # 交老田拍板，不在代码里擅自设定。
+    sold_today = set(sells)
+    rebound = [b["code"] for b in orders if b["code"] in sold_today]
+    if rebound:
+        orders = [b for b in orders if b["code"] not in sold_today]
+        acc["rebound_blocked_last"] = {"day": day, "codes": rebound,
+                                       "why": "same_day_sell_then_buy"}
+        print("[open] 换股护栏：当日已卖出 %d 只，不再买回（%s）"
+              % (len(rebound), "、".join(rebound)))
     buy_codes = {b["code"] for b in orders}
     all_codes = sorted(set(sells) | buy_codes | set(acc["positions"]))
     adjm = adj_factors(all_codes, day)   # 后复权因子（判定层用，缺数据 fail-open）
@@ -750,6 +801,17 @@ def main():
     if a.decision_time and a.cmd != "open":
         print("[BLOCK] --decision-time 只对 open 有意义")
         return 2
+    # ── 交易日历门（v2.2）：周末/节假日不判定、不写账户、不写流水 ──
+    # 计划任务全年每日触发。缺了这道门，周末会拿周五收盘价做卖出判定、
+    # 生成隔夜挂单，并往 equity.jsonl 写一条非交易日净值点（污染样本）。
+    # 业务跳过 exit 0，与「程序崩溃 exit 非 0」严格区分。
+    if a.cmd in ("open", "review", "equity"):
+        day = _resolve_day(a.date)
+        ok, src = is_trading_day(day)
+        if not ok:
+            print("[SKIP] %s 非交易日（日历=%s）：不判定、不写账户、不写流水"
+                  % (day, src))
+            return 0
     try:
         return {"open": lambda: cmd_open(a.date, a.decision_time),
                 "review": lambda: cmd_review(a.date),
