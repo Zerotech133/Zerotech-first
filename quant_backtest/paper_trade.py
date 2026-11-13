@@ -77,9 +77,15 @@ SESSIONS = (("09:30", "11:30"), ("13:00", "15:00"))
 #      ——解「卖A的钱买B」与「当天买当天坏」的 T+1 死锁；
 #   ② 加仓纪律：亏损不加（现价<成本不出加仓单）、金字塔每次≤5%、
 #      同票加仓冷却 2 交易日；
-#   ③ 盘中降级：当日票浮亏 ≤-5% → 封存等额现金垫 + 次日卖单最优先。
+#   ③ 盘中降级：当日票浮亏 ≤-4% → 封存等额现金垫 + 次日卖单最优先。
+# v2.1（2026-11-13 老田拍板，一个月回放回测后的三条调校）：
+#   ④ 降级线 -5%→-4%（回放中今日 6 只持仓 4 只触线，-5% 偏松）；
+#   ⑤ 除权口径：avg_cost 保持原始成交价（现金记账用），判定改走
+#      后复权收益率 _ret_of()，除权日不产生假浮亏/假降级；
+#   ⑥ T2 通道收口：挂单必须有有效 chanlun 买点，剔除 strong/qpzm
+#      单独抬层票（回算该通道 -7.61%、胜率 16%，最大毒源）。
 RULES = {
-    "version": "v2",
+    "version": "v2.1",
     "capital": 10_000_000.0,        # 单策略上限 1000 万
     "init_pos_pct": 0.05,           # 首仓 5%
     "max_pos_pct": 0.30,            # 加仓后单票上限 30%
@@ -93,13 +99,20 @@ RULES = {
     "add_step_pct": 0.05,           # 金字塔：每次加仓 ≤5%
     "add_no_averaging_down": True,  # 亏损不加仓（现价<成本 → 拒绝加仓单）
     "add_cooldown_days": 2,         # 同票加仓冷却 2 交易日
-    "intraday_mark_pct": -0.05,     # 当日票浮亏 -5% → 降级标记
+    "intraday_mark_pct": -0.04,     # 当日票浮亏 -4% → 降级标记（v2.1，原 -5%）
+    "require_chanlun_buy": True,    # v2.1 T2 通道收口：挂单必带 chanlun 买点
     "audit": {
         "assumptions": "成交价=严格早于决策时刻的最后一分钟收盘价；"
                        "浮亏即卖=不达预期；失守/下离枢=不在趋势上；"
-                       "三层占比以 capital 为分母静态核算",
+                       "三层占比以 capital 为分母静态核算；"
+                       "复权仅用于信号判定（后复权每股成本），现金账保持"
+                       "原始成交口径；除权送股不调整 shares（模拟盘简化），"
+                       "故除权日账面 pnl 与复权收益率可能不一致，卖出决策"
+                       "以后者为准；复权因子取 <=day 最后可得日，缺数据回退"
+                       "原始口径（fail-open）",
         "falsifier": "实盘滑点>1%；口径过松/紧（后验胜率<基准）；"
-                     "现金垫被击穿（连续弱势日卖单>现金垫）",
+                     "现金垫被击穿（连续弱势日卖单>现金垫）；"
+                     "除权日出现假浮亏卖单（查 trades 的 adj_asof 字段）",
         "cost_if_wrong": "训练数据污染——rules_version 必须随档",
     },
 }
@@ -290,6 +303,79 @@ def _cur_price_map(codes):
     return out
 
 
+# ── 除权口径（v2.1）──────────────────────────────────────────────
+# 回放回测抓到的坑：买入成本若与复权现价不在同一量纲，浮亏会被系统性
+# 低估（002623 除权因子 1.1164，浮亏少算 11%）。生产代码两边原本都是
+# 原始价、当下无错，但**持仓跨除权日**时价格跳空 → 假浮亏 → 误卖/误降级。
+# 修法：持仓记「后复权每股成本」cost_adj，判定统一走 _pos_ret()。
+# 只有买入基准 af_buy 与当日 af_now 都可取时才用复权口径，否则 fail-open
+# 回退原始价比较 —— 绝不因为缺复权因子就阻断交易或凭空改变判定。
+ADJ_ROOT = os.path.join(HERE, "data", "tdx", "ts_adj_factor")
+
+
+def adj_factors(codes, day):
+    """{code: (af, asof)}：<= day 的最后一个后复权因子。
+
+    一次遍历全部分片、谓词下推只取目标票（6 只票 ~几千行，不动全表）。
+    表缺失/读失败 → 返回空 dict，调用方 fail-open 回退原始口径。
+    """
+    import glob
+    try:
+        import pandas as pd
+    except Exception:
+        return {}
+    parts = sorted(glob.glob(os.path.join(ADJ_ROOT, "part_*.parquet")))
+    if not parts or not codes:
+        return {}
+    want = set(codes)
+    best = {}
+    d8 = str(day)[:8]
+    for p in parts:
+        try:
+            t = pd.read_parquet(p, columns=["ts_code", "trade_date", "adj_factor"],
+                                filters=[("ts_code", "in", tuple(want))])
+        except Exception:
+            # 老 parquet 不支持谓词下推时退回全读再过滤
+            try:
+                t = pd.read_parquet(p, columns=["ts_code", "trade_date",
+                                                "adj_factor"])
+                t = t[t["ts_code"].isin(want)]
+            except Exception:
+                continue
+        if t.empty:
+            continue
+        for c, d, f in zip(t["ts_code"].astype(str),
+                           t["trade_date"].astype(str).str[:8],
+                           t["adj_factor"].astype(float)):
+            if d > d8 or not (f > 0):
+                continue
+            if c not in best or d > best[c][1]:
+                best[c] = (f, d)
+    return best
+
+
+def _pos_ret(pos, code, price, adjm):
+    """持仓浮动收益率 + 口径标签。返回 (ret, basis, asof)。
+
+    basis='adj'：后复权口径（cost_adj 与 af_now 齐备）；
+    basis='raw'：回退原始价比较（新建仓当天/因子表缺数据）。
+    """
+    cost_adj = pos.get("cost_adj")
+    item = adjm.get(code)
+    if cost_adj and cost_adj > 0 and item and item[0] > 0:
+        return price * item[0] / cost_adj - 1, "adj", item[1]
+    return price / pos["avg_cost"] - 1, "raw", None
+
+
+def _adj_cost_on_buy(price, af_buy):
+    """建仓时的后复权每股成本；因子取不到则 None（判定回退 raw）。"""
+    return price * af_buy if af_buy and af_buy > 0 else None
+
+
+# T2 通道闸门（独立模块，便于 portal 生成侧与金测复用）
+from t2_channel_gate import gate_t2, gate_report, has_chanlun_buy  # noqa: E402
+
+
 # ── 开盘：执行买卖挂单 ─────────────────────────────────────────────
 def cmd_open(day=None, decision_time=None):
     day = _resolve_day(day)
@@ -309,7 +395,18 @@ def cmd_open(day=None, decision_time=None):
                            encoding="utf-8"))
     # 1) 执行隔夜卖出单（价=决策时点可见价）
     sells = [s["code"] for s in acc.get("pending_sells") or []]
-    buy_codes = {b["code"] for b in acc.get("pending_buys") or []}
+    orders = acc.get("pending_buys") or []
+    # v2.1 T2 通道收口（open 侧二次护栏）：挂单是昨晚生成的，可能来自
+    # 旧口径/人工注入，执行前再过一次闸，绝不把无买点抬层票买进来。
+    if RULES["require_chanlun_buy"] and orders:
+        orders, rej = gate_t2(orders)
+        if rej:
+            print("[open] T2 通道收口：剔除 %d 单（%s）"
+                  % (len(rej), "、".join(r["why"] for r in rej[:3])))
+            acc["t2_gate_last"] = gate_report(orders, rej)
+    buy_codes = {b["code"] for b in orders}
+    all_codes = sorted(set(sells) | buy_codes | set(acc["positions"]))
+    adjm = adj_factors(all_codes, day)   # 后复权因子（判定层用，缺数据 fail-open）
     px = resolve_visible_prices(sorted(set(sells) | buy_codes), day,
                                 decision_time)
     for s in acc.get("pending_sells") or []:
@@ -329,6 +426,9 @@ def cmd_open(day=None, decision_time=None):
             "name": pos.get("name", ""), "price": round(price, 3),
             "shares": pos["shares"], "pnl": round(pnl, 0),
             "why": s.get("why", ""), "rules": RULES["version"],
+            # 除权留痕：判定口径与现金账口径分开记，后验可识别除权日假亏
+            "pnl_basis": "raw_cash", "cost_adj": pos.get("cost_adj"),
+            "adj_asof": (adjm.get(c) or (None, None))[1],
             **_audit_meta(quote, day, decision_time),
             "ts": dt.datetime.now().isoformat(timespec="seconds"),
         })
@@ -338,7 +438,7 @@ def cmd_open(day=None, decision_time=None):
 
     # 2) 执行买入挂单（T2 名单，首仓 5%；已持仓且信号在→加仓至≤30%）
     budget = acc["cash"]
-    for b in acc.get("pending_buys") or []:
+    for b in orders:
         c = b["code"]
         quote = px.get(c)
         if not quote:
@@ -351,10 +451,11 @@ def cmd_open(day=None, decision_time=None):
             if not RULES["add_on_signal"]:
                 continue
             # ── v2 加仓纪律（三层仓位架构）────────────────────────
-            # ①亏损不加：现价低于持仓成本 → 拒绝（摊平是纪律禁区）
-            if RULES["add_no_averaging_down"] and price < pos["avg_cost"]:
-                print("[open] 加仓拒绝 %s：现价 %.2f < 成本 %.2f（亏损不加）"
-                      % (c, price, pos["avg_cost"]))
+            # ①亏损不加：复权收益率 <0 → 拒绝（摊平是纪律禁区）
+            ret_now, _basis, _asof = _pos_ret(pos, c, price, adjm)
+            if RULES["add_no_averaging_down"] and ret_now < 0:
+                print("[open] 加仓拒绝 %s：复权浮亏 %.1f%%（亏损不加）"
+                      % (c, ret_now * 100))
                 continue
             # ②冷却期：距上次加仓 <2 交易日 → 拒绝（防同信号重复加）
             last_add = pos.get("last_add_day")
@@ -378,8 +479,15 @@ def cmd_open(day=None, decision_time=None):
             shares = int(add_val / price / 100) * 100
             if shares <= 0:
                 continue
-            pos["avg_cost"] = (pos["avg_cost"] * pos["shares"] + price * shares) \
-                / (pos["shares"] + shares)
+            old_shares = pos["shares"]
+            # 复权成本同步加权（旧仓无 cost_adj 时保持 None→判定回退 raw）
+            af_now = (adjm.get(c) or (None, None))[0]
+            if pos.get("cost_adj") and af_now:
+                pos["cost_adj"] = (pos["cost_adj"] * old_shares
+                                   + price * af_now * shares) \
+                    / (old_shares + shares)
+            pos["avg_cost"] = (pos["avg_cost"] * old_shares + price * shares) \
+                / (old_shares + shares)
             pos["shares"] += shares
             pos["last_add_day"] = day
             acc["addon_used"] = addon_used + shares * price
@@ -415,11 +523,16 @@ def cmd_open(day=None, decision_time=None):
                 "risk_gate": picks.get("risk_gate"),
                 "picks_generated": picks.get("generated_at"),
                 "basis": picks.get("trade_basis"),
+                "chanlun_buy": has_chanlun_buy(b),   # v2.1 通道闸门留痕
             }
+            af_buy, af_asof = adjm.get(c) or (None, None)
             acc["positions"][c] = {
                 "name": b.get("name", quote.get("name", "")),
                 "shares": shares, "avg_cost": price,
                 "opened": day, "snapshot": snapshot,
+                # 后复权每股成本（判定口径）；因子缺失→None→fail-open 回退 raw
+                "cost_adj": _adj_cost_on_buy(price, af_buy),
+                "cost_adj_asof": af_asof,
             }
             acc["cash"] -= shares * price
             budget = acc["cash"]
@@ -448,19 +561,32 @@ def cmd_review(day=None):
     if not codes:
         print("无持仓")
     px = _cur_price_map(codes) if codes else {}
+    adjm = adj_factors(codes, day) if codes else {}   # 判定层后复权因子
 
     pending_sells = []
     intraday_marks = []      # v2 盘中降级：当日票浮亏超阈（明日最优先卖）
+    basis_stat = {"adj": 0, "raw": 0}
     for c, pos in acc["positions"].items():
         price = px.get(c)
         if not price:
             continue
-        ret = price / pos["avg_cost"] - 1
+        # v2.1：统一后复权口径收益率（除权日不产生假浮亏 → 不误卖/误降级）
+        ret, basis, af_asof = _pos_ret(pos, c, price, adjm)
+        basis_stat[basis] += 1
+        pos["last_ret_basis"] = basis
+        pos["last_adj_asof"] = af_asof
         # ── v2 规则⓪：当日开仓票盘中降级标记（T+1 不能卖，但记账+排序）──
         if pos.get("opened") == day:
             if ret <= RULES["intraday_mark_pct"]:
-                pos["degraded"] = day          # 明日 review 见此标直接最优先卖
+                pos["degraded"] = day
                 intraday_marks.append((c, ret))
+                # v2.1 时序修复：打标的**同一晚**就排进明早卖单。
+                # 原实现只打标、等「次日 review」再见 degraded 排单，
+                # 结果今日走坏的票要到后日开盘才卖，迟整整一个交易日。
+                # T+1 合规：今日买入不可卖，明日开盘卖出（持仓日≥1）合法。
+                pending_sells.insert(0, {"code": c, "why":
+                    "盘中降级（当日浮亏 %.1f%% ≤ %.0f%%，明日最优先卖）"
+                    % (ret * 100, RULES["intraday_mark_pct"] * 100)})
             continue                           # 当日票不参与①②（T+1）
         # 规则①：持有次日收盘浮亏 → 不达预期，直接卖
         # （昨日已被标记 degraded 的票无条件最优先——规则⓪的次日执行）
@@ -506,6 +632,19 @@ def cmd_review(day=None):
                                             "todays_picks.json"),
                                encoding="utf-8"))
         t2 = [s for s in picks.get("stocks") or [] if s.get("tier") == "T2"]
+        # v2.1 T2 通道收口：剔除「无 chanlun 买点、靠 strong/qpzm 单独抬层」
+        # 回算该通道 T+5 -7.61%(n=19, 胜率16%)，是 T2 最大毒源。
+        # 对首仓单与加仓单一视同仁（加仓同样要求「在买点上」）。
+        if RULES["require_chanlun_buy"]:
+            t2, rejected = gate_t2(t2)
+            gate = gate_report(t2, rejected)
+        else:
+            rejected, gate = [], {"applied": False}
+        acc["t2_gate_last"] = gate
+        if rejected:
+            print("[review] T2 通道收口：%d→%d 单（剔除 %d：%s）"
+                  % (gate["t2_in"], gate["t2_kept"], len(rejected),
+                     "、".join(r["why"] for r in rejected[:3])))
         pb = []
         add_sigs = []      # 已持仓票的新买点信号 → 次日 open 走加仓分支
         for s in t2:
@@ -513,7 +652,8 @@ def cmd_review(day=None):
             sig = {"code": s["code"], "name": s.get("name"), "tier": "T2",
                    "sources": [{"s": x.get("s"), "tag": x.get("tag"),
                                 "dt": x.get("dt")}
-                               for x in s.get("sources") or []]}
+                               for x in s.get("sources") or []
+                               if isinstance(x, dict)]}
             if held:
                 add_sigs.append(sig)   # 加仓挂单：open 的 pos 分支消费
                 continue
@@ -534,8 +674,10 @@ def cmd_review(day=None):
 
     _atomic_write_json(ACC, acc)
     for c, r in intraday_marks:
-        print("[review] 盘中降级标记 %s（今日浮亏 %.1f%% ≤ -5%%，明日最优先卖）"
-              % (c, r * 100))
+        print("[review] 盘中降级标记 %s（今日浮亏 %.1f%% ≤ %.0f%%，明日最优先卖）"
+              % (c, r * 100, RULES["intraday_mark_pct"] * 100))
+    print("[review] 判定口径：后复权 %d / 原始 %d（缺复权因子回退，不阻断）"
+          % (basis_stat["adj"], basis_stat["raw"]))
     print("[review] 明日卖出 %d 单：%s" % (len(pending_sells),
           "、".join(s["code"] for s in pending_sells) or "无"))
 
@@ -567,6 +709,8 @@ def cmd_status():
     acc = load_account()
     codes = list(acc["positions"])
     px = _cur_price_map(codes) if codes else {}
+    day = _resolve_day()
+    adjm = adj_factors(codes, day) if codes else {}
     mv = sum(pos["shares"] * px.get(c, pos["avg_cost"])
              for c, pos in acc["positions"].items())
     total = acc["cash"] + mv
@@ -578,10 +722,14 @@ def cmd_status():
              total / RULES["capital"], acc["realized_pnl"]))
     for c, pos in acc["positions"].items():
         p = px.get(c)
-        ret = (p / pos["avg_cost"] - 1) * 100 if p else 0
-        print("  %-11s %-8s %d股 成本%.2f 现价%.2f 浮动%+.1f%%（%s入）"
+        if p:
+            ret, basis, _ = _pos_ret(pos, c, p, adjm)
+            ret *= 100
+        else:
+            ret, basis = 0, "n/a"
+        print("  %-11s %-8s %d股 成本%.2f 现价%.2f 浮动%+.1f%%[%s]（%s入）"
               % (c, pos.get("name", ""), pos["shares"], pos["avg_cost"],
-                 p or 0, ret, pos.get("opened")))
+                 p or 0, ret, basis, pos.get("opened")))
     for s in acc.get("pending_sells") or []:
         print("  [明日卖] %s %s" % (s["code"], s["why"]))
 
