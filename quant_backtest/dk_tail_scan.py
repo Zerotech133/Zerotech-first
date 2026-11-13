@@ -6,7 +6,8 @@
   --live             尾盘口径：东财全市场快照合成当日 bar，追加到昨日历史后扫描
   --watch            更新观察清单前向收益（1/5/20 日，基于 parquet 日线）
 
-观察清单：data/dk_tail_watch/watchlist.jsonl（append-only 语义：code+signal_date+profile 去重）
+观察清单：data/dk_tail_watch/watchlist.jsonl（append-only 语义：同票同日期只归一个最强档——
+命中 strict 优先于 relaxed，strict 是 relaxed 子集，保证两档队列不重叠、前向收益统计不双重计）
 状态日志：logs/dk_tail_scan_status.log（ASCII）
 引擎：agent_platform/engine/quant_double_knife.py（strict/relaxed）
 口径提醒：R1-R8 已证日线双刀无稳定 alpha，本工具仅作执行口径观察，不构成实盘建议。
@@ -201,19 +202,27 @@ def scan(asof, live=False):
 
 def append_watch(signals, asof, src):
     os.makedirs(WATCH_DIR, exist_ok=True)
+    # 同票同日期只归一个最强档：命中 strict 优先（strict ⊂ relaxed），
+    # 保证 two profiles 队列不重叠，前向收益统计不双重计入。
+    best = {}
+    for s in signals:
+        k = s["ts_code"]
+        if k not in best or (s["profile"] == "strict" and best[k]["profile"] != "strict"):
+            best[k] = s
+    signals = list(best.values())
     have = set()
     if os.path.exists(WATCH_F):
         with open(WATCH_F, encoding="utf-8") as f:
             for ln in f:
                 try:
                     e = json.loads(ln)
-                    have.add((e["ts_code"], e["signal_date"], e["profile"]))
+                    have.add((e["ts_code"], e["signal_date"]))
                 except Exception:
                     continue
     n_add = 0
     with open(WATCH_F, "a", encoding="utf-8") as f:
         for s in signals:
-            key = (s["ts_code"], asof, s["profile"])
+            key = (s["ts_code"], asof)
             if key in have:
                 continue
             f.write(json.dumps({
