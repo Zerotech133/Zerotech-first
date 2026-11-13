@@ -37,6 +37,19 @@ import json
 import os
 import sys
 
+# 交易日间隔工具（冷却期判定）：借 strong_ts_window_research 的日历
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+
+def R_cal_after(d0, d1, n):
+    """d0 之后第 n 个交易日是否已到 d1（None=日历不可用，调用方放行）。"""
+    try:
+        import strong_ts_window_research as _R
+        cal = _R.trade_calendar()
+        return _R.after_days(cal, d0, n) if cal else None
+    except Exception:
+        return None
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
@@ -58,7 +71,13 @@ SUP_SCHEMA = "preopen_suppressed/v1"
 SESSIONS = (("09:30", "11:30"), ("13:00", "15:00"))
 
 
-# ── 规则参数（rules_v1；改动必须 bump 并在 trades 记版本）──────────────
+# ── 规则参数（rules_v2：三层仓位架构，2026-11-13 老田仓位管理拍板）─────
+# v1→v2 变更（全部入 trades rules_version=v2，旧样本不混）：
+#   ① 三层仓位：核心仓 ≤60% / 机动仓(加仓专用) ≤30% / 现金垫 ≥10%
+#      ——解「卖A的钱买B」与「当天买当天坏」的 T+1 死锁；
+#   ② 加仓纪律：亏损不加（现价<成本不出加仓单）、金字塔每次≤5%、
+#      同票加仓冷却 2 交易日；
+#   ③ 盘中降级：当日票浮亏 ≤-5% → 封存等额现金垫 + 次日卖单最优先。
 RULES = {
     "version": "v2",
     "capital": 10_000_000.0,        # 单策略上限 1000 万
@@ -67,10 +86,20 @@ RULES = {
     "add_on_signal": True,          # 新买点加仓（用户：「加仓点且在买点上」）
     "stop_loss_pct": None,          # 硬止损（未设；用户口径=浮亏即卖）
     "lose_next_day_sell": True,     # 持有次日收盘浮亏 → 卖（不达预期）
+    # ── v2 三层仓位 ──
+    "core_cap_pct": 0.60,           # 核心仓上限 60%（首仓建仓总闸）
+    "addon_budget_pct": 0.30,       # 机动仓：加仓专用额度（累计）
+    "cash_floor_pct": 0.10,         # 现金垫：永不动用的保命钱
+    "add_step_pct": 0.05,           # 金字塔：每次加仓 ≤5%
+    "add_no_averaging_down": True,  # 亏损不加仓（现价<成本 → 拒绝加仓单）
+    "add_cooldown_days": 2,         # 同票加仓冷却 2 交易日
+    "intraday_mark_pct": -0.05,     # 当日票浮亏 -5% → 降级标记
     "audit": {
         "assumptions": "成交价=严格早于决策时刻的最后一分钟收盘价；"
-                       "浮亏即卖=不达预期；失守/下离枢=不在趋势上",
-        "falsifier": "实盘滑点>1%；口径过松/紧（后验胜率<基准）",
+                       "浮亏即卖=不达预期；失守/下离枢=不在趋势上；"
+                       "三层占比以 capital 为分母静态核算",
+        "falsifier": "实盘滑点>1%；口径过松/紧（后验胜率<基准）；"
+                     "现金垫被击穿（连续弱势日卖单>现金垫）",
         "cost_if_wrong": "训练数据污染——rules_version 必须随档",
     },
 }
@@ -321,9 +350,29 @@ def cmd_open(day=None, decision_time=None):
         if pos:
             if not RULES["add_on_signal"]:
                 continue
+            # ── v2 加仓纪律（三层仓位架构）────────────────────────
+            # ①亏损不加：现价低于持仓成本 → 拒绝（摊平是纪律禁区）
+            if RULES["add_no_averaging_down"] and price < pos["avg_cost"]:
+                print("[open] 加仓拒绝 %s：现价 %.2f < 成本 %.2f（亏损不加）"
+                      % (c, price, pos["avg_cost"]))
+                continue
+            # ②冷却期：距上次加仓 <2 交易日 → 拒绝（防同信号重复加）
+            last_add = pos.get("last_add_day")
+            if last_add:
+                try:
+                    gap_t = R_cal_after(last_add, day, RULES["add_cooldown_days"])
+                    if gap_t is None or gap_t <= 0:
+                        print("[open] 加仓拒绝 %s：冷却期内（上次 %s）"
+                              % (c, last_add))
+                        continue
+                except Exception:
+                    pass
             cur_val = pos["shares"] * price
-            add_val = min(RULES["capital"] * RULES["init_pos_pct"],
-                          cap_total - cur_val, budget)
+            # ③金字塔步长 + 单票上限 + 机动仓余额三重封顶
+            addon_used = acc.get("addon_used", 0.0)
+            addon_left = RULES["capital"] * RULES["addon_budget_pct"] - addon_used
+            add_val = min(RULES["capital"] * RULES["add_step_pct"],
+                          cap_total - cur_val, addon_left, budget)
             if add_val < price * 100:
                 continue
             shares = int(add_val / price / 100) * 100
@@ -332,7 +381,13 @@ def cmd_open(day=None, decision_time=None):
             pos["avg_cost"] = (pos["avg_cost"] * pos["shares"] + price * shares) \
                 / (pos["shares"] + shares)
             pos["shares"] += shares
+            pos["last_add_day"] = day
+            acc["addon_used"] = addon_used + shares * price
             acc["cash"] -= shares * price
+            # 现金垫不可击穿
+            if acc["cash"] < RULES["capital"] * RULES["cash_floor_pct"]:
+                print("[open] 警告：现金垫接近下限（%.0f 万）"
+                      % (acc["cash"] / 1e4))
             budget = acc["cash"]
             _append_jsonl(TRADES, {
                 "day": day, "action": "ADD", "code": c, "price": round(price, 3),
@@ -343,10 +398,16 @@ def cmd_open(day=None, decision_time=None):
             })
             print("[open] 加仓 %s +%d 股 @%.2f" % (c, shares, price))
         else:
-            val = min(RULES["capital"] * RULES["init_pos_pct"], budget)
+            # ── v2 核心仓总闸：首仓名义总市值 ≤60% capital ──
+            core_used = sum(
+                p["shares"] * p.get("avg_cost", 0)
+                for p in acc["positions"].values())
+            core_left = RULES["capital"] * RULES["core_cap_pct"] - core_used
+            val = min(RULES["capital"] * RULES["init_pos_pct"],
+                      core_left, budget)
             shares = int(val / price / 100) * 100
             if shares <= 0:
-                print("[open] 现金不足，跳过 %s" % c)
+                print("[open] 现金不足/核心仓满，跳过 %s" % c)
                 continue
             snapshot = {
                 "tier": b.get("tier"),
@@ -389,13 +450,24 @@ def cmd_review(day=None):
     px = _cur_price_map(codes) if codes else {}
 
     pending_sells = []
+    intraday_marks = []      # v2 盘中降级：当日票浮亏超阈（明日最优先卖）
     for c, pos in acc["positions"].items():
         price = px.get(c)
         if not price:
             continue
         ret = price / pos["avg_cost"] - 1
-        held_days = 1 if pos.get("opened") == day else 2  # 简化：非当日即次日+
+        # ── v2 规则⓪：当日开仓票盘中降级标记（T+1 不能卖，但记账+排序）──
+        if pos.get("opened") == day:
+            if ret <= RULES["intraday_mark_pct"]:
+                pos["degraded"] = day          # 明日 review 见此标直接最优先卖
+                intraday_marks.append((c, ret))
+            continue                           # 当日票不参与①②（T+1）
         # 规则①：持有次日收盘浮亏 → 不达预期，直接卖
+        # （昨日已被标记 degraded 的票无条件最优先——规则⓪的次日执行）
+        if pos.get("degraded") and pos.get("degraded") != day:
+            pending_sells.insert(0, {"code": c, "why":
+                                     "盘中降级（%s 浮亏触发）" % pos["degraded"]})
+            continue
         if RULES["lose_next_day_sell"] and pos.get("opened") != day and ret < 0:
             pending_sells.append({"code": c, "why":
                                   "不达预期（浮亏 %.1f%%）" % (ret * 100)})
@@ -461,6 +533,9 @@ def cmd_review(day=None):
         print("[review] 名单读取失败（保留空挂单）：%s" % str(e)[:60])
 
     _atomic_write_json(ACC, acc)
+    for c, r in intraday_marks:
+        print("[review] 盘中降级标记 %s（今日浮亏 %.1f%% ≤ -5%%，明日最优先卖）"
+              % (c, r * 100))
     print("[review] 明日卖出 %d 单：%s" % (len(pending_sells),
           "、".join(s["code"] for s in pending_sells) or "无"))
 
