@@ -235,6 +235,14 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
         return False
     if re.match(r"^[A-Z][A-Z0-9_]*=", cand):
         return False  # KEY=value 连写（如 DATABASE_URL=postgresql）是赋值片段，非密钥
+    # 2026-11-13 SCANFIX（第10轮）：上一行只认**大写开头**的 KEY=value，漏了
+    # 「小写形参=全大写常量」这种最常见的代码写法。判例：daily_check_rescue.py 里
+    # `max_tokens=MAX_TOKENS` 恰好 20 字符触顶，被当高熵密钥阻断提交（2026-11-13）。
+    # 只豁免右侧**含下划线的全大写常量**（多词常量的命名特征）；纯大写无下划线的
+    # `api_key=ABCDEFGHIJKLMNOPQRST` 仍照原规则拦截，带小写/数字/符号的真 token
+    # 也不在字符集内。放宽到"任意小写=大写"会把 20 位纯大写 key 一起放掉，故不收。
+    if re.fullmatch(r"[a-z_][a-z0-9_]*=[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+", cand):
+        return False
     if BASE64_DATA_URI_RE.search(line):
         return False  # 内嵌图片资源，非凭据
     if looks_like_identifier(cand):

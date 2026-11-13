@@ -298,10 +298,16 @@ def run(args: argparse.Namespace) -> dict:
         letter = {"dept": dept, "target": routes["departments"][dept]["target"],
                   "priority": BLOCKER if any(i["severity"] == BLOCKER for i in groups[dept]) else WARNING,
                   "n_items": len(groups[dept]), "title": title,
-                  "dedupe_key": key, "body_preview": body[:300]}
+                  "dedupe_key": key, "body_preview": body[:300],
+                  # 全文必须落台账（2026-11-13 修）：原先只有 dry 分支存 body，
+                  # 真实投递只留 300 字预览，导致两个后果——
+                  #   ① 07:00 抢险只能拿到截断文本，模型永远看不到
+                  #      「哪张表未达标」，只能给 unknown/low 的废方案（实测）；
+                  #   ② 事后审计无法还原「当时到底给部门说了什么」，违反原件可追溯。
+                  # 台账增量：每封 1~2KB，一天 3 封，一年 <2MB，可忽略。
+                  "body": body}
         if args.dry:
             letter["action"] = "DRY_RUN"
-            letter["body"] = body
         else:
             try:
                 env = internal_notify.emit(

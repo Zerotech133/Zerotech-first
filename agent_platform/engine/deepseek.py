@@ -175,12 +175,19 @@ class DeepSeekClient:
         temperature: float = 0.2,
         max_tokens: int = 800,
         response_format: Optional[dict] = None,
+        extra: Optional[dict] = None,
     ) -> dict:
         """发一轮对话，返回 ``{content, usage, model, finish_reason}``。
 
         注意（LLMDEEPSEEKFIX2 实证）：deepseek 系列为**推理模型**，响应含
         ``reasoning_content``，其 token 与正文共用 ``max_tokens`` 预算；短回复场景
         预算过小会被推理吃光而正文为空。一句话级 ≥64，结构化抽取 ≥512。
+
+        ``extra``：透传厂商扩展字段（如 ``{"reasoning_effort": "minimal"}``、
+        ``{"thinking": {"type": "disabled"}}``）。默认 None，行为与旧调用完全一致
+        ——**不要**在默认值里加任何字段，那会静默改变所有既有调用方的成本与延迟
+        （2026-11-13：抢险方案因长提示触发长推理，3000 预算被 reasoning 吃满、
+        正文为空、finish_reason=length；加 minimal 后 reasoning 降到 86 token）。
         """
         payload: dict = {
             "model": model or self.model,
@@ -191,6 +198,8 @@ class DeepSeekClient:
         }
         if response_format:
             payload["response_format"] = response_format
+        if extra:
+            payload.update(extra)
         data = self._request("POST", "/chat/completions", payload)
         try:
             choice = data["choices"][0]
@@ -213,6 +222,7 @@ class DeepSeekClient:
         temperature: float = 0.2,
         max_tokens: int = 800,
         response_format: Optional[dict] = None,
+        extra: Optional[dict] = None,
     ) -> str:
         """发一轮对话，返回 assistant 正文（需要 usage 用 chat_full）。"""
         return self.chat_full(
@@ -221,6 +231,7 @@ class DeepSeekClient:
             temperature=temperature,
             max_tokens=max_tokens,
             response_format=response_format,
+            extra=extra,
         )["content"]
 
     def models(self) -> list[str]:

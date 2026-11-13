@@ -165,3 +165,37 @@ def test_high_entropy_path_component_predicate():
     assert ss.is_high_entropy_candidate(cand, "见 %s.py 的 token" % cand) is True
     tok = "Xk9mQ2pL7vR4wZ8bN3tY"
     assert ss.is_high_entropy_candidate(tok, "token: /%s.py" % tok) is True
+
+
+# ---------------------------------------------------------------------------
+# 第10轮（2026-11-13）：小写形参 = 全大写常量
+# 判例：daily_check_rescue.py 的 `max_tokens=MAX_TOKENS` 恰好 20 字符，
+# 被 HIGH_ENTROPY 当成密钥阻断提交（pre-commit block）。
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("cand", [
+    "max_tokens=MAX_TOKENS",
+    "budget=MAX_OUT_TOKENS",
+    "limit=MAX_EVIDENCE_CHARS",
+])
+def test_kwarg_assign_upper_constant_exempt(cand):
+    """小写形参 = 含下划线的全大写常量 → 代码写法，非凭据。"""
+    assert ss.is_high_entropy_candidate(cand, "    %s, temperature=0.2," % cand) is False
+
+
+@pytest.mark.parametrize("cand,why", [
+    ("api_key=ABCDEFGHIJKLMNOPQRST", "纯大写无下划线：可能是真 key，不许豁免"),
+    ("token=Sk9mQ2pL7vR4wZ8bN3tY", "含小写：真 token 形态，不许豁免"),
+    ("secret=AbCdEfGhIjKlMnOpQrSt", "大小写混合：不许豁免"),
+])
+def test_kwarg_assign_upper_constant_boundary(cand, why):
+    """豁免必须窄：放宽成「任意小写=大写」会把 20 位纯大写 key 一起放掉。"""
+    assert ss.is_high_entropy_candidate(cand, "    %s," % cand) is True, why
+
+
+def test_max_tokens_line_no_longer_blocks(tmp_path):
+    """端到端复现提交被阻断的那一行。"""
+    content = ("        res = client.chat_full(\n"
+               "            msgs, max_tokens=MAX_TOKENS, temperature=0.2,\n"
+               "        )\n")
+    hits = [h for h in _hits(tmp_path, content) if h[1] == "HIGH_ENTROPY"]
+    assert hits == [], "该行不应再命中 HIGH_ENTROPY：%r" % (hits,)

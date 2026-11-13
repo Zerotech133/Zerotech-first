@@ -14,6 +14,8 @@
 # 不做的事：不注册自身、不改系统配置。注册见 install_daily_check_task.ps1
 # 顶部的五要素说明（系统级变更需老田批准）。
 param(
+    [ValidateSet('check', 'rescue')]
+    [string]$Phase = 'check',
     [switch]$WhatIf,
     [switch]$Dry,
     [string]$Date = '',
@@ -26,7 +28,9 @@ $T0 = Get-Date
 function Write-Launch([string]$kind, [hashtable]$extra) {
     try {
         $o = [ordered]@{
-            schema = 'launch/v1'; kind = $kind; task = 'daily_check_0530'
+            schema = 'launch/v1'; kind = $kind
+            task = $(if ($Phase -eq 'rescue') { 'preopen_rescue_0700' } else { 'preopen_check_0530' })
+            phase = $Phase
             ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
             day = (Get-Date).ToString('yyyyMMdd')
             pid = $PID; host = $env:COMPUTERNAME; user = $env:USERNAME
@@ -50,13 +54,19 @@ $ErrorActionPreference = 'Continue'
 
 $py = 'C:\Program Files\Python311\python.exe'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$tag   = 'check_0530'
 $entry = Join-Path $root 'tools\preopen\daily_check_dispatch.py'
+if ($Phase -eq 'rescue') {
+    $tag   = 'rescue_0700'
+    $entry = Join-Path $root 'tools\preopen\daily_check_rescue.py'
+}
 
 function Write-Log([string]$msg) {
     ((Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + ' ' + $msg) | Out-File $Log -Append -Encoding utf8
 }
 
 if ($WhatIf) {
+    Write-Output "phase = $Phase"
     Write-Output "py    = $py"
     Write-Output "root  = $root"
     Write-Output "entry = $entry"
@@ -67,7 +77,7 @@ if ($WhatIf) {
     exit 0
 }
 
-Write-Log "=== daily_check_0530 start (Dry=$Dry Date=$Date) ==="
+Write-Log "=== daily_$tag start (Dry=$Dry Date=$Date) ==="
 
 if (-not (Test-Path $entry)) {
     Write-Log "FATAL entry not found: $entry"
@@ -83,7 +93,7 @@ if ($Date) { $argv += @('--date', $Date) }
 $out = & $py @argv 2>&1
 $rc = $global:LASTEXITCODE
 $out | Out-File $Log -Append -Encoding utf8
-Write-Log "=== daily_check_0530 end 业务rc=$rc ==="
+Write-Log "=== daily_$tag end 业务rc=$rc ==="
 
 if ($rc -eq 0) {
     Write-Launch 'end' @{ rc = 0; ts_rc = 0; stage = 'done'
