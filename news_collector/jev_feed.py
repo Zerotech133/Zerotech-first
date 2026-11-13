@@ -637,6 +637,47 @@ def judge_pending(kind, cap, dryrun=False):
 CAP_HIT_ALERT_ENV = "JEV_CAP_HIT_ALERT"  # 缺省开；=0 关告警（排障用）
 
 
+def _write_run(ok_flag, detail, new_count=0, dryrun=False, run_id=None):
+    """写 runs：run_id=None 插新行，否则更新该行。返回行 id（dryrun 返回 None）。
+
+    2026-11-13 B 案配套。原实现只在 main 收尾写一条 runs，而水位（wm）就存在
+    这条记录的 detail 里 —— 判读阶段若被计划任务超时强杀，收尾根本不执行，
+    水位不推进，下轮重拉同一批。11-12 实证：runs 表里 11-12 那轮零记录，
+    最新 ok=1 停在 11-11 21:00，而进程在 00:00 被 PT3H 强杀。
+    故改为：采集阶段结束先插一条（水位立即固化），判读结束再 UPDATE 同一行。
+    行数不增；正常完成时 ok/new_count/detail 语义与改动前一致；被强杀时至少
+    留下 phase="feed" 且 wm 已推进的记录。
+
+    写库失败只降级告警、不抛：采集已完成，不该因为记账写不进去而整轮崩掉。
+    """
+    if dryrun:
+        return None
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    payload = json.dumps(detail, ensure_ascii=False)
+    try:
+        db = sqlite3.connect(DB)
+        try:
+            if run_id is None:
+                cur = db.execute(
+                    "INSERT INTO runs(kind, ts, ok, new_count, push_count, detail) "
+                    "VALUES (?,?,?,?,0,?)",
+                    (FEED_KIND, ts, 1 if ok_flag else 0, int(new_count or 0), payload),
+                )
+                db.commit()
+                return cur.lastrowid
+            db.execute(
+                "UPDATE runs SET ts=?, ok=?, new_count=?, detail=? WHERE id=?",
+                (ts, 1 if ok_flag else 0, int(new_count or 0), payload, run_id),
+            )
+            db.commit()
+            return run_id
+        finally:
+            db.close()
+    except Exception as e:  # noqa: BLE001
+        print("  WARN runs 写入失败（不影响采集结果）：%s" % str(e)[:120])
+        return run_id
+
+
 def _cap_hit_handle(summary, kind, n_ins, n_fetched, cap, dryrun=False):
     """P0 RFC 方案①（修订版）R5 止血：截断轮显式化，只做信号、不动水位策略。
 
@@ -704,7 +745,15 @@ def main(argv=None):
         print(line)
         print(line, file=sys.stderr)
 
-    for alias, kind in [("news", "news"), ("notice", "notice")]:
+    kinds = [("news", "news"), ("notice", "notice")]
+    # ── 阶段一：采集（两源全采完才进判读）──────────────────────────────
+    # 2026-11-13 老田裁定 B 案。原实现「采一源 → 立刻判一源」，而判读是小时级
+    # 的（单并发 ollama），news 一顿判读就能把计划任务的 PT3H 吃满，notice
+    # 连抓都没抓到。11-12 实证：21:00:11 落完 news 500 条后再无任何输出，
+    # 00:00 被强杀，notice 0 条入库。
+    # 采集是十秒级的、判读是小时级的 —— 先保采集入库，判读能判多少算多少。
+    t_feed = time.time()
+    for alias, kind in kinds:
         max_date = None  # 展示口径（v2 用 new_wm["date"]，见下）
         if wm_v2:
             n_ins, n_fetched, new_wm, err = feed_source_v2(
@@ -768,6 +817,29 @@ def main(argv=None):
             "  %s <- %s: inserted=%d fetched=%d max=%s"
             % (kind, alias, n_ins, n_fetched, max_date or "-")
         )
+    feed_secs = time.time() - t_feed
+    print(
+        "=== 采集阶段完成：%s，合计 inserted=%d，%.1fs ==="
+        % (
+            " / ".join(
+                "%s=%d" % (k, summary["src"].get(k, {}).get("inserted", 0))
+                for _, k in kinds
+            ),
+            total_ins,
+            feed_secs,
+        )
+    )
+    # 采集即固化水位：判读阶段可能被超时强杀，收尾写库等不到（见 _write_run）。
+    run_id = _write_run(
+        (not errors),
+        dict(summary, phase=("dryrun" if args.dryrun else "feed")),
+        new_count=total_ins,
+        dryrun=args.dryrun,
+    )
+    # ── 阶段二：判读（与采集同序）──────────────────────────────────────
+    t_judge = time.time()
+    for _, kind in kinds:
+        summary["src"].setdefault(kind, {})
         jr = judge_pending(kind, args.cap, dryrun=args.dryrun)
         if jr.get("skipped_night"):
             summary["src"][kind]["judge_skipped_night"] = True
@@ -784,26 +856,26 @@ def main(argv=None):
             )
         if jr["error"]:
             _fail(kind, "judge", jr["error"])
+    judge_secs = time.time() - t_judge
+    print(
+        "=== 判读阶段完成：%s，合计 judged=%d，%.1fs（采集 %.1fs + 判读 %.1fs）==="
+        % (
+            " / ".join(
+                "%s=%d" % (k, summary["src"].get(k, {}).get("judged", 0))
+                for _, k in kinds
+            ),
+            sum(summary["src"].get(k, {}).get("judged", 0) for _, k in kinds),
+            judge_secs,
+            feed_secs,
+            judge_secs,
+        )
+    )
     if args.dryrun:
         print("DRYRUN 结束，未写库。")
         return 0
     ok = not errors
-    db = sqlite3.connect(DB)
-    try:
-        db.execute(
-            "INSERT INTO runs(kind, ts, ok, new_count, push_count, detail) "
-            "VALUES (?,?,?,?,0,?)",
-            (
-                FEED_KIND,
-                datetime.now().strftime("%Y-%m-%d %H:%M"),
-                1 if ok else 0,
-                total_ins,
-                json.dumps(summary, ensure_ascii=False),
-            ),
-        )
-        db.commit()
-    finally:
-        db.close()
+    summary["phase"] = "done"
+    _write_run(ok, summary, new_count=total_ins, run_id=run_id)
     if ok:
         print(
             "FEED done inserted=%d wm=%s %.1fs"
