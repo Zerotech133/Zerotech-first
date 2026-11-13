@@ -35,6 +35,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import sys
 
 # 交易日间隔工具（冷却期判定）：借 strong_ts_window_research 的日历
@@ -114,8 +115,14 @@ SESSIONS = (("09:30", "11:30"), ("13:00", "15:00"))
 #   ⑧ 早盘触发早于 09:30 时明确报错（当天无可见分钟价），不再静默零成交；
 #   ⑨ 交易日历门（ts_trade_cal，覆盖未来）：周末/节假日 SKIP，
 #      不判定、不写账户、不写流水，防止非交易日净值点污染训练样本。
+# v2.3（2026-11-14 名单时序倒挂 A+B，非策略参数变更；样本单独分档）：
+#   ⑩ 挂单逐单带 list_generated_at / list_basis_date，生成逻辑统一到
+#      build_buy_orders()（review 与存量重建共用）；
+#   ⑪ open 执行前按「基准日」硬判倒挂（缺时点/基准落后 → 拒绝成交），
+#      周末重跑刷新 generated_at 但基准不变，不误杀；
+#   ⑫ signal 快照只读挂单自带时点，不再读 live 名单，杜绝归因错标。
 RULES = {
-    "version": "v2.2",
+    "version": "v2.3",
     "capital": 10_000_000.0,        # 单策略上限 1000 万
     "init_pos_pct": 0.05,           # 首仓 5%
     "max_pos_pct": 0.30,            # 加仓后单票上限 30%
@@ -140,11 +147,14 @@ RULES = {
                        "故除权日账面 pnl 与复权收益率可能不一致，卖出决策"
                        "以后者为准；复权因子取 <=day 最后可得日，缺数据回退"
                        "原始口径（fail-open）；卖出与买入须隔夜分离——"
-                       "同一次 open 卖出的票当日不买回（换股护栏）",
+                       "同一次 open 卖出的票当日不买回（换股护栏）；"
+                       "隔夜挂单与 signal 快照必须来自同一份名单（基准日）",
         "falsifier": "实盘滑点>1%；口径过松/紧（后验胜率<基准）；"
                      "现金垫被击穿（连续弱势日卖单>现金垫）；"
                      "除权日出现假浮亏卖单（查 trades 的 adj_asof 字段）；"
-                     "同一 open 内出现同票 SELL 后 BUY（查 rebound_blocked_last）",
+                     "同一 open 内出现同票 SELL 后 BUY（查 rebound_blocked_last）；"
+                     "BUY 的 signal.picks_generated 与挂单来源档不一致"
+                     "（查 list_basis_date / pending_buys_meta）",
         "cost_if_wrong": "训练数据污染——rules_version 必须随档",
     },
 }
@@ -427,12 +437,45 @@ def cmd_open(day=None, decision_time=None):
         return 0
 
     acc = load_account()
-    picks = json.load(open(os.path.join(HERE, "..", "portal", "data",
-                                        "todays_picks.json"),
-                           encoding="utf-8"))
+    try:
+        picks = _load_live_picks()
+    except Exception as e:  # noqa: BLE001
+        print("[open] 警告：live 名单不可读（%s），跳过倒挂硬判；"
+              "挂单时点仍逐单留痕" % str(e)[:60])
+        picks = {}
     # 1) 执行隔夜卖出单（价=决策时点可见价）
     sells = [s["code"] for s in acc.get("pending_sells") or []]
     orders = acc.get("pending_buys") or []
+    # ── v2.3 名单时点契约：防名单时序倒挂复发 ────────────────────────
+    # 11-13 实锤：存量 12 单来自 11-12 名单，open 却用 11-13 live 名单
+    # 写 signal 快照 → 票与快照不是同一份名单，训练样本归因错。
+    live_g, live_basis, live_src = _picks_meta(picks)
+    if orders:
+        missing = [b["code"] for b in orders if not b.get("list_basis_date")]
+        if missing:
+            raise RuntimeError(
+                "[BLOCK] %d 单挂单缺 list_basis_date（旧口径/人工注入），"
+                "无法证明名单未倒挂：%s；请重跑 review 重建挂单"
+                % (len(missing), "、".join(missing[:5])))
+        if live_basis:
+            # 只在 live 基准可信（来自 trade_basis 或本身是交易日）时硬判；
+            # 周末重跑/行情湖不可达会让 generated_at 漂移，不能据此误杀。
+            live_ok = (live_src == "trade_basis"
+                       or is_trading_day(live_basis)[0])
+            if live_ok:
+                stale = sorted({b["list_basis_date"] for b in orders
+                                if b["list_basis_date"] < live_basis})
+                if stale:
+                    raise RuntimeError(
+                        "[BLOCK] 挂单基准日 %s 落后于当前名单 %s（名单时序倒挂），"
+                        "拒绝成交；请重跑 review 生成挂单"
+                        % ("、".join(stale), live_basis))
+            else:
+                print("[open] 名单基准 %s 非交易日/回退口径，跳过倒挂硬判（只告警）"
+                      % live_basis)
+        if any(b.get("list_generated_at") != live_g for b in orders):
+            print("[open] 提示：live 名单时点 %s 与挂单不同，但基准日一致，"
+                  "按同基准放行；signal 快照一律按挂单自带时点记账" % live_g)
     # v2.1 T2 通道收口（open 侧二次护栏）：挂单是昨晚生成的，可能来自
     # 旧口径/人工注入，执行前再过一次闸，绝不把无买点抬层票买进来。
     if RULES["require_chanlun_buy"] and orders:
@@ -568,12 +611,18 @@ def cmd_open(day=None, decision_time=None):
             if shares <= 0:
                 print("[open] 现金不足/核心仓满，跳过 %s" % c)
                 continue
+            # v2.3：signal 快照一律读「挂单自带的名单时点」，绝不读 live。
+            # 否则名单时序倒挂时会出现「票来自 A 名单、快照标 B 名单」，
+            # 字段齐全看着自洽、内容却是错的（最隐蔽的训练数据污染）。
+            ometa = acc.get("pending_buys_meta") or {}
             snapshot = {
                 "tier": b.get("tier"),
                 "sources": b.get("sources"),
-                "risk_gate": picks.get("risk_gate"),
-                "picks_generated": picks.get("generated_at"),
-                "basis": picks.get("trade_basis"),
+                "risk_gate": ometa.get("risk_gate"),
+                "picks_generated": b.get("list_generated_at"),
+                "basis": ometa.get("trade_basis") or b.get("list_basis_date"),
+                "list_basis_date": b.get("list_basis_date"),
+                "list_basis_source": b.get("list_basis_source"),
                 "chanlun_buy": has_chanlun_buy(b),   # v2.1 通道闸门留痕
             }
             af_buy, af_asof = adjm.get(c) or (None, None)
@@ -605,6 +654,86 @@ def cmd_open(day=None, decision_time=None):
 
 
 # ── 盘后评审：不达预期判定 + 明日卖出清单 + 次日买入挂单 ─────────────
+# ── v2.3 名单时点契约（名单时序倒挂防复发）────────────────────────────
+# 倒挂定义：隔夜挂单来自「旧基准日」的名单，open 却拿实时 live 名单写
+# signal 快照 → 票来自 A 名单、快照标 B 名单，字段齐全但归因错。
+# 判据用 trade_basis 的基准日（周末重跑不变），不用 generated_at 时间戳：
+# TodaysPicks 周末照跑会刷新 generated_at，但基准日仍是上个交易日。
+def _picks_meta(picks):
+    """抽名单 (generated_at, basis_date, basis_source)。
+
+    basis_date 优先取 trade_basis 里的 YYYY-MM-DD（行情湖基准日）；
+    行情湖不可达时 trade_basis 无日期，才回退 generated_at 的日期，
+    并标 source=generated_at_fallback，供 open 决定是否硬判倒挂。
+    """
+    g = str(picks.get("generated_at") or "")
+    b = str(picks.get("trade_basis") or "")
+    m = re.search(r"(20\d{2})-(\d{2})-(\d{2})", b)
+    if m:
+        return g, "".join(m.groups()), "trade_basis"
+    m = re.search(r"(20\d{2})-(\d{2})-(\d{2})", g)
+    return (g, "".join(m.groups()) if m else "", "generated_at_fallback")
+
+
+def _load_live_picks():
+    """当前 live 名单（open 做倒挂校验用，不用于写 signal 快照）。"""
+    return json.load(open(os.path.join(HERE, "..", "portal", "data",
+                                      "todays_picks.json"), encoding="utf-8"))
+
+
+def build_buy_orders(picks, acc, day):
+    """从名单构造隔夜买入挂单（首仓 + 加仓），逐单带名单时点契约。
+
+    cmd_review 与「存量挂单重建」共用同一份实现，杜绝两套口径。
+    返回 (orders, gate, meta)；meta 落 acc["pending_buys_meta"]。
+    """
+    g, basis, bsrc = _picks_meta(picks)
+    t2 = [s for s in picks.get("stocks") or [] if s.get("tier") == "T2"]
+    if RULES["require_chanlun_buy"]:
+        t2, rejected = gate_t2(t2)
+        gate = gate_report(t2, rejected)
+    else:
+        rejected, gate = [], {"applied": False}
+    if rejected:
+        print("[review] T2 通道收口：%d→%d 单（剔除 %d：%s）"
+              % (gate["t2_in"], gate["t2_kept"], len(rejected),
+                 "、".join(r["why"] for r in rejected[:3])))
+    meta = {
+        "generated_at": g, "basis_date": basis, "basis_source": bsrc,
+        "trade_basis": str(picks.get("trade_basis") or ""),
+        "risk_gate": picks.get("risk_gate"),
+        "built_for_day": day,
+    }
+    pb, add_sigs = [], []
+    for s in t2:
+        sig = {
+            "code": s["code"], "name": s.get("name"), "tier": "T2",
+            "sources": [{"s": x.get("s"), "tag": x.get("tag"),
+                         "dt": x.get("dt")}
+                        for x in s.get("sources") or []
+                        if isinstance(x, dict)],
+            "list_generated_at": g,
+            "list_basis_date": basis,
+            "list_basis_source": bsrc,
+        }
+        if s["code"] in acc["positions"]:
+            add_sigs.append(sig)   # 加仓挂单：open 的 pos 分支消费
+        else:
+            pb.append(sig)
+    rg = picks.get("risk_gate") or {}
+    meta["weak_day"] = bool(rg.get("weak_day"))
+    if meta["weak_day"]:
+        print("[review] 弱势日：明日建仓名单仅保留前 6 只（半仓试错）")
+        pb = pb[:6]
+    sup = load_suppression(day)
+    meta["suppressed"] = bool(sup)
+    if sup:
+        print("[review] 抑制日：不生成买入挂单（止损卖出判定保留，只减敞口不造信号）")
+        pb, add_sigs = [], []
+    meta["n_orders"] = len(pb) + len(add_sigs)
+    return pb + add_sigs, gate, meta
+
+
 def cmd_review(day=None):
     acc = load_account()
     day = _resolve_day(day)
@@ -675,51 +804,17 @@ def cmd_review(day=None):
 
     acc["pending_sells"] = pending_sells
 
-    # 次日买入挂单：今日名单 T2（若今日已过开盘，名单已在 open 消费——
-    # review 生成的是「明早执行」的挂单，来源=今晚 18:20 生成的新名单。
-    # 白天手动跑 review 时读到的还是昨夜名单 → 这里挂单留给明早 open。
+    # 次日买入挂单：来源是「今晚 18:20 生成的新名单」（18:25 review 晚于
+    # 名单生成，名单时序倒挂的调度层已收口）。v2.3 起逐单带名单时点契约，
+    # 生成逻辑与「存量挂单重建」共用 build_buy_orders()，杜绝两套口径。
     try:
-        picks = json.load(open(os.path.join(HERE, "..", "portal", "data",
-                                            "todays_picks.json"),
-                               encoding="utf-8"))
-        t2 = [s for s in picks.get("stocks") or [] if s.get("tier") == "T2"]
-        # v2.1 T2 通道收口：剔除「无 chanlun 买点、靠 strong/qpzm 单独抬层」
-        # 回算该通道 T+5 -7.61%(n=19, 胜率16%)，是 T2 最大毒源。
-        # 对首仓单与加仓单一视同仁（加仓同样要求「在买点上」）。
-        if RULES["require_chanlun_buy"]:
-            t2, rejected = gate_t2(t2)
-            gate = gate_report(t2, rejected)
-        else:
-            rejected, gate = [], {"applied": False}
+        picks = _load_live_picks()
+        orders, gate, ometa = build_buy_orders(picks, acc, day)
         acc["t2_gate_last"] = gate
-        if rejected:
-            print("[review] T2 通道收口：%d→%d 单（剔除 %d：%s）"
-                  % (gate["t2_in"], gate["t2_kept"], len(rejected),
-                     "、".join(r["why"] for r in rejected[:3])))
-        pb = []
-        add_sigs = []      # 已持仓票的新买点信号 → 次日 open 走加仓分支
-        for s in t2:
-            held = s["code"] in acc["positions"]
-            sig = {"code": s["code"], "name": s.get("name"), "tier": "T2",
-                   "sources": [{"s": x.get("s"), "tag": x.get("tag"),
-                                "dt": x.get("dt")}
-                               for x in s.get("sources") or []
-                               if isinstance(x, dict)]}
-            if held:
-                add_sigs.append(sig)   # 加仓挂单：open 的 pos 分支消费
-                continue
-            pb.append(sig)
-        # 弱势日仓位减半建仓（盘面联动；rules_v1 口径）
-        rg = picks.get("risk_gate") or {}
-        if rg.get("weak_day"):
-            print("[review] 弱势日：明日建仓名单仅保留前 6 只（半仓试错）")
-            pb = pb[:6]
-        sup = load_suppression(day)
-        if sup:
-            print("[review] 抑制日：不生成买入挂单（止损卖出判定保留，只减敞口不造信号）")
-            pb = []
-            add_sigs = []   # 加仓同样是买入指令，抑制日一律不发
-        acc["pending_buys"] = pb + add_sigs   # 首仓单+加仓单（open 分支区分）
+        acc["pending_buys"] = orders
+        acc["pending_buys_meta"] = ometa
+        print("[review] 隔夜挂单 %d 单（名单 %s / 基准日 %s）"
+              % (len(orders), ometa["generated_at"], ometa["basis_date"]))
     except Exception as e:  # noqa: BLE001
         print("[review] 名单读取失败（保留空挂单）：%s" % str(e)[:60])
 

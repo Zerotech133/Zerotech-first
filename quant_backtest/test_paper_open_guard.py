@@ -24,6 +24,10 @@ def _src(tag):
 
 
 def _setup(tmp_path, monkeypatch):
+    # v2.3 起挂单必须带名单时点契约；缺字段的旧挂单会被 open 硬拒。
+    g = "%s-%s-%s 18:20:16" % (DAY[:4], DAY[4:6], DAY[6:])
+    stamp = {"list_generated_at": g, "list_basis_date": DAY,
+             "list_basis_source": "trade_basis"}
     acc = {
         "created": "test", "cash": 9_000_000.0, "realized_pnl": 0.0,
         "addon_used": 0.0,
@@ -39,12 +43,23 @@ def _setup(tmp_path, monkeypatch):
             {"code": "B.SZ", "name": "B", "tier": "T2", "sources": _src("3买")},
             {"code": "C.SZ", "name": "C", "tier": "T2", "sources": _src("3买")},
         ],
+        "pending_buys_meta": {
+            "generated_at": g, "basis_date": DAY,
+            "trade_basis": "%s-%s-%s 收盘（测试）" % (DAY[:4], DAY[4:6], DAY[6:]),
+            "risk_gate": {"weak_day": True},
+        },
     }
+    for b in acc["pending_buys"]:
+        b.update(stamp)
     monkeypatch.setattr(P, "ACC", str(tmp_path / "account.json"))
     monkeypatch.setattr(P, "TRADES", str(tmp_path / "trades.jsonl"))
     monkeypatch.setattr(P, "EQUITY", str(tmp_path / "equity.jsonl"))
     monkeypatch.setattr(P, "load_suppression", lambda day: None)
     monkeypatch.setattr(P, "adj_factors", lambda codes, day: {})
+    monkeypatch.setattr(P, "_load_live_picks", lambda: {
+        "generated_at": g,
+        "trade_basis": acc["pending_buys_meta"]["trade_basis"],
+        "risk_gate": {"weak_day": True}, "stocks": []})
 
     def fake_px(codes, day, decision_time):
         return {c: {"price": 10.0, "name": "", "price_source": "unit_test",
@@ -65,8 +80,8 @@ def _trades():
     return out
 
 
-def test_rules_version_v22():
-    assert P.RULES["version"] == "v2.2"
+def test_rules_version_v23():
+    assert P.RULES["version"] == "v2.3"
 
 
 def test_sold_stock_never_rebought_same_open(tmp_path, monkeypatch):
@@ -82,7 +97,7 @@ def test_sold_stock_never_rebought_same_open(tmp_path, monkeypatch):
     assert acc["rebound_blocked_last"]["codes"] == ["A.SZ"]
     assert acc["rebound_blocked_last"]["why"] == "same_day_sell_then_buy"
     assert len(acc["pending_buys"]) == 0 and len(acc["pending_sells"]) == 0
-    assert all(t["rules"] == "v2.2" for t in acts)
+    assert all(t["rules"] == "v2.3" for t in acts)
 
 
 def test_preopen_decision_is_actionable_error(tmp_path, monkeypatch):
