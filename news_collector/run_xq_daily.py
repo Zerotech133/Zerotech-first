@@ -26,7 +26,9 @@ except Exception as _e:  # noqa: BLE001
     print("[registry_guard] WARN 自检跳过: %s" % str(_e)[:120], flush=True)
 
 os.chdir(HERE)
-sys.argv = ["xq_stock_timeline.py", "--queue", "all", "--pages", "1"]
+# --order mtime：最久未刷新优先。根治「尾部饥饿」——固定队头 + 中途中断 = 队尾永远轮不到
+# （11-12 尾部 136 只 48h 未刷新）。该模式不启用游标：未采到的票 mtime 仍旧，下轮自动排前。
+sys.argv = ["xq_stock_timeline.py", "--queue", "all", "--pages", "1", "--order", "mtime"]
 try:
     runpy.run_path(os.path.join(HERE, "xq_stock_timeline.py"), run_name="__main__")
     print("===== rc=0 =====", flush=True)

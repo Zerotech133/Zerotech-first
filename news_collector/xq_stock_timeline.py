@@ -272,6 +272,28 @@ def _save_cursor(last_code, scope, sources, queue_len, rnd, quota, done):
         pass
 
 
+def order_by_staleness(codes, data_dir=None):
+    """按本地数据文件的新鲜度排序：最久未刷新的排最前，从未采集的排更前。
+
+    目的：撞墙时先采「最欠刷新」的票，而不是固定从队头开始——固定队头 + 中途中断，
+    尾部就永远轮不到（11-12 尾部 136 只 48h 未刷新的成因）。
+
+    与游标的关系：排序模式天然表达断点——没采到的票 mtime 仍是旧的，下一轮自动排前，
+    因此该模式下**不启用游标旋转**，避免两套顺序互相打架。
+
+    排序是稳定的：mtime 相同（如同一轮同时写入）时保持队列原序。
+    """
+    d = data_dir or OUT_DIR
+
+    def key(code):
+        try:
+            return os.path.getmtime(os.path.join(d, "%s.jsonl" % code))
+        except OSError:
+            return 0.0          # 无文件 = 从未采过，排最前
+
+    return sorted(codes, key=key)
+
+
 def rotate_from(codes, last_code):
     """把顺序队列旋转成「上次结束处之后」开头。
 
@@ -396,6 +418,9 @@ def main():
                     help="不读旧游标（本轮顺序照常），用于名单大改后重排")
     ap.add_argument("--plan-only", action="store_true",
                     help="只打印本轮解析出的顺序/配额/游标，不启浏览器（验配置用）")
+    ap.add_argument("--order", choices=["default", "mtime"], default="default",
+                    help="队列顺序：default=固定顺序+断点游标；"
+                         "mtime=最久未刷新优先（该模式不启用游标，顺序本身即断点）")
     args = ap.parse_args()
     scope, src_key, cursor_on, rnd, queue_len = "", "", False, 1, 0
     if args.codes:
@@ -408,6 +433,11 @@ def main():
         base = load_queue(scope, sources=src_list or None)
         queue_len = len(base)
         cursor_on = not args.no_cursor
+        if args.order == "mtime":
+            base = order_by_staleness(base)
+            cursor_on = False
+            print("[xq_tl] 顺序=最久未刷新优先（%d 只）；该模式不启用游标——"
+                  "未采到的票 mtime 仍旧，下轮自动排前" % len(base), flush=True)
         cur = {} if args.reset_cursor else _load_cursor(scope, src_key)
         # 游标按 (scope, sources) 分域：全量轮与分片轮的断点互不串味
         if cursor_on and cur and cur.get("scope") == scope \

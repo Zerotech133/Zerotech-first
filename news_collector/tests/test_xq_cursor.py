@@ -248,3 +248,51 @@ def test_interval_is_bounded_so_run_cannot_drag_forever():
     assert m.SESSION_MIN_SAMPLES < 666
 
 
+# ---------------------------------------------------- 最久未刷新优先（mtime 排序）
+# 动机：固定队头 + 中途中断 = 尾部永远轮不到（11-12 尾部 136 只 48h 未刷新）。
+# 排序模式用数据本身表达断点：没采到的票 mtime 仍旧，下轮自动排前，不需要游标。
+
+
+def test_order_by_staleness_puts_never_collected_first(tmp_path):
+    codes = ["600000", "600001", "600002"]
+    for c, ts in (("600001", 3000), ("600002", 1000)):
+        p = tmp_path / ("%s.jsonl" % c)
+        p.write_text("{}\n", encoding="utf-8")
+        os.utime(str(p), (ts, ts))
+    ordered = m.order_by_staleness(codes, str(tmp_path))
+    assert ordered[0] == "600000"       # 无文件 = 从未采过，最前
+    assert ordered[1] == "600002"       # 更旧
+    assert ordered[2] == "600001"
+
+
+def test_order_by_staleness_is_stable_for_equal_mtime(tmp_path):
+    """同一轮同时写入会得到相同 mtime，此时必须保持队列原序，不能随机打乱。"""
+    codes = ["600000", "600001", "600002", "600003"]
+    for c in codes:
+        p = tmp_path / ("%s.jsonl" % c)
+        p.write_text("{}\n", encoding="utf-8")
+        os.utime(str(p), (2000, 2000))
+    assert m.order_by_staleness(codes, str(tmp_path)) == codes
+
+
+def test_order_by_staleness_is_lossless(tmp_path):
+    codes = ["600000", "600001", "600002", "300001", "920001"]
+    (tmp_path / "920001.jsonl").write_text("{}\n", encoding="utf-8")
+    ordered = m.order_by_staleness(codes, str(tmp_path))
+    assert sorted(ordered) == sorted(codes)
+    assert len(ordered) == len(codes)
+
+
+def test_staleness_order_self_rotates_without_cursor(tmp_path):
+    """采完最旧的几只后它们自动排到队尾——这正是「不启用游标」也安全的依据。"""
+    codes = ["A1", "A2", "A3", "A4"]
+    for i, c in enumerate(codes):
+        p = tmp_path / ("%s.jsonl" % c)
+        p.write_text("{}\n", encoding="utf-8")
+        os.utime(str(p), (1000 + i * 100, 1000 + i * 100))
+    assert m.order_by_staleness(codes, str(tmp_path)) == ["A1", "A2", "A3", "A4"]
+    for c in ("A1", "A2"):
+        os.utime(str(tmp_path / ("%s.jsonl" % c)), (9999, 9999))
+    assert m.order_by_staleness(codes, str(tmp_path)) == ["A3", "A4", "A1", "A2"]
+
+
