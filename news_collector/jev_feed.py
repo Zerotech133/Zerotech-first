@@ -60,6 +60,17 @@ WM_V2_MAX_PAGES = 40  # 单源单轮分页安全阀（cap=500 → 单轮至多 2
 # 应急开关：JEV_FEED_FORCE_JUDGE=1 强制判读。
 NIGHT_GUARD_START_MIN = 21 * 60 + 45  # 21:45
 NIGHT_GUARD_END_MIN = 7 * 60 + 5  # 07:05（不含）
+
+# ── 2026-11-13 A 案（老田裁定）：白天让位，jev_feed 不在门禁/盘中窗口判读 ──
+# 背景：单并发 ollama（NUM_PARALLEL=1）下，jev_feed 自 07:05 起持续判读会把队列占满，
+# 门禁 jev_gate 的判定请求排不上 → 11-13 07:21–07:23 连续三次 60s 超时、regime 降级放行。
+# 修法：盘前门禁窗口 + 交易时段（默认工作日 07:05–15:05）jev_feed 只拉数不判读，
+# 未判行留 jev IS NULL 由 JevNight 夜间统一判（与夜窗守卫同一语义：数据不丢）。
+# 开关：JEV_FEED_DAY_GUARD=0 关闭；JEV_FEED_DAY_GUARD_WINDOW="0705-1505" 改窗口；
+# 应急：JEV_FEED_FORCE_JUDGE=1 强制判读（与夜窗守卫共用同一应急开关）。
+DAY_GUARD_ENV = "JEV_FEED_DAY_GUARD"
+DAY_GUARD_WINDOW_ENV = "JEV_FEED_DAY_GUARD_WINDOW"
+DAY_GUARD_DEFAULT_WINDOW = "0705-1505"
 NIGHT_PAUSE_FLAG = r"C:\Temp\k266_m3.pause"
 NIGHT_LOCK = os.environ.get(
     "JEV_NIGHT_LOCK_PATH",
@@ -80,6 +91,35 @@ def _in_night_window(now=None):
     if minutes >= NIGHT_GUARD_START_MIN or minutes < NIGHT_GUARD_END_MIN:
         return True
     return os.path.exists(NIGHT_PAUSE_FLAG) or os.path.exists(NIGHT_LOCK)
+
+
+def _day_guard_window():
+    """解析 JEV_FEED_DAY_GUARD_WINDOW（HHMM-HHMM），非法回默认窗口。"""
+    raw = (os.environ.get(DAY_GUARD_WINDOW_ENV) or DAY_GUARD_DEFAULT_WINDOW).strip()
+    m = re.match(r"^(\d{3,4})-(\d{3,4})$", raw)
+    if not m:
+        raw = DAY_GUARD_DEFAULT_WINDOW
+        m = re.match(r"^(\d{3,4})-(\d{3,4})$", raw)
+    a, b = int(m.group(1)), int(m.group(2))
+    return (a // 100) * 60 + a % 100, (b // 100) * 60 + b % 100
+
+
+def _in_day_guard(now=None):
+    """是否处于白天让位窗口（默认工作日 07:05–15:05）。
+
+    True = 本轮只拉数不判读，未判行留 jev IS NULL 给 JevNight（与夜窗守卫同语义）。
+    默认开启；JEV_FEED_DAY_GUARD=0 关闭；JEV_FEED_FORCE_JUDGE=1 强制判读。
+    """
+    if os.environ.get("JEV_FEED_FORCE_JUDGE") == "1":
+        return False
+    if os.environ.get(DAY_GUARD_ENV) == "0":
+        return False
+    now = now or datetime.now()
+    if now.weekday() >= 5:  # 周末门禁/盘中链路不跑，不设让位
+        return False
+    start, end = _day_guard_window()
+    minutes = now.hour * 60 + now.minute
+    return start <= minutes < end
 
 
 def _xd_id(kind, url, title):
@@ -464,6 +504,16 @@ def judge_pending(kind, cap, dryrun=False):
             "留待夜批判读" % kind
         )
         res["pref_skipped"] += _night_prefilter(kind, cap)
+        return res
+    if not dryrun and _in_day_guard():
+        # 2026-11-13 A 案：白天让位。只拉数不判读，不跑 _night_prefilter——
+        # 规则粗筛写的是 neutral，白天不该用它顶替夜间 LLM 判读（降质）。
+        res["skipped_day"] = True
+        print(
+            "  SKIP judge %s: 白天让位窗口（%s，ollama 让给门禁/盘中链路）；"
+            "留待 JevNight 判读"
+            % (kind, os.environ.get(DAY_GUARD_WINDOW_ENV) or DAY_GUARD_DEFAULT_WINDOW)
+        )
         return res
     db = sqlite3.connect(DB)
     try:

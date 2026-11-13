@@ -203,8 +203,13 @@ def _jev_ask_ollama(state: str, questions: dict) -> dict:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
+    # 2026-11-13 A 案（老田裁定）：本地 ollama 请求超时 60s → 180s。
+    # 依据：同日 07:21–07:23 门禁连续三次 60s 超时、regime 判定降级放行；
+    # 历史同类 11-09 159 次 / 11-06 37 次；ollama 本身健康（11434 通、模型已载入），
+    # 60s 不够的是「单并发队列排队」而非推理本身。可 env 覆盖，回滚即设 60。
+    _ollama_timeout = int(os.environ.get("JEV_OLLAMA_TIMEOUT_S") or 180)
     try:
-        with safe_urlopen(req, timeout=60) as resp:
+        with safe_urlopen(req, timeout=_ollama_timeout) as resp:
             data = json.loads(resp.read())
     except Exception as e:
         log(
