@@ -43,6 +43,11 @@ WAF_COOLDOWN = 300            # 撞 WAF 后冷却秒数（对齐台账"数分钟
 WAF_RETRY = 3                # 冷却后同码同页重试次数
 SUSTAINED_ABORT_PCT = 0.20   # 持续封锁阈值：waf_hits/已处理 > 此值才整轮停（防拉黑）
 MAX_DEFERRED_ATTEMPTS = 5    # 单码跨日重试上限，超过则放弃（防冷却死循环）
+CONSEC_FAIL_HALT = 3         # 连续整只失败达此数 → 判会话被彻底拒，整轮停
+CONSEC_FAIL_COOLDOWN = 60    # 近期已出现失败后的快冷却秒数（长冷却已被实测证明无效）
+SESSION_WINDOW = 20          # 会话健康度滑动窗口（只数）
+SESSION_MIN_SAMPLES = 10     # 窗口样本不足不做坏率判定
+SESSION_BAD_RATIO = 0.30     # 窗口坏率 ≥ 此值 → 判限流态，整轮停（换时段再跑，不硬刚）
 DEFERRED_F = os.path.join(OUT_DIR, "_deferred.json")  # 跨日自愈 ledger
 CURSOR_F = os.path.join(OUT_DIR, "_cursor.json")      # 断点游标（尾部饥饿治理）
 
@@ -245,6 +250,50 @@ def rotate_from(codes, last_code):
     return ordered, (i + 1 >= len(codes)), i
 
 
+def window_bad_ratio(outcomes):
+    """最近 N 只的失败占比（outcomes: 1=成功 / 0=整只失败，尾部为最新）。"""
+    if not outcomes:
+        return 0.0
+    return 1.0 - (sum(outcomes) / float(len(outcomes)))
+
+
+def recent_fail_count(outcomes, k=3):
+    """最近 k 只里的失败只数——用来决定冷却策略。"""
+    return sum(1 for x in outcomes[-k:] if not x)
+
+
+def retry_policy(recent_fail):
+    """最近 k 只的失败只数 → (重试次数, 冷却秒数)。
+
+    一只都没失败：按 WAF_RETRY × WAF_COOLDOWN 走，给瞬时抖动留自愈机会。
+    近期出现过失败：长冷却已被实测证明无效——2026-11-13 生产轮两次独立会话都在
+    **第 401 次请求**撞墙，且撞墙后 3 × 300 秒冷却只换来 1 只通过——此时降级为
+    单次快冷却，把「每只空耗 15 分钟」压到 1 分钟内。
+    """
+    if recent_fail <= 0:
+        return WAF_RETRY, WAF_COOLDOWN
+    return 1, CONSEC_FAIL_COOLDOWN
+
+
+def should_halt(outcomes):
+    """轮内自停判据，返回停止原因（空串=继续）。
+
+    两档：
+      SESSION_DEAD      连续 CONSEC_FAIL_HALT 只全灭 —— 会话被彻底拒，立刻停；
+      SESSION_DEGRADED  成败交替但窗口坏率 ≥ SESSION_BAD_RATIO —— 典型限流态。
+                        必须用坏率而非「连续失败」：2026-11-13 实测撞墙后是
+                        「失败-成功-失败」交替，连续计数被成功不断清零，永不触发，
+                        结果以 900 秒/只的代价空转到 15 小时。
+    """
+    if len(outcomes) >= CONSEC_FAIL_HALT and \
+            outcomes[-CONSEC_FAIL_HALT:] == [0] * CONSEC_FAIL_HALT:
+        return "SESSION_DEAD"
+    if len(outcomes) >= SESSION_MIN_SAMPLES and \
+            window_bad_ratio(outcomes) >= SESSION_BAD_RATIO:
+        return "SESSION_DEGRADED"
+    return ""
+
+
 def _fetch_page(page, symbol, pg):
     """页内 fetch 封装；返回 (ok, data, err)。"""
     data = page.evaluate(API_JS, {"symbol": symbol, "page": pg, "count": COUNT})
@@ -347,6 +396,7 @@ def main():
     total_new = 0
     halted = ""
     waf_hits = 0
+    outcomes = []              # 最近 N 只成败（1/0），用于会话健康度判定
     deferred_now = {}          # {code: 已重试次数}，结束写回 ledger
     with sync_playwright() as p:
         ctx = None
@@ -378,6 +428,7 @@ def main():
             seen = load_seen(path)
             new = 0
             waf_this = False
+            code_dead = False       # 本只「重试耗尽仍被拒」→ 会话失效信号
             for pg in range(1, args.pages + 1):
                 ok, data, err = _fetch_page(page, symbol, pg)
                 if ok:
@@ -393,10 +444,14 @@ def main():
                     # 优雅降级：冷却重试，重试耗尽则 defer 续跑，不整轮停
                     waf_this = True
                     recovered = False
-                    for _ in range(WAF_RETRY):
-                        print("[xq_tl] %s p%d 防御触发(%s)——冷却%d秒后重试"
-                              % (code, pg, err[:40], WAF_COOLDOWN), flush=True)
-                        time.sleep(WAF_COOLDOWN)
+                    n_fail = recent_fail_count(outcomes)
+                    n_try, n_cool = retry_policy(n_fail)
+                    for _ in range(n_try):
+                        print("[xq_tl] %s p%d 防御触发(%s)——冷却%d秒后重试%s"
+                              % (code, pg, err[:40], n_cool,
+                                 "（近 3 只已失败 %d 只，降级快冷却）" % n_fail
+                                 if n_fail else ""), flush=True)
+                        time.sleep(n_cool)
                         ok2, data2, err2 = _fetch_page(page, symbol, pg)
                         if ok2:
                             items = data2.get("items") or []
@@ -410,6 +465,7 @@ def main():
                         time.sleep(2 + random.random() * 2)
                         continue
                     # 重试耗尽：本码 defer，续跑下一码（不整轮停）
+                    code_dead = True
                     attempts = deferred_prev.get(code, 0) + 1
                     if attempts > MAX_DEFERRED_ATTEMPTS:
                         print("[xq_tl] %s 重试%d次仍封锁——放弃"
@@ -417,18 +473,33 @@ def main():
                     else:
                         deferred_now[code] = attempts
                         print("[xq_tl] %s 冷却重试%d次仍封锁——defer 下轮续跑"
-                              % (code, WAF_RETRY), flush=True)
+                              % (code, n_try), flush=True)
                     break
                 # 其它错误（非 WAF，如 5xx）：打印并跳过本码，续跑下一码
                 print("[xq_tl] %s p%d %s" % (code, pg, err[:60]), flush=True)
                 break
             if waf_this:
                 waf_hits += 1
+            outcomes.append(0 if code_dead else 1)
+            del outcomes[:-SESSION_WINDOW]
             total_new += new
             # 逐码落游标：被强杀（含关机）时下一轮从此码之后继续，尾部不再饿死
             if cursor_on and code:
                 _save_cursor(code, scope, src_key, queue_len, rnd,
                              args.quota, i + 1)
+            # 会话健康度判定：连续全灭 或 窗口坏率过高 → 停轮（换时段再跑，不硬刚）。
+            # （比例阈值 SUSTAINED_ABORT_PCT 对「慢速滴漏」无效：分母含成功数，
+            #   2026-11-13 实测要累积 86 只、约 15 小时才踩到 20%，护栏形同虚设。）
+            halt_reason = should_halt(outcomes)
+            if halt_reason:
+                halted = halt_reason
+                print("[xq_tl] 停轮 %s：近 %d 只坏率 %.0f%%（%d/%d 只被拒）"
+                      "——冷却自愈无效，游标已落在 %s 之后，换时段/新会话续跑"
+                      % (halt_reason, len(outcomes),
+                         100.0 * window_bad_ratio(outcomes),
+                         len(outcomes) - sum(outcomes), len(outcomes), code),
+                      flush=True)
+                break
             # 持续封锁判定：撞 WAF 比例超阈值 → 整轮停（真·拉黑风险）
             if waf_hits and (waf_hits / max(1, i + 1)) > SUSTAINED_ABORT_PCT:
                 halted = "SUSTAINED_WAF_BLOCK"

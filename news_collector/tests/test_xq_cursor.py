@@ -88,3 +88,74 @@ def test_cursor_survives_restart_simulation(tmp_path, monkeypatch):
     ordered, wrapped, idx = m.rotate_from(CODES, cur["last_code"])
     assert cur["last_code"] == "000001"
     assert ordered[0] == "300001" and wrapped is False
+
+
+# ---------------------------------------------------------------- 会话健康度护栏
+# 判例 2026-11-13 生产轮：两次独立会话都在**第 401 次请求**撞 HTTP 400；撞墙后
+# 「失败-成功-失败」交替（3×300s 冷却只换来 1 只通过），14 只 × 900 秒 = 2.5 小时
+# 零自愈。原比例阈值 20% 的分母含成功数，要 86 只（约 15 小时）才触发，等于没护栏。
+# 要锁死的语义：
+#   1) 近期无失败 → 保留 3×300s 长冷却（瞬时抖动还值得等）；
+#   2) 近期有过失败 → 降级 1×60s（长冷却已被实测证伪）；
+#   3) 停轮判据必须用**窗口坏率**，不能只数连续失败——交替失败会被成功不断清零。
+
+
+def test_retry_policy_no_recent_failure_keeps_long_cooldown():
+    n_try, n_cool = m.retry_policy(0)
+    assert (n_try, n_cool) == (m.WAF_RETRY, m.WAF_COOLDOWN)
+    assert (n_try, n_cool) == (3, 300)
+
+
+def test_retry_policy_degrades_once_any_recent_failure():
+    for nf in (1, 2, 3, 99):
+        assert m.retry_policy(nf) == (1, m.CONSEC_FAIL_COOLDOWN)
+
+
+def test_recent_fail_count_only_looks_at_tail():
+    outs = [0, 0, 0, 1, 1, 1]     # 尾部 3 只全成功
+    assert m.recent_fail_count(outs, k=3) == 0
+    assert m.recent_fail_count([1, 1, 0], k=3) == 1
+    assert m.recent_fail_count([], k=3) == 0
+
+
+def test_window_bad_ratio():
+    assert m.window_bad_ratio([]) == 0.0
+    assert m.window_bad_ratio([1, 1, 1, 1]) == 0.0
+    assert m.window_bad_ratio([0, 0, 0, 0]) == 1.0
+    assert abs(m.window_bad_ratio([1, 0]) - 0.5) < 1e-9
+
+
+def test_halt_on_consecutive_total_failure():
+    assert m.should_halt([1, 1, 1, 0, 0, 0]) == "SESSION_DEAD"
+
+
+def test_halt_on_alternating_failures_not_missed():
+    """核心回归：成败交替（连续失败数恒为 1）也必须判限流态。
+
+    这正是 2026-11-13 撞墙后的真实形态；若只数连续失败，计数被成功清零，
+    护栏永不触发，代价是 900 秒/只空转到 15 小时。
+    """
+    outs = [1, 0] * 10                      # 20 只，坏率 50%
+    # 最长连续失败只有 1 只 —— 任何「连续失败数」判据都会漏掉这种形态
+    streak = max(len(s) for s in "".join(str(x) for x in outs).split("1"))
+    assert streak == 1
+    assert m.should_halt(outs) == "SESSION_DEGRADED"
+
+
+def test_no_halt_before_enough_samples():
+    assert m.should_halt([0, 1, 0, 1, 0]) == ""
+    assert m.should_halt([1] * 9) == ""
+
+
+def test_no_halt_when_healthy():
+    assert m.should_halt([1] * 19 + [0]) == ""                 # 5% 坏率
+    assert m.should_halt([1] * 15 + [0] * 4 + [1]) == ""       # 20% < 30% 阈值
+
+
+def test_halt_latency_bounded_after_threshold():
+    """撞墙后停轮代价上界：坏率达阈值时，最多再走快冷却若干只。"""
+    outs = [1, 0] * 4                       # 8 只，样本不足
+    assert m.should_halt(outs) == ""
+    cost = m.recent_fail_count(outs) * 0 + m.CONSEC_FAIL_COOLDOWN
+    assert cost == 60 and cost < m.WAF_COOLDOWN
+
