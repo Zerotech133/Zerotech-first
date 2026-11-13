@@ -62,12 +62,55 @@ def test_cursor_roundtrip(tmp_path, monkeypatch):
     f = tmp_path / "_cursor.json"
     monkeypatch.setattr(m, "CURSOR_F", str(f))
     m._save_cursor("920001", "all", "", 6, 2, 40, 3)
-    d = m._load_cursor()
+    d = m._load_cursor("all", "")
     assert d["last_code"] == "920001" and d["round"] == 2
     assert d["scope"] == "all" and d["queue_len"] == 6 and d["quota"] == 40
     assert d["done_this_run"] == 3
     # 原子写：不许留 .tmp 残骸
     assert not os.path.exists(str(f) + ".tmp")
+
+
+# ------------------------------------------------------------ 游标域隔离（v2）
+# 判例 2026-11-13：07:00 全量轮 `--queue all`（域 "all|"）与 21:00 分片轮
+# `--sources houfeng_candidates164,cohorts`（域 "all|..."）不同域，却共用一个
+# _cursor.json 单记录。v1 原实现只在读取侧校验 scope/sources——那只防「读错」，
+# 不防「写覆盖」：21:00 跑完即抹掉 07:00 断点，次日全量轮从头开始，尾部再饿一天。
+
+
+def test_cursor_domains_do_not_overwrite_each_other(tmp_path, monkeypatch):
+    f = tmp_path / "_cursor.json"
+    monkeypatch.setattr(m, "CURSOR_F", str(f))
+    m._save_cursor("600000", "all", "", 666, 1, 0, 400)
+    m._save_cursor("301218", "all", "houfeng_candidates164,cohorts", 246, 1, 0, 246)
+    full = m._load_cursor("all", "")
+    shard = m._load_cursor("all", "houfeng_candidates164,cohorts")
+    assert full["last_code"] == "600000" and full["queue_len"] == 666
+    assert shard["last_code"] == "301218" and shard["queue_len"] == 246
+    # 没跑过的域必须返回空，不能借用别的域的断点乱跳
+    assert m._load_cursor("actionable", "") == {}
+
+
+def test_cursor_v1_upgrades_without_losing_bookmark(tmp_path, monkeypatch):
+    """升级当天不能让旧断点失效——否则次日全队列重跑，正是要治的病。"""
+    f = tmp_path / "_cursor.json"
+    monkeypatch.setattr(m, "CURSOR_F", str(f))
+    v1 = {"scope": "all", "sources": "", "last_code": "000001",
+          "queue_len": 666, "round": 2, "quota": 0, "done_this_run": 666,
+          "updated_at": "seed"}
+    f.write_text(json.dumps(v1, ensure_ascii=False), encoding="utf-8")
+    assert m._load_cursor("all", "")["last_code"] == "000001"   # v1 原样可读
+    m._save_cursor("600999", "all", "cohorts", 12, 1, 0, 5)     # 新域写入触发升级
+    assert m._load_cursor("all", "")["last_code"] == "000001"   # 旧域断点保住
+    assert m._load_cursor("all", "cohorts")["last_code"] == "600999"
+    raw = json.loads(f.read_text(encoding="utf-8"))
+    assert raw["v"] == 2 and len(raw["domains"]) == 2
+
+
+def test_cursor_domain_key_is_stable_across_argument_forms():
+    """sources 为 None 与空串必须落同一域，否则全量轮认不出自己的断点。"""
+    assert m._cursor_domain("all", None) == m._cursor_domain("all", "")
+    assert m._cursor_domain("all", "") == "all|"
+    assert m._cursor_domain("all", "a,b") == "all|a,b"
 
 
 def test_cursor_missing_or_corrupt_returns_empty(tmp_path, monkeypatch):
@@ -84,7 +127,7 @@ def test_cursor_survives_restart_simulation(tmp_path, monkeypatch):
     monkeypatch.setattr(m, "CURSOR_F", str(f))
     for i, code in enumerate(CODES[:3], start=1):
         m._save_cursor(code, "all", "", len(CODES), 1, 0, i)
-    cur = m._load_cursor()
+    cur = m._load_cursor("all", "")
     ordered, wrapped, idx = m.rotate_from(CODES, cur["last_code"])
     assert cur["last_code"] == "000001"
     assert ordered[0] == "300001" and wrapped is False

@@ -209,29 +209,62 @@ def _load_deferred():
     return {str(k): int(v) for k, v in d.items()}
 
 
-def _load_cursor():
-    """读取断点游标。结构：{scope, sources, last_code, queue_len, round, quota, updated_at}。"""
+def _cursor_domain(scope, sources):
+    """游标域键：(scope, sources) → 字符串。全量轮与分片轮据此互不覆盖。"""
+    return "%s|%s" % (scope or "", sources or "")
+
+
+def _load_cursor(scope=None, sources=None):
+    """读取断点游标。
+
+    v2 结构：{"v":2, "domains": {"<scope>|<sources>": {记录...}}, "updated_at": ...}
+    v1 结构（兼容）：单条记录 {scope, sources, last_code, ...}
+
+    2026-11-13 判例：v1 是单文件单记录，07:00 全量轮（域 "all|"）与 21:00 分片轮
+    （域 "all|houfeng_candidates164,cohorts"）共用同一文件，**后一轮必抹掉前一轮断点**。
+    原实现只在读取侧做 scope/sources 匹配校验——那只防「读错」，不防「写覆盖」。
+    """
     if not os.path.exists(CURSOR_F):
         return {}
     try:
         d = json.load(open(CURSOR_F, encoding="utf-8"))
     except Exception:
         return {}
-    return d if isinstance(d, dict) else {}
+    if not isinstance(d, dict):
+        return {}
+    doms = d.get("domains")
+    if isinstance(doms, dict):
+        rec = doms.get(_cursor_domain(scope, sources))
+        return rec if isinstance(rec, dict) else {}
+    return d  # v1：单条记录原样返回，由调用方按 scope/sources 校验
 
 
 def _save_cursor(last_code, scope, sources, queue_len, rnd, quota, done):
-    """原子写游标（tmp + fsync + os.replace），保证被强杀也不会写出半截 JSON。"""
+    """原子写游标（tmp + fsync + os.replace），按域合并写，不覆盖其它域。"""
     payload = {
         "scope": scope, "sources": sources or "",
         "last_code": last_code, "queue_len": queue_len,
         "round": rnd, "quota": quota, "done_this_run": done,
         "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
+    doms = {}
+    try:
+        if os.path.exists(CURSOR_F):
+            old = json.load(open(CURSOR_F, encoding="utf-8"))
+            if isinstance(old, dict):
+                if isinstance(old.get("domains"), dict):
+                    doms = old["domains"]
+                elif old.get("scope") is not None:
+                    # v1 旧记录按其自身域归位，升级后断点不丢
+                    doms[_cursor_domain(old.get("scope"), old.get("sources"))] = old
+    except Exception:
+        doms = {}
+    doms[_cursor_domain(scope, sources)] = payload
+    out = {"v": 2, "domains": doms, "updated_at": payload["updated_at"]}
     tmp = CURSOR_F + ".tmp"
     try:
         with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False)
+            json.dump(out, f, ensure_ascii=False)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, CURSOR_F)
@@ -375,7 +408,7 @@ def main():
         base = load_queue(scope, sources=src_list or None)
         queue_len = len(base)
         cursor_on = not args.no_cursor
-        cur = {} if args.reset_cursor else _load_cursor()
+        cur = {} if args.reset_cursor else _load_cursor(scope, src_key)
         # 游标按 (scope, sources) 分域：全量轮与分片轮的断点互不串味
         if cursor_on and cur and cur.get("scope") == scope \
                 and (cur.get("sources") or "") == src_key:
