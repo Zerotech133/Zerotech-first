@@ -1,11 +1,15 @@
 # paper trade launcher (ASCII only)
 # Task: PaperTrade, daily two triggers:
-#   09:28  open    (pre-open: execute overnight sells then buys; visible-price)
-#   15:06  review+equity (after close: sell-judgment, pending orders, NAV)
+#   09:35  open    (execute overnight sells then buys; visible-price)
+#   18:25  review+equity (sell-judgment, pending orders, NAV)
 # Exit code: 0 = ran (business alarms in JSON); 1 = crash / not executed.
 # 2026-11-13: created with rules_v2 (three-tier position sizing).
 # 2026-11-13 v2.2: rc is no longer always 0; review and equity are
 #   captured separately so a crash in review cannot be masked by equity.
+# 2026-11-13 v2.2: triggers moved 09:28/15:06 -> 09:35/18:25 (user approved).
+#   09:35 is inside SESSIONS (09:30-11:30) so minute prices are visible;
+#   18:25 is after TodaysPicks (18:20), so review uses the SAME-DAY list.
+#   Window guards below (0920-1200 / >=1501) already cover both times.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Environment]::SetEnvironmentVariable('PYTHONUTF8', '1', 'Process')
 [Environment]::SetEnvironmentVariable('NO_PROXY',
@@ -33,7 +37,7 @@ try {
         $rc = [Math]::Max($rc1, $rc2)
         $mode = 'review+equity'
     } else {
-        $body = 'no scheduled window (09:2x open / 15:0x review)'
+        $body = 'no scheduled window (09:35 open / 18:25 review)'
         $mode = 'skip'
     }
     ('paper ' + $mode + ' rc=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
