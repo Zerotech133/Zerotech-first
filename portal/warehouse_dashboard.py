@@ -535,6 +535,14 @@ def render_dashboard(
     priority = priority or '<p class="muted">%s</p>' % (
         "当前没有异常指标。" if model["metrics"] else "尚无完整核验结果。"
     )
+    # 2026-11-14 I1a 步3：结论上提到顶部。
+    # 原状：2.1MB / 17 区块，用户要滚到第三个区块「优先核对」才知道有几项异常、最严重是哪项。
+    # 只补一句定位语，不改任何区块顺序，也不新增模板参数（避免 % 元组错位）。
+    if problems:
+        _w = problems[0][1]
+        status_title = "%s · %d 项待处理，最严重：%s（%s %s）" % (
+            e(status_title), len(problems), e(_w["label"]),
+            e(fmt(_w["value"])), e(_w["unit"]))
     asset_rows = []
     freshness_labels = {
         "unknown": "文件时点未知",
