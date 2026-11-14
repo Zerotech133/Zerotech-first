@@ -476,8 +476,10 @@ def build_consumers(tables, refresh=False, ttl=7 * 86400):
     """
     want = set(tables)
     try:
-        all_tables = set((json.load(open(MANIFEST, encoding="utf-8"))
-                          .get("tables") or {}).keys())
+        _man = json.load(open(MANIFEST, encoding="utf-8"))
+        # manifest 两种形态：旧版 {"tables": {...}}；现网是顶层直接映射。
+        # 只读 .get("tables") 会让 all_tables 恒空，缓存 scope 退化成子集。
+        all_tables = set((_man.get("tables") or _man).keys())
     except Exception:
         all_tables = set(want)
     if not refresh and os.path.exists(CONS_CACHE):

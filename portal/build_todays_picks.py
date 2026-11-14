@@ -1138,6 +1138,7 @@ def _push_source_alert(metas, veto_failed, basis_day):
 def main():
     stocks = {}
     metas = {}
+    basis0 = None   # 湖不可达时保持 None（设计内降级），不能未绑定
     # 行情湖基准日提前取一次（weak 过期闸门用；backfill 内部会再取，轻查询幂等）
     try:
         sys.path.insert(0, QB)

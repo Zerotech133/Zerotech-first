@@ -43,7 +43,33 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 def R_cal_after(d0, d1, n):
-    """d0 之后第 n 个交易日是否已到 d1（None=日历不可用，调用方放行）。"""
+    """d0 之后第 n 个交易日（YYYYMMDD 字符串）；None=日历不可用，调用方放行。
+
+    审计修复（同日）：原实现只依赖 strong_ts_window_research.trade_calendar()
+    （由历史日线生成、只到最新数据日）。「最近刚加过仓」时第 n 个交易日
+    落在未来 -> after_days 越界返回 None -> 冷却 fail-open，恰好在最该
+    冷却的窗口失效。改为优先用 ts_trade_cal（SSE，含未来交易日与节假日）；
+    表不可读才回退旧日历，仍保持 fail-open 不阻断交易。
+    """
+    try:
+        import bisect
+        import pandas as pd
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "data", "tdx", "ts_trade_cal", "part_0000.parquet")
+        _d = pd.read_parquet(_p)
+        if "exchange" in _d.columns:
+            _d = _d[_d["exchange"] == "SSE"]
+        if "is_open" in _d.columns:
+            _d = _d[_d["is_open"].astype(float) == 1.0]
+        _days = sorted({str(x).replace("-", "")[:8]
+                        for x in _d["cal_date"].tolist()})
+        _days = [x for x in _days if x.isdigit() and len(x) == 8]
+        if _days:
+            _j = bisect.bisect_right(_days, str(d0)) + n - 1
+            if _j < len(_days):
+                return _days[_j]
+    except Exception:
+        pass
     try:
         import strong_ts_window_research as _R
         cal = _R.trade_calendar()
@@ -503,18 +529,23 @@ def cmd_open(day=None, decision_time=None):
     adjm = adj_factors(all_codes, day)   # 后复权因子（判定层用，缺数据 fail-open）
     px = resolve_visible_prices(sorted(set(sells) | buy_codes), day,
                                 decision_time)
+    filled_sells = set()
     for s in acc.get("pending_sells") or []:
         c = s["code"]
         pos = acc["positions"].get(c)
         quote = px.get(c)
-        if not pos or not quote:
+        if not pos:
+            filled_sells.add(c)   # 持仓已不在，卖单自然结清
             continue
+        if not quote:
+            continue              # 无可见价：保留到下次 open，绝不丢单
         price = quote["price"]
         proceeds = pos["shares"] * price
         acc["cash"] += proceeds
         pnl = (price - pos["avg_cost"]) * pos["shares"]
         acc["realized_pnl"] += pnl
         del acc["positions"][c]
+        filled_sells.add(c)
         _append_jsonl(TRADES, {
             "day": day, "action": "SELL", "code": c,
             "name": pos.get("name", ""), "price": round(price, 3),
@@ -528,7 +559,11 @@ def cmd_open(day=None, decision_time=None):
         })
         print("[open] 卖出 %s %s @%.2f 盈亏 %+.0f（%s）"
               % (c, pos.get("name", ""), price, pnl, s.get("why", "")))
-    acc["pending_sells"] = []
+    # 只有真正成交的卖单才结清；无可见价的卖单必须留到下次 open，
+    # 否则「明日最优先卖」的降级票会在开盘无价时凭空蒸发。
+    acc["pending_sells"] = [
+        s for s in (acc.get("pending_sells") or [])
+        if s["code"] not in filled_sells]
 
     # 2) 执行买入挂单（T2 名单，首仓 5%；已持仓且信号在→加仓至≤30%）
     budget = acc["cash"]
@@ -554,14 +589,17 @@ def cmd_open(day=None, decision_time=None):
             # ②冷却期：距上次加仓 <2 交易日 → 拒绝（防同信号重复加）
             last_add = pos.get("last_add_day")
             if last_add:
-                try:
-                    gap_t = R_cal_after(last_add, day, RULES["add_cooldown_days"])
-                    if gap_t is None or gap_t <= 0:
-                        print("[open] 加仓拒绝 %s：冷却期内（上次 %s）"
-                              % (c, last_add))
-                        continue
-                except Exception:
-                    pass
+                # R_cal_after 返回「冷却结束日」(YYYYMMDD 字符串) 或 None。
+                # 旧写法拿字符串与整数比大小 -> TypeError 被裸 except 吞掉，
+                # 冷却完全失效；None 分支反而拒绝加仓，与本函数 docstring
+                # 「None=日历不可用，调用方放行」相反。此处按日期比较修回。
+                cool_until = R_cal_after(last_add, day, RULES["add_cooldown_days"])
+                if cool_until is None:
+                    print("[open] 加仓冷却日历不可用，fail-open 放行 %s" % c)
+                elif str(day) < str(cool_until):
+                    print("[open] 加仓拒绝 %s：冷却期内（上次 %s，至 %s）"
+                          % (c, last_add, cool_until))
+                    continue
             cur_val = pos["shares"] * price
             # ③金字塔步长 + 单票上限 + 机动仓余额三重封顶
             addon_used = acc.get("addon_used", 0.0)
@@ -595,6 +633,18 @@ def cmd_open(day=None, decision_time=None):
                 "day": day, "action": "ADD", "code": c, "price": round(price, 3),
                 "shares": shares, "rules": RULES["version"],
                 "why": "买点加仓", "signal": b.get("sources"),
+                # 契约补齐：ADD 与 BUY 同样留名单时点（原来只有 sources，
+                # 后验无法判断这次加仓来自哪份名单）。保留 signal 旧形态兼容。
+                "snapshot": {
+                    "tier": b.get("tier"), "sources": b.get("sources"),
+                    "risk_gate": (acc.get("pending_buys_meta") or {}).get("risk_gate"),
+                    "picks_generated": b.get("list_generated_at"),
+                    "basis": (acc.get("pending_buys_meta") or {}).get("trade_basis")
+                             or b.get("list_basis_date"),
+                    "list_basis_date": b.get("list_basis_date"),
+                    "list_basis_source": b.get("list_basis_source"),
+                    "chanlun_buy": has_chanlun_buy(b),
+                },
                 **_audit_meta(quote, day, decision_time),
                 "ts": dt.datetime.now().isoformat(timespec="seconds"),
             })
