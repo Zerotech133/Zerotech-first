@@ -12,6 +12,33 @@ from api_common import (
     QBT_DIR, REPORTS_DIR, ROOT, STATION, _read_json, log_exc, pill_nav)
 
 
+def _weak_stale_banner(rep):
+    """弱案例页陈旧横幅（2026-11-14 I1a）。
+
+    数据日来源：最新 `weak_scan_YYYYMMDD.csv` 的**文件名日期**——生成器按数据日
+    命名，这是数据自身声明，不是 mtime。另把该 csv 的 mtime 作为「生成时刻」
+    分列显示（实测数据日 11-06 / 文件 mtime 11-09，差 3 天，两者不是一回事）。
+    无产物 → day=None → 横幅显示「数据日未知」，不猜。
+    """
+    import glob as _g
+    import re as _re
+    try:
+        from api_pages_portal import _stale_banner_html
+    except Exception:
+        return ""
+    fs = sorted(_g.glob(os.path.join(rep, "weak_scan_*.csv")))
+    day = None
+    if fs:
+        m = _re.search(r"weak_scan_(\d{4})(\d{2})(\d{2})",
+                       os.path.basename(fs[-1]))
+        if m:
+            day = "%s-%s-%s" % (m.group(1), m.group(2), m.group(3))
+    return _stale_banner_html(
+        {"day": day, "level": "info",
+         "reason": "周频扫描（每周一 15:35）"},
+        fs[-1] if fs else "")
+
+
 def _weak_cases_page(self):
         """📚 弱于板块案例库：在案状态流摘要 + 案例档案 + 最新扫描（纯读，
         不触发任何重算/拉取；数据源 reports/weak_track_*.jsonl、
@@ -181,6 +208,7 @@ def _weak_cases_page(self):
             "initial-scale=1'><title>📚 弱于板块案例库</title>"
             + self._COCKPIT_CSS + "</head><body>"
             + pill_nav("cases")
+            + _weak_stale_banner(REP)
             + "<h1>📚 弱于板块案例库 <span style='font-size:14px;"
             "color:#8b949e'>weak 产线：扫描→建案→归因→跟踪→结案 · "
             "影子观察</span></h1>"

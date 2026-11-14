@@ -42,15 +42,23 @@ def _sole_date_in(path):
 
 
 def _stale_banner_html(stale, path):
-    """陈旧横幅。stale = {"day": "YYYY-MM-DD"|None, "reason": str, "gen_at": str}。
+    """陈旧横幅。stale = {"day": "YYYY-MM-DD"|None, "reason": str,
+    "gen_at": str, "level": "warn"|"info"}。
 
     数据日与生成时刻**分列**：前者来自数据自身声明，后者只是文件生成时间。
     两者的差（opt 实测 7 天）本身就是信息，不能合并成一个「更新时间」。
+
+    level 两档（2026-11-14 实测纠正）：
+      · warn —— 不定期/按需产线停摆（如 /bt-opt 寻优，停 49 天是真异常）
+      · info —— 周期产线的正常滞后（如 /bt-weak 周频扫描，滞后 8 天属常态）
+    为什么必须分档：周频页每周都报一次红，三周后用户就不看横幅了，
+    等于把告警训成本底噪。**报警要稀缺才有效。**
     """
     import html as _h
 
     day = stale.get("day")
     reason = stale.get("reason") or "未定位"
+    level = stale.get("level") or "warn"
     gen = stale.get("gen_at")
     if not gen:
         try:
@@ -58,26 +66,39 @@ def _stale_banner_html(stale, path):
                                 time.localtime(os.path.getmtime(path)))
         except OSError:
             gen = ""
-    warn = "var(--color-warn,#d29922)"
+    if level == "info":
+        color = "var(--link,#58a6ff)"
+        mark = "ℹ️"
+        bg = "rgba(88,166,255,.07)"
+        tail = "周期性滞后属正常（非故障）"
+    else:
+        color = "var(--color-warn,#d29922)"
+        mark = "⚠️"
+        bg = "rgba(210,153,34,.08)"
+        tail = "据此决策前请先确认数据是否已更新"
     dim = "var(--text-dim,#8b949e)"
     if day:
         try:
             from datetime import date as _dt_date
             days = (_dt_date.today() - _dt_date.fromisoformat(day)).days
-            headline = "⚠️ 本页数据停更 %d 天（数据日 %s）" % (days, day)
+            headline = ("%s 本页数据停更 %d 天（数据日 %s）" % (mark, days, day)
+                        if level != "info" else
+                        "%s 本页数据日 %s（%d 天前）" % (mark, day, days))
         except (ValueError, TypeError):
-            headline = "⚠️ 本页数据日 %s" % day
+            headline = "%s 本页数据日 %s" % (mark, day)
     else:
-        headline = "⚠️ 本页数据日未知"
-    meta = "生成 %s · 原因：%s" % (gen, reason) if gen else "原因：%s" % reason
+        headline = "%s 本页数据日未知" % mark
+    meta = ("生成 %s · %s" % (gen, reason)) if gen else reason
     return (
-        "<div class='ui-stale-banner' role='status' style='margin:10px 14px 0;"
+        "<div class='ui-stale-banner' role='status' data-level='%s' "
+        "style='margin:10px 14px 0;"
         "padding:10px 14px;border:1px solid %s;border-radius:6px;"
-        "background:rgba(210,153,34,.08);font-size:12.5px;line-height:1.8;"
+        "background:%s;font-size:12.5px;line-height:1.8;"
         "font-family:var(--font-ui,sans-serif)'>"
         "<b style='color:%s'>%s</b><br>"
-        "<span style='color:%s'>%s · 据此决策前请先确认数据是否已更新</span>"
-        "</div>" % (warn, warn, _h.escape(headline), dim, _h.escape(meta)))
+        "<span style='color:%s'>%s · %s</span>"
+        "</div>" % (_h.escape(level), color, bg, color,
+                    _h.escape(headline), dim, _h.escape(meta), tail))
 
 
 class Handler:  # Mixin 壳：经基座多继承并入
