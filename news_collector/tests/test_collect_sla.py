@@ -270,3 +270,28 @@ def test_scan_stale_ignores_empty_files_and_outsiders(sandbox, tmp_path):
     info = cs._scan_stale(str(d), {"600000", "600001"}, NOW)
     assert info["checked"] == 1
     assert info["no_new_n"] == 0
+
+
+def test_scan_stale_24h_dimension_exposes_partial_run(sandbox, tmp_path):
+    """24h 维度专治「源级 GREEN 但当日只跑了一半」。
+
+    判例 2026-11-14：雪球 07:00 轮 400/666 停轮，266 只当日未刷新；
+    48h 维度全绿（那 266 只昨日采过），源级 GREEN 也全绿——
+    当日缺口只有 24h 维度能照出来。这条断言就是防止该维度被后人「优化」掉。
+    """
+    d = tmp_path / "scan24"
+    d.mkdir()
+    ages = {"600000": 2, "600001": 30, "600002": 60}
+    for code, age_h in ages.items():
+        p = d / ("%s.jsonl" % code)
+        p.write_text('{"id":"x"}\n', encoding="utf-8")
+        ts = NOW.timestamp() - age_h * 3600
+        os.utime(str(p), (ts, ts))
+    info = cs._scan_stale(str(d), set(ages), NOW)
+    assert info["checked"] == 3
+    assert info["no_new_n"] == 1              # >48h 仅一只
+    assert info["no_new_pct"] == 33.3
+    assert info["no_new_24h_n"] == 2          # >24h 两只——当日缺口在此显形
+    assert info["no_new_24h_pct"] == 66.7
+    # 24h 口径必须恒 ≥ 48h 口径（阈值更松），否则说明算错
+    assert info["no_new_24h_n"] >= info["no_new_n"]

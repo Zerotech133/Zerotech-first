@@ -320,6 +320,7 @@ def _scan_stale(path, expect, now, hours=48.0):
     分母外（缺口）不在此列，缺口另有 gap/gap_open 字段。
     """
     empty = {"checked": 0, "no_new_n": 0, "no_new_pct": None,
+             "no_new_24h_n": 0, "no_new_24h_pct": None,
              "oldest_age_h": None, "no_new_sample": []}
     if not os.path.isdir(path):
         return empty
@@ -345,10 +346,16 @@ def _scan_stale(path, expect, now, hours=48.0):
     if not ages:
         return empty
     old = sorted([c for c, a in ages.items() if a > hours])
+    # 24h 维度：源级 GREEN + 48h 无新增为 0，仍可能「今日整轮只跑了一半」——
+    # 2026-11-14 雪球 07:00 轮停轮（400/666），266 只当日未刷新，而 48h 维度全绿，
+    # 因为那 266 只昨日采过。48h 答「有没有断供」，24h 才答「今天采够了没有」。
+    old24 = sorted([c for c, a in ages.items() if a > 24.0])
     return {
         "checked": len(ages),
         "no_new_n": len(old),
         "no_new_pct": round(100.0 * len(old) / len(ages), 1),
+        "no_new_24h_n": len(old24),
+        "no_new_24h_pct": round(100.0 * len(old24) / len(ages), 1),
         "oldest_age_h": round(max(ages.values()), 1),
         "no_new_sample": old[:10],
     }
@@ -517,18 +524,24 @@ def build_report(now=None, thresholds=None, state=None):
                 row["stale_checked"] = st_info["checked"]
                 row["no_new_n"] = st_info["no_new_n"]
                 row["no_new_pct"] = st_info["no_new_pct"]
+                row["no_new_24h_n"] = st_info["no_new_24h_n"]
+                row["no_new_24h_pct"] = st_info["no_new_24h_pct"]
                 row["oldest_age_h"] = st_info["oldest_age_h"]
                 row["no_new_sample"] = st_info["no_new_sample"]
             else:
                 row["stale_checked"] = 0
                 row["no_new_n"] = None
                 row["no_new_pct"] = None
+                row["no_new_24h_n"] = None
+                row["no_new_24h_pct"] = None
                 row["oldest_age_h"] = None
                 row["no_new_sample"] = []
         else:
             row["stale_checked"] = None
             row["no_new_n"] = None
             row["no_new_pct"] = None
+            row["no_new_24h_n"] = None
+            row["no_new_24h_pct"] = None
             row["oldest_age_h"] = None
             row["no_new_sample"] = []
         if expect and covered is not None:
@@ -614,13 +627,15 @@ def build_report(now=None, thresholds=None, state=None):
                     "gap_known": sum(r.get("gap_known") or 0 for r in rows),
                     "gap_open": sum(r.get("gap_open") or 0 for r in rows),
                     "no_new_48h_total": sum(r.get("no_new_n") or 0 for r in rows),
+                    "no_new_24h_total": sum(r.get("no_new_24h_n") or 0 for r in rows),
                     "gap_whitelist_expired": wl_expired,
                     "verdict": "RED" if n_red else ("AMBER" if (n_amber or n_nodata) else "GREEN")},
         "rows": rows,
         "note": "只读快照；state=GREEN/AMBER/RED/NODATA；阈值为 DEFAULT 经验值，调参归 11-15 微调日；"
                 "gap=分母内缺文件数，gap_known=已核验合法缺口（见 collect_gap_whitelist.json），gap_open=待查；"
                 "no_new_n/pct=分母内有文件但 48h 无新增的只数（内容维度，非采集动作维度——"
-                "追加型源「无新帖」与「未采集」同形，须交叉 last_run_ts 或源日志）",
+                "追加型源「无新帖」与「未采集」同形，须交叉 last_run_ts 或源日志）；"
+                "no_new_24h_n/pct=同上但阈值 24h，用于暴露「源级 GREEN 但今日整轮只跑了一半」",
     }
 
 
@@ -631,6 +646,18 @@ def _nn_cell(r):
     txt = "%d/%s" % (r["no_new_n"], r.get("stale_checked"))
     if r.get("no_new_pct") is not None:
         txt += " (%s%%)" % r["no_new_pct"]
+    return txt
+
+
+def _nn24_cell(r):
+    """24h 无新增单元格——回答「今天采够了没有」。
+    源级 GREEN 只保证有源在动；48h 只保证没断供两天。整轮中途停轮（如 11-14
+    雪球 400/666）在 48h 口径下全绿，只有 24h 口径能把它照出来。"""
+    if r.get("no_new_24h_n") is None:
+        return "-"
+    txt = "%d/%s" % (r["no_new_24h_n"], r.get("stale_checked"))
+    if r.get("no_new_24h_pct") is not None:
+        txt += " (%s%%)" % r["no_new_24h_pct"]
     return txt
 
 
@@ -646,20 +673,21 @@ def render_md(rep):
            rep["summary"]["gap_total"], rep["summary"]["gap_known"],
            rep["summary"]["gap_open"]),
         "",
-        "| 源 | 判定 | 最后成功 | 滞后(h) | 覆盖/期望 | 缺口 | 待查 | 48h无新增 | 连续不达标 | 备注 |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| 源 | 判定 | 最后成功 | 滞后(h) | 覆盖/期望 | 缺口 | 待查 | 48h无新增 | 24h未刷新 | 连续不达标 | 备注 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rep["rows"]:
         cov = "-" if r.get("expected") is None else "%s/%s" % (r.get("covered"), r["expected"])
         if r.get("covered_all") is not None:
             cov += "（all %s/%s）" % (r["covered_all"], r["expected_all"])
         nn = _nn_cell(r)
-        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+        nn24 = _nn24_cell(r)
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
             r["label"], r["state"], r.get("last_ok_ts") or "-",
             "-" if r.get("stale_hours") is None else r["stale_hours"],
             cov, "-" if r.get("gap") is None else r["gap"],
             "-" if r.get("gap_open") is None else r["gap_open"],
-            nn, r.get("consecutive_bad"), r.get("note")))
+            nn, nn24, r.get("consecutive_bad"), r.get("note")))
     lines += [
         "",
         "口径：最后成功 = 各源产物落盘时间/库内 max(ts)（非日志行）；覆盖分母见各行 `expected_from`。",
@@ -668,26 +696,29 @@ def render_md(rep):
         "**48h无新增**=分母内「有文件但 48 小时无新增」的只数/占比（百分比按分母内有文件的票算）。"
         "四源均为追加写，无新帖时 mtime 不动，故此列是**内容维度**，不等于未采集；"
         "判「有没有去采」看 `last_run_ts`/源日志。源级 GREEN 只保证「有源在动」，不保证「每只都新」。",
+        "**24h未刷新**=同一口径但阈值 24 小时。它专门用来看「今天这一轮采够了没有」："
+        "整轮中途停轮时 48h 维度可能全绿（昨日采过），只有 24h 维度会暴露当日缺口。",
         "本表只给读数与判据，不含任何研判结论。",
     ]
     return "\n".join(lines) + "\n"
 
 
 def render_table(rep):
-    head = "%-12s %-6s %-16s %6s %10s %5s %5s %12s %4s  %s" % (
-        "源", "判定", "最后成功", "滞后h", "覆盖/期望", "缺口", "待查", "48h无新增", "连坏", "备注")
+    head = "%-12s %-6s %-16s %6s %10s %5s %5s %12s %12s %4s  %s" % (
+        "源", "判定", "最后成功", "滞后h", "覆盖/期望", "缺口", "待查", "48h无新增", "24h未刷新", "连坏", "备注")
     out = [head, "-" * len(head)]
     for r in rep["rows"]:
         cov = "-" if r.get("expected") is None else "%s/%s" % (r.get("covered"), r["expected"])
         if r.get("covered_all") is not None:
             cov += "(all %s/%s)" % (r["covered_all"], r["expected_all"])
         nn = _nn_cell(r)
-        out.append("%-12s %-6s %-16s %6s %10s %5s %5s %12s %4s  %s" % (
+        nn24 = _nn24_cell(r)
+        out.append("%-12s %-6s %-16s %6s %10s %5s %5s %12s %12s %4s  %s" % (
             r["label"], r["state"], r.get("last_ok_ts") or "-",
             "-" if r.get("stale_hours") is None else r["stale_hours"],
             cov, "-" if r.get("gap") is None else r["gap"],
             "-" if r.get("gap_open") is None else r["gap_open"],
-            nn, r.get("consecutive_bad"), r.get("note")))
+            nn, nn24, r.get("consecutive_bad"), r.get("note")))
     s = rep["summary"]
     out.append("")
     out.append("判定=%s  RED=%d AMBER=%d NODATA=%d  阈值来源=%s  周末放宽=%.0fh"
@@ -697,6 +728,8 @@ def render_table(rep):
                % (s["gap_total"], s["gap_known"], s["gap_open"], s["gap_whitelist_expired"]))
     out.append("48h无新增合计=%d 只（内容维度：无新帖≠未采集，判采集动作看 last_run_ts/源日志）"
                % s["no_new_48h_total"])
+    out.append("24h未刷新合计=%d 只（今日维度：>0 且来源本应每日全量时，说明当日轮次没跑完）"
+               % s.get("no_new_24h_total", 0))
     return "\n".join(out)
 
 
