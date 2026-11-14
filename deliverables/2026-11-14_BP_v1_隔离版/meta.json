@@ -4,7 +4,7 @@
   "version": "a1",
   "generated_at": "2026-11-14T14:52:54+08:00",
   "isolation": "isolated",
-  "status": "BLOCKED/待送审",
+  "status": "ACCEPTED（老田 2026-11-14 15:05 verdict：接受，BP v1 记为通过）",
   "source_ref": "PRODUCT_BASELINE v1.2 + A0-DEC-20261107 + 老田 2026-11-14 14:50 验收指令",
   "source_files": [
     "docs/plans/2026-11-10_统一真相源_能力账本+执行计划_v2.md",
@@ -17,7 +17,8 @@
   "forbidden": [
     "对外发送",
     "路演",
-    "收入预测数字"
+    "收入预测数字",
+    "未经老田看过的v2直接视为通过"
   ],
   "assumptions": [
     {
@@ -44,5 +45,11 @@
       "type": "hypothesis",
       "verify": "v2 修订次数与采纳率"
     }
-  ]
+  ],
+  "verdict": {
+    "decision": "accepted",
+    "by": "老田",
+    "at": "2026-11-14T15:05:00+08:00",
+    "note": "接受，BP v1 记为通过；v2 改前先给老田看"
+  }
 }
