@@ -10,6 +10,7 @@ _html_file / _hub_market_tabs / _portal_page（B1b 解耦后移入）。
 import json
 import logging
 import os
+import re
 import time
 
 import org_command_api
@@ -19,6 +20,64 @@ from api_misc import _SS_TAG
 
 # K-STOCK-101：Hermes 30s TTL 探活缓存（B1b 从 portal_api 移入）
 _HERMES_UP_CACHE = (0.0, False)
+
+# ── 2026-11-14 I1a：静态报告页「陈旧横幅」支撑件 ──
+_SOLE_DATE_RE = re.compile(r"20\d\d-\d\d-\d\d")
+
+
+def _sole_date_in(path):
+    """从静态页里取「唯一的」数据日；不是恰好 1 个不同日期就返回 None。
+
+    为什么要求唯一：多日期页里混着生成时刻、指标起止日，取 max 会把生成
+    时间当成数据日——那正是本次要消灭的假绿。宁可显示「数据日未知」，
+    也不猜。实测 quant_backtest/reports/opt.html 全文只有 2026-09-26 一个日期。
+    """
+    try:
+        with open(path, "rb") as f:
+            t = f.read().decode("utf-8", "ignore")
+    except OSError:
+        return None
+    ds = set(_SOLE_DATE_RE.findall(t))
+    return next(iter(ds)) if len(ds) == 1 else None
+
+
+def _stale_banner_html(stale, path):
+    """陈旧横幅。stale = {"day": "YYYY-MM-DD"|None, "reason": str, "gen_at": str}。
+
+    数据日与生成时刻**分列**：前者来自数据自身声明，后者只是文件生成时间。
+    两者的差（opt 实测 7 天）本身就是信息，不能合并成一个「更新时间」。
+    """
+    import html as _h
+
+    day = stale.get("day")
+    reason = stale.get("reason") or "未定位"
+    gen = stale.get("gen_at")
+    if not gen:
+        try:
+            gen = time.strftime("%m-%d %H:%M",
+                                time.localtime(os.path.getmtime(path)))
+        except OSError:
+            gen = ""
+    warn = "var(--color-warn,#d29922)"
+    dim = "var(--text-dim,#8b949e)"
+    if day:
+        try:
+            from datetime import date as _dt_date
+            days = (_dt_date.today() - _dt_date.fromisoformat(day)).days
+            headline = "⚠️ 本页数据停更 %d 天（数据日 %s）" % (days, day)
+        except (ValueError, TypeError):
+            headline = "⚠️ 本页数据日 %s" % day
+    else:
+        headline = "⚠️ 本页数据日未知"
+    meta = "生成 %s · 原因：%s" % (gen, reason) if gen else "原因：%s" % reason
+    return (
+        "<div class='ui-stale-banner' role='status' style='margin:10px 14px 0;"
+        "padding:10px 14px;border:1px solid %s;border-radius:6px;"
+        "background:rgba(210,153,34,.08);font-size:12.5px;line-height:1.8;"
+        "font-family:var(--font-ui,sans-serif)'>"
+        "<b style='color:%s'>%s</b><br>"
+        "<span style='color:%s'>%s · 据此决策前请先确认数据是否已更新</span>"
+        "</div>" % (warn, warn, _h.escape(headline), dim, _h.escape(meta)))
 
 
 class Handler:  # Mixin 壳：经基座多继承并入
@@ -59,7 +118,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
         except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError) as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
-    def _html_file(self, path, nav_key=None):
+    def _html_file(self, path, nav_key=None, stale=None):
         try:
             with open(path, "rb") as f:
                 body = f.read()
@@ -80,6 +139,22 @@ class Handler:  # Mixin 壳：经基座多继承并入
                     i = t.find(">", i) + 1
                     t = (t[:i] + "<div style='padding:12px 14px 0'>"
                          + pill_nav(nav_key) + "</div>" + t[i:])
+                    body = t.encode("utf-8")
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
+        # 2026-11-14 I1a：陈旧横幅（数据停更的静态报告页）。与上方 nav/tokens 同构，
+        # 生成器重写文件后注入依然生效。
+        # 纪律（I1 施工单 §1.1）：stale["day"] 只接受「数据自身声明的日期」，
+        # 绝不拿 mtime 顶替——实测 opt.html mtime=10-03 而数据日=09-26，
+        # 用 mtime 会凭空新鲜 7 天，等于用新假绿替换旧的「无提示」。
+        # day=None 时横幅显示「数据日未知」，仅报生成时刻，不编日期。
+        if stale and b"<body" in body:
+            try:
+                t = body.decode("utf-8", "ignore")
+                if "ui-stale-banner" not in t:
+                    i = t.find("<body")
+                    i = t.find(">", i) + 1
+                    t = (t[:i] + _stale_banner_html(stale, path) + t[i:])
                     body = t.encode("utf-8")
             except Exception as exc:
                 logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)

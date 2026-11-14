@@ -3240,9 +3240,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
             getattr(self, route_table._GET_EXACT_8[path])()
         elif path == "/bt-opt":
             # 飞书卡片「寻优榜单」按钮目标页：全池参数寻优 Top5
-            self._html_file(os.path.join(STATION, "quant_backtest",
-                                         "reports", "opt.html"),
-                            nav_key="opt")
+            # 2026-11-14 I1a：本页产物自 09-26 起未更新（mtime 10-03，数据日 09-26），
+            # 加陈旧横幅。数据日由 api_pages_portal._sole_date_in 从页面内容取
+            # 「唯一日期」；取不到则显「数据日未知」，不拿 mtime 顶替。
+            _opt_p = os.path.join(STATION, "quant_backtest",
+                                  "reports", "opt.html")
+            self._html_file(
+                _opt_p, nav_key="opt",
+                stale={"day": api_pages_portal._sole_date_in(_opt_p),
+                       "reason": "未定位（自 09-26 后无新产物）"})
         elif path in ("/qd", "/qd/"):
             # K-STOCK-027 影子层/展示层分离：渲染委托 qd_view.py（纯函数，
             # 可离线单测 python qd_view.py），本分支只做 I/O 副作用——
