@@ -11,6 +11,7 @@
 # 2026-11-13 v2.2: rc is no longer always 0; review and equity are
 #   captured separately so a crash in review cannot be masked by equity.
 # 2026-11-14 v2.3: 自动调 verify 验判据门，rc 合并进总 rc；
+# 2026-11-14 v2.5: pre-open account snapshot before open (evidence only, never changes rc).
 #   verify 脚本不存在则 skip（兼容老环境）；verify rc 非 0 = 停跑信号。
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Environment]::SetEnvironmentVariable('PYTHONUTF8', '1', 'Process')
@@ -29,6 +30,17 @@ try {
     $h  = Get-Date -Format 'HHmm'
     $rc = 0
     if ($h -ge '0920' -and $h -lt '1200') {
+        # [v2.5] pre-open snapshot: evidence only, never touches $rc.
+        # Closes criterion-3 blind spot (open discards filled sells).
+        $snap = Join-Path $wd 'paper_preopen_snapshot.py'
+        if (Test-Path $snap) {
+            $snap_out = & $py -X utf8 $snap --day $day 2>&1 | Out-String
+            $snap_rc  = if ($LASTEXITCODE -eq $null) { 0 } else { $LASTEXITCODE }
+            ('paper preopen snapshot rc=' + $snap_rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+            $snap_out | Out-File ("C:\Temp\paper_preopen_" + $day + ".log") -Encoding UTF8
+        } else {
+            ('paper preopen snapshot SKIP (script not found: ' + $snap + ') ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+        }
         $body = & $py -X utf8 paper_trade.py open 2>&1 | Out-String
         $rc = if ($LASTEXITCODE -eq $null) { 0 } else { $LASTEXITCODE }
         $mode = 'open'
