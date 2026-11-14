@@ -568,6 +568,25 @@ def _src_cell(symbol, picks, picks_ok):
     return '<td class="src0">观察名单</td>'
 
 
+def signals_conclusion(rows):
+    """🚦 /bt-signals 一句话结论（I1a 步 3）。纯函数，无 I/O。
+
+    口径纪律（施工单：结论里每个数字都能在页内找到出处，禁止前端自算）：
+    数字全部来自入参 rows——与下方表格**同源同批**（每行 date/●/res 列
+    均可逐行核对），页面上也写明核对路径。rows 为空 → 如实停，不编造。
+    """
+    if not rows:
+        return ("结论缺失：信号数据为空（rows 为空）——不编造数字，"
+                "请检查信号采集任务。")
+    max_date = max(r["date"] for r in rows)
+    n = len(rows)
+    n_hold = sum(1 for r in rows if any(r["sigs"].values()))
+    k3 = sum(1 for r in rows if r["res"] >= 3)
+    return ("数据日 %s：全池 %d 只，%d 只任一策略翻多，共振 ≥3 共 %d 只"
+            "（逐行核对：表内「数据日」列 / ● 标记 / 共振列）。"
+            % (max_date, n, n_hold, k3))
+
+
 def write_signals_html(rows, gen_ts, hold_only=False):
     """全池策略信号页：●持仓 ○空仓（悬停可见信号起始日），共振 ≥3 高亮。
     可下钻：点标的 → 个股全景 /bt/stock · 点策略列头 → 策略纵切页。
@@ -627,6 +646,7 @@ font-size:11px;line-height:17px;vertical-align:1px}
 <div class="meta">生成于 %s · %d 只 · 策略参数=当前 config（季度自动调参）</div>
 <div class="meta">本页=观察名单(%d)信号检查；机器聚合选票池见
 <a href="/picks.html" style="color:#58a6ff">/picks.html</a>（%s 只带来源评分）</div>
+<div class="meta" style="color:#e6edf3">📌 一句话结论（I1a 步3）：%s</div>
 %s
 <div class="filter"><a class="%s" href="/bt-signals">全部 %d</a>
 <a class="%s" href="/bt-signals?hold=1">只看持仓 %d</a></div>
@@ -636,12 +656,13 @@ font-size:11px;line-height:17px;vertical-align:1px}
 <div class="leg">● 持仓 ○ 空仓（悬停可见信号起始日）· 共振=4 策略同时持仓数（≥3 橙色）
 · 点标的 → 个股全景 · 点策略列头 → 策略纵切页
 · 信号基于最新收盘数据，按下一交易日执行（T+1）· 不构成投资建议</div>
-</div></body></html>""" % (
+</div></body></html>"""     % (
         CSS,
         gen_ts,
         len(rows),
         len(rows),
         n_picks,
+        signals_conclusion(rows),
         _nav_html(exclude="signals"),
         "on" if not hold_only else "",
         len(rows),

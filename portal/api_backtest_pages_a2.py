@@ -9,6 +9,9 @@ import logging
 import os
 import sys
 import time
+import html as _html
+
+import ui_parts  # I1a 步1/步3：ui-asof 徽章 + 一句话结论组件
 
 from api_common import (
     QBT_DIR, ROOT, STATION, _read_json, pill_nav)
@@ -533,11 +536,61 @@ def _bt_jev(self):
         self.wfile.write(body)
 
 
+def brief_conclusion(brief_row, review_row):
+    """AI 晨报/复盘页一句话结论（I1a 步 3）。纯函数，无 I/O，便于单测。
+
+    口径纪律：晨报 brief 自带【一句话总览】结构段（实测 2026-11-05~14
+    连续 10/10 存在），结论**直接引用管线自己的判定句**——不是页面自算；
+    结构段缺失时如实标注「缺结构字段」，不硬造一句话（缺判定 ≠ 页面缺 UI）。
+    brief_row / review_row : (ts, model, ok, brief) 元组或 None（无记录）。
+    """
+    def _ov(row, mark):
+        txt = (row[3] or "") if row else ""
+        if mark not in txt:
+            return None
+        seg = txt.split(mark, 1)[1].strip().splitlines()
+        line = seg[0].strip() if seg else ""
+        line = (line[:120] + "…") if len(line) > 120 else (line or None)
+        # 去句尾句号：外层用「；」连接、结尾统一加「。」，避免「。；」双标点
+        if line and line.endswith("。"):
+            line = line[:-1]
+        return line
+
+    if brief_row is None and review_row is None:
+        return ui_parts.conclusion(
+            "暂无生成记录（每日 08:00 晨报 / 交易日 15:30 复盘后生成）。",
+            note=ui_parts.asof_badge(None))
+    parts, days = [], []
+    if brief_row is not None:
+        ts = (brief_row[0] or "").strip()
+        days.append(ts[:10])
+        deg = "" if brief_row[2] else "（降级：模型未参与）"
+        line = _ov(brief_row, "【一句话总览】")
+        parts.append("晨报 %s%s：%s" % (
+            _html.escape(ts), deg,
+            _html.escape(line) if line else
+            "<span style='color:#d29922'>已生成但缺【一句话总览】结构字段"
+            "——页面不编造结论</span>"))
+    if review_row is not None:
+        ts2 = (review_row[0] or "").strip()
+        days.append(ts2[:10])
+        line2 = _ov(review_row, "【大盘复盘】")
+        parts.append("复盘 %s：%s" % (
+            _html.escape(ts2),
+            _html.escape(line2) if line2 else
+            "<span style='color:#d29922'>已生成但缺【大盘复盘】结构字段"
+            "——页面不编造结论</span>"))
+    asof = max(days) if days else None
+    return ui_parts.conclusion("；".join(parts) + "。",
+                               note=ui_parts.asof_badge(asof))
+
+
 def _bt_brief(self):
         """AI 晨报/复盘直达页：news.db ai_briefs / ai_reviews 最新各一条。"""
         import sqlite3 as _sq
         import html as _html
         blocks = []
+        latest = {}  # I1a 步 3：留最新一行给结论构造器（与下方渲染同源）
         try:
             db = _sq.connect(os.path.join(STATION, "news_collector",
                                            "news.db"))
@@ -550,6 +603,7 @@ def _bt_brief(self):
                 except Exception:
                     r = None
                 if r:
+                    latest[tbl] = r
                     blocks.append(
                         "<h3 style='color:#8b949e;font-size:13px'>%s · %s ·"
                         " %s%s</h3><pre style='white-space:pre-wrap;"
@@ -564,12 +618,17 @@ def _bt_brief(self):
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
-                "initial-scale=1'><title>AI 晨报</title></head>"
+                "initial-scale=1'><title>AI 晨报</title>" + ui_parts.style_block()
+                + "</head>"
                 "<body style='background:#0d1117;color:#c9d1d9;"
                 "font-family:Microsoft YaHei,Arial;margin:0;padding:20px'>"
                 "<div style='max-width:760px;margin:0 auto'>"
-                "<h2 style='font-size:18px'>🤖 AI 金融晨报 / 📊 收盘复盘</h2>%s%s"
+                "<h2 style='font-size:18px'>🤖 AI 金融晨报 / 📊 收盘复盘</h2>"
+                + brief_conclusion(latest.get("ai_briefs"),
+                                   latest.get("ai_reviews"))
+                + "%s%s"
                 "<div style='color:#58606a;font-size:11px;margin-top:16px'>"
                 "信息采集域 · 本地 Ollama 客观归纳 · 不构成投资建议"
                 "</div></div></body></html>"

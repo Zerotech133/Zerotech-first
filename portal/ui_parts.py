@@ -21,7 +21,7 @@
 import html as _h
 from datetime import date as _date
 
-__all__ = ["STYLE", "style_block", "sec", "asof_badge", "kpi"]
+__all__ = ["STYLE", "style_block", "sec", "asof_badge", "kpi", "conclusion"]
 
 # 只含新域用到的类；页面 head 里放一次 style_block()。
 # 类名统一 ui- 前缀，避免与老页 .sec/.kpi 同名互相污染。
@@ -52,6 +52,8 @@ flex-direction:column;gap:3px;min-width:0}
 font-variant-numeric:tabular-nums}
 .ui-kpi-sub{font-size:12px;color:var(--text-dim);font-variant-numeric:tabular-nums}
 .ui-kpi-n{font-size:10.5px;color:var(--text-dim);font-family:var(--font-mono)}
+.ui-conc-text{font-size:15px;line-height:1.9;color:var(--text)}
+.ui-conc-text b{font-variant-numeric:tabular-nums}
 </style>"""
 
 
@@ -135,3 +137,18 @@ def kpi(label, value, note=""):
             % (_h.escape(str(label)), vhtml,
                ('<div class="ui-kpi-n">%s</div>' % _h.escape(str(note)))
                if note else ""))
+
+
+def conclusion(text, note=""):
+    """一句话结论块（I1a 步 3）：页面顶部先给判定，再给明细。
+
+    text : **已渲染 HTML**（由调用方从管线数据聚合；本函数不转义，
+           因为结论里允许 <b> 等标记——调用方自行保证数字来自管线，
+           施工单验收：结论里每个数字都能在页内找到出处，禁止前端自算）
+    note : 右上角 note，一般传 asof_badge(...) 输出
+
+    ⚠ 调用纪律：写不出一句话说明数据链路缺判定——那就该停下先补判定，
+    不要调用本函数硬凑一段空话。
+    """
+    return sec("一句话结论", note=note,
+               body='<div class="ui-conc-text">%s</div>' % str(text))

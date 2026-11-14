@@ -17,6 +17,49 @@ from api_common import (
 
 from api_chanlun_sl_tp import _ChanlunSlTpMixin  # A5FROZEN：止损/止盈与自动线拆出
 from chanlun_viewer import JS as js, VIEWER as viewer  # noqa: F401 页面片段
+import ui_parts  # I1a 步1/步3：ui-asof 徽章 + 一句话结论组件
+
+
+def chanlun_pool_conclusion(last_day, pool, paper, strong):
+    """🛟 预警池一句话结论（I1a 步 3）。纯函数，无 I/O，便于单测。
+
+    口径纪律（施工单验收：结论里每个数字都能在页内找到出处）：
+    · n_day / 可成交 / 强预警 / 持仓 全部来自本函数入参——与页面渲染同源
+      （pool=chanlun_pool*.jsonl、paper=chanlun_paper*.json），不是前端自算；
+    · 「过闸门」只写 K203 涨停可成交闸（tradable 字段，mask-first）——
+      三闸（市场状态/T2 bull/信号龄）在选股管线不在本页，**不冒充**；
+      该字段是 2026-11 才加入的，旧行缺字段时如实标注条数，不静默当全过；
+    · pool 为空 → 如实写「池文件为空或缺失」，不编日期不编数字。
+    """
+    if not pool:
+        return ui_parts.conclusion(
+            "池文件为空或缺失，无检出数据——本页其余区块照旧渲染，"
+            "但不给结论（缺判定不硬凑）。", note=ui_parts.asof_badge(None))
+    day_rows = [r for r in pool if r.get("detect_date") == last_day]
+    n_day = len(day_rows)
+    # K203 可成交闸口径（缺失字段如实分列）
+    vals = [r.get("tradable") for r in day_rows]
+    known = [v for v in vals if v is not None]
+    if known:
+        shield = sum(1 for v in vals if v is False)
+        tr_clause = "涨停屏蔽 <b>%d</b> 条不可成交" % shield
+        if len(known) < len(vals):
+            tr_clause += "（另 %d 条旧口径缺该字段）" % (len(vals) - len(known))
+    else:
+        tr_clause = "可成交字段缺失（当日无一条带 tradable）"
+    n_open = len(paper.get("open") or [])
+    n_closed = len(paper.get("closed") or [])
+    n_strong = len(strong or [])
+    if n_strong:
+        hot = ("最需处理 🚨 <b>1卖·趋✓</b> 强预警 <b>%d</b> 只"
+               "（明细见下方强预警节）" % n_strong)
+    else:
+        hot = "今日无 1卖·趋✓ 强预警"
+    text = ("最新检出 <b>%s</b>：入池 <b>%d</b> 条，%s；%s；"
+            "模拟持仓 <b>%d</b> 笔 / 已平 <b>%d</b> 笔"
+            "（影子观察 · 不推送不拦截）。"
+            % (last_day or "—", n_day, tr_clause, hot, n_open, n_closed))
+    return ui_parts.conclusion(text, note=ui_parts.asof_badge(last_day))
 
 
 def _chanlun_pool_push(rec):
@@ -1302,7 +1345,8 @@ class Handler(_ChanlunSlTpMixin):  # Mixin 壳：经基座多继承并入
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>缠论预警池 · %s扫描 · "
-                "模拟交易（影子）</title>" % _mkt_cn + self._COCKPIT_CSS
+                "模拟交易（影子）</title>" % _mkt_cn + ui_parts.style_block()
+                + self._COCKPIT_CSS
                 + "</head><body>" + pill_nav("chanlun-pool")
                 + "<h1>🛟 缠论预警池 · 结构信号工作台</h1><div class='dim'>"
                 "全市场缠论方法论（<b style='color:#e6edf3'>只看结构不看市场"
@@ -1344,6 +1388,10 @@ class Handler(_ChanlunSlTpMixin):  # Mixin 壳：经基座多继承并入
                  % (_tname, tstat_disp, _rc_h, len(pool), last_day or "—",
                     len(paper.get("open") or []),
                     len(paper.get("closed") or [])))
+        # ── 一句话结论（I1a 步 3）：数字与页面同源，禁止浏览器自算；
+        #    写不出结论=数据链路缺判定，该停就停（chanlun_pool_conclusion
+        #    空池时已如实标注）──
+        body += chanlun_pool_conclusion(last_day, pool, paper, strong)
         # ── 策略说明书（学青萍之末 spec 范式：一句话总纲+数据源+扩展） ──
         body += ("<div class='sec' style='margin-top:12px'><h2>📖 策略说明书"
                  "</h2><div class='dim' style='font-size:13px;line-height:2.1'>"
