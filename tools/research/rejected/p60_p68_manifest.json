@@ -1,0 +1,48 @@
+{
+  "source_backup": "qpzm_backtest.py.bak-pre-restore-20261114_205110",
+  "functions": [
+    {
+      "name": "_ym",
+      "original_lineno": 1093,
+      "original_end_lineno": 1097,
+      "original_owner": "run_backtest",
+      "line_count": 5
+    },
+    {
+      "name": "_band_row",
+      "original_lineno": 1343,
+      "original_end_lineno": 1357,
+      "original_owner": "run_backtest",
+      "line_count": 15
+    },
+    {
+      "name": "_portfolio_curve",
+      "original_lineno": 1405,
+      "original_end_lineno": 1423,
+      "original_owner": "run_backtest",
+      "line_count": 19
+    },
+    {
+      "name": "_curve_stats",
+      "original_lineno": 1425,
+      "original_end_lineno": 1437,
+      "original_owner": "run_backtest",
+      "line_count": 13
+    },
+    {
+      "name": "_mr_row",
+      "original_lineno": 1499,
+      "original_end_lineno": 1504,
+      "original_owner": "run_backtest",
+      "line_count": 6
+    }
+  ],
+  "context": {
+    "block_hunk": "git diff -U0 c7af3e66b..HEAD @@ -966,0 +974,627 @@",
+    "total_added_lines": 656,
+    "research_variables": 88,
+    "report_consumers": 10,
+    "production_w4_callers": 0,
+    "note": "Entire +656/-14 hunk block was research. Combined 14 W4→w rewrites in combine_score() are production-equivalent to pure W4 (w4 param always None on prod path). This archive holds only the 5 nested defs; the remaining 627 lines were inline research code (RPS split/band/gate AB experiments) — recoverable via git show c7af3e66b..HEAD."
+  }
+}

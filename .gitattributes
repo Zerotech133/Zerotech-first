@@ -8,6 +8,11 @@
 *.sh    text eol=lf
 *.bash  text eol=lf
 
+# Python 源码统一 LF（2026-11-14 补）：autocrlf=true 下检出时 LF→CRLF 会污染
+# 指纹门禁（qpzm_backtest.py / portfolio_sim.py 的冻结 md5 都是 LF 口径）。
+# 规则覆盖所有 .py，避免同一仓库内不同文件行为不一致。
+*.py    text eol=lf
+
 # 钩子副本没有扩展名，上面的 *.sh 覆盖不到（2026-11-12 补）：
 # tools/git-hooks/pre-push 检出时被转成 CRLF，cp 回 .git/hooks/ 后 sh 会按
 # "\r: command not found" 直接失效——钩子静默不跑，比报错更难发现。
