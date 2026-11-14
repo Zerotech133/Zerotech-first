@@ -586,11 +586,25 @@ def main():
             halt_reason = should_halt(outcomes)
             if halt_reason:
                 halted = halt_reason
-                print("[xq_tl] 停轮 %s：近 %d 只坏率 %.0f%%（%d/%d 只被拒）"
-                      "——冷却自愈无效，游标已落在 %s 之后，换时段/新会话续跑"
-                      % (halt_reason, len(outcomes),
+                # 文案必须写清「触发依据」。2026-11-14 生产轮把窗口读数当依据播报
+                # （"坏率 15%"），而实际触发的是「连续 3 只全灭」——15% 远低于 30%
+                # 阈值，读日志的人第一反应是判据坏了。两条判据不可混报。
+                if halt_reason == "SESSION_DEAD":
+                    basis = "连续 %d 只整只被拒" % CONSEC_FAIL_HALT
+                else:
+                    basis = "窗口坏率 %.0f%% ≥ %.0f%%" % (
+                        100.0 * window_bad_ratio(outcomes),
+                        100.0 * SESSION_BAD_RATIO)
+                if cursor_on:
+                    resume = "游标已落在 %s 之后，换时段续跑" % code
+                else:
+                    resume = ("未启用游标（陈旧优先排序）：未采标的 mtime 未变，"
+                              "下轮自动排最前，无需人工补")
+                print("[xq_tl] 停轮 %s：依据=%s；已处理 %d/%d"
+                      "（窗口读数 %d 只、坏率 %.0f%%、被拒 %d 只）；%s"
+                      % (halt_reason, basis, i + 1, n, len(outcomes),
                          100.0 * window_bad_ratio(outcomes),
-                         len(outcomes) - sum(outcomes), len(outcomes), code),
+                         len(outcomes) - sum(outcomes), resume),
                       flush=True)
                 break
             # 持续封锁判定：撞 WAF 比例超阈值 → 整轮停（真·拉黑风险）
