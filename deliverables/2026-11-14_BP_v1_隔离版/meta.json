@@ -1,0 +1,48 @@
+{
+  "artifact": "business_plan",
+  "title": "零界（老田的AI助手）商业计划 v1（隔离版）",
+  "version": "a1",
+  "generated_at": "2026-11-14T14:52:54+08:00",
+  "isolation": "isolated",
+  "status": "BLOCKED/待送审",
+  "source_ref": "PRODUCT_BASELINE v1.2 + A0-DEC-20261107 + 老田 2026-11-14 14:50 验收指令",
+  "source_files": [
+    "docs/plans/2026-11-10_统一真相源_能力账本+执行计划_v2.md",
+    "A0-DEC-20261107",
+    "deliverables/2026-11-14_四件成果最小闭环验收_v1.md"
+  ],
+  "external_evidence": "none（不编造外部事实/数字）",
+  "sha256": "99c0293f4df7633556f8aa78c1449425196ca24a0f237fb71e0f4d4c1d51d101",
+  "bytes": 5099,
+  "forbidden": [
+    "对外发送",
+    "路演",
+    "收入预测数字"
+  ],
+  "assumptions": [
+    {
+      "code": "A1",
+      "text": "用户是「有经验、有想法、仍在持续创业」的人",
+      "type": "hypothesis",
+      "verify": "本人访谈/试用反馈"
+    },
+    {
+      "code": "A2",
+      "text": "用户愿意用一句话交付一个可验收成果",
+      "type": "hypothesis",
+      "verify": "三句话内完成率"
+    },
+    {
+      "code": "A3",
+      "text": "隔离环境产物足以支撑首次方向判断",
+      "type": "hypothesis",
+      "verify": "本人是否接受 v1"
+    },
+    {
+      "code": "A4",
+      "text": "先出假设版 BP 再迭代，优于先追求完整",
+      "type": "hypothesis",
+      "verify": "v2 修订次数与采纳率"
+    }
+  ]
+}
