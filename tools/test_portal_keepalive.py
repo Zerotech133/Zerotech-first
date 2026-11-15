@@ -24,6 +24,15 @@ def _load():
 ka = _load()
 
 
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolate_log(tmp_path, monkeypatch):
+    """测试不写生产日志 logs/portal_keepalive.log（2026-11-16 修：曾污染）。"""
+    monkeypatch.setattr(ka, "LOG", tmp_path / "keepalive.log")
+
+
 def test_listening_false_on_closed_port():
     # 高位端口既没监听也不该抛错
     assert ka.listening(59631) is False
