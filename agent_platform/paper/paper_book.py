@@ -245,6 +245,9 @@ def apply_decision(decision, gate, state, date, ledger_path=None, seen=None):
         "nav": state["nav"],
         "mode": "paper",
         "trading_permitted": False,
+        # 2026-11-15 WO-INV-PAPER-TRADEID：成交回执 ID 随决策预分配后写入账行，
+        # 使「ledger 行 → receipt」可直接反查（旧行为 None，历史行不改写 hash-chain）。
+        "trade_id": decision.get("trade_id"),
     }
     rec = append_ledger(rec, ledger_path)
     seen.add(key)

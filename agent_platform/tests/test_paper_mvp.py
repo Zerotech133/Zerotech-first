@@ -95,6 +95,26 @@ def test_daily_end_to_end(tmp_path):
     assert res2["recorded"] == 0
 
 
+def test_trade_id_lands_on_ledger_row(tmp_path):
+    """2026-11-15 WO-INV-PAPER-TRADEID：账行带 trade_id，ledger 行可直接反查 receipt。"""
+    ledger = tmp_path / "ledger.jsonl"
+    state = book.empty_state()
+    tid = "pt-20261116010101-abcdef"
+    d = _dec(recommendation="STRONG_BUY", confidence=0.9, trade_id=tid)
+    g = risk.evaluate(d, state=state, cfg=CFG)
+    r = book.apply_decision(d, g, state, "2026-11-16", ledger_path=str(ledger))
+    assert r["duplicate"] is False
+    assert r["record"]["trade_id"] == tid
+    lines = [json.loads(x) for x in ledger.read_text(encoding="utf-8").splitlines()]
+    assert lines[0]["trade_id"] == tid
+    # 未传 trade_id（旧调用方）仍可写账，字段为 None，不破坏 hash-chain
+    d2 = _dec(symbol="000858", recommendation="STRONG_BUY", confidence=0.9)
+    g2 = risk.evaluate(d2, state=state, cfg=CFG)
+    r2 = book.apply_decision(d2, g2, state, "2026-11-16", ledger_path=str(ledger))
+    assert r2["record"]["trade_id"] is None
+    assert r2["record"]["prev_hash"] == lines[0]["hash"]
+
+
 def test_run_shadow_has_paper_auto_hook():
     src = (REPO / "agent_platform" / "run_shadow.py").read_text(encoding="utf-8")
     assert "_paper_auto(today)" in src

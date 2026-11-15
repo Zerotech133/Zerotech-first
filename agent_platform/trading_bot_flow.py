@@ -439,6 +439,10 @@ def decide(confirmation_id, decision, by="老田", note="", price=None,
     day = date.today().isoformat()
     ledger = paper_ledger_path
     seen = None if ledger is None else paper_book.existing_keys(ledger)
+    # 2026-11-15 WO-INV-PAPER-TRADEID：先铸 trade_id，账行与回执写同一个 ID，
+    # 「ledger 行 → receipt」可直接反查（此前账行无 trade_id，只能靠 receipt 侧追）。
+    trade_id = trade_receipt.new_trade_id()
+    d = dict(d, trade_id=trade_id)
     result = paper_book.apply_decision(d, gate, state, day, ledger_path=ledger, seen=seen)
     ledger_duplicate = bool(result.get("duplicate"))
     if not ledger_duplicate:
@@ -449,7 +453,7 @@ def decide(confirmation_id, decision, by="老田", note="", price=None,
     if not ledger_duplicate and isinstance(record, dict):
         candidate = trade_receipt.build_receipt(
             rec, dict(record, _ledger_path=str(ledger or paper_book.DEFAULT_LEDGER)),
-            gate, entry_path=ENTRY_PATH)
+            gate, entry_path=ENTRY_PATH, trade_id=trade_id)
         stored = trade_receipt.write_receipt(
             candidate, path=receipt_log,
             receipt_dir=os.path.join(_dirs(data_dir)[0], "receipts"))
