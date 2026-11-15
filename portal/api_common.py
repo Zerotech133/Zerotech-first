@@ -73,6 +73,7 @@ QBT_DIR = os.path.join(STATION, "quant_backtest")   # 缠论 P1 数据底座模�
 # 现有工具页 URL 全部不动（飞书卡片历史链接不破坏），只重组入口归属。
 SECTIONS = [
     ("quant", "📈 量化", "/quant"),
+    ("chanlun", "🧭 缠论", "/chanlun/"),
     ("stock", "📊 个股分析", "/sa"),
     ("intel", "🕵️ 情报", "/intel"),
     ("creator", "🎬 创作", "/creator"),
@@ -144,6 +145,16 @@ DOMAIN_NAV_GROUPS = {
             ("📊 寻优", "/bt-opt", "opt"),
             ("🔥 板块", "/bt-sectors", "sectors"),
             ("🗄 数据仓", "/bt-data-health", "data-health"))),
+    ),
+    "chanlun": (
+        ("🌅 今日", ((
+            "📌 今日结论", "/chanlun/", "cl-today"),)),
+        ("🚨 预警", ((
+            "🛟 预警池", "/chanlun/radar", "cl-radar"),)),
+        ("💼 执行", ((
+            "🧾 影子仓", "/chanlun/action", "cl-action"),)),
+        ("📖 学习", ((
+            "📖 判据账本", "/chanlun/learn", "cl-learn"),)),
     ),
     "intel": (
         ("📡 情报流", (
@@ -237,7 +248,10 @@ SECTION_PAGES = {k: [it for _, its in groups for it in its]
                  for k, groups in DOMAIN_NAV_GROUPS.items()}
 
 
-PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
+# I1b §3.1：新域 4 页映射；老 8 个缠论页的 PAGE_SECTION 仍为 "quant"（顶栏高亮不跳域）。
+PAGE_SECTION = {"cl-today": "chanlun", "cl-radar": "chanlun",
+                "cl-action": "chanlun", "cl-learn": "chanlun",
+                "fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "afterhours": "quant",
                 "flow": "ops",
                 "strategies": "quant", "screen": "quant",

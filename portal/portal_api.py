@@ -1674,6 +1674,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        # I1b §3.3：缠论新域（方案 A）。独立入口 + return，不进旧 if/elif 大链，
+        # 也不改 route_table 的 16 段等价表——旧 8 个缠论页零改动。
+        # 前缀与 nginx 的 ^~ 块同为带斜杠形式；未知子路径由新模块出 404，
+        # 不会穿透到旧链。页面渲染全在新文件，巨石只做转发。
+        if path == "/chanlun" or path.startswith("/chanlun/"):
+            import api_chanlun_domain
+            api_chanlun_domain.handle_get(self, path, qs)
+            return
         if path.startswith('/api/factor/'):
             # P1 因子服务只读目录/健康 + 计算型 POST（独立文件 api_factor.py）。
             # GET 只读；POST 在 do_POST 的 token 闸门后分派。

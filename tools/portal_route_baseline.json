@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-10T04:51:50",
+ "generated_at": "2026-11-15T09:28:28",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 327,
+ "total": 329,
  "signatures": [
   [
    "GET",
@@ -836,6 +836,11 @@
   [
    "GET",
    "exact",
+   "/chanlun"
+  ],
+  [
+   "GET",
+   "exact",
    "/chanlun-anno"
   ],
   [
@@ -1292,6 +1297,11 @@
    "GET",
    "prefix",
    "/bt/strategy/"
+  ],
+  [
+   "GET",
+   "prefix",
+   "/chanlun/"
   ],
   [
    "GET",
