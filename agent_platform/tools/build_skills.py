@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""生成赵云 Agent Skills（14 能力卡 → SKILL.md + scripts/verify.py）。
+"""生成赵云 Agent Skills（能力卡源 CAPABILITIES.json → 技能目录 + registry.json）。
 
 用法：
     python agent_platform/tools/build_skills.py            # 生成/刷新 agent_platform/skills/
@@ -84,6 +84,21 @@ SPECS = {
         "exists": ["tools/gov_ai_case_bridge.py"],
         "dirs": ["_vault/sign_requests"],
     },
+    # 赵云独有：做T（T-Engine 信号）→ iPhone 审批执行终端（terminal Gateway）跨仓焊点。
+    # 决策端与执行端是两个独立仓（../t-engine、../terminal），焊点回归在 ../integration；
+    # verify 不启动任何服务，只做独占性 + 三件套存在性只读核验。
+    "t-approval-terminal": {
+        "run": [
+            [
+                "python",
+                "agent_platform/skills/t-approval-terminal/scripts/exclusive_check.py",
+            ]
+        ],
+        "note": (
+            "赵云独有技能：做T 审批卡片→iPhone 端批准/拒绝→执行回执全链路；"
+            "真实系统在 ../terminal（Gateway）+ ../integration（焊点测试），本仓只登记能力与边界"
+        ),
+    },
 }
 
 VERIFY_TEMPLATE = '''# -*- coding: utf-8 -*-
@@ -93,6 +108,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 
@@ -107,8 +123,8 @@ def _main_repo():
             if not common.is_absolute():
                 common = (HERE.parent / common).resolve()
             return common.parent
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/skills/{name}/scripts/verify.py", exc)
     p = HERE.parent
     while p.name and not (p / "agent_platform").is_dir():
         p = p.parent
@@ -259,7 +275,7 @@ def _skill_md(cap: dict, spec: dict) -> str:
     return "\n".join(parts) + "\n"
 
 
-def build(caps_path: Path = DEFAULT_CAPS) -> dict:
+def build(caps_path: Path = DEFAULT_CAPS, force: bool = False) -> dict:
     data = json.loads(caps_path.read_text(encoding="utf-8-sig"))
     caps = [c for c in data.get("capabilities") or [] if c.get("name")]
     SKILLS.mkdir(parents=True, exist_ok=True)
@@ -271,9 +287,13 @@ def build(caps_path: Path = DEFAULT_CAPS) -> dict:
         (d / "scripts").mkdir(parents=True, exist_ok=True)
         (d / "references").mkdir(exist_ok=True)
         (d / "SKILL.md").write_text(_skill_md(cap, spec), encoding="utf-8")
-        (d / "scripts" / "verify.py").write_text(
-            VERIFY_TEMPLATE.format(name=name, body=_body(spec)), encoding="utf-8"
-        )
+        # verify.py 允许人工修补（silent-except 等规范），默认不覆盖已存在文件；
+        # 需要按模板重生成时显式传 --force，避免批量抹掉人工修补（2026-11-15 回归教训）。
+        verify_p = d / "scripts" / "verify.py"
+        if force or not verify_p.exists():
+            verify_p.write_text(
+                VERIFY_TEMPLATE.format(name=name, body=_body(spec)), encoding="utf-8"
+            )
         (d / "references" / "README.md").write_text(
             "# %s 参考材料\n\n- 能力卡源：`~/.hermes/profiles/zhaoyun/skills/CAPABILITIES.json`\n"
             "- 状态：%s\n- 边界：%s\n" % (name, cap.get("status"), cap.get("boundary")),
@@ -321,6 +341,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="生成赵云 Agent Skills")
     ap.add_argument("--caps", default=str(DEFAULT_CAPS))
     ap.add_argument("--check", action="store_true", help="只检查 registry 与能力数一致")
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="按模板重生成已存在的 scripts/verify.py（默认保留人工修补）",
+    )
     args = ap.parse_args(argv)
     if args.check:
         reg = json.loads((SKILLS / "registry.json").read_text(encoding="utf-8"))
@@ -342,7 +367,7 @@ def main(argv=None) -> int:
             )
         )
         return 0 if ok else 1
-    reg = build(Path(args.caps))
+    reg = build(Path(args.caps), force=args.force)
     print("生成 %d 个技能 → %s" % (reg["total"], SKILLS))
     return 0
 

@@ -121,6 +121,9 @@ def verify(name: str, timeout: int = TIMEOUT) -> dict:
             errors="replace",
             timeout=timeout,
             env=_clean_env(),
+            # 显式绑定 stdin，不继承父进程 stdio：在 pytest fd 捕获等场景下继承会拿到
+            # 已被替换/失效的句柄，Windows 上表现为 OSError: [WinError 6] 句柄无效。
+            stdin=subprocess.DEVNULL,
         )
         ok = r.returncode == 0
         detail = ((r.stderr or r.stdout or "").strip().splitlines() or [""])[-1][:300]

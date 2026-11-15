@@ -33,8 +33,8 @@ CA = _load("capability_self_audit", _TOOLS / "capability_self_audit.py")
 
 def test_registry_total_and_files():
     reg = SR.load_registry()
-    assert reg.get("total") == 14, reg.get("total")
-    assert len(reg.get("skills") or []) == 14
+    assert reg.get("total") == 15, reg.get("total")
+    assert len(reg.get("skills") or []) == 15
     for s in reg["skills"]:
         p = _WT / s["path"]
         assert p.exists(), s["name"]
@@ -43,10 +43,13 @@ def test_registry_total_and_files():
 
 
 @_DEV_ENV_SKIP
-def test_verify_all_passes():
-    rep = SR.verify_all()
+def test_verify_all_passes(capfd):
+    # 关闭 pytest 的 fd 级捕获：Windows 下子进程管道会继承到已被替换/无效的句柄，
+    # 表现为 OSError: [WinError 6] 句柄无效（2026-11-15 实测：fd 捕获 3 跑 1 红，sys 捕获 5 跑全绿）。
+    with capfd.disabled():
+        rep = SR.verify_all()
     assert rep["ok"] is True, rep.get("failed")
-    assert rep["total"] == 14
+    assert rep["total"] == 15
 
 
 def test_verify_unknown_and_traversal():
@@ -96,9 +99,45 @@ def test_build_is_idempotent_with_tmp_caps(tmp_path, monkeypatch):
     assert (tmp_path / "skills" / "registry.json").exists()
 
 
+def test_build_keeps_patched_verify_without_force(tmp_path, monkeypatch):
+    """回归（2026-11-15）：build 默认不得覆盖已存在、可能被人工修补的 scripts/verify.py。"""
+    caps = tmp_path / "CAPABILITIES.json"
+    caps.write_text(
+        json.dumps(
+            {
+                "generated_at": "2026-11-15T00:00:00+08:00",
+                "total": 1,
+                "ready": 1,
+                "capabilities": [
+                    {
+                        "name": "cap-x",
+                        "what": "X",
+                        "how": "python x.py",
+                        "boundary": "只读",
+                        "status": "ready",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(BS, "SKILLS", tmp_path / "skills")
+    BS.build(caps)
+    verify = tmp_path / "skills" / "cap-x" / "scripts" / "verify.py"
+    assert verify.exists()
+    patched = "# 人工修补标记\n"
+    verify.write_text(patched, encoding="utf-8")
+    BS.build(caps)  # 默认保留人工修补
+    assert verify.read_text(encoding="utf-8") == patched
+    BS.build(caps, force=True)  # 显式 --force 才重生成
+    assert verify.read_text(encoding="utf-8") != patched
+
+
 @_DEV_ENV_SKIP
-def test_audit_uses_registry_for_real_profile():
-    rep = CA.check()  # 默认真实 profile → 走 skills_registry
+def test_audit_uses_registry_for_real_profile(capfd):
+    with capfd.disabled():  # 同上：check() 内部调用 verify_all（子进程）
+        rep = CA.check()  # 默认真实 profile → 走 skills_registry
     assert rep.get("source") == "skills_registry"
     assert "drift" in rep and isinstance(rep["drift"], list)
     assert rep["ok"] is True, rep.get("drift")
