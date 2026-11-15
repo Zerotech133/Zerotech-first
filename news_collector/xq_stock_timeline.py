@@ -53,6 +53,7 @@ RATE_CAP = 30.0              # 额外间隔上限（秒）——再慢也不会�
 RATE_DECAY = 1.0             # 成功后每只回调的秒数（逐步恢复原速）
 DEFERRED_F = os.path.join(OUT_DIR, "_deferred.json")  # 跨日自愈 ledger
 CURSOR_F = os.path.join(OUT_DIR, "_cursor.json")      # 断点游标（尾部饥饿治理）
+ATTEMPT_F = os.path.join(OUT_DIR, "_attempt.json")    # 上次尝试时间（头部拥堵治理）
 
 # ── 断点游标（2026-11-13，判例：11-12 07:00 与 21:00 两轮均被强杀，队列尾部
 # 600780 起连续 136 只 52.8h 未刷新）。每轮从上次结束处继续，配额限制单轮时长；
@@ -209,6 +210,61 @@ def _load_deferred():
     return {str(k): int(v) for k, v in d.items()}
 
 
+def _load_attempt():
+    """读取「上次尝试时间」账本：{code: epoch 秒}。
+
+    为什么需要它：`order_by_staleness` 原本用落盘文件 mtime 排序，但雪球是追加写——
+    某票若干天确实没有新帖时，采完 mtime 不动，次日仍是最老 → 继续排队首，每轮被
+    白采。冷票累积即为「头部拥堵」，是 2026-11-12「尾部饥饿」的镜像缺陷。
+    账本记录的是「真的去采过」，与「有没有新内容」解耦。
+
+    缺失/损坏一律返回空 dict，不阻断采集（降级为纯 mtime 排序）。
+    """
+    if not os.path.exists(ATTEMPT_F):
+        return {}
+    try:
+        d = json.load(open(ATTEMPT_F, encoding="utf-8"))
+    except Exception:
+        return {}
+    codes = d.get("codes") if isinstance(d, dict) else None
+    if not isinstance(codes, dict):
+        return {}
+    out = {}
+    for k, v in codes.items():
+        try:
+            out[str(k)] = float(v)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _save_attempt(attempt):
+    """原子写尝试账本（tmp + fsync + os.replace），被强杀也不会留半截 JSON。"""
+    payload = {
+        "v": 1,
+        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "codes": {str(k): round(float(v), 3) for k, v in attempt.items()},
+    }
+    tmp = ATTEMPT_F + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, ATTEMPT_F)
+    except Exception:
+        pass
+
+
+def _record_attempt(attempt, code, ts=None):
+    """就地登记某码的本次尝试时间；返回 True 表示此前无记录（首次纳入账本）。"""
+    if not code:
+        return False
+    first = code not in attempt
+    attempt[str(code)] = float(ts if ts is not None else time.time())
+    return first
+
+
 def _cursor_domain(scope, sources):
     """游标域键：(scope, sources) → 字符串。全量轮与分片轮据此互不覆盖。"""
     return "%s|%s" % (scope or "", sources or "")
@@ -272,24 +328,36 @@ def _save_cursor(last_code, scope, sources, queue_len, rnd, quota, done):
         pass
 
 
-def order_by_staleness(codes, data_dir=None):
-    """按本地数据文件的新鲜度排序：最久未刷新的排最前，从未采集的排更前。
+def order_by_staleness(codes, data_dir=None, attempt=None):
+    """按「最久未尝试」排序：最久没去采的排最前，从未采过的排更前。
 
     目的：撞墙时先采「最欠刷新」的票，而不是固定从队头开始——固定队头 + 中途中断，
     尾部就永远轮不到（11-12 尾部 136 只 48h 未刷新的成因）。
 
-    与游标的关系：排序模式天然表达断点——没采到的票 mtime 仍是旧的，下一轮自动排前，
+    排序键优先级（2026-11-14 修订）：
+      1. `attempt` 账本里的「上次尝试时间」—— 与「有没有新内容」解耦；
+      2. 无账本记录时回退到落盘文件 mtime —— 兼容升级前的老数据；
+      3. 两者皆无（从未采过）= 0.0，排最前。
+
+    为什么不再单用 mtime：雪球是追加写，某票确实多日无新帖时 mtime 不动，
+    次日仍排最前，每轮白采 → 冷票在队首固定占位，把真正待刷新的挤到后面（头部拥堵）。
+    账本为空时行为与旧版完全一致，故此参数是纯增强。
+
+    与游标的关系：排序模式天然表达断点——没采到的票尝试时间仍是旧的，下一轮自动排前，
     因此该模式下**不启用游标旋转**，避免两套顺序互相打架。
 
-    排序是稳定的：mtime 相同（如同一轮同时写入）时保持队列原序。
+    排序是稳定的：键相同时保持队列原序（保证同分排序可复现）。
     """
     d = data_dir or OUT_DIR
+    att = attempt or {}
 
     def key(code):
+        if code in att:
+            return att[code]
         try:
             return os.path.getmtime(os.path.join(d, "%s.jsonl" % code))
         except OSError:
-            return 0.0          # 无文件 = 从未采过，排最前
+            return 0.0          # 无账本、无文件 = 从未采过，排最前
 
     return sorted(codes, key=key)
 
@@ -418,9 +486,12 @@ def main():
                     help="不读旧游标（本轮顺序照常），用于名单大改后重排")
     ap.add_argument("--plan-only", action="store_true",
                     help="只打印本轮解析出的顺序/配额/游标，不启浏览器（验配置用）")
-    ap.add_argument("--order", choices=["default", "mtime"], default="default",
+    ap.add_argument("--order", choices=["default", "mtime", "attempt"],
+                    default="default",
                     help="队列顺序：default=固定顺序+断点游标；"
-                         "mtime=最久未刷新优先（该模式不启用游标，顺序本身即断点）")
+                         "attempt=最久未尝试优先（读 _attempt.json，失效则回退 mtime；"
+                         "该模式不启用游标，顺序本身即断点）；"
+                         "mtime=最久未刷新优先（旧口径，仅按落盘 mtime，排障对照用）")
     args = ap.parse_args()
     scope, src_key, cursor_on, rnd, queue_len = "", "", False, 1, 0
     if args.codes:
@@ -433,11 +504,19 @@ def main():
         base = load_queue(scope, sources=src_list or None)
         queue_len = len(base)
         cursor_on = not args.no_cursor
-        if args.order == "mtime":
-            base = order_by_staleness(base)
+        if args.order in ("attempt", "mtime"):
+            att = _load_attempt() if args.order == "attempt" else {}
+            base = order_by_staleness(base, attempt=att)
             cursor_on = False
-            print("[xq_tl] 顺序=最久未刷新优先（%d 只）；该模式不启用游标——"
-                  "未采到的票 mtime 仍旧，下轮自动排前" % len(base), flush=True)
+            if args.order == "attempt":
+                print("[xq_tl] 顺序=最久未尝试优先（%d 只，其中 %d 只有尝试记录、"
+                      "%d 只回退 mtime）；该模式不启用游标——未采到的票尝试时间仍旧，"
+                      "下轮自动排前" % (len(base), sum(1 for c in base if c in att),
+                                        len(base) - sum(1 for c in base if c in att)),
+                      flush=True)
+            else:
+                print("[xq_tl] 顺序=最久未刷新优先（旧口径·仅 mtime，%d 只）；"
+                      "该模式不启用游标" % len(base), flush=True)
         cur = {} if args.reset_cursor else _load_cursor(scope, src_key)
         # 游标按 (scope, sources) 分域：全量轮与分片轮的断点互不串味
         if cursor_on and cur and cur.get("scope") == scope \
@@ -470,12 +549,17 @@ def main():
     if args.plan_only:
         head = ",".join(codes[:6]) + ("…" if len(codes) > 6 else "")
         tail = ",".join(codes[-3:]) if len(codes) > 3 else ""
-        print("[xq_tl] PLAN scope=%s sources=%s quota=%s cursor=%s round=%d "
+        print("[xq_tl] PLAN scope=%s sources=%s quota=%s cursor=%s order=%s round=%d "
               "queue_len=%d 本轮=%d 起=%s 止=%s"
               % (scope or "-", src_key or "-", args.quota,
-                 "off" if not cursor_on else "on", rnd, queue_len,
+                 "off" if not cursor_on else "on", args.order, rnd, queue_len,
                  len(codes), head, tail or "-"), flush=True)
         return 0
+
+    # 尝试账本：仅队列/分片模式登记（手动 --codes 属临时探针，不污染调度排序）。
+    # 只在「采成功」时登记——整只被拒的码保持旧时间戳，下轮仍排最前，保证重试优先。
+    attempt_ledger = {} if args.codes else _load_attempt()
+    att_new = 0
 
     from playwright.sync_api import sync_playwright
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -576,6 +660,11 @@ def main():
                 print("[xq_tl] 降速档位 %.0f → %.0f 秒/只（每只额外等待）"
                       % (prev_rate, rate_sleep), flush=True)
             total_new += new
+            # 逐码落尝试账本：与 mtime 解耦，冷票不再霸占队首（头部拥堵治理）
+            if not args.codes and not code_dead:
+                if _record_attempt(attempt_ledger, code):
+                    att_new += 1
+                _save_attempt(attempt_ledger)
             # 逐码落游标：被强杀（含关机）时下一轮从此码之后继续，尾部不再饿死
             if cursor_on and code:
                 _save_cursor(code, scope, src_key, queue_len, rnd,
@@ -597,6 +686,9 @@ def main():
                         100.0 * SESSION_BAD_RATIO)
                 if cursor_on:
                     resume = "游标已落在 %s 之后，换时段续跑" % code
+                elif args.order == "attempt":
+                    resume = ("未启用游标（最久未尝试优先）：未采标的尝试时间未更新，"
+                              "下轮自动排最前，无需人工补")
                 else:
                     resume = ("未启用游标（陈旧优先排序）：未采标的 mtime 未变，"
                               "下轮自动排最前，无需人工补")
@@ -625,8 +717,9 @@ def main():
             json.dump(deferred_now, f, ensure_ascii=False)
     except Exception:
         pass
-    print("[xq_tl] 完成：新增 %d（halted=%s, deferred=%d）"
-          % (total_new, halted[:40], len(deferred_now)), flush=True)
+    print("[xq_tl] 完成：新增 %d（halted=%s, deferred=%d, 尝试账本 %d 只/新增 %d）"
+          % (total_new, halted[:40], len(deferred_now),
+             len(attempt_ledger), att_new), flush=True)
     return 0 if not halted else 2
 
 

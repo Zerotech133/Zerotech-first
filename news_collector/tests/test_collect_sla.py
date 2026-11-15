@@ -108,7 +108,12 @@ def test_fresh_all_green(sandbox):
         [(r["source"], r["state"], r["note"]) for r in rep["rows"]]
 
 
-def test_stale_thresholds_and_exit_code(sandbox):
+def test_stale_thresholds_and_exit_code(sandbox, monkeypatch):
+    # 本用例锁的是「37h 落 AMBER 区、60h 落 RED 区」这条阈值分档，
+    # **不是**周末松弛。周末松弛会给阈值整体 +24h/周末日，导致周末/周一跑必挂
+    # （2026-11-15 周日实测：37h 被洗成 GREEN）。周末语义由
+    # `test_weekend_slack_prevents_false_red` 单独覆盖，此处必须关掉松弛。
+    monkeypatch.setattr(cs, "_weekend_slack", lambda *a, **k: 0.0)
     codes = ["600000", "600001", "000001", "300001", "920001"]
     _touch_dir(sandbox / "data/taoguba", codes, hours_ago=37)   # AMBER 区
     _touch_dir(sandbox / "data/irm", codes, hours_ago=60)       # RED 区
@@ -195,7 +200,10 @@ def test_weekend_slack_prevents_false_red(sandbox):
     assert _row(rep, "irm")["state"] != cs.STATE_RED
 
 
-def test_consecutive_bad_escalates_to_red(sandbox):
+def test_consecutive_bad_escalates_to_red(sandbox, monkeypatch):
+    # 同 test_stale_thresholds_and_exit_code：本用例测「连续不达标提级」，
+    # 需把 30h 稳定落在 AMBER 区，故关掉周末松弛（周末会把 AMBER 线推到 50h+）。
+    monkeypatch.setattr(cs, "_weekend_slack", lambda *a, **k: 0.0)
     codes = ["600000", "600001", "000001", "300001", "920001"]
     _touch_dir(sandbox / "data/qianping", [], hours_ago=0)
     (sandbox / "news_collector/data/qianping/latest.json").write_text(json.dumps({

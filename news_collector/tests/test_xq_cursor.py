@@ -296,3 +296,78 @@ def test_staleness_order_self_rotates_without_cursor(tmp_path):
     assert m.order_by_staleness(codes, str(tmp_path)) == ["A3", "A4", "A1", "A2"]
 
 
+# ------------------------------------------- 尝试账本：治理「头部拥堵」（2026-11-14）
+# 缺陷：排序键原来是落盘 mtime，而雪球是追加写——某票确实多日无新帖时 mtime 不动，
+# 次日仍是最老 → 继续排队首、每轮白采。冷票一多就在队首固定占位，把真正待刷新的
+# 挤到后面。这是 11-12「尾部饥饿」的镜像缺陷，故排序键必须换成「上次尝试时间」。
+
+
+def test_attempt_ledger_roundtrip(tmp_path, monkeypatch):
+    f = tmp_path / "_attempt.json"
+    monkeypatch.setattr(m, "ATTEMPT_F", str(f))
+    led = {}
+    m._record_attempt(led, "600000", ts=1000.0)
+    m._save_attempt(led)
+    got = m._load_attempt()
+    assert got == {"600000": 1000.0}
+    assert not os.path.exists(str(f) + ".tmp")      # 原子写不留残骸
+
+
+def test_attempt_ledger_missing_file_degrades_silently(tmp_path, monkeypatch):
+    """账本缺失/损坏不得阻断采集，只降级为纯 mtime 排序。"""
+    monkeypatch.setattr(m, "ATTEMPT_F", str(tmp_path / "nope.json"))
+    assert m._load_attempt() == {}
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json", encoding="utf-8")
+    monkeypatch.setattr(m, "ATTEMPT_F", str(bad))
+    assert m._load_attempt() == {}
+
+
+def test_attempt_key_dominates_mtime(tmp_path):
+    """核心断言：新 mtime 但更旧的尝试时间，必须排前面。
+
+    判例场景——600001 天天有新帖（mtime 很新）但连续多天没被采到（尝试时间很旧），
+    600002 刚采过但无新帖（mtime 很旧）。按 mtime 排会把 600002 送进队首白采，
+    按尝试时间排才会先补 600001。
+    """
+    for c, ts in (("600001", 9000), ("600002", 1000)):
+        p = tmp_path / ("%s.jsonl" % c)
+        p.write_text("{}\n", encoding="utf-8")
+        os.utime(str(p), (ts, ts))
+    att = {"600001": 1000.0, "600002": 9000.0}
+    assert m.order_by_staleness(["600001", "600002"], str(tmp_path)) == \
+        ["600002", "600001"]            # 旧口径（mtime）：冷票霸占队首
+    assert m.order_by_staleness(["600001", "600002"], str(tmp_path),
+                                attempt=att) == ["600001", "600002"]
+
+
+def test_attempt_missing_falls_back_to_mtime(tmp_path):
+    """升级当天账本只覆盖部分码：无记录的码回退 mtime，不得全被当成「从未采过」。"""
+    for c, ts in (("600001", 9000), ("600002", 1000)):
+        p = tmp_path / ("%s.jsonl" % c)
+        p.write_text("{}\n", encoding="utf-8")
+        os.utime(str(p), (ts, ts))
+    ordered = m.order_by_staleness(["600001", "600002"], str(tmp_path),
+                                   attempt={"600001": 9000.0})
+    assert ordered == ["600002", "600001"]      # 600002 无记录 → 用 mtime 1000 排前
+
+
+def test_attempt_record_reports_first_seen():
+    led = {}
+    assert m._record_attempt(led, "600000", ts=1.0) is True
+    assert m._record_attempt(led, "600000", ts=2.0) is False
+    assert led["600000"] == 2.0                 # 时间戳必须被覆盖为最新一次
+    assert m._record_attempt(led, "", ts=3.0) is False   # 空码不写
+
+
+def test_attempt_empty_ledger_keeps_legacy_behaviour(tmp_path):
+    """账本为空时行为与旧版完全一致（纯增强，不是口径替换）——防止回退时行为漂移。"""
+    codes = ["600000", "600001", "600002"]
+    for c, ts in (("600001", 3000), ("600002", 1000)):
+        p = tmp_path / ("%s.jsonl" % c)
+        p.write_text("{}\n", encoding="utf-8")
+        os.utime(str(p), (ts, ts))
+    assert m.order_by_staleness(codes, str(tmp_path), attempt={}) == \
+        m.order_by_staleness(codes, str(tmp_path))
+
+
