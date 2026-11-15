@@ -104,6 +104,35 @@ def run_merge(tid: str, timeout: int) -> dict:
                 "tail": type(exc).__name__, "ok": False}
 
 
+STEP_REBASE = "rebase"
+STEP_MERGE = "merge"
+
+
+def plan_for(tid: str, no_rebase: bool = False) -> list[dict]:
+    """单条任务的执行计划。
+
+    **dry-run 与实际执行共用本函数**——这是「演练顺序 = 执行顺序」的唯一保证。
+    新增任何前置步骤只改这里，两边同时生效，不会各写一套漂移。
+    """
+    steps: list[dict] = []
+    if not no_rebase:
+        steps.append({"kind": STEP_REBASE,
+                      "cmd": "git -C .worktrees/%s rebase master" % tid})
+    steps.append({"kind": STEP_MERGE,
+                  "cmd": "python tools/devtask.py merge %s" % tid})
+    return steps
+
+
+def execute_step(step: dict, tid: str, timeout: int) -> dict:
+    """执行计划中的一步，返回统一结果结构（kind/ok/tail，merge 另带 rc/seconds）。"""
+    if step["kind"] == STEP_REBASE:
+        r = rebase_branch(tid)
+        return {"kind": STEP_REBASE, "ok": bool(r.get("ok")), "tail": r.get("tail", "")}
+    r = run_merge(tid, timeout)
+    return {"kind": STEP_MERGE, "ok": bool(r.get("ok")), "rc": r.get("rc"),
+            "seconds": r.get("seconds"), "tail": r.get("tail", "")}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Merge 窗口批处理（窗口外拒绝）")
     ap.add_argument("--tids", required=True, help="逗号分隔的任务 TID")
@@ -130,10 +159,10 @@ def main(argv=None) -> int:
     if args.dry_run:
         planned = []
         for tid in tids:
-            steps = ([] if args.no_rebase else ["git -C .worktrees/%s rebase master" % tid]) + \
-                    ["python tools/devtask.py merge %s" % tid]
-            planned.append({"tid": tid, "steps": steps})
-            log("  [dry] %s" % " → ".join(steps))
+            plan = plan_for(tid, args.no_rebase)
+            planned.append({"tid": tid, "steps": plan,
+                            "kinds": [s["kind"] for s in plan]})
+            log("  [dry] %s" % " → ".join(s["cmd"] for s in plan))
         payload = {"schema": "merge_window_run/v1", "dry_run": True,
                    "at": now.astimezone().isoformat(timespec="seconds"),
                    "window": why, "window_ok": ok_window, "planned": planned, "ok": True}
@@ -154,21 +183,20 @@ def main(argv=None) -> int:
 
     results = []
     for tid in tids:
-        reb = {"ok": True, "tail": "skipped"}
-        if not args.no_rebase:
-            reb = rebase_branch(tid)
-            log("  rebase %s %s" % (tid, reb["tail"]))
-            if not reb["ok"]:
-                results.append({"tid": tid, "rc": 3, "seconds": 0.0,
-                                "tail": "merge 跳过：rebase 失败 %s" % reb["tail"],
-                                "ok": False, "rebase": reb})
-                continue
-        res = run_merge(tid, args.timeout)
-        res["rebase"] = reb
-        results.append(res)
+        plan = plan_for(tid, args.no_rebase)  # 与 dry-run 同源
+        steps: list[dict] = []
+        for step in plan:
+            got = execute_step(step, tid, args.timeout)
+            steps.append(got)
+            log("  %s %s ok=%s %s" % (tid, got["kind"], got["ok"], got.get("tail", "")))
+            if not got["ok"]:
+                break  # 前置失败即停：不继续该条后续步骤（绝不半路硬来）
+        ok = len(steps) == len(plan) and all(s["ok"] for s in steps)
+        results.append({"tid": tid, "plan": [s["kind"] for s in plan],
+                        "steps": steps, "ok": ok})
     for r in results:
-        log("  %s rc=%d %ss %s" % (r["tid"], r["rc"], r["seconds"], r["tail"]))
-    payload = {"schema": "merge_window_run/v1",
+        log("  RESULT %s ok=%s steps=%d/%d" % (r["tid"], r["ok"], len(r["steps"]), len(r["plan"])))
+    payload = {"schema": "merge_window_run/v2",
                "at": now.astimezone().isoformat(timespec="seconds"),
                "window": why, "forced": bool(args.force and not ok_window),
                "results": results, "ok": all(r["ok"] for r in results)}
