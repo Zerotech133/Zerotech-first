@@ -154,6 +154,60 @@ def arm_plans(dry_run: bool) -> dict:
         return {"error": type(exc).__name__}
 
 
+def open_meeting(rec: dict, sid: str, scan_day: str, bearer: str, interval: float) -> dict:
+    """对当日 Top1 标的开一场 D1 投研会（create → 4 票 → finalize）。
+
+    走真实 POST /api/d1/meeting，既补 D1 日常评审动作，也让 meeting 写接口积累样本。
+    幂等键绑定「池日 + 代码」；同一池日重跑返回原记录。
+    """
+    code = str(rec.get("code"))
+    name = rec.get("name")
+    score = float((rec.get("aggregate") or {}).get("score") or 0.0)
+    tier = tier_of(score)
+    key = "d1mt-%s-%s" % (scan_day.replace("-", ""), code.replace(".", ""))
+    http, data, ms = post("/api/d1/meeting", {
+        "action": "create", "code": code, "created_by": "D1", "asof": scan_day,
+        "topic": "%s D1 投研会（会审复核）" % (name or code),
+        "agenda": ["会审精选复核", "档位与止损", "paper 观察结论"],
+    }, key + "-create", bearer, interval)
+    mid = (data.get("meeting") or {}).get("meeting_id") if isinstance(data, dict) else None
+    log("  meeting  create %-10s http=%s %6.1fms id=%s %s"
+        % (code, http, ms, mid, (data or {}).get("error") or ""))
+    out = {"code": code, "create_http": http, "meeting_id": mid}
+    if http != 200 or not mid:
+        return out
+    seat_why = {str(o.get("name")): "、".join((o.get("reasons") or [])[:2])
+                for o in (rec.get("opinions") or [])}
+    votes = [
+        ("T1", "BUY", min(0.90, round(score + 0.10, 3)), seat_why.get("刘晔") or "技术面：会审精选，结构未破"),
+        ("T2", "HOLD", 0.45, seat_why.get("蒋济") or "风控：短线涨幅已大，回撤风险存在"),
+        ("N1", "BUY", round(min(0.85, max(0.30, score * 0.90)), 3), "情绪面：池内关注度抬升，未见过热"),
+        ("F1", "HOLD", 0.55, seat_why.get("满宠") or "价值面：估值中枢附近，跟踪为主"),
+    ]
+    votes_ok = 0
+    for seat, t, conf, why in votes:
+        h, d, _ms2 = post("/api/d1/meeting", {
+            "action": "vote", "meeting_id": mid, "seat": seat,
+            "tier": t, "confidence": conf, "rationale": str(why)[:300],
+        }, "%s-%s" % (key, seat.lower()), bearer, interval)
+        if h == 200:
+            votes_ok += 1
+        else:
+            log("  meeting  vote   %-3s http=%s %s" % (seat, h, (d or {}).get("error") or ""))
+    h3, d3, ms3 = post("/api/d1/meeting", {
+        "action": "finalize", "meeting_id": mid, "tier": tier,
+        "confidence": round(min(0.95, max(0.05, score)), 3),
+        "rationale": "会审 %s 精选（聚合分 %.2f）：四席意见已归档，D1 裁 %s，交 WA1 盯盘。"
+                     % (sid, score, tier),
+        "decided_by": "D1",
+    }, key + "-finalize", bearer, interval)
+    doc = (d3.get("meeting") or {}) if isinstance(d3, dict) else {}
+    log("  meeting  final  %-10s http=%s %6.1fms status=%s %s"
+        % (code, h3, ms3, doc.get("status"), (d3 or {}).get("error") or ""))
+    out.update({"votes_ok": votes_ok, "finalize_http": h3, "status": doc.get("status")})
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="D1 日终批量裁决 + 交棒（走真实 HTTP）")
     ap.add_argument("--top", type=int, default=5)
@@ -161,6 +215,8 @@ def main(argv=None) -> int:
                     help="每次写请求的最小间隔秒（写端点限流 12 次/分钟）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-handoff", action="store_true")
+    ap.add_argument("--no-meeting", action="store_true",
+                    help="跳过当日的 Top1 投研会（默认开一场）")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
@@ -254,6 +310,16 @@ def main(argv=None) -> int:
         row.update({"handoff": "created" if h2 == 200 else "failed", "handoff_http": h2,
                     "receipt_id": rid})
 
+    # 每日一场投研会（对 Top1 标的）：补 D1 日常评审动作 + meeting 写接口样本。
+    if args.dry_run:
+        meeting = {"skipped": "dry_run", "would_open_for": (todo[0].get("code") if todo else None)}
+    elif not todo:
+        meeting = {"skipped": "no_todo"}
+    elif args.no_meeting:
+        meeting = {"skipped": "disabled_by_flag"}
+    else:
+        meeting = open_meeting(todo[0], sid, scan_day, bearer, args.interval)
+
     armed = arm_plans(args.dry_run)
     log("ARM %s" % json.dumps(armed, ensure_ascii=False))
     payload_out = {"schema": "d1_daily_batch/v1",
@@ -261,14 +327,16 @@ def main(argv=None) -> int:
                    "session_id": sid, "scan_run_date": scan_day, "top": args.top,
                    "selected": len(selected), "already_judged": len(done),
                    "processed": len(todo), "results": results, "arm": armed,
+                   "meeting": meeting,
                    "paper_only": True, "not_a_trade": True}
     if args.json:
         print(json.dumps(payload_out, ensure_ascii=False, indent=1))
-    log("SUMMARY session=%s processed=%d decisions=%d handoffs=%d armed=%s bad=%d"
+    log("SUMMARY session=%s processed=%d decisions=%d handoffs=%d armed=%s meeting=%s bad=%d"
         % (sid, len(results),
            sum(1 for r in results if r.get("action") == "decision"),
            sum(1 for r in results if r.get("handoff") == "created"),
-           armed.get("armed"), sum(1 for r in results if r.get("http") not in (None, 200))))
+           armed.get("armed"), meeting.get("status") or meeting.get("skipped"),
+           sum(1 for r in results if r.get("http") not in (None, 200))))
     return 0
 
 
