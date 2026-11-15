@@ -51,6 +51,7 @@ import sys
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -78,6 +79,15 @@ MODEL_ADMIN_PORT = int(os.environ.get("MODEL_ADMIN_PORT", "8098"))
 # Read-only GET timeout (seconds) — bounded so build() never hangs.
 # 2026-10-30 WO-WATCH-ADMIN：8098 /api/models 实测 4s（Ollama 列表），3s 会误报超时。
 _HTTP_TIMEOUT = 6.0
+
+# 2026-11-15 WO-INV-WARROOM-FAST：本地只读 GET 进程内缓存 + 并行。
+# 原实现 zone2 串行 GET /api/agents + /api/models（models 实测 1.6–4s），zone3 串行
+# 3 个 8097 GET；每次 /api/watch-admin/snapshot 都重打一遍 → war_room 8.4s。
+# 现改为：成功响应缓存 20s、失败缓存 5s（避免打爆不可达端口），zone 内并行取。
+_HTTP_CACHE: Dict[str, Tuple[float, Any, Optional[str]]] = {}
+_HTTP_CACHE_OK_SEC = 20.0
+_HTTP_CACHE_ERR_SEC = 5.0
+_HTTP_CACHE_LOCK = threading.Lock()
 
 
 # --------------------------------------------------------------------------- #
@@ -248,6 +258,28 @@ class WatchAdminAggregator:
             return None, None, "read_error"
 
     def _http_get_json(
+        self, url: str, headers: Optional[Dict[str, str]] = None
+    ) -> Tuple[Optional[Any], Optional[str]]:
+        """Read-only GET returning parsed JSON. Bounded timeout; never throws.
+
+        2026-11-15 WO-INV-WARROOM-FAST：进程内 TTL 缓存（成功 20s / 失败 5s），
+        缓存键 = url + headers；未命中才真正请求。返回对象视为只读共享引用。
+        """
+        key = url + "|" + json.dumps(headers or {}, sort_keys=True, ensure_ascii=False)
+        now = time.time()
+        with _HTTP_CACHE_LOCK:
+            hit = _HTTP_CACHE.get(key)
+        if hit is not None:
+            ts, val, err = hit
+            ttl = _HTTP_CACHE_OK_SEC if err is None else _HTTP_CACHE_ERR_SEC
+            if now - ts < ttl:
+                return val, err
+        val, err = self._http_get_json_uncached(url, headers)
+        with _HTTP_CACHE_LOCK:
+            _HTTP_CACHE[key] = (now, val, err)
+        return val, err
+
+    def _http_get_json_uncached(
         self, url: str, headers: Optional[Dict[str, str]] = None
     ) -> Tuple[Optional[Any], Optional[str]]:
         """Read-only GET returning parsed JSON. Bounded timeout; never throws."""
@@ -464,8 +496,12 @@ class WatchAdminAggregator:
         # 8098 model-admin static config (no auth on read routes) — fail-visible.
         agents_url = "http://%s:%d/api/agents" % (MODEL_ADMIN_HOST, MODEL_ADMIN_PORT)
         models_url = "http://%s:%d/api/models" % (MODEL_ADMIN_HOST, MODEL_ADMIN_PORT)
-        agents_val, agents_err = self._http_get_json(agents_url)
-        models_val, models_err = self._http_get_json(models_url)
+        # 2026-11-15 WO-INV-WARROOM-FAST：两次 GET 并行（原串行，models 单条 1.6–4s）。
+        with ThreadPoolExecutor(max_workers=2) as _pool:
+            _fa = _pool.submit(self._http_get_json, agents_url)
+            _fm = _pool.submit(self._http_get_json, models_url)
+            agents_val, agents_err = _fa.result()
+            models_val, models_err = _fm.result()
         if isinstance(agents_val, dict):
             ag = agents_val.get("agents") or []
             sources.append(_source(
@@ -549,9 +585,14 @@ class WatchAdminAggregator:
             key = self._quant_mid_key()
             if key:
                 headers = {"X-Push-Hub-Key": key}
-                active_val, active_err = self._http_get_json(active_url, headers)
-                pending_val, pending_err = self._http_get_json(pending_url, headers)
-                health_val, _ = self._http_get_json(health_url)  # 探活无需 key
+                # 2026-11-15 WO-INV-WARROOM-FAST：三次 GET 并行（原串行）。
+                with ThreadPoolExecutor(max_workers=3) as _pool:
+                    _pa = _pool.submit(self._http_get_json, active_url, headers)
+                    _pp = _pool.submit(self._http_get_json, pending_url, headers)
+                    _ph = _pool.submit(self._http_get_json, health_url)
+                    active_val, active_err = _pa.result()
+                    pending_val, pending_err = _pp.result()
+                    health_val, _ = _ph.result()
                 if isinstance(active_val, dict) and isinstance(pending_val, dict):
                     sources.append(_source(
                         "production_trade_pool", state="healthy", source_mode="http", error_code=None,
@@ -1010,15 +1051,19 @@ class WatchAdminAggregator:
             ("zone7", self._zone7_shadow),
         ]
         zones: Dict[str, Dict[str, Any]] = {}
-        for zid, fn in builders:
-            try:
-                zones[zid] = fn()
-            except Exception as exc:  # noqa: BLE001
-                zones[zid] = self._zone(zid, zid, [_source(
-                    zid + "_error", state="unknown", source_mode="computed",
-                    error_code="build_error",
-                    note="区域构建异常（fail-visible，不影响其他区域）：%s" % str(exc)[:160],
-                    data=None, source="internal", verified=False)])
+        # 2026-11-15 WO-INV-WARROOM-FAST：7 个 zone 并行（原串行，合计 1.7s+）。
+        # 顺序仍按 builders 声明顺序组装，异常隔离口径不变。
+        with ThreadPoolExecutor(max_workers=max(1, len(builders))) as _pool:
+            _futs = [(zid, _pool.submit(fn)) for zid, fn in builders]
+            for zid, fut in _futs:
+                try:
+                    zones[zid] = fut.result()
+                except Exception as exc:  # noqa: BLE001
+                    zones[zid] = self._zone(zid, zid, [_source(
+                        zid + "_error", state="unknown", source_mode="computed",
+                        error_code="build_error",
+                        note="区域构建异常（fail-visible，不影响其他区域）：%s" % str(exc)[:160],
+                        data=None, source="internal", verified=False)])
 
         out: Dict[str, Any] = {
             "schema": SCHEMA,

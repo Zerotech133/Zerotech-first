@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 PORTAL = os.path.dirname(os.path.abspath(__file__))
@@ -39,38 +40,115 @@ STRATEGIES = [
     {"id": "emotion", "name": "打板情绪", "color": "#ff4d6d", "desc": "情绪周期"},
 ]
 WATCH_ADMIN = "http://127.0.0.1:8789/api/watch-admin/snapshot"
+# 2026-11-15 WO-INV-WARROOM-FAST：原 6s 串行 → 1.5s 有界（8789 内 8098 已改缓存+并行）。
+WATCH_TIMEOUT = 1.5
 _WATCH_CACHE = {"ts": 0.0, "data": None}
+_WATCH_TTL = 60.0
+# 整快照进程内缓存：聚合口径 15–20s 足够新，避免每次点击都重跑全部数据源。
+_SNAPSHOT_CACHE = {"ts": 0.0, "data": None}
+SNAPSHOT_TTL = 20.0
+# PG 可用性探测（60s 缓存）：PG 不可达时让池/研究两源走投影，不再每次等 3s 超时。
+_PG_PROBE = {"ts": 0.0, "up": None}
+PG_PROBE_TTL = 60.0
+# 并行取回的 8789 结果（供 _watch_summary 单参签名读取；None=None 表示未取）。
+_WATCH_LAST = {"snap": None, "err": None}
+
+
+def _pg_guard():
+    """PG 端口探测；不通时临时置 ACAD1_POOL_PG_DISABLE=1（语义等同 PG 不可用）。
+
+    原本每次 war_room 请求都会在 pool/d1 两处各等 3s 连接超时（实测 8.2s 的主因）。
+    """
+    import socket
+    import time
+
+    now = time.time()
+    if _PG_PROBE["up"] is not None and now - _PG_PROBE["ts"] < PG_PROBE_TTL:
+        return _PG_PROBE["up"]
+    up = False
+    try:
+        with socket.create_connection(("127.0.0.1", 5432), timeout=0.3):
+            up = True
+    except OSError:
+        up = False
+    _PG_PROBE["ts"] = now
+    _PG_PROBE["up"] = up
+    if up:
+        os.environ.pop("ACAD1_POOL_PG_DISABLE", None)
+    else:
+        os.environ["ACAD1_POOL_PG_DISABLE"] = "1"
+    return up
+
+
+def _watch_fetch():
+    """取 8789 盯盘中台 snapshot（成功结果 60s 缓存）；返回 (snapshot|None, error|None)。"""
+    import time
+
+    now = time.time()
+    if _WATCH_CACHE["data"] is not None and now - _WATCH_CACHE["ts"] < _WATCH_TTL:
+        return _WATCH_CACHE["data"], None
+    snap, err = None, None
+    try:
+        with safe_urlopen(WATCH_ADMIN, timeout=WATCH_TIMEOUT) as r:
+            snap = json.loads(r.read())
+    except Exception as exc:  # noqa: BLE001 8789 未启/超时不阻塞页面
+        err = str(exc)[:120]
+    if snap is not None:
+        _WATCH_CACHE["data"] = snap
+        _WATCH_CACHE["ts"] = now
+    _WATCH_LAST["snap"], _WATCH_LAST["err"] = snap, err
+    return snap, err
+
+
+def _confirm_pending():
+    try:
+        return sim_confirm.list_payload("pending")
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "items": []}
 
 
 def _watch_summary(armed):
-    import time
+    """盯盘摘要。签名保持单参（外部/测试按私有一参调用）；并行取回的结果走 _WATCH_LAST。"""
     out = {"armed": armed, "verified_sources": 17, "unverified": 2,
            "admin_url": "http://127.0.0.1:8789/watch-admin", "source": "d1_handoff"}
-    cached = _WATCH_CACHE.get("data")
-    if cached is not None and time.time() - _WATCH_CACHE.get("ts", 0) < 60:
-        out.update(cached)
-        return out
-    try:
-        with safe_urlopen(WATCH_ADMIN, timeout=6) as r:
-            out["snapshot"] = json.loads(r.read())
+    snap, err = _WATCH_LAST["snap"], _WATCH_LAST["err"]
+    if snap is None and err is None:
+        snap, err = _watch_fetch()
+    if snap is not None:
+        out["snapshot"] = snap
         out["source"] = "watch_admin"
-    except Exception as exc:  # noqa: BLE001 8789 未启不阻塞页面
-        out["error"] = str(exc)[:120]
-    _WATCH_CACHE["data"] = {"source": out["source"]}
-    _WATCH_CACHE["ts"] = time.time()
-    if "snapshot" in out:
-        _WATCH_CACHE["data"]["snapshot"] = out["snapshot"]
+    else:
+        out["error"] = err or "unavailable"
     return out
 
 
-def war_room_snapshot():
-    pool = pool_data.pool_snapshot()
-    d1 = d1_data.d1_snapshot()
-    paper = paper_data.paper_snapshot()
-    try:
-        confirmations = sim_confirm.list_payload("pending")
-    except Exception:  # noqa: BLE001
-        confirmations = {"ok": False, "items": []}
+def war_room_snapshot(use_cache=True):
+    """作战台聚合快照（只读）。
+
+    2026-11-15 WO-INV-WARROOM-FAST：
+    - 5 个数据源并行（原串行，pool/d1 各自等 PG 3s 超时 → 实测 8.2s）；
+    - PG 端口不通时临时禁用 PG 池读取（走投影），不再每次白等；
+    - 整快照进程内缓存 ``SNAPSHOT_TTL``（默认 20s）；``use_cache=False`` 强制重算。
+    """
+    import time
+
+    now = time.time()
+    if use_cache and _SNAPSHOT_CACHE["data"] is not None \
+            and now - _SNAPSHOT_CACHE["ts"] < SNAPSHOT_TTL:
+        return _SNAPSHOT_CACHE["data"]
+    _pg_guard()
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        f_pool = executor.submit(pool_data.pool_snapshot)
+        f_d1 = executor.submit(d1_data.d1_snapshot)
+        f_paper = executor.submit(paper_data.paper_snapshot)
+        f_conf = executor.submit(_confirm_pending)
+        f_watch = executor.submit(_watch_fetch)
+        pool = f_pool.result()
+        d1 = f_d1.result()
+        paper = f_paper.result()
+        confirmations = f_conf.result()
+        wsnap, werr = f_watch.result()
+    _WATCH_LAST["snap"], _WATCH_LAST["err"] = wsnap, werr
     d1map = {x.get("code"): x for x in d1.get("items") or []}
     poolmap = {str(x.get("code")): x for x in pool.get("items") or []}
     items = []
@@ -100,7 +178,7 @@ def war_room_snapshot():
     counts = {s["id"]: sum(1 for x in items if s["id"] in (x.get("sources") or []))
               for s in STRATEGIES}
     armed = sum(1 for x in items if (x.get("handoff") or {}).get("status") == "armed")
-    return {
+    payload = {
         "ok": True, "mode": "war_room_live",
         "date": d1.get("date") or pool.get("date"),
         "data_date": d1.get("data_date") or pool.get("data_date"),
@@ -123,6 +201,9 @@ def war_room_snapshot():
         },
         "trading_permitted": False,
     }
+    _SNAPSHOT_CACHE["ts"] = now
+    _SNAPSHOT_CACHE["data"] = payload
+    return payload
 
 
 def snapshot_envelope(handler):
