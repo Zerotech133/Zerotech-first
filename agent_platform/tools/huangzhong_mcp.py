@@ -607,6 +607,16 @@ def _content(obj):
 def handle(msg: dict) -> dict:
     mid = msg.get("id")
     method = msg.get("method")
+    # JSON-RPC 2.0 / MCP：**通知（无 id）一律不回包**。MCP 握手的第二步就是
+    # `notifications/initialized`（客户端 → 服务端，单向）。旧实现落到末尾的
+    # `method not found: -32601` 分支，回了一条 `{"id": null, ...}`；严格客户端
+    # 判协议违规并中止连接。症状是「这个 server 连不上」，而 Hermes 侧只记
+    # `not attempted (in retry cooldown)`（不为冷却态打印原始错误），
+    # 看起来像服务挂了——服务端其实是好的。同一缺陷 2026-11-08~11-15 让
+    # 张松 profile 连续 7 天 0 工具（见 zerobound-kg/factor_proto/factor_governance_mcp.py）。
+    # 调用方 main() 已按 `if resp is not None` 丢弃空响应。
+    if "id" not in msg:
+        return None
     if method == "initialize":
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "protocolVersion": PROTOCOL,
