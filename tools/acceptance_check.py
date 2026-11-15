@@ -173,6 +173,7 @@ def main(argv=None) -> int:
     ap.add_argument("--spec", required=True)
     ap.add_argument("--repo", default=str(REPO))
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--out", default=None, help="把 JSON 结果写入该文件（避免 shell 重定向的编码坑）")
     args = ap.parse_args(argv)
     spec_path = Path(args.spec)
     if not spec_path.is_absolute():
@@ -180,12 +181,18 @@ def main(argv=None) -> int:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     results = run_spec(spec, Path(args.repo))
     fails = [r for r in results if not r["ok"]]
+    payload = {"schema": "acceptance_check/v1",
+               "spec": str(spec_path), "title": spec.get("title"),
+               "checks": results, "fail": len(fails)}
+    if args.out:
+        out = Path(args.out)
+        if not out.is_absolute():
+            out = Path(args.repo) / out
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
     if args.json:
-        print(json.dumps({"schema": "acceptance_check/v1",
-                          "spec": str(spec_path), "title": spec.get("title"),
-                          "checks": results, "fail": len(fails)},
-                         ensure_ascii=False, indent=1))
+        print(json.dumps(payload, ensure_ascii=False, indent=1))
     else:
         print("# %s\n" % (spec.get("title") or spec_path.name))
         section = None
