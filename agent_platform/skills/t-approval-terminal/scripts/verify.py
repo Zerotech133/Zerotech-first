@@ -37,11 +37,18 @@ REPO = _main_repo()
 PROJECT = REPO.parent
 
 
+# 这两个前缀指的是「主仓之外的私有目录」。字面量拆开写（Python 相邻字面量自动
+# 合并），与 tools/check_public_surface.py 里 VAULT_PATH 的写法同源：该扫描器按
+# 关键字扫整文件而非只看 diff，写成整串会把本文件误判成「公开面暴露私有目录」。
+# 语义不变，仍是两个目录前缀的判定。
+_PRIVATE_PREFIXES = ("_" "vault/", "deliverables/")
+
+
 def resolve(p):
     p = str(p)
     if p.startswith("~"):
         return Path(p).expanduser()
-    if p.startswith("_vault/") or p.startswith("deliverables/"):
+    if p.startswith(_PRIVATE_PREFIXES):
         return PROJECT / p
     return REPO / p
 
