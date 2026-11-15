@@ -26,7 +26,8 @@ sys.path.insert(0, str(REPO))
 
 LEDGER = REPO / "agent_platform" / "data" / "paper" / "paper_ledger.jsonl"
 STATE = REPO / "agent_platform" / "data" / "paper" / "state.json"
-OUT_DIR = REPO / "deliverables" / "d1_q2"
+# 与 Q2 其他证据同目录（C:\项目\deliverables\d1_q2），按日期分子目录。
+OUT_DIR = REPO.parent / "deliverables" / "d1_q2"
 LOG = REPO / "logs" / "d1_t1_check.log"
 
 
