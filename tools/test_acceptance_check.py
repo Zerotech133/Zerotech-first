@@ -98,6 +98,30 @@ def test_cmd_unchanged_detects_mutation(tmp_path):
     assert target.stat().st_mtime >= before
 
 
+def test_task_next_run_variants(monkeypatch):
+    """task_next_run：可读即过、N/A 需 allow_na、任务缺失必 FAIL。"""
+    import types
+
+    def fake_run(*_a, **_k):
+        return types.SimpleNamespace(
+            stdout="PortalKeepalive|11/16/2026 04:49:06\nD1T1Check|N/A\n", returncode=0)
+
+    monkeypatch.setattr(ac, "subprocess", types.SimpleNamespace(run=fake_run))
+    ok, ev = ac.check_task_next_run({"tasks": ["PortalKeepalive"]}, Path("."))
+    assert ok is True and "PortalKeepalive=" in ev
+    # 一次性任务跑完 → N/A，未声明 allow_na 时判 FAIL 并给出提示
+    ok2, ev2 = ac.check_task_next_run({"tasks": ["D1T1Check"]}, Path("."))
+    assert ok2 is False and "allow_na" in ev2
+    ok3, _ = ac.check_task_next_run({"tasks": ["D1T1Check"], "allow_na": True}, Path("."))
+    assert ok3 is True
+    # 任务不存在 → MISSING
+    ok4, ev4 = ac.check_task_next_run({"tasks": ["NoSuchTask"]}, Path("."))
+    assert ok4 is False and "MISSING" in ev4
+    # 混合：一个有未来时间 + 一个 allow_na 的 N/A
+    ok5, _ = ac.check_task_next_run({"tasks": ["PortalKeepalive", "D1T1Check"], "allow_na": True}, Path("."))
+    assert ok5 is True
+
+
 def test_run_spec_unknown_kind_and_exit_code(tmp_path):
     spec = {"checks": [
         {"id": "1", "section": "s", "name": "ok", "kind": "file_exists", "path": "a.txt"},

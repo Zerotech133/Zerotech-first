@@ -77,6 +77,8 @@ def pending_internal() -> list[dict]:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="P0-05 T+1 检查（验证 + 内部 auto 补齐）")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-report", action="store_true",
+                    help="只打印不写 report 文件（验收自检/反复 dry-run 时用，避免刷出重复报告）")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
@@ -131,13 +133,16 @@ def main(argv=None) -> int:
     }
     out = OUT_DIR / dt.date.today().strftime("%Y%m%d") / ("P0-05_t1_check_%s.json"
                                                           % dt.datetime.now().strftime("%H%M%S"))
-    try:
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        payload["written_to"] = str(out)
-    except OSError as exc:
-        payload["write_error"] = type(exc).__name__
-    log("VERDICT %s %s" % (verdict, out))
+    if args.no_report:
+        log("VERDICT %s (--no-report：未写报告文件)" % verdict)
+    else:
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            payload["written_to"] = str(out)
+        except OSError as exc:
+            payload["write_error"] = type(exc).__name__
+        log("VERDICT %s %s" % (verdict, out))
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=1))
     return 0

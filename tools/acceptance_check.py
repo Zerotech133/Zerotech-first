@@ -125,7 +125,14 @@ def check_cmd(spec: dict, repo: Path) -> tuple[bool, str]:
 
 
 def check_task_next_run(spec: dict, repo: Path) -> tuple[bool, str]:
+    """计划任务可读性检查。
+
+    默认要求 NextRunTime 是**未来时间**；一次性任务执行过后 NextRunTime 会变成 `N/A`
+    （这是正常终态，不是故障），此类用例显式声明 `"allow_na": true`。
+    任务不存在（行缺失）一律 FAIL。
+    """
     tasks = spec.get("tasks") or []
+    allow_na = bool(spec.get("allow_na"))
     ps = ("foreach($t in %s){$i=Get-ScheduledTaskInfo -TaskName $t;"
           "\"$t|$($i.NextRunTime)\"}" % ",".join("'%s'" % t for t in tasks))
     try:
@@ -133,8 +140,21 @@ def check_task_next_run(spec: dict, repo: Path) -> tuple[bool, str]:
                            capture_output=True, text=True, timeout=120)
     except Exception as exc:  # noqa: BLE001
         return False, "查询失败 %s" % type(exc).__name__
-    lines = [l for l in (r.stdout or "").splitlines() if "|" in l]
-    return len(lines) == len(tasks), " ; ".join(lines) or "无结果"
+    got: dict[str, str] = {}
+    for line in (r.stdout or "").splitlines():
+        if "|" not in line:
+            continue
+        name, _, val = line.partition("|")
+        got[name.strip()] = val.strip()
+    missing = [t for t in tasks if t not in got]
+    na = [t for t in tasks if t in got and got[t] in ("", "N/A", "不可用")]
+    ok = not missing and (allow_na or not na)
+    ev = " ; ".join("%s=%s" % (t, got.get(t, "MISSING")) for t in tasks)
+    if missing:
+        ev += " | 缺失=%s" % ",".join(missing)
+    elif na and not allow_na:
+        ev += " | N/A（一次性任务已执行？如属正常请加 allow_na）"
+    return ok, ev
 
 
 HANDLERS = {
