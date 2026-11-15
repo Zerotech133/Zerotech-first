@@ -6,6 +6,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent.parent
 ORG = REPO / "agent_platform" / "registry" / "org.json"
 TT = REPO / "agent_platform" / "registry" / "team_trading.json"
+TI = REPO / "agent_platform" / "registry" / "team_invest.json"
 SE = REPO / "agent_platform" / "registry" / "sim_exchange.json"
 
 
@@ -25,10 +26,16 @@ def test_tr1_moved_to_invest():
 
 
 def test_team_trading_reports_to_d1():
-    team = _j(TT)
+    """2026-11-16 交易组并入 D1：TR1/2/3 在 team_invest.json 的 `roster_extra`。
+
+    team_trading.json 已按合并口径清空（保留壳），数据源改 TI；断言意图不变。
+    """
+    team = _j(TI)
     assert team["dept"] == "invest"
-    assert team["agents"][0]["agent_id"] == "TR1"
-    assert team["agents"][0]["reports_to"] == "D1"
+    tr1 = next(a for a in team["roster_extra"] if a["agent_id"] == "TR1")
+    assert tr1["reports_to"] == "D1"
+    assert {a["agent_id"] for a in team["roster_extra"] if a["agent_id"].startswith("TR")} == {
+        "TR1", "TR2", "TR3"}
 
 
 def test_sim_exchange_approved():
