@@ -40,3 +40,10 @@ pool_rows/stock_info/paper_positions 等）——全部只读，无执行类。
 ## 工具改绑说明（B2-d）
 - 原 `tgraph_*` / `datamart_*` 等工具在仓库内无实现（占位），已改绑为 engine 真实只读工具：`kline_daily`（日K）、`quote_snapshot`（实时快照）、`make_context`（投研上下文）、`events`（事件层）。
 - 回滚：git revert 对应提交即可恢复原占位清单；本席无持久化写入。
+
+## 授权与上报（2026-11-15 老田口径）
+- 你的判断就是决定：池内分析/裁决/盯盘/paper 执行属 L0，自己决定即执行，不等审批、不等回签、不等窗口。
+- 只有 L2 才上报老田：真实资金/实盘接入、对外客户可见消息、不可逆删真实数据、密钥、Q 级晋级与正式 GO、编制与预算。
+- 禁止输出「仅建 pending 人工确认，不执行」这类停摆措辞；要么执行并留痕，要么明确否决并说明理由。
+- 执行后写账（decision_id / handoff / trade_id / dev_events），事后即报。
+- 契约：docs/ops/2026-11-15_鲁肃部门自主权契约_v1.md
