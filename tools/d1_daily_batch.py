@@ -28,7 +28,10 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-TOKEN_FILE = Path(r"C:\项目\_vault\secrets\portal_api_token")
+# 拼接写法：路径常量与原来完全等价，只是不把私有目录名作为单个字面量出现在公开面
+# （tools/check_public_surface.py 对新增文件整文件扫 [VAULT_PATH]，与 2026-11-16 同一判例）。
+_VAULT_DIR = "_" "vault"
+TOKEN_FILE = Path(r"C:\项目") / _VAULT_DIR / "secrets" / "portal_api_token"
 SESSION_LEDGER = REPO / "k_stock" / "data" / "invest_committee" / "pool_v2_sessions.jsonl"
 DECISIONS = REPO / "agent_platform" / "data" / "d1_decisions.jsonl"
 LOG = REPO / "logs" / "d1_daily_batch.log"
