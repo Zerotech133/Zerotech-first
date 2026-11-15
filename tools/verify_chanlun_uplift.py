@@ -106,8 +106,16 @@ class Ledger:
 # 本机 HTTP_PROXY 指向本地代理端口，curl/urllib 访问 127.0.0.1 会拿到代理的
 # 94 字节 502（观测面陷阱）。http.client.HTTPConnection 不读代理环境变量，
 # 是这里唯一可靠的观测通道。
+# 网络超时必须显著大于首屏预算判据。实测（2026-11-15 真实 8091 验收）：
+# 巨石三活页首次冷启动（懒加载 + 读 12576 行 chanlun_pool.jsonl）> 8s，
+# 缓存后仅 0.1s。原先 timeout=8 与 I1A_SLOW_LIMIT_S=8 相等，慢页面被记成
+# 「请求异常 timed out」而绕过预算判据，把真实性能特征伪装成页面故障。
+# 放宽到 20s，让 SLOW_LIMIT_S / I1A_SLOW_LIMIT_S 真正承担性能判定。
+NET_TIMEOUT_S = 20.0
+
+
 def request(host, port, path):
-    conn = http.client.HTTPConnection(host, port, timeout=8)
+    conn = http.client.HTTPConnection(host, port, timeout=NET_TIMEOUT_S)
     try:
         conn.request("GET", path)
         resp = conn.getresponse()
