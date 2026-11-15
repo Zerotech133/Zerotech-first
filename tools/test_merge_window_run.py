@@ -58,7 +58,7 @@ def test_refuse_outside_window(monkeypatch):
 
 
 def test_force_bypasses_window_but_marks(monkeypatch, tmp_path):
-    """--force 允许窗口外，但要留痕（forced=True）。用假 run_merge 避免真合并。"""
+    """--force 允许窗口外，但要留痕（forced=True）。用假 rebase/run_merge 避免真操作。"""
     calls = []
 
     def fake_run_merge(tid, timeout):
@@ -69,6 +69,7 @@ def test_force_bypasses_window_but_marks(monkeypatch, tmp_path):
     monkeypatch.setattr(mw, "LOG", tmp_path / "log.txt")
     monkeypatch.setattr(mw, "OUT_DIR", tmp_path / "out")
     monkeypatch.setattr(mw, "run_merge", fake_run_merge)
+    monkeypatch.setattr(mw, "rebase_branch", lambda tid, timeout=600: {"ok": True, "tail": "rebased"})
     rc = mw.main(["--tids", "A", "--force"])
     assert rc == 0 and calls == ["A"]
     files = list((tmp_path / "out").rglob("merge_*.json"))
@@ -76,6 +77,7 @@ def test_force_bypasses_window_but_marks(monkeypatch, tmp_path):
     import json
     doc = json.loads(files[0].read_text(encoding="utf-8"))
     assert doc["forced"] is True and doc["ok"] is True
+    assert doc["results"][0]["rebase"]["tail"] == "rebased"
 
 
 def test_inside_window_runs_merges(monkeypatch, tmp_path):
@@ -89,5 +91,27 @@ def test_inside_window_runs_merges(monkeypatch, tmp_path):
     monkeypatch.setattr(mw, "LOG", tmp_path / "log.txt")
     monkeypatch.setattr(mw, "OUT_DIR", tmp_path / "out")
     monkeypatch.setattr(mw, "run_merge", fake_run_merge)
+    monkeypatch.setattr(mw, "rebase_branch", lambda tid, timeout=600: {"ok": True, "tail": "rebased"})
     rc = mw.main(["--tids", "A,B"])
     assert rc == 1 and calls == ["A", "B"]  # 一条失败不影响下一条，整体 rc=1
+
+
+def test_rebase_failure_skips_merge(monkeypatch, tmp_path):
+    """rebase 冲突时该条跳过 merge（不下半路，也不动 master）。"""
+    merged = []
+
+    def fake_run_merge(tid, timeout):
+        merged.append(tid)
+        return {"tid": tid, "rc": 0, "seconds": 0.1, "tail": "fake", "ok": True}
+
+    monkeypatch.setattr(mw, "_now", lambda: _at(16, 31))
+    monkeypatch.setattr(mw, "LOG", tmp_path / "log.txt")
+    monkeypatch.setattr(mw, "OUT_DIR", tmp_path / "out")
+    monkeypatch.setattr(mw, "run_merge", fake_run_merge)
+    monkeypatch.setattr(mw, "rebase_branch",
+                        lambda tid, timeout=600: {"ok": False, "tail": "rebase_conflict（已 abort，未改 master）"})
+    rc = mw.main(["--tids", "A"])
+    assert rc == 1 and merged == []  # 没调 merge
+    import json
+    doc = json.loads(list((tmp_path / "out").rglob("merge_*.json"))[0].read_text(encoding="utf-8"))
+    assert doc["results"][0]["rc"] == 3 and "rebase 失败" in doc["results"][0]["tail"]

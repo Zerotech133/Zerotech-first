@@ -54,6 +54,27 @@ def in_window(now: dt.datetime) -> tuple[bool, str]:
     return False, "当前 %s 不在 %s 内" % (hm, " / ".join("%s-%s" % w for w in WINDOWS))
 
 
+def rebase_branch(tid: str, timeout: int = 600) -> dict:
+    """把 worktree 里的分支 rebase 到当前 master（窗口前漂移修正）。
+
+    失败立即 `--abort`，不留半路状态；这条失败不影响其余条目。
+    """
+    wt = REPO / ".worktrees" / tid
+    if not wt.is_dir():
+        return {"ok": False, "tail": "worktree_missing:%s" % wt}
+    try:
+        r = subprocess.run(["git", "-C", str(wt), "rebase", "master"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=timeout)
+        if r.returncode != 0:
+            subprocess.run(["git", "-C", str(wt), "rebase", "--abort"],
+                           capture_output=True, text=True, timeout=120)
+            return {"ok": False, "tail": "rebase_conflict（已 abort，未改 master）"}
+        return {"ok": True, "tail": "rebased"}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "tail": "rebase_error:%s" % type(exc).__name__}
+
+
 def run_merge(tid: str, timeout: int) -> dict:
     t0 = time.perf_counter()
     try:
@@ -78,6 +99,8 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="窗口外紧急放行（留痕，需 24h 复盘）")
     ap.add_argument("--timeout", type=int, default=1800, help="单条 merge 超时秒")
+    ap.add_argument("--no-rebase", action="store_true",
+                    help="跳过窗口前的 rebase（默认先 rebase master 修正漂移）")
     args = ap.parse_args(argv)
 
     tids = [t.strip() for t in args.tids.split(",") if t.strip()]
@@ -87,7 +110,7 @@ def main(argv=None) -> int:
 
     if args.dry_run:
         for tid in tids:
-            log("  [dry] would merge %s" % tid)
+            log("  [dry] would rebase master + merge %s" % tid)
         log("SUMMARY dry_run planned=%d window_ok=%s" % (len(tids), ok_window))
         return 0
     if not ok_window and not args.force:
@@ -96,7 +119,20 @@ def main(argv=None) -> int:
     if args.force and not ok_window:
         log("WARN --force 窗口外放行：%s（需 24h 复盘）" % why)
 
-    results = [run_merge(tid, args.timeout) for tid in tids]
+    results = []
+    for tid in tids:
+        reb = {"ok": True, "tail": "skipped"}
+        if not args.no_rebase:
+            reb = rebase_branch(tid)
+            log("  rebase %s %s" % (tid, reb["tail"]))
+            if not reb["ok"]:
+                results.append({"tid": tid, "rc": 3, "seconds": 0.0,
+                                "tail": "merge 跳过：rebase 失败 %s" % reb["tail"],
+                                "ok": False, "rebase": reb})
+                continue
+        res = run_merge(tid, args.timeout)
+        res["rebase"] = reb
+        results.append(res)
     for r in results:
         log("  %s rc=%d %ss %s" % (r["tid"], r["rc"], r["seconds"], r["tail"]))
     payload = {"schema": "merge_window_run/v1",
