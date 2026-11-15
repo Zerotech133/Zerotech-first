@@ -167,4 +167,5 @@ def test_rebase_failure_skips_merge(monkeypatch, tmp_path):
     assert merged == []  # 没调 merge
     r0 = json.loads(list((tmp_path / "out").rglob("merge_*.json"))[0].read_text(encoding="utf-8"))["results"][0]
     assert r0["ok"] is False and r0["plan"] == ["rebase", "merge"]
+    assert len(r0["steps"]) < len(r0["plan"]), "中途停止必须体现为 steps 短于 plan"
     assert len(r0["steps"]) == 1 and r0["steps"][0]["kind"] == "rebase" and r0["steps"][0]["ok"] is False

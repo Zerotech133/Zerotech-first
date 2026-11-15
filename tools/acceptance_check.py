@@ -28,6 +28,7 @@ import argparse
 import json
 import re
 import subprocess
+import time
 import sys
 from pathlib import Path
 
@@ -106,21 +107,72 @@ def check_count_equals(spec: dict, repo: Path) -> tuple[bool, str]:
     return ok, "声明=%s 实际=%d" % (a.group(1) if a else "?", n_b)
 
 
+def _dir_snapshot(path: Path) -> dict:
+    """目录快照：{相对路径: 字节数}。用于证明"跑命令前后交付目录零变化"。"""
+    if not path.exists():
+        return {}
+    out = {}
+    for p in path.rglob("*"):
+        if p.is_file():
+            try:
+                out[str(p.relative_to(path))] = p.stat().st_size
+            except OSError:
+                continue
+    return out
+
+
+def _run_with_retry(cmd, cwd: str, timeout: int, retries: int = 1):
+    """跑命令；对**瞬时句柄错误**（Windows WinError 6）重试一次。
+
+    本机连续调用 subprocess 时偶发 `OSError: [WinError 6] 句柄无效`
+    （2026-11-16 在 test_platform_composition / 本检查器上都复现）。
+    只对这一类瞬时错误重试，其余错误（命令不存在、超时）原样抛出——
+    不掩盖真实失败。返回 (CompletedProcess, attempts)。
+    """
+    last = None
+    for attempt in range(1, retries + 2):
+        try:
+            return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace", timeout=timeout), attempt
+        except OSError as exc:  # noqa: BLE001 — 仅句柄类瞬时错误重试
+            last = exc
+            if getattr(exc, "winerror", None) != 6 and exc.errno not in (13, 22):
+                raise
+            time.sleep(0.3)
+    raise last  # type: ignore[misc]
+
+
 def check_cmd(spec: dict, repo: Path) -> tuple[bool, str]:
     guard = spec.get("unchanged")
+    guard_dir = spec.get("unchanged_dir")
     before = (repo / guard).stat().st_mtime if guard and (repo / guard).is_file() else 0
+    gdir = Path(guard_dir) if guard_dir else None
+    if gdir is not None and not gdir.is_absolute():
+        gdir = repo / gdir
+    snap_before = _dir_snapshot(gdir) if gdir else None
     try:
-        r = subprocess.run(spec["cmd"], cwd=str(repo), capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=int(spec.get("timeout", 600)))
+        r, attempts = _run_with_retry(spec["cmd"], str(repo), int(spec.get("timeout", 600)))
     except Exception as exc:  # noqa: BLE001
-        return False, "执行失败 %s" % type(exc).__name__
+        return False, "执行失败 %s: %s" % (type(exc).__name__, str(exc)[:80])
     after = (repo / guard).stat().st_mtime if guard and (repo / guard).is_file() else 0
     tail = (r.stdout or "").strip().splitlines()
     ev = tail[-1][:140] if tail else "(无输出)"
+    if attempts > 1:
+        ev += " | retried_winerror6=%d" % (attempts - 1)
     ok = r.returncode == int(spec.get("expect_rc", 0))
     if guard:
         ok = ok and before == after
         ev += " | %s unchanged=%s" % (guard, before == after)
+    if gdir is not None:
+        snap_after = _dir_snapshot(gdir)
+        added = sorted(set(snap_after) - set(snap_before))
+        removed = sorted(set(snap_before) - set(snap_after))
+        changed = sorted(k for k in set(snap_after) & set(snap_before) if snap_after[k] != snap_before[k])
+        same = not (added or removed or changed)
+        ok = ok and same
+        ev += " | dir %s unchanged=%s%s" % (
+            gdir.name, same,
+            "" if same else " added=%s removed=%s changed=%s" % (added[:3], removed[:3], changed[:3]))
     return ok, "rc=%d %s" % (r.returncode, ev)
 
 

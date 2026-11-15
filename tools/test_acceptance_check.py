@@ -122,6 +122,29 @@ def test_task_next_run_variants(monkeypatch):
     assert ok5 is True
 
 
+def test_cmd_unchanged_dir_detects_new_file(tmp_path):
+    """unchanged_dir：跑命令前后交付目录必须零变化（防测试污染生产）。"""
+    d = tmp_path / "deliv"
+    d.mkdir()
+    (d / "a.json").write_text("1", encoding="utf-8")
+    ok, ev = ac.check_cmd({"cmd": [sys.executable, "-c", "print(1)"], "expect_rc": 0,
+                           "unchanged_dir": str(d)}, tmp_path)
+    assert ok is True and "unchanged=True" in ev
+
+    code = "open(r'%s', 'w').write('x')" % (d / "new.json").as_posix()
+    ok2, ev2 = ac.check_cmd({"cmd": [sys.executable, "-c", code], "expect_rc": 0,
+                             "unchanged_dir": str(d)}, tmp_path)
+    assert ok2 is False and "unchanged=False" in ev2 and "new.json" in ev2
+
+
+def test_cmd_unchanged_dir_relative_to_repo(tmp_path):
+    d = tmp_path / "deliv"
+    d.mkdir()
+    ok, ev = ac.check_cmd({"cmd": [sys.executable, "-c", "print(1)"], "expect_rc": 0,
+                           "unchanged_dir": "deliv"}, tmp_path)
+    assert ok is True and "dir deliv unchanged=True" in ev
+
+
 def test_run_spec_unknown_kind_and_exit_code(tmp_path):
     spec = {"checks": [
         {"id": "1", "section": "s", "name": "ok", "kind": "file_exists", "path": "a.txt"},
