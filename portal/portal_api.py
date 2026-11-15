@@ -577,19 +577,31 @@ def _read_dw_body(handler, max_bytes=None):
 
 
 class Handler(api_data.Handler, api_chanlun_pages.Handler, api_chanlun_buy.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_intel_health.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
+    def parse_request(self):
+        # 2026-11-16 WO-PORTAL-ACCESSLATENCY：记录请求起点，供 access log 输出耗时。
+        # 背景：Q2 的 3 个写接口（decision/handoff/meeting POST）因 access log 无延迟
+        # 字段只能判 NOT_MEASURED；补这一列后，写接口可凭真实 POST 的耗时计算 SLO。
+        self._req_t0 = time.perf_counter()
+        return super().parse_request()
+
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
         # C6b：写前按大小轮转（>50MB → .1），防止无限增长吃满磁盘
+        # 2026-11-16：行尾追加 latency（毫秒，1 位小数）；老字段位置不变，旧解析方不受影响。
         if "/favicon" in fmt:
             return
         try:
             _log_rotate(_ACCESS_LOG)
+            t0 = getattr(self, "_req_t0", None)
+            latency = ""
+            if t0 is not None:
+                latency = " %.1fms" % ((time.perf_counter() - t0) * 1000.0)
             with open(_ACCESS_LOG, "a",
                       encoding="utf-8", errors="ignore") as f:
-                f.write("%s %s %s\n" % (
+                f.write("%s %s %s%s\n" % (
                     time.strftime("%Y-%m-%d %H:%M:%S"),
-                    self.client_address[0], fmt % args))
+                    self.client_address[0], fmt % args, latency))
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
