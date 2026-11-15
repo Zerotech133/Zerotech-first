@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
 import time
@@ -44,6 +45,16 @@ def log(msg: str) -> None:
 def _now() -> dt.datetime:
     """当前时间（测试可 monkeypatch，避免改全局 datetime）。"""
     return dt.datetime.now()
+
+
+def _parse_now(text: str) -> dt.datetime:
+    """解析 `--now`：支持 `HH:MM`（今天）与完整 ISO。仅用于 dry-run 演练。"""
+    text = str(text).strip()
+    if re.match(r"^\d{2}:\d{2}$", text):
+        hm = dt.datetime.strptime(text, "%H:%M")
+        base = dt.datetime.now()
+        return base.replace(hour=hm.hour, minute=hm.minute, second=0, microsecond=0)
+    return dt.datetime.fromisoformat(text)
 
 
 def in_window(now: dt.datetime) -> tuple[bool, str]:
@@ -101,16 +112,38 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=int, default=1800, help="单条 merge 超时秒")
     ap.add_argument("--no-rebase", action="store_true",
                     help="跳过窗口前的 rebase（默认先 rebase master 修正漂移）")
+    ap.add_argument("--now", default=None,
+                    help="模拟当前时间（HH:MM 或 ISO）；**仅允许与 --dry-run 同用**，防绕过窗口守卫")
     args = ap.parse_args(argv)
 
     tids = [t.strip() for t in args.tids.split(",") if t.strip()]
-    now = _now()
+    if args.now:
+        if not args.dry_run:
+            log("REFUSED --now 只能与 --dry-run 同用（防止伪造时间绕过窗口守卫）")
+            return 2
+        now = _parse_now(args.now)
+    else:
+        now = _now()
     ok_window, why = in_window(now)
     log("START tids=%s window=%s dry_run=%s force=%s" % (tids, why, args.dry_run, args.force))
 
     if args.dry_run:
+        planned = []
         for tid in tids:
-            log("  [dry] would rebase master + merge %s" % tid)
+            steps = ([] if args.no_rebase else ["git -C .worktrees/%s rebase master" % tid]) + \
+                    ["python tools/devtask.py merge %s" % tid]
+            planned.append({"tid": tid, "steps": steps})
+            log("  [dry] %s" % " → ".join(steps))
+        payload = {"schema": "merge_window_run/v1", "dry_run": True,
+                   "at": now.astimezone().isoformat(timespec="seconds"),
+                   "window": why, "window_ok": ok_window, "planned": planned, "ok": True}
+        out = OUT_DIR / now.strftime("%Y%m%d") / ("plan_%s.json" % now.strftime("%H%M%S"))
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            log("WROTE(plan) %s" % out)
+        except OSError as exc:
+            log("WARN 计划未落盘：%s" % type(exc).__name__)
         log("SUMMARY dry_run planned=%d window_ok=%s" % (len(tids), ok_window))
         return 0
     if not ok_window and not args.force:

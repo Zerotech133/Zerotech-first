@@ -29,6 +29,28 @@ def _at(hh: int, mm: int) -> dt.datetime:
     return dt.datetime(2026, 11, 16, hh, mm, 0)
 
 
+def test_dry_run_in_window_writes_plan(monkeypatch, tmp_path):
+    """窗口内 dry-run：打印 rebase→merge 顺序，并落计划 JSON（可追）。"""
+    monkeypatch.setattr(mw, "LOG", tmp_path / "log.txt")
+    monkeypatch.setattr(mw, "OUT_DIR", tmp_path / "out")
+    rc = mw.main(["--tids", "A,B", "--dry-run", "--now", "16:31"])
+    assert rc == 0
+    import json
+    files = list((tmp_path / "out").rglob("plan_*.json"))
+    assert len(files) == 1
+    doc = json.loads(files[0].read_text(encoding="utf-8"))
+    assert doc["dry_run"] is True and doc["window_ok"] is True
+    steps = doc["planned"][0]["steps"]
+    assert steps[0].endswith("rebase master") and steps[-1].endswith("merge A")
+    assert len(doc["planned"]) == 2
+
+
+def test_now_rejected_without_dry_run(monkeypatch, tmp_path):
+    """--now 只能与 --dry-run 同用，防伪造时间绕过窗口守卫。"""
+    monkeypatch.setattr(mw, "LOG", tmp_path / "log.txt")
+    assert mw.main(["--tids", "A", "--now", "16:31"]) == 2
+
+
 def test_in_window_boundaries():
     assert mw.in_window(_at(16, 29))[0] is False
     assert mw.in_window(_at(16, 30))[0] is True
