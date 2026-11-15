@@ -61,6 +61,16 @@ spec:
       note: IFS F5 训练 episode 契约已落地（outcome_chain.py）；生产 episodes.jsonl 未生成（API 诚实 data_unavailable）；dataset_registry 登记 task-27 planned
     contract: trading-bot/v1
     sla:
+      authority:
+        mode: autonomy_first
+        effective: '2026-11-15'
+        policy: '鲁肃部门（D1 + 13 席）自己决定就执行，只有重要改动才上报老田'
+        L0_autonomous: '池内投研/多空辩论/五档裁决；decision→handoff→watch_plan→trigger 全链；内部 auto paper 执行；盯盘计划与阈值调整；复盘与置信度校准；排障与内部服务自检'
+        L1_notify_after: '跨部门协作与派单、observer→active、非生产配置与计划任务、测试数据修复、参数微调（执行后即时报）'
+        L2_requires_human: '真实资金/实盘接入、对外客户可见消息、不可逆删除真实数据、密钥凭据、Q 级晋级与正式 GO、编制与预算变更'
+        no_gate: '内部 pending/签批不阻塞执行；超时即 execute_and_report，先做留痕事后即报'
+        escalation: '席位分歧先报 D1 裁决；仅 L2 与跨域冲突上 A0/老田'
+        doc_path: docs/ops/2026-11-15_鲁肃部门自主权契约_v1.md
       paper_only: true
       human_gate_external_only: true
       kill_switch: PAPER_KILL

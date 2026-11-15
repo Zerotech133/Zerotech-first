@@ -79,11 +79,14 @@
       "output": "批准/拒绝/改价/挂起/接管",
       "mode": "on_trigger",
       "human_gate": true,
-      "note": "仅外部测试/真实交易需要；内部 auto 路径跳过此门。",
+      "note": "仅外部测试/真实资金需要；内部 auto 路径跳过此门，且 pending 不阻塞——超时即自主执行并事后即报。",
       "applies_to": [
-        "external_test"
+        "external_test",
+        "real_money"
       ],
-      "internal_bypass": true
+      "internal_bypass": true,
+      "blocks_internal": false,
+      "pending_timeout_action": "execute_and_report"
     },
     {
       "id": "execute",
@@ -119,20 +122,30 @@
   },
   "human_interface": {
     "required_for": [
-      "BUY",
-      "SELL",
-      "新标的",
-      "加仓",
-      "单票超限",
-      "总仓超限",
-      "人工接管"
+      "真实资金下单",
+      "实盘接入/交易所适配器启用",
+      "对外客户可见的交易通知",
+      "人工接管/强制暂停"
     ],
+    "not_required_for": [
+      "内部 auto 路径 BUY/SELL/加仓/减仓/止损（paper-only）",
+      "池内新标的（ACAD1 池内，D1 自主裁决）",
+      "单票/总仓超限（D1 风控席位自主裁剪并留痕）",
+      "复盘、训练 episode、置信度校准"
+    ],
+    "internal_autonomy": {
+      "mode": "autonomy_first",
+      "effective": "2026-11-15",
+      "rule": "内部运行 D1 决定即执行：裁决→handoff→盯盘→paper 执行全链不等人工；执行后即时报 A0 并入 dev_events",
+      "pending_timeout_action": "execute_and_report",
+      "note": "仅真实资金/实盘/对外消息上报老田；审批流程本身不构成上报条件（判例 docs/ops/2026-11-15_鲁肃部门自主权契约_v1.md）"
+    },
     "methods": [
       "portal_confirm",
       "feishu_card",
       "cli_approve"
     ],
-    "timeout_action": "expire_to_watch",
+    "timeout_action": "execute_and_report",
     "human_can": [
       "pause",
       "resume",

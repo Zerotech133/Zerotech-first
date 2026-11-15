@@ -54,5 +54,14 @@ def test_human_gate_present():
     d = _j(REG)
     assert d["stages"][4]["id"] == "human_confirm"
     assert d["stages"][4]["human_gate"] is True
-    assert "BUY" in d["human_interface"]["required_for"]
     assert d["human_interface"]["kill_switch"]
+    # 2026-11-15 鲁肃部门自主权契约：人工门只拦真实资金/实盘/对外，内部 auto 全自主
+    req = d["human_interface"]["required_for"]
+    assert "真实资金下单" in req
+    assert "实盘接入/交易所适配器启用" in req
+    assert "BUY" not in req and "SELL" not in req
+    ia = d["human_interface"]["internal_autonomy"]
+    assert ia["mode"] == "autonomy_first"
+    assert ia["pending_timeout_action"] == "execute_and_report"
+    assert d["human_interface"]["timeout_action"] == "execute_and_report"
+    assert d["stages"][4]["blocks_internal"] is False

@@ -348,6 +348,14 @@
         }
       ],
       "llm_binding_note": "2026-10-29 WO-INV-P0-ALIGN：与 org D1 统一为 glm/glm-5.3（E3 裁决强模型）；原 ollama/qwen3.5:9b 为临时降级。",
+      "decision_authority": {
+        "policy": "autonomy_first：自己决定就去做，只有重要改动才上报（2026-11-15 老田口径；判例入口 docs/ops/2026-11-15_鲁肃部门自主权契约_v1.md）",
+        "L0_autonomous": "池内投研/辩论/五档裁决、decision/handoff/watch_plan/trigger 生成、内部 auto paper 执行、盯盘计划与阈值、复盘校准、排障与内部服务自检",
+        "L1_notify_after": "跨部门协作、observer→active、非生产配置与计划任务、测试数据修复、参数微调；执行后即时报",
+        "L2_requires_human": "真实资金/实盘、对外客户消息、不可逆删真数据、密钥、Q 级晋级/正式 GO、编制预算",
+        "no_gate": "内部 pending 与签批不阻塞执行；先做留痕事后即报",
+        "escalation": "席位分歧先报 D1 裁决；仅 L2 与跨域冲突上 A0/老田"
+      },
       "llm_fallback": [
         "deepseek/deepseek-flash",
         "ollama/qwen3.5:9b"
