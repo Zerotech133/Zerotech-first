@@ -63,6 +63,13 @@ _LAST_RUN_RE = re.compile(r"(?:Last Run Time|上次运行时间|上次執行時�
 _LAST_RESULT_RE = re.compile(r"(?:Last Result|上次结果|上次結果)[:：]\s*(-?\d+)", re.I)
 _STATUS_RE = re.compile(r"(?:Status|状态|狀態)[:：]\s*(\S+)")
 
+# gate 新鲜度阈值：必须按**生产者周期**定，不能用一把尺量两种节奏。
+# 全量报告 learning_gate_YYYYMMDD.json 由 ZeroBound_LearningStandardize（WeeklyTrigger，
+# 每周一 10:00）产出 —— 天然周期 168h，留 12h 余量；分阶段报告由日任务/半小时轮次产出。
+# 2026-11-16 判例：统一 36h 让周报一周固定红 6 天，4 个任务各报一次，最终没人再看。
+FULL_GATE_MAX_AGE_HOURS = 180.0
+STAGE_GATE_MAX_AGE_HOURS = 36.0
+
 
 # ---------------------------------------------------------------------------
 # 解析（纯函数，可单测）
@@ -89,24 +96,62 @@ def parse_schtasks_listing(text: str) -> dict:
     return out
 
 
+_MISSING_HINTS = ("does not exist", "cannot find the task", "cannot find",
+                  "找不到", "不存在", "系统找不到")
+
+
+def _decode_out(raw) -> str:
+    if not raw:
+        return ""
+    if isinstance(raw, str):
+        return raw
+    text = raw.decode("utf-8", errors="replace")
+    if "\ufffd" in text or ("Last Run Time" not in text and "上次" not in text):
+        alt = raw.decode("gbk", errors="replace")
+        if alt.count("\ufffd") < text.count("\ufffd"):
+            return alt
+    return text
+
+
 def query_task(name: str, runner=None) -> dict:
-    """查询计划任务（schtasks）；失败/未找到返回 found=False + error。"""
+    """查询计划任务（schtasks）→ 三态 ``query_state``。
+
+        found         解析到 Last Run Time / Last Result
+        not_found     schtasks **明确回答**该任务不存在
+        unmeasurable  schtasks 跑不起来 / 被安全策略拦 / 拒绝访问 / 输出无法解析
+
+    为什么要分（2026-11-16 判例）
+        沙箱里 ``schtasks.exe`` 在程序黑名单，7 个任务全返回「未解析到…（任务可能
+        不存在）」，巡检据此记成「计划任务未找到」。差异 100% 来自执行环境，却看起来
+        像七个任务集体消失。旧实现只看 stdout、不看 returncode/stderr，把
+        **「测不了」和「没有」压成同一个值** —— 这比漏报更危险，因为它指挥人去修
+        一个不存在的问题。
+    """
     cmd = ["schtasks", "/query", "/tn", name, "/v", "/fo", "LIST"]
+    base = {"found": False, "last_run_time": None, "last_result": None, "status": None}
     try:
         proc = (runner or subprocess.run)(cmd, capture_output=True, timeout=20)
-        raw = proc.stdout or b""
-        if isinstance(raw, bytes):
-            text = raw.decode("utf-8", errors="replace")
-            if "Last Run Time" not in text and "上次" not in text:
-                text = raw.decode("gbk", errors="replace")
-        else:
-            text = str(raw)
     except Exception as exc:  # noqa: BLE001
-        return {"found": False, "last_run_time": None, "last_result": None,
-                "status": None, "error": f"{type(exc).__name__}: {exc}"}
+        return {**base, "query_state": "unmeasurable",
+                "error": f"不可测：schtasks 无法执行（{type(exc).__name__}: {exc}）"}
+
+    rc = getattr(proc, "returncode", 0) or 0
+    text = _decode_out(proc.stdout or b"")
+    err = _decode_out(proc.stderr or b"").strip()
+
+    if rc != 0:
+        low = err.lower()
+        if any(h in low for h in _MISSING_HINTS):
+            return {**base, "query_state": "not_found",
+                    "error": f"任务不存在：{err[:200]}"}
+        return {**base, "query_state": "unmeasurable",
+                "error": f"不可测：schtasks rc={rc}（{err[:200] or '无 stderr'}）"}
+
     info = parse_schtasks_listing(text)
     if not info["found"]:
-        info["error"] = "未解析到 Last Run Time/Last Result（任务可能不存在）"
+        return {**base, "query_state": "unmeasurable",
+                "error": "不可测：schtasks 输出无可解析字段（输出形态可能已变化）"}
+    info["query_state"] = "found"
     return info
 
 
@@ -177,23 +222,74 @@ def latest_output(spec: dict, now: datetime | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # 检查 / 报告 / 告警
 # ---------------------------------------------------------------------------
-def gate_status(now: datetime | None = None, stale_hours: float = 36.0) -> dict:
-    """学习 gate 最新产出（research/reports/learning_gate_*.json）状态与新鲜度。"""
+def gate_status(now: datetime | None = None, stale_hours: float | None = None, *,
+                reports_dir: Path | str | None = None) -> dict:
+    """学习 gate 最新产出状态与新鲜度。
+
+    选取口径（2026-11-16 判例修正）
+        按**报告内 `generated_at`**（缺失回落 mtime）取最新，不再让文件名形态恒优先。
+        旧写法把 `learning_gate_YYYYMMDD.json` 排在最前且只看 `files[0]`，而全量报告
+        由**周任务**（每周一 10:00）产出 —— 一旦跨过周一，age 被永久锁死在那份，
+        每天必报「gate 产出过期 XXXh」，并把「分阶段 gate 天天在产」这层事实整个遮住。
+        `learning_dashboard_build.latest_gate` 的原意是「全量优先、但可回落」，
+        这里抄了优先级却漏了回落，才变成死锁。
+
+    新鲜度阈值按**生产者周期**区分（这是关键：拿 36h 衡量周报，一周固定误报 6 天）
+        全量 `…_YYYYMMDD.json`（周任务）→ 180h（=168h 周期 + 12h 余量）
+        分阶段 `…_YYYYMMDD_<stage>.json`（日任务/半小时轮次）→ 36h
+        显式传 `stale_hours` 时对所有形态生效，保持旧调用语义。
+    """
     now = now or datetime.now().astimezone()
-    files = sorted((REPO / "research" / "reports").glob("learning_gate_*.json"),
-                   key=lambda p: (not re.fullmatch(r"learning_gate_\d{8}\.json", p.name),
-                                  -p.stat().st_mtime))
-    if not files:
-        return {"exists": False, "ok": None, "age_hours": None, "fresh": False}
-    p = files[0]
-    age = round((now - datetime.fromtimestamp(p.stat().st_mtime).astimezone()).total_seconds() / 3600, 2)
+    base = Path(reports_dir) if reports_dir is not None else REPO / "research" / "reports"
+    cands = list(base.glob("learning_gate_*.json")) if base.exists() else []
+    if not cands:
+        return {"exists": False, "ok": None, "age_hours": None, "fresh": False,
+                "is_full": None, "stage": None, "filename": None, "max_age_hours": None}
+
+    def _sort_key(p: Path):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            d = {}
+        gen = str(d.get("generated_at") or "")
+        return (gen, p.stat().st_mtime), d
+
+    ranked = []
+    for p in cands:
+        try:
+            key, data = _sort_key(p)
+        except OSError:
+            continue
+        ranked.append((key, p, data))
+    ranked.sort(key=lambda x: x[0], reverse=True)
+    _, p, data = ranked[0]
+    data = data or {}
+
+    is_full = bool(re.fullmatch(r"learning_gate_\d{8}\.json", p.name))
+    if stale_hours is not None:
+        max_age = float(stale_hours)
+    else:
+        max_age = FULL_GATE_MAX_AGE_HOURS if is_full else STAGE_GATE_MAX_AGE_HOURS
+
+    gen_at = data.get("generated_at")
+    when = None
+    if gen_at:
+        try:
+            when = datetime.fromisoformat(str(gen_at)).astimezone()
+        except ValueError:
+            when = None
+    if when is None:
+        when = datetime.fromtimestamp(p.stat().st_mtime).astimezone()
+    age = round((now - when).total_seconds() / 3600, 2)
     try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        data = {}
-    return {"exists": True, "path": str(p.relative_to(REPO)), "ok": data.get("ok"),
-            "generated_at": data.get("generated_at"), "summary": data.get("summary"),
-            "age_hours": age, "fresh": age <= stale_hours}
+        rel = str(p.relative_to(REPO))
+    except ValueError:
+        rel = str(p)
+    return {"exists": True, "path": rel, "filename": p.name, "ok": data.get("ok"),
+            "generated_at": gen_at, "summary": data.get("summary"),
+            "stage": data.get("stage") or ("all" if is_full else None),
+            "is_full": is_full, "max_age_hours": max_age,
+            "age_hours": age, "fresh": age <= max_age}
 
 
 def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = None,
@@ -209,7 +305,11 @@ def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = No
         latest_output({**spec, "stale_hours": cfg.get("stale_hours")}, now)
         for spec in cfg.get("outputs") or []]
     issues: list[str] = []
-    if not info.get("found"):
+    qs = info.get("query_state")
+    if qs == "unmeasurable":
+        # 不可测 ≠ 不存在 ≠ 合格：如实写清是哪一种，别让环境问题伪装成任务消失。
+        issues.append(info.get("error") or "不可测：计划任务查询不可用（schtasks）")
+    elif qs == "not_found" or (qs is None and not info.get("found")):
         issues.append("计划任务未找到")
     if info.get("last_result") not in (0, None):
         issues.append(f"Last Result={info['last_result']}")
@@ -232,13 +332,22 @@ def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = No
     gate_info = None
     if cfg.get("gate"):
         gate_info = gate if gate is not None else gate_status(now)
+        # 归因：分阶段 gate 必须写明是哪一段，否则「gate 未通过」无法指向具体工序。
+        stage = gate_info.get("stage")
+        tag = f"({stage})" if (not gate_info.get("is_full") and stage and stage != "all") else ""
         if not gate_info.get("exists"):
             issues.append("gate 产出缺失（learning_gate_*.json）")
         else:
             if gate_info.get("ok") is not True:
-                issues.append(f"gate 未通过：ok={gate_info.get('ok')} summary={gate_info.get('summary')}")
-            if gate_info.get("age_hours") is not None and gate_info["age_hours"] > 36:
-                issues.append(f"gate 产出过期 {gate_info['age_hours']}h（>36h）")
+                sm = gate_info.get("summary") or {}
+                fail = sm.get("fail") if isinstance(sm, dict) else None
+                detail = (f"fail={fail}" if fail is not None
+                          else f"summary={gate_info.get('summary')}")
+                issues.append(f"gate{tag} 未通过：ok={gate_info.get('ok')} {detail}")
+            max_age = gate_info.get("max_age_hours")
+            max_age = float(max_age) if max_age is not None else STAGE_GATE_MAX_AGE_HOURS
+            if gate_info.get("age_hours") is not None and gate_info["age_hours"] > max_age:
+                issues.append(f"gate{tag} 产出过期 {gate_info['age_hours']}h（>{max_age:g}h）")
     return {"name": cfg["name"], "label": cfg.get("label"), "status": "ok" if not issues else "alert",
             "issues": issues, "task": info, "log": log, "outputs": outputs, "gate": gate_info}
 
@@ -247,21 +356,36 @@ def build_report(tasks: list[dict], now: datetime | None = None, *,
                  tag: str = DEFAULT_TAG, dry_run: bool = True,
                  mcp: dict | None = None) -> dict:
     now = now or datetime.now().astimezone()
-    alerts = [{"task": t["name"], "label": t.get("label"), "issues": t["issues"],
-               "last_result": (t.get("task") or {}).get("last_result"),
-               "log_line": (t.get("log") or {}).get("line"),
-               "log_rcs": (t.get("log") or {}).get("rcs"),
-               "gate_ok": (t.get("gate") or {}).get("ok"),
-               "gate_age_hours": (t.get("gate") or {}).get("age_hours"),
-               "last_log": (t.get("log") or {}).get("timestamp")}
-              for t in tasks if t["status"] == "alert"]
+    raw_alerts = [{"task": t["name"], "label": t.get("label"), "issues": t["issues"],
+                   "last_result": (t.get("task") or {}).get("last_result"),
+                   "log_line": (t.get("log") or {}).get("line"),
+                   "log_rcs": (t.get("log") or {}).get("rcs"),
+                   "gate_ok": (t.get("gate") or {}).get("ok"),
+                   "gate_age_hours": (t.get("gate") or {}).get("age_hours"),
+                   "last_log": (t.get("log") or {}).get("timestamp")}
+                  for t in tasks if t["status"] == "alert"]
     # MCP 协议违规不是计划任务，但同样要进同一份告警——否则它永远不会被发现。
     # 只有 ok is False 才告警；ok=None（不可测）不冒充通过、也不制造噪音，
     # 记在 rep["mcp_protocol"] 里供人查。
     if mcp and mcp.get("ok") is False:
-        alerts.append({"task": "MCP 协议门", "label": "工具握手", "issues": mcp.get("issues") or [],
-                       "last_result": None, "log_line": None, "log_rcs": None,
-                       "gate_ok": None, "gate_age_hours": None, "last_log": None})
+        raw_alerts.append({"task": "MCP 协议门", "label": "工具握手", "issues": mcp.get("issues") or [],
+                           "last_result": None, "log_line": None, "log_rcs": None,
+                           "gate_ok": None, "gate_age_hours": None, "last_log": None})
+    # 同一事实不重复刷屏，但真实条数不丢：summary 记折叠前，alerts 记折叠后。
+    alerts = collapse_alerts(raw_alerts)
+    # 环境级口径：若一条都测不到，报告要能一句话说清「这次没测到任务」，
+    # 而不是让 7 个任务各自背一条「未找到」。
+    states = [((t.get("task") or {}).get("query_state")) for t in tasks]
+    n_un = sum(1 for s in states if s == "unmeasurable")
+    if tasks and n_un == len(states):
+        task_query = {"available": False, "unmeasurable": n_un, "total": len(states),
+                      "note": "本次巡检未能查询计划任务（schtasks 不可测）；"
+                              "各任务状态记为「不可测」，**不等于任务不存在**。"}
+    elif n_un:
+        task_query = {"available": True, "unmeasurable": n_un, "total": len(states),
+                      "note": f"{n_un}/{len(states)} 个任务查询不可测；这些条目不代表任务不存在。"}
+    else:
+        task_query = {"available": True, "unmeasurable": 0, "total": len(states), "note": ""}
     return {
         "schema_version": SCHEMA_VERSION,
         "kind": "daily_tasks_health",
@@ -269,13 +393,39 @@ def build_report(tasks: list[dict], now: datetime | None = None, *,
         "generated_at": now.isoformat(timespec="seconds"),
         "dry_run": bool(dry_run),
         "summary": {"total": len(tasks), "ok": sum(1 for t in tasks if t["status"] == "ok"),
-                    "alert": len(alerts)},
+                    "alert": len(raw_alerts)},
+        "task_query": task_query,
         "tasks": tasks,
         "mcp_protocol": mcp,
         "alerts": alerts,
         "alert_text": format_alert(alerts) if alerts else "",
         "disclaimer": "研究/运维监控输出；告警默认 dry-run，--send 才发飞书。",
     }
+
+
+def collapse_alerts(alerts: list[dict]) -> list[dict]:
+    """把 issues 完全相同的告警折叠成一条，并记下同类任务清单。
+
+    为什么需要（2026-11-16 判例）
+        4 个学习任务共用同一个 gate 事实，一天刷 4 条逐字相同的「gate 产出过期」。
+        告警通道里连续多日只有这一条内容，其余真问题被淹没 —— 这是「告警疲劳」
+        的典型成因。折叠只针对**完全相同的 issues**，内容不同绝不合并。
+    """
+    seen: dict[tuple, int] = {}
+    out: list[dict] = []
+    for a in alerts:
+        key = tuple(a.get("issues") or [])
+        if key in seen:
+            first = out[seen[key]]
+            if "dup_tasks" not in first:
+                first["dup_tasks"] = [first["task"]]
+                first["dup_count"] = 1
+            first["dup_tasks"].append(a["task"])
+            first["dup_count"] += 1
+            continue
+        seen[key] = len(out)
+        out.append(dict(a))
+    return out
 
 
 def format_alert(alerts: list[dict]) -> str:
@@ -285,6 +435,8 @@ def format_alert(alerts: list[dict]) -> str:
     lines = ["【零界·每日任务健康告警】", ""]
     for a in alerts:
         lines.append(f"⚠️ {a['task']}（{a.get('label') or ''}）")
+        if a.get("dup_count"):
+            lines.append(f"  同类 {a['dup_count']} 项：{' / '.join(a.get('dup_tasks') or [])}")
         lines.append(f"  Last Result: {a.get('last_result')}")
         if a.get("last_log"):
             lines.append(f"  最后日志: {a['last_log']}")
