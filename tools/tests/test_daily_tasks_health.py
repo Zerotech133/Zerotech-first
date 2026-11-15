@@ -119,6 +119,12 @@ def test_main_dry_run_and_send(tmp_path, monkeypatch):
                  "outputs": [{"path": "research/reports/daily_screening_20261030.json",
                               "exists": True, "age_hours": 40.0, "fresh": False}]}
     monkeypatch.setattr(mod, "check_task", lambda cfg, now=None: dict(fake_task))
+    # MCP 协议门会起子进程读 profile 配置，单测必须隔离（否则测试结果取决于
+    # 本机装了哪些 MCP 服务端，且要等 4s+）。
+    monkeypatch.setattr(mod, "check_mcp_protocol",
+                        lambda timeout=90.0: {"ok": True, "pass": 2, "fail": 0, "skip": 0,
+                                              "rc": 0, "issues": [], "unverified": [],
+                                              "error": None})
     seen = {}
 
     def fake_send(text):
@@ -136,6 +142,31 @@ def test_main_dry_run_and_send(tmp_path, monkeypatch):
     data2 = json.loads((out / "daily_tasks_health_20261101.json").read_text(encoding="utf-8"))
     assert data2["dry_run"] is False
     assert data2["send_result"]["ok"] is True and "ZeroBound_DailyScreening" in seen["text"]
+
+
+def test_mcp_protocol_gate_alerts():
+    """MCP 协议违规要进同一份告警；不可测(ok=None)既不冒充通过、也不制造噪音。
+
+    三态纪律：PASS/FAIL/未验证必须分开。把「探针没跑成」写成 ok=True 是假绿，
+    写成告警是假红——两种都会让人不再信这份巡检。
+    """
+    base = mod.build_report([], tag="20261101", dry_run=True)
+    assert base["summary"]["alert"] == 0
+    assert base["mcp_protocol"] is None                  # 未启用时不产生字段值
+
+    bad = {"ok": False, "pass": 1, "fail": 1, "skip": 0, "rc": 1,
+           "issues": ["huangzhong（profile=huangzhong）: 对通知回了 1 条 id=null 响应"],
+           "error": None}
+    rep = mod.build_report([], tag="20261101", dry_run=True, mcp=bad)
+    assert rep["summary"]["alert"] == 1
+    assert "MCP 协议门" in rep["alert_text"]
+    assert "id=null" in rep["alert_text"]
+
+    unknown = {"ok": None, "pass": 0, "fail": 0, "skip": 0, "rc": None,
+               "issues": ["探针超时 90s，未验证"], "error": "timeout"}
+    rep2 = mod.build_report([], tag="20261101", dry_run=True, mcp=unknown)
+    assert rep2["summary"]["alert"] == 0                 # 不可测不告警
+    assert rep2["mcp_protocol"]["ok"] is None            # 但也绝不写成通过
 
 
 # ---------------------------------------------------------------------------

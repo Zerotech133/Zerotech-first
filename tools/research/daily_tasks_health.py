@@ -244,7 +244,8 @@ def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = No
 
 
 def build_report(tasks: list[dict], now: datetime | None = None, *,
-                 tag: str = DEFAULT_TAG, dry_run: bool = True) -> dict:
+                 tag: str = DEFAULT_TAG, dry_run: bool = True,
+                 mcp: dict | None = None) -> dict:
     now = now or datetime.now().astimezone()
     alerts = [{"task": t["name"], "label": t.get("label"), "issues": t["issues"],
                "last_result": (t.get("task") or {}).get("last_result"),
@@ -254,6 +255,13 @@ def build_report(tasks: list[dict], now: datetime | None = None, *,
                "gate_age_hours": (t.get("gate") or {}).get("age_hours"),
                "last_log": (t.get("log") or {}).get("timestamp")}
               for t in tasks if t["status"] == "alert"]
+    # MCP 协议违规不是计划任务，但同样要进同一份告警——否则它永远不会被发现。
+    # 只有 ok is False 才告警；ok=None（不可测）不冒充通过、也不制造噪音，
+    # 记在 rep["mcp_protocol"] 里供人查。
+    if mcp and mcp.get("ok") is False:
+        alerts.append({"task": "MCP 协议门", "label": "工具握手", "issues": mcp.get("issues") or [],
+                       "last_result": None, "log_line": None, "log_rcs": None,
+                       "gate_ok": None, "gate_age_hours": None, "last_log": None})
     return {
         "schema_version": SCHEMA_VERSION,
         "kind": "daily_tasks_health",
@@ -263,6 +271,7 @@ def build_report(tasks: list[dict], now: datetime | None = None, *,
         "summary": {"total": len(tasks), "ok": sum(1 for t in tasks if t["status"] == "ok"),
                     "alert": len(alerts)},
         "tasks": tasks,
+        "mcp_protocol": mcp,
         "alerts": alerts,
         "alert_text": format_alert(alerts) if alerts else "",
         "disclaimer": "研究/运维监控输出；告警默认 dry-run，--send 才发飞书。",
@@ -317,6 +326,20 @@ def render_md(rep: dict) -> str:
         L += ["### 告警文本", "", "```", rep["alert_text"], "```", ""]
     else:
         L += ["- 无告警 ✅", ""]
+    if rep.get("mcp_protocol"):
+        m = rep["mcp_protocol"]
+        state = "未验证" if m.get("ok") is None else ("合规" if m.get("ok") else "有协议违规")
+        L += ["## MCP 协议门", "",
+              f"- 状态：{state}；PASS {m.get('pass')} / FAIL {m.get('fail')} / SKIP {m.get('skip')}；"
+              f"rc={m.get('rc')}",
+              "- 判据：MCP 握手第二步 `notifications/initialized` 无 id，服务端**不得回包**；"
+              "回了 `{\"id\": null, ...}` 严格客户端即判违规中止连接。",
+              "- 范围：各 profile `config.yaml` 的 stdio 服务端；**SKIP 是「不可测」，不等于合格**。", ""]
+        for it in (m.get("issues") or []):
+            L.append(f"  - {it}")
+        for it in (m.get("unverified") or []):
+            L.append(f"  - [未验证] {it}")
+        L.append("")
     L += ["## 口径", "",
           "- 计划任务：`schtasks /query /tn <name> /v /fo LIST` 解析 Last Run Time/Last Result；",
           "- 日志：`C:\\Temp\\zero_daily_*.log` 最新 `YYYY-MM-DD HH:mm:ss <task> rc=N` 行；",
@@ -335,6 +358,58 @@ def write_outputs(rep: dict, out_dir: Path | str = OUT_DEFAULT) -> dict:
     return {"json": str(jp), "md": str(mp)}
 
 
+def check_mcp_protocol(timeout: float = 90.0) -> dict:
+    """MCP 协议门：配置里的 stdio 服务端必须对「通知」闭嘴。
+
+    为什么并入本巡检
+        2026-11-08~11-15 张松 profile 连续 7 天 `0 tool(s) from 0 server(s)`，
+        根因是服务端对握手通知 `notifications/initialized` 回了一条 id=null 的
+        -32601；Hermes 对冷却中的服务器不打印原始错误，日志只剩
+        `not attempted (in retry cooldown)`，看着像服务挂了。这类故障**没有任何
+        计划任务会红**，只能靠主动探测发现，所以挂到每日巡检。
+
+    三态（不可测 ≠ 合格）
+        ok=True    全部可测且合规
+        ok=False   有协议违规（计入告警）
+        ok=None    探针缺失/超时/无 python —— 记「未验证」，**不计入 ok**
+    """
+    probe = REPO.parent / "zerobound-kg" / "factor_proto" / "mcp_protocol_probe.py"
+    py = Path(r"C:\Program Files\Python311\python.exe")
+    if not probe.exists():
+        return {"ok": None, "pass": 0, "fail": 0, "skip": 0, "rc": None,
+                "issues": [f"探针缺失，未验证：{probe}"], "error": "probe_missing"}
+    if not py.exists():
+        return {"ok": None, "pass": 0, "fail": 0, "skip": 0, "rc": None,
+                "issues": [f"解释器缺失，未验证：{py}"], "error": "python_missing"}
+    try:
+        r = subprocess.run([str(py), str(probe)], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return {"ok": None, "pass": 0, "fail": 0, "skip": 0, "rc": None,
+                "issues": [f"探针超时 {timeout:.0f}s，未验证"], "error": "timeout"}
+    except Exception as exc:                                   # noqa: BLE001
+        return {"ok": None, "pass": 0, "fail": 0, "skip": 0, "rc": None,
+                "issues": [f"探针未执行 {type(exc).__name__}: {exc}"], "error": "exec_failed"}
+
+    lines = [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
+    n_pass = sum(1 for ln in lines if ln.startswith("[PASS]"))
+    n_fail = sum(1 for ln in lines if ln.startswith("[FAIL]"))
+    n_skip = sum(1 for ln in lines if ln.startswith("[SKIP]"))
+    issues = [ln[len("[FAIL] "):] for ln in lines if ln.startswith("[FAIL]")]
+    unverified = [ln[len("[SKIP] "):] for ln in lines if ln.startswith("[SKIP]")]
+    if n_fail:
+        return {"ok": False, "pass": n_pass, "fail": n_fail, "skip": n_skip,
+                "rc": r.returncode, "issues": issues, "unverified": unverified, "error": None}
+    if n_pass == 0:
+        # 一行 PASS 都没有：可能压根没找到服务端，也可能探针自己崩了。
+        # 不判通过 —— 空集合不等于合格。
+        tail = (r.stderr or "").strip().splitlines()[-1:] or [""]
+        return {"ok": None, "pass": 0, "fail": 0, "skip": n_skip, "rc": r.returncode,
+                "issues": [f"无 PASS 行，未验证：{tail[0][:120]}"], "error": "no_pass"}
+    return {"ok": True, "pass": n_pass, "fail": 0, "skip": n_skip, "rc": r.returncode,
+            "issues": [], "unverified": unverified, "error": None}
+
+
 def send_alert(text: str) -> dict:
     """调用 news_collector.send_feishu 发文本告警；失败返回 error（不抛出）。"""
     try:
@@ -349,6 +424,8 @@ def send_alert(text: str) -> dict:
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="每日任务健康监控（默认 dry-run，不发送）")
     ap.add_argument("--send", action="store_true", help="有告警时发送飞书（默认 dry-run）")
+    ap.add_argument("--skip-mcp", action="store_true",
+                    help="跳过 MCP 协议门（默认跑；仅供离线调试，生产勿用）")
     ap.add_argument("--out-dir", default=str(OUT_DEFAULT))
     ap.add_argument("--tag", default=None, help="输出文件名日期标签（默认今天）")
     return ap
@@ -359,12 +436,16 @@ def main(argv=None) -> int:
     now = datetime.now().astimezone()
     tag = args.tag or now.strftime("%Y%m%d")
     tasks = [check_task(cfg, now) for cfg in TASKS]
-    rep = build_report(tasks, now, tag=tag, dry_run=not args.send)
+    mcp = None if args.skip_mcp else check_mcp_protocol()
+    rep = build_report(tasks, now, tag=tag, dry_run=not args.send, mcp=mcp)
     if args.send and rep["alerts"]:
         rep["send_result"] = send_alert(rep["alert_text"])
     rep["outputs"] = write_outputs(rep, args.out_dir)
     print(json.dumps({"tag": rep["tag"], "dry_run": rep["dry_run"],
                       "summary": rep["summary"],
+                      "mcp": (None if rep.get("mcp_protocol") is None else
+                              {k: rep["mcp_protocol"].get(k)
+                               for k in ("ok", "pass", "fail", "skip", "rc", "error")}),
                       "alerts": [a["task"] for a in rep["alerts"]],
                       "send_result": rep.get("send_result"),
                       "outputs": rep["outputs"]}, ensure_ascii=False, indent=1), flush=True)
