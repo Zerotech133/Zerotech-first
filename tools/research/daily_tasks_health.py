@@ -59,6 +59,11 @@ _LOG_RC_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\S+)\s+rc=(-
 _LOG_RC2_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\S+)\s+"
                          r"rc_pipeline=(-?\d+)\s+rc_gate=(-?\d+)\s*$")
 _LOG_EXC_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\S+)\s+EXCEPTION:\s*(.+)$")
+# 结论行（含 rc= 但后面不是数字）：用来识别「rc 被写成空」的最新行。
+# 2026-11-16 判例：启动器取不到退出码时写 `rc=`，旧实现匹配不上就往前回退到上一行，
+# 把「日志格式坏了」显示成「日志 44h 没更新」——两件事的处置完全不同。
+# 注意用 .*? 而非 `\S+`：`daily_screening SKIPPED rc= (...)` 这种带状态词的也要认。
+_ANY_RC_LINE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+.*?\brc=(?![-\d])")
 _LAST_RUN_RE = re.compile(r"(?:Last Run Time|上次运行时间|上次執行時間)[:：]\s*(.+)", re.I)
 _LAST_RESULT_RE = re.compile(r"(?:Last Result|上次结果|上次結果)[:：]\s*(-?\d+)", re.I)
 _STATUS_RE = re.compile(r"(?:Status|状态|狀態)[:：]\s*(\S+)")
@@ -190,6 +195,15 @@ def parse_last_log(path: str | Path, now: datetime | None = None) -> dict:
                     "rc": 1, "line": line.strip(),
                     "age_hours": round((now - ts).total_seconds() / 3600, 2),
                     "exception": m.group(3)}
+        # 到这里说明这是一条结论行，但 rc 位置不是数字（常见：`rc=` 为空）。
+        # 必须就地报出，**不许回退到更早那条能解析的行** —— 那会冒用旧值。
+        m = _ANY_RC_LINE_RE.match(line.strip())
+        if m:
+            ts = datetime.fromisoformat(m.group(1)).astimezone()
+            return {"exists": True, "timestamp": ts.isoformat(timespec="seconds"),
+                    "rc": None, "line": line.strip(), "rc_unparsable": True,
+                    "age_hours": round((now - ts).total_seconds() / 3600, 2),
+                    "error": "最新日志行退出码缺失（rc 后无数字：多为启动器未取到退出码）"}
     return {"exists": True, "timestamp": None, "rc": None, "line": None,
             "age_hours": None, "error": "日志中未找到 rc=/EXCEPTION 行"}
 
@@ -318,6 +332,8 @@ def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = No
         if bad:
             issues.append("日志 " + " ".join(f"{k}={v}" for k, v in log["rcs"].items())
                           + f"（{log.get('line')}）")
+    if log.get("rc_unparsable"):
+        issues.append(f"日志退出码缺失：{log.get('line')}（{log.get('error')}）")
     elif log.get("rc") not in (0, None):
         issues.append(f"日志 rc={log['rc']}（{log.get('line') or log.get('error')}）")
     if log.get("exists") is False:
