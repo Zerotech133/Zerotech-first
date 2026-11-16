@@ -355,6 +355,67 @@ def should_debate(t1_stance: str, t2_stance: str, rounds: int) -> bool:
     return rounds > 0 and {str(t1_stance), str(t2_stance)} == {"bull", "bear"}
 
 
+# 空头论据类型词表（用于把「基本面差」与「价格已坏」区分开）
+# technical 只收「价格结构已坏」的表述：破位/跌破/新低/放量下跌/背离/失守。
+# 刻意不收「缩量」「成交量」「支撑」「形态」「止损」——那些多是"缺证据"的说法，不是"已破位"。
+SHORT_KW = {
+    "valuation": ("PE", "PB", "PS", "估值", "净利率", "毛利", "利润", "ROE",
+                  "现金流", "OCF", "营收", "增长", "业绩", "计提", "亏损"),
+    "technical": ("破位", "跌破", "新低", "放量下跌", "顶背离", "底背离",
+                  "价格背离", "下穿", "失守", "均线下方"),
+    "flow": ("资金", "主力", "净流出", "净流入", "筹码", "户数", "换手", "减持"),
+}
+
+
+_NEG_PREFIX = ("无", "未", "缺", "没有", "未见", "不足", "尚未")
+
+
+def _hit_positive(text: str, kw: str) -> bool:
+    """关键词命中且**不是否定语境**（"无破位证据"不能算作技术型空头依据）。"""
+    start = 0
+    while True:
+        i = text.find(kw, start)
+        if i < 0:
+            return False
+        pre = text[max(0, i - 4):i]
+        if not any(n in pre for n in _NEG_PREFIX):
+            return True
+        start = i + len(kw)
+
+
+def short_types(res: dict) -> set[str]:
+    """从席位已给出的论据文本判断它的「空头类型」（不改 prompt，纯文本归类）。
+
+    动机：`bear≥2 → SELL` 把「估值太贵」和「价格破位」合并成同一票，导致
+    `301081`/`688777` 这种「基本面空但无破位」被规则判 STRONG_SELL、由决胜席拉回 HOLD。
+    """
+    r = (res or {}).get("result") or {}
+    text = " ".join([str(r.get("verdict") or "")] + [str(x) for x in (r.get("points") or [])]
+                    + [str(x) for x in (r.get("risks") or [])])
+    return {k for k, kws in SHORT_KW.items()
+            if any(_hit_positive(text, w) for w in kws)}
+
+
+def decide_final_level(level: str, seats: dict) -> tuple[str, str]:
+    """规则层再收一道：SELL 必须至少有一条「技术型」空头依据。
+
+    只有估值/资金偏空（价格结构未坏）时，正确结论是「不买」而不是「卖出」，
+    因此把 SELL/STRONG_SELL 降为 HOLD，并写明原因。
+    """
+    if level not in ("SELL", "STRONG_SELL"):
+        return level, ""
+    bears = {k: v for k, v in seats.items()
+             if (v or {}).get("ok") and _stance(v) == "bear"}
+    types = set()
+    for k, v in bears.items():
+        types |= short_types(v)
+    if "technical" in types:
+        return level, ""
+    detail = "、".join("%s=%s" % (k, "/".join(sorted(short_types(v))) or "未识别")
+                       for k, v in bears.items())
+    return "HOLD", "空头依据缺技术面（%s）→ 仅构成'不买'，不足以'卖出'" % detail
+
+
 def should_finalize(bull: int, bear: int) -> bool:
     """何时启用决胜席：四席里同时存在看多与看空（真对立），否则规则已能定。
 
@@ -494,6 +555,13 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
             why = "四席均无立场（证据不足；降级 %d 席）" % len(degraded)
 
     horizon = "SHORT" if level in ("BUY", "STRONG_BUY", "SELL", "STRONG_SELL") else "MEDIUM"
+    # 粒度收口：SELL 必须有技术型空头依据（只有估值/资金偏空 → 应为「不买」而非「卖出」）
+    rule_level_before = None
+    level_before_granularity = level
+    level, short_note = decide_final_level(level, seats)
+    if short_note:
+        rule_level_before = level_before_granularity
+        why = short_note
     # 关键席位降级保护（2026-11-16 实测踩到）：T2 降级时 `bear=0` 会被误读成"无空头反对"，
     # 从而抖动出假 BUY（603596.SH 就是这么出的）。关键席位缺席时不许出方向性结论。
     downgraded = [k for k in DEBATE_PAIR
@@ -502,8 +570,6 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
         rule_level_before = level
         level = "HOLD"
         why = "关键席位降级（%s）不足以定方向 → 由 %s 降为 HOLD" % ("/".join(downgraded), rule_level_before)
-    else:
-        rule_level_before = None
 
     out = {
         "recommendation_level": level,

@@ -81,12 +81,25 @@ def test_summarize_buy_and_strong_buy():
 
 
 def test_summarize_sell_levels():
-    sell = rd.summarize("X", {"T1": _seat("bull", 0.5), "T2": _seat("bear", 0.5),
+    # 空头须带技术面依据（跌破/破位），否则会被粒度收口降为 HOLD
+    tech = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["跌破前低 12.8"], "verdict": "价格破位", "risks": []}}
+    sell = rd.summarize("X", {"T1": _seat("bull", 0.5), "T2": tech,
                               "N1": _seat("bear", 0.5), "F1": _seat("unknown")})
     assert sell["recommendation_level"] == "SELL" and sell["risk_level"] == "HIGH"
-    strong = rd.summarize("X", {"T1": _seat("bear", 0.7), "T2": _seat("bear", 0.7),
+    strong = rd.summarize("X", {"T1": _seat("bear", 0.7), "T2": tech,
                                 "N1": _seat("bear", 0.7), "F1": _seat("unknown")})
     assert strong["recommendation_level"] == "STRONG_SELL"
+
+
+def test_summarize_sell_downgraded_without_technical():
+    """两个 bear 但都只有估值/资金依据 → 降 HOLD（'不该买' ≠ '该卖'）。"""
+    val = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["PE 887 倍"], "verdict": "估值太高", "risks": []}}
+    s = rd.summarize("X", {"T1": _seat("bull"), "T2": val, "N1": val, "F1": _seat("unknown")})
+    assert s["recommendation_level"] == "HOLD"
+    assert s["rule_level_downgraded"] in ("SELL", "STRONG_SELL")
+    assert "缺技术面" in s["rationale"]
 
 
 def test_confidence_normalized_to_0_100():
@@ -277,6 +290,41 @@ def test_no_json_not_retried_as_transport(monkeypatch):
     out = rd._call(Truncated(), "s", "u", "m", 100, transport_retries=3)
     assert out["ok"] is False and out["mode"] == "degraded" and out["error"] == "no_json"
     assert calls["n"] == 2                                     # 只走内容层 2 次
+
+
+def test_short_types_negation_aware():
+    """'无破位证据' 不能算技术型空头；'估值与基本面背离' 也不是价格背离。"""
+    val = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["PE 887 倍，估值极端"], "verdict": "无破位证据，但估值太高",
+        "risks": []}}
+    t = rd.short_types(val)
+    assert "valuation" in t and "technical" not in t        # 否定语境不计技术面
+
+    tech = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["已跌破 15.33 支撑", "250 日新低"], "verdict": "价格破位",
+        "risks": []}}
+    assert "technical" in rd.short_types(tech)
+
+    amb = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["估值与基本面背离"], "verdict": "x", "risks": []}}
+    assert "technical" not in rd.short_types(amb)           # 基本面背离 ≠ 价格背离
+
+
+def test_decide_final_level_requires_technical_bear():
+    """只靠估值/资金偏空 → 不该 SELL。"""
+    seats_val = {"T1": _seat("bull"), "T2": _seat("bear"), "N1": _seat("bear"), "F1": _seat("unknown")}
+    seats_val["T2"] = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["PE 高"], "verdict": "估值太高", "risks": []}}
+    seats_val["N1"] = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["主力净流出"], "verdict": "资金弱", "risks": []}}
+    lvl, note = rd.decide_final_level("SELL", seats_val)
+    assert lvl == "HOLD" and "缺技术面" in note
+
+    seats_tech = dict(seats_val)
+    seats_tech["T2"] = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["跌破 15.33 支撑"], "verdict": "价格破位", "risks": []}}
+    lvl2, note2 = rd.decide_final_level("SELL", seats_tech)
+    assert lvl2 == "SELL" and note2 == ""
 
 
 def test_upsert_index_dedup(tmp_path, monkeypatch):
