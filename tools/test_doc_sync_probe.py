@@ -69,5 +69,7 @@ def test_probe_json_shape(tmp_path, capsys):
     assert rc == 0
     doc_json = json.loads(capsys.readouterr().out)
     assert doc_json["ok"] is True and doc_json["source_unchanged"] is True
-    assert [s["name"] for s in doc_json["scenarios"]] == ["A 原样", "B 手改一字", "C 起始行重复"]
+    assert [s["name"] for s in doc_json["scenarios"]] == [
+        "A 原样", "B 手改一字", "C 起始行重复", "D 块被截断", "E 命令失败"]
+    assert all(s["ok"] for s in doc_json["scenarios"])
     assert doc_json["sha256_before"] == doc_json["sha256_after"]

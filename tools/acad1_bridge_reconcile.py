@@ -92,9 +92,19 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     expect = args.expect
+    expect_src = "arg"
     if expect is None:
-        expect = pool_cn_count()
+        n = pool_cn_count()
+        if n:
+            expect, expect_src = n, "pool_api"
+        else:
+            # 池退化（source_mode=shadow / market 全 None）时 CN 数为 0——
+            # 这属于「期望无法确定」，不是「对账不符」，两者必须分开报。
+            print("EXPECT_UNKNOWN 池 API 不可用或 market 字段缺失（CN=0）"
+                  "→ 无法确定处理量；请用 --expect N 指定，或先修复池数据源。")
+            return 2
     res = reconcile(args.pool_date, expect)
+    res["expect_source"] = expect_src
     if args.json:
         print(json.dumps(res, ensure_ascii=False, indent=1))
     elif args.markdown:

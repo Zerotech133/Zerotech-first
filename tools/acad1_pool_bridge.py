@@ -166,10 +166,17 @@ def main(argv=None) -> int:
 
     pool = fetch_pool()
     pool_date = str(pool.get("pool_date") or "")
+    mode = str(pool.get("source_mode") or "")
     items = [x for x in (pool.get("items") or [])
              if str(x.get("market") or "").upper() == str(args.market).upper()]
     log("POOL pool_date=%s count=%d review_status=%s source_mode=%s"
-        % (pool_date, len(items), pool.get("review_status"), pool.get("source_mode")))
+        % (pool_date, len(items), pool.get("review_status"), mode))
+    # 退化守卫：shadow = 非官方回退源（实测会返回旧日期且 market 全 None），
+    # 拿它去裁决等于用错数据，必须拒绝而不是静默处理 0 条。
+    if mode == "shadow" or str(pool.get("review_status") or "") == "shadow_only":
+        log("REFUSED 池来源已退化（source_mode=%s, degraded_reason=%s）→ 不拿退化数据裁决；"
+            "先修 PG 或其投影。" % (mode, pool.get("degraded_reason")))
+        return 2
     if not pool_date or not items:
         log("NO_POOL 池为空或缺少 pool_date → 本轮无事可做")
         return 0

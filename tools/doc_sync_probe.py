@@ -96,6 +96,26 @@ def main(argv=None) -> int:
         scenarios.append({"name": "C 起始行重复", "expect": "FAIL(含'需唯一')",
                           "got": "PASS" if ok else "FAIL",
                           "ok": (not ok) and ("需唯一" in ev), "evidence": ev})
+
+        # D 块被截断（少一行）→ 必须 FAIL，理由是行数不足
+        d = work / "d.md"
+        if len(idx) == 1:
+            cut = idx[0] + args.lines - 1  # 去掉块的最后一行
+            trunc = "\n".join(lines[:cut] + lines[cut + 1:]) + "\n"
+        else:
+            trunc = src
+        d.write_text(trunc, encoding="utf-8")
+        ok, ev = ac.check_block_equals_cmd(dict(spec_base, path=str(d)), REPO)
+        scenarios.append({"name": "D 块被截断", "expect": "FAIL(含'行数')",
+                          "got": "PASS" if ok else "FAIL",
+                          "ok": (not ok) and ("行数" in ev or "第" in ev), "evidence": ev})
+
+        # E 生成命令失败 → 必须 FAIL，理由是命令 rc 不符
+        spec_e = dict(spec_base, path=str(a), cmd=[sys.executable, "-c", "import sys; sys.exit(3)"])
+        ok, ev = ac.check_block_equals_cmd(spec_e, REPO)
+        scenarios.append({"name": "E 命令失败", "expect": "FAIL(含'命令 rc=')",
+                          "got": "PASS" if ok else "FAIL",
+                          "ok": (not ok) and ("命令 rc=" in ev), "evidence": ev})
     finally:
         shutil.rmtree(work, ignore_errors=True)
 

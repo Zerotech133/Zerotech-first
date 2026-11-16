@@ -247,9 +247,29 @@ def default_pg_reader(day=None):
             pass
 
 
+def _pg_env_says_disabled():
+    """env 声称禁用 PG 时**实测**一次 5432：通了就撤销禁用并放行。
+
+    背景（2026-11-16）：`war_room_data._pg_guard()` 会在 PG 探测失败时置
+    `ACAD1_POOL_PG_DISABLE=1`，但**只在 war_room 请求时重探**。若此后 PG 恢复而
+    war_room 没被调用，池接口会一直读到残留的 env → 永久退化到 shadow（实测导致
+    池日期从 11-16 倒退成 11-15、market 全为 None）。这里做自愈：不信 env，实测端口。
+    """
+    if str(os.environ.get(PG_DISABLE_ENV, "")).strip() != "1":
+        return False
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", 5432), timeout=0.3):
+            pass
+    except OSError:
+        return True
+    os.environ.pop(PG_DISABLE_ENV, None)
+    return False
+
+
 def fetch_pg_pool(day=None, pg_reader=None):
     """PG 官方池读取（默认直连；测试可注入 pg_reader）。返回 (payload|None, reason)。"""
-    if str(os.environ.get(PG_DISABLE_ENV, "")).strip() == "1":
+    if _pg_env_says_disabled():
         return None, "pg_disabled_by_env"
     try:
         reader = pg_reader or default_pg_reader
@@ -337,7 +357,7 @@ def default_pg_reader_full(day=None):
 
 def fetch_pg_pool_full(pg_reader=None):
     """PG 只读聚合读取（view=full；默认直连；测试可注入 pg_reader）。"""
-    if str(os.environ.get(PG_DISABLE_ENV, "")).strip() == "1":
+    if _pg_env_says_disabled():
         return None, "pg_disabled_by_env"
     try:
         reader = pg_reader or default_pg_reader_full
