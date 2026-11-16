@@ -18,6 +18,7 @@ def _run(root: Path, *args):
     return subprocess.run(
         [sys.executable, "-X", "utf8", str(TOOL), "--root", str(root), *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+    stdin=subprocess.DEVNULL,
     )
 
 

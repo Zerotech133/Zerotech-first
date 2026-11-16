@@ -309,6 +309,7 @@ def test_submit_concurrent_windows_spawn_processes(store, tmp_path):
                 env=env,
                 stdout=subprocess.DEVNULL,
                 stderr=ef,
+            stdin=subprocess.DEVNULL,
             )
         )
     try:

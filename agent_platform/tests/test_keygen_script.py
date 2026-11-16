@@ -65,6 +65,7 @@ def test_embedded_code_generates_valid_ed25519_keypair(tmp_path):
         capture_output=True,
         text=True,
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, proc.stderr[-800:]
     assert "fingerprint_sha256=" in proc.stdout

@@ -95,6 +95,7 @@ def _run(root: Path, action: str, *extra: str) -> subprocess.CompletedProcess:
         encoding="utf-8",
         errors="replace",
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 
@@ -314,6 +315,7 @@ def test_pool_adapter_missing_cards_exit_2(tmp_path):
             "--cards", str(missing), "--data-root", str(tmp_path), "--json",
         ],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 2, proc.stderr
     payload = json.loads(proc.stdout)

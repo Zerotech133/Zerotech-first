@@ -17,7 +17,7 @@ def _git_has_worktree():
     """git worktree 子命令自 2.5 起才有；CentOS 7 自带 1.8.3.1 无此能力。"""
     try:
         p = subprocess.run(["git", "worktree", "list"],
-                           capture_output=True, text=True, timeout=10)
+                           capture_output=True, text=True, timeout=10, stdin=subprocess.DEVNULL)
         return p.returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
@@ -36,7 +36,7 @@ def _git(cwd, *args):
     # 2026-11-07 K-RELEASE-20261106：CentOS 7 自带 git 1.8.3.1 不支持 `git -C`
     # （不报"不支持"，只打 usage 并返回非 0，实测 Unknown option: -C）。
     # 改用 cwd= 传参，Windows/Linux 通用；与 13_verify.sh GITPORT 判例同口径。
-    p = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True)
+    p = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert p.returncode == 0, p.stderr
     return p.stdout
 

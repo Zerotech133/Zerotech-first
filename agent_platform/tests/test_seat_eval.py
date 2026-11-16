@@ -41,6 +41,7 @@ def _run(root: Path, golden: Path, *args):
         [sys.executable, "-X", "utf8", str(TOOL), "--root", str(root),
          "--golden", str(golden), "--no-write", *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 

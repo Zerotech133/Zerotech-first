@@ -700,7 +700,8 @@ response = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: t
 
     env = dict(os.environ, MEETING_JS=js)
     result = subprocess.run(
-        ["node", "-e", harness], capture_output=True, text=True, env=env, timeout=10
+        ["node", "-e", harness], capture_output=True, text=True, env=env, timeout=10,
+    stdin=subprocess.DEVNULL,
     )
     assert result.returncode == 0, result.stderr
 

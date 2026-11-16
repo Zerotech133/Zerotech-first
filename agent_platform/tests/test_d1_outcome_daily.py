@@ -217,7 +217,7 @@ def _run_calibration(path):
     cmd = [sys.executable, "-X", "utf8", str(TOOLS / "d1_calibration.py"),
            "--outcomes", str(path), "--json"]
     res = subprocess.run(cmd, capture_output=True, text=True,
-                         encoding="utf-8", errors="replace", timeout=120)
+                         encoding="utf-8", errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     return res.returncode, json.loads(res.stdout)
 
 

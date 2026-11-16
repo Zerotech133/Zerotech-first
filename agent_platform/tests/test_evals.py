@@ -69,6 +69,7 @@ def test_smoke_run_via_subprocess(tmp_path):
         encoding="utf-8",
         env={**__import__("os").environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
         timeout=180,
+    stdin=subprocess.DEVNULL,
     )
     assert r.returncode == 0, r.stderr[-400:]
     rep = json.loads(r.stdout)

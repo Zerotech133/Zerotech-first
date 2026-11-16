@@ -79,6 +79,7 @@ def _run(root: Path, action: str, *extra: str) -> subprocess.CompletedProcess:
         encoding="utf-8",
         errors="replace",
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 

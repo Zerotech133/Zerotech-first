@@ -190,7 +190,7 @@ def test_p03_p04_browser_e2e(tmp_path):
            "--no-default-browser-check", "--user-data-dir=" + str(profile),
            "--virtual-time-budget=15000", "--dump-dom", page.as_uri()]
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=90)
+                       errors="replace", timeout=90, stdin=subprocess.DEVNULL)
     dom = r.stdout or ""
     assert "E2E RESULT: PASS" in dom, dom[-3000:]
     for line in ("PASS A0 button exists", "PASS picker labels", "PASS orchestrate after confirm",

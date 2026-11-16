@@ -26,7 +26,7 @@ def _git(cwd, *args):
     # 选项（不报"不支持"，只打 usage 并返回非 0），改用 cwd= 传参，Windows/Linux 通用；
     # 与 test_ide_worktree.py:35 及 13_verify.sh GITPORT 判例同口径。
     subprocess.run(["git", *args], cwd=str(cwd), check=True,
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, stdin=subprocess.DEVNULL)
 
 
 def _fixture(tmp_path: Path):

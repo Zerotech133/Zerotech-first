@@ -41,7 +41,7 @@ def _run_builder(*args):
     return subprocess.run(
         [sys.executable, "-X", "utf8", str(BUILDER)] + list(args),
         cwd=str(ROOT), capture_output=True, text=True,
-        encoding="utf-8", errors="replace", timeout=180)
+        encoding="utf-8", errors="replace", timeout=180, stdin=subprocess.DEVNULL)
 
 
 def _display_names(doc):

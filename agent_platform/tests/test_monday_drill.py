@@ -39,6 +39,7 @@ def run_cli(*args):
         encoding="utf-8",
         errors="replace",
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 
@@ -187,6 +188,7 @@ def test_read_only_no_side_effects(tmp_path):
             encoding="utf-8",
             errors="replace",
             timeout=120,
+        stdin=subprocess.DEVNULL,
         )
 
     before = snapshot(app_copy / "data")

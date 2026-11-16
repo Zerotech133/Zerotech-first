@@ -45,6 +45,7 @@ def _run(root: Path, *extra: str) -> subprocess.CompletedProcess:
         encoding="utf-8",
         errors="replace",
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 
@@ -92,6 +93,7 @@ def test_invalid_root_exit_2(tmp_path):
         encoding="utf-8",
         errors="replace",
         timeout=60,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 2
     assert "repo root invalid" in proc.stdout

@@ -21,6 +21,7 @@ def run_tool(args):
         text=True,
         encoding="utf-8",
         errors="replace",
+    stdin=subprocess.DEVNULL,
     )
 
 

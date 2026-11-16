@@ -60,6 +60,7 @@ def run_tool(
         encoding="utf-8",
         errors="replace",
         timeout=SUBPROCESS_TIMEOUT_S,
+    stdin=subprocess.DEVNULL,
     )
 
 

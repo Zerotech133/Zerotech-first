@@ -354,6 +354,7 @@ def _run_cli(*args):
         text=True,
         encoding="utf-8",
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 

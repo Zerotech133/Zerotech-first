@@ -25,6 +25,7 @@ def run_scan(args, cwd=None):
         encoding="utf-8",
         errors="replace",
         cwd=cwd,
+    stdin=subprocess.DEVNULL,
     )
 
 

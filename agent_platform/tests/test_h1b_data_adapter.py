@@ -365,6 +365,6 @@ def test_no_parquet_dependency_on_import():
             "import h1b_data_adapter as a; "
             "print(int('pandas' in sys.modules), int('pyarrow' in sys.modules))")
     proc = subprocess.run([sys.executable, "-c", code], cwd=str(REPO),
-                          capture_output=True, text=True, encoding="utf-8")
+                          capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip().endswith("0 0")

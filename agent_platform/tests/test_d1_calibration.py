@@ -253,7 +253,7 @@ def test_cli_json_readonly(tmp_path):
         [sys.executable, "-X", "utf8", str(ROOT / "agent_platform" / "d1_calibration.py"),
          "--json", "--ledger", str(ledger)],
         cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", env=env, timeout=120)
+        errors="replace", env=env, timeout=120, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     rep = json.loads(proc.stdout)
     assert rep["status"] == CAL.STATUS_INSUFFICIENT
@@ -266,7 +266,7 @@ def test_cli_json_readonly(tmp_path):
         [sys.executable, "-X", "utf8", str(ROOT / "agent_platform" / "d1_calibration.py"),
          "--json", "--ledger", str(missing)],
         cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", env=env, timeout=120)
+        errors="replace", env=env, timeout=120, stdin=subprocess.DEVNULL)
     assert proc2.returncode == 0, proc2.stderr
     rep2 = json.loads(proc2.stdout)
     assert rep2["status"] == CAL.STATUS_UNMEASURED

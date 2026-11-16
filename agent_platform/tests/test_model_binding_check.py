@@ -265,6 +265,7 @@ def test_cli_subprocess_strict_end_to_end(tmp_path):
         errors="replace",
         timeout=60,
         env=env,
+    stdin=subprocess.DEVNULL,
     )
 
     assert proc.returncode == 1, proc.stderr

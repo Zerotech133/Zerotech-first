@@ -44,6 +44,7 @@ def run_cli(repo_root: Path, *args):
         encoding="utf-8",
         errors="replace",
         timeout=300,
+    stdin=subprocess.DEVNULL,
     )
 
 

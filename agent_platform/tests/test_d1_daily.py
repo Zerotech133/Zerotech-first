@@ -390,6 +390,7 @@ def _run_cli(*args):
         capture_output=True,
         text=True,
         encoding="utf-8",
+    stdin=subprocess.DEVNULL,
     )
 
 

@@ -129,6 +129,7 @@ def _make_git_repo(root: Path) -> None:
                 "SYSTEMROOT": __import__("os").environ.get("SYSTEMROOT", ""),
                 "HOME": str(root),
             },
+        stdin=subprocess.DEVNULL,
         )
 
     g("init")

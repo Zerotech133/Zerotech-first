@@ -17,7 +17,7 @@ def test_actual_policy_valid_and_check_cli():
     pol = NP._read(NP.POLICY)
     assert NP.validate(pol) == []
     r = subprocess.run([sys.executable, "-X", "utf8", str(TOOL), "--check"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stdout + r.stderr
     out = json.loads(r.stdout)
     assert out["ok"] is True and out["default"] == "deny"
@@ -32,7 +32,7 @@ def test_decide_allow_and_deny():
 
 def test_cli_denied_exit3(tmp_path):
     r = subprocess.run([sys.executable, "-X", "utf8", str(TOOL), "--host", "evil.example.com", "--port", "443"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 3
     assert json.loads(r.stdout)["allowed"] is False
 
@@ -48,5 +48,5 @@ def test_wildcard_rejected(tmp_path):
     problems = NP.validate(bad)
     assert any("host_not_exact" in x for x in problems)
     r = subprocess.run([sys.executable, "-X", "utf8", str(TOOL), "--policy", str(p), "--check"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 2

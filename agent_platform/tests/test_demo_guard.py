@@ -56,6 +56,7 @@ class EvalShadowGuardTests(unittest.TestCase):
             text=True,
             encoding="utf-8",
             timeout=30,
+        stdin=subprocess.DEVNULL,
         )
         self.assertIn("--persist-root", r.stdout)
 

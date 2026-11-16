@@ -48,7 +48,7 @@ def test_seat_realness_help_ok():
     tool = REPO / "agent_platform" / "tools" / "seat_realness.py"
     r = subprocess.run([sys.executable, "-X", "utf8", str(tool), "--help"],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=60, cwd=str(REPO))
+                       errors="replace", timeout=60, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "usage" in (r.stdout + r.stderr).lower()
     assert "80%" in r.stdout
@@ -64,6 +64,6 @@ def test_memory_package_compat_under_engine_collision():
     )
     r = subprocess.run([sys.executable, "-X", "utf8", "-c", code],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=60, cwd=str(REPO))
+                       errors="replace", timeout=60, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "MemoryStore" in r.stdout
