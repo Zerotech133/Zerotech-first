@@ -27,6 +27,7 @@ def _main_repo() -> Path:
     encoding="utf-8",
     errors="replace",
             timeout=30,
+        stdin=subprocess.DEVNULL,
         )
         if r.returncode == 0 and r.stdout.strip():
             common = Path(r.stdout.strip())
