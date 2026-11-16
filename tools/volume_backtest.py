@@ -38,6 +38,8 @@ sys.path.insert(0, str(TOOLS))       # volume_profile 与本文件同目录
 import volume_profile as vp  # noqa: E402
 
 HORIZONS = (1, 3, 5)
+SIGNAL_KINDS = ("breakout_with_volume", "shrink_pullback", "high_vol_no_gain",
+                "oversold_drop5", "three_day_shrink", "break_low20", "gap_up")
 BREAKOUT_MIN_RATIO = 1.5
 BREAKOUT_MIN_PCT = 3.0
 SHRINK_MAX_RATIO = 0.8
@@ -64,13 +66,18 @@ def load_series(code: str, days: int) -> list[dict]:
     for r in rows:
         out.append({"date": str(r.get("trade_date")),
                     "close": vp._f(r.get("close")),
+                    "low": vp._f(r.get("low")),
                     "pct": vp._f(r.get("pct_chg")),
                     "vol": vp._f(r.get("vol"))})
     return [x for x in out if x["close"] and x["vol"] is not None]
 
 
 def scan(code: str, series: list[dict]) -> list[dict]:
-    """逐日算信号 + 后续收益。前 20 日只作为均量基准，不出信号。"""
+    """逐日算多个候选信号 + 后续收益。前 20 日只作均量基准，不出信号。
+
+    一次扫描同时评估多个判据——因为「哪个判据有区分度」本身就是要验证的问题，
+    不能只测自己想到的那一个。
+    """
     hits = []
     for i in range(20, len(series) - 1):
         prev = series[:i]
@@ -81,21 +88,46 @@ def scan(code: str, series: list[dict]) -> list[dict]:
         ratio = vol / ma20
         pct = series[i]["pct"] or 0.0
         high20 = max(x["close"] for x in prev[-20:])
+        low20 = min(x["close"] for x in prev[-20:])
         close = series[i]["close"]
-        kind = None
+        prev_close = prev[-1]["close"]
+
+        kinds = []
+        # 1) 放量突破（已证伪，保留作对照）
         if pct > BREAKOUT_MIN_PCT and ratio >= BREAKOUT_MIN_RATIO and close > high20:
-            kind = "breakout_with_volume"
-        elif pct < 0 and ratio <= SHRINK_MAX_RATIO:
-            kind = "shrink_pullback"
-        if not kind:
+            kinds.append("breakout_with_volume")
+        # 2) 缩量回调（历史上略低于基准，保留作对照）
+        if pct < 0 and ratio <= SHRINK_MAX_RATIO:
+            kinds.append("shrink_pullback")
+        # 3) 放量滞涨：量比高但涨幅小——常见于出货
+        if ratio >= 2.0 and 0 <= pct < 1.0:
+            kinds.append("high_vol_no_gain")
+        # 4) 超跌反弹：单日跌超 5%
+        if pct <= -5.0:
+            kinds.append("oversold_drop5")
+        # 5) 连续三日缩量（当日及前两日量比均 < 0.8）
+        if len(prev) >= 22:
+            r2 = prev[-1]["vol"] / (sum(x["vol"] for x in prev[-21:-1]) / 20)
+            r3 = prev[-2]["vol"] / (sum(x["vol"] for x in prev[-22:-2]) / 20)
+            if ratio <= 0.8 and r2 <= 0.8 and r3 <= 0.8:
+                kinds.append("three_day_shrink")
+        # 6) 跌破 20 日低点（技术破位）
+        if close < low20:
+            kinds.append("break_low20")
+        # 7) 跳空高开 >2%（当日最低 > 昨收）
+        if (series[i].get("low") or 0) > prev_close * 1.02:
+            kinds.append("gap_up")
+
+        if not kinds:
             continue
         fwd = {}
         for h in HORIZONS:
             j = i + h
             fwd["r%d" % h] = (round((series[j]["close"] - close) / close * 100, 2)
                               if j < len(series) else None)
-        hits.append({"code": code, "date": series[i]["date"], "signal": kind,
-                     "pct": pct, "vol_ratio": round(ratio, 2), **fwd})
+        for kind in kinds:
+            hits.append({"code": code, "date": series[i]["date"], "signal": kind,
+                         "pct": pct, "vol_ratio": round(ratio, 2), **fwd})
     return hits
 
 
@@ -196,8 +228,7 @@ def main(argv=None) -> int:
            "thresholds": {"breakout_min_ratio": BREAKOUT_MIN_RATIO,
                           "breakout_min_pct": BREAKOUT_MIN_PCT,
                           "shrink_max_ratio": SHRINK_MAX_RATIO},
-           "signals": [summarize(all_hits, "breakout_with_volume"),
-                       summarize(all_hits, "shrink_pullback")],
+           "signals": [summarize(all_hits, k) for k in SIGNAL_KINDS],
            "baseline": base,
            "note": "回放仅验证信号区分度，不构成交易建议；样本量小时不做显著性判断"}
 
