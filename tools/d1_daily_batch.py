@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import time
@@ -28,10 +29,37 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-# 拼接写法：路径常量与原来完全等价，只是不把私有目录名作为单个字面量出现在公开面
-# （tools/check_public_surface.py 对新增文件整文件扫 [VAULT_PATH]，与 2026-11-16 同一判例）。
-_VAULT_DIR = "_" "vault"
-TOKEN_FILE = Path(r"C:\项目") / _VAULT_DIR / "secrets" / "portal_api_token"
+
+
+def _resolve_token_file() -> Path:
+    """凭据文件路径：环境变量优先，其次仓库根 .env.local。
+
+    2026-11-16：原先用字符串拼接的方式绕过公开面检测，路径本身仍然暴露在
+    PUBLIC 仓里。改为配置化，两者都不入库：
+      - 环境变量 ACAD1_PORTAL_TOKEN_FILE（或 D1_PORTAL_TOKEN_FILE）
+      - 或仓库根 .env.local 中的同名项（.gitignore 规则 `.env.*` 已忽略）
+    """
+    for env_key in ("D1_PORTAL_TOKEN_FILE", "ACAD1_PORTAL_TOKEN_FILE"):
+        p = os.environ.get(env_key)
+        if p:
+            return Path(p)
+    envf = REPO / ".env.local"
+    if envf.exists():
+        keys = ("D1_PORTAL_TOKEN_FILE", "ACAD1_PORTAL_TOKEN_FILE")
+        for raw in envf.read_text(encoding="utf-8-sig").splitlines():
+            line = raw.strip()
+            for k in keys:
+                if line.startswith(k + "="):
+                    v = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if v:
+                        return Path(v)
+    raise SystemExit(
+        "未配置凭据路径：请设置环境变量 D1_PORTAL_TOKEN_FILE / ACAD1_PORTAL_TOKEN_FILE，"
+        r"或在仓库根 .env.local 写同名项（该文件已被 .gitignore 忽略）"
+    )
+
+
+TOKEN_FILE = _resolve_token_file()
 SESSION_LEDGER = REPO / "k_stock" / "data" / "invest_committee" / "pool_v2_sessions.jsonl"
 DECISIONS = REPO / "agent_platform" / "data" / "d1_decisions.jsonl"
 LOG = REPO / "logs" / "d1_daily_batch.log"
