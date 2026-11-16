@@ -157,7 +157,26 @@
       "decision_note": "2026-11-16 10:22 老田裁定：选 A（只纳入 n_hit>=2 ∪ T2 的 49 只）。全量 649 只四源约 3.5-4 小时，超 07:00 单轮窗口，不纳入。",
       "applied_at": "2026-11-16 10:27:10",
       "apply_note": "执行：新建 build_queue_picks.py + target_queue_picks.json（49只，asof=2026-11-13，含 generator/rule/source_file 溯源）；注册表新增 picks_daily（xq_include=true）；load_queue 666→700（净增34，15只原已覆盖）；备份 selection_universe.json.bak-20261116；registry_guard 0 问题；207 passed。"
+    },
+    {
+      "id": "CR-20261116-03",
+      "level": "L2",
+      "kind": "source",
+      "title": "akshare 三源接入：财联社/东财快讯、个股新闻、研报目录（补文本语料广度缺口）",
+      "background": "老田 2026-11-16 指令「抓取的多元数据不够，去开源社区研究升级」。本席当日完成盘点与调研，结论：\n\n1. 分层判据：结构化数据（行情/财务三表/公告目录 anns_d/复权因子/可转债/筹码）别线 TushareSync+TdxSync(A/B/C/D) 已覆盖，本席不重复建设；本席七源是文本语料线。\n2. 文本语料真实缺口：高频快讯（财联社电报类）、个股新闻、研报——三项目前无任何源覆盖。\n3. 缺口体检 2026-11-16 11:34 读数：news 流「新闻空窗」783 只，为全部缺口最大单项，现有自采新闻流仅覆盖 199/982。\n4. 调研对象 akshare（GitHub 22.5K star，MIT，2000+ 接口，免 token 免注册）：stock_info_global_cls（财联社电报，分钟级）/stock_info_global_em（东财全球资讯）/stock_news_em(symbol)（个股新闻：标题/内容/发布时间/来源/链接）/stock_research_report_em（研报列表）。\n5. 边界确认：开源库对帖文正文/评论（雪球/股吧/淘股吧）均不支持——七源自研爬虫是护城河，本 CR 不动帖文类采集，只补快讯/新闻/研报三类。",
+      "five": {
+        "command": "全部待配准后执行，分三步：\n\n1) pip install akshare==<配准时最新稳定版>（锁定版本入 requirements）\n2) 新建 news_collector/akshare_news.py：\n   - stock_info_global_cls(symbol='重点') + stock_info_global_em() 增量落盘 data/flash/{cls,em}.jsonl\n   - stock_news_em(code6) 按 gap_scan 缺口队列 Top N（每日 ≤400 只，单会话配额内）落 data/aknews/{code6}.jsonl\n   - stock_research_report_em() 每日一轮落 data/research/report_YYYYMMDD.jsonl\n3) gap_scan.py 源表注册 flash / aknews / research 三源；频率：快讯每 30 分钟增量、个股新闻与研报每日一轮（挂现有调度链）。",
+        "impact": "新增 3 个落盘目录 + 3 个源注册；缺口工具分母扩大（D 类新闻空窗 783 只的主体将可被新源覆盖，口径变化会在台账注明）。请求量：快讯 2 请求/30 分钟、个股新闻 ≤400 请求/日、研报 1 请求/日，合计远低于单会话 ≈400 请求的限流经验值。不影响现有七源与既有队列。",
+        "irreversible": "无不可逆点。akshare 可 pip uninstall；落盘目录可整体删除；源注册可从 selection_universe.json 移除。",
+        "alternatives": "①不接新源：783 只新闻空窗维持现状；②自研财联社/东财爬虫：akshare 已封装且免维护，属重复造轮；③Tushare news 接口：需积分，当前账号积分不足实测返回 0 条，不可用。",
+        "rollback": "删 data/flash、data/aknews、data/research 三目录 + gap_scan.py 移除三源注册 + pip uninstall akshare。新源无状态（无账本依赖），回滚即时生效，不影响任何现有采集。"
+      },
+      "evidence": "2026-11-16 Web 检索（GitHub/CSDN/社区文档）：stock_info_global_cls 单次返回最近 20 条、标题列常空、内容在「内容」字段、日期为 date 对象需按对象过滤；stock_news_em 传 6 位代码返回个股新闻列表；stock_research_report_em 为东财研报列表。实测留待配准后首跑（首跑数据进台账）。",
+      "status": "pending",
+      "created_at": "2026-11-16 15:46:33",
+      "requester": "OSINT1 马良",
+      "approver": "INTEL0 马超"
     }
   ],
-  "updated_at": "2026-11-16 10:56:48"
+  "updated_at": "2026-11-16 15:46:33"
 }

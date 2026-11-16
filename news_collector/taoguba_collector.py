@@ -38,6 +38,26 @@ import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(os.path.dirname(HERE), "data", "taoguba")
+# 失败账本：HTTP 失败/拦截页/异常落这里，让缺口工具能区分「被拦截/被限速」
+# 与「从未采过/确无新帖」——jsonl mtime 在这几种情形下同形（停更），账本是唯一判据。
+BLOCKED_F = os.path.join(OUT_DIR, "_blocked.json")
+
+
+def record_blocked(code, kind, ts=None):
+    """记失败账本（覆盖同 code 旧记录）。账本故障只打印、绝不阻断采集。"""
+    try:
+        d = {}
+        if os.path.exists(BLOCKED_F):
+            with open(BLOCKED_F, "r", encoding="utf-8") as f:
+                d = json.load(f)
+        d[str(code)] = {"ts": round(float(ts if ts is not None else time.time()), 3),
+                        "kind": str(kind)[:40]}
+        tmp = BLOCKED_F + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=0)
+        os.replace(tmp, BLOCKED_F)
+    except Exception as e:  # noqa: BLE001
+        print("[tgb] WARN 账本写入失败: %s" % str(e)[:60], flush=True)
 QUEUE_FILE = os.path.join(HERE, "target_queue_chanlun.json")
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -216,9 +236,11 @@ def main():
                 html, st = fetch_stock_page(sess, code, pg)
                 if html is None:
                     fails.append("%s: HTTP %s p%d" % (code, st, pg))
+                    record_blocked(code, "http_%s" % st)
                     break
                 if "身份核实" in html[:3000] or len(html) < 8000:
                     blocked.append(code)
+                    record_blocked(code, "blocked")
                     break
                 if pg == 1:
                     p1_ok += 1
@@ -246,6 +268,7 @@ def main():
             print("[tgb] %s %-10s 新增 %d" % (code, name, got_new))
         except Exception as e:
             fails.append("%s: %s" % (code, str(e)[:70]))
+            record_blocked(code, "exception_%s" % type(e).__name__)
         time.sleep(_GAP)
     pct = (100.0 * p1_empty / p1_ok) if p1_ok else 0.0
     print("[tgb] 完成: %d 标的, 新增 %d 条, 失败 %d, 拦截页 %s, "

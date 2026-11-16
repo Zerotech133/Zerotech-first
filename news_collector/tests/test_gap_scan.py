@@ -308,3 +308,89 @@ def test_artifact_hint_silent_when_not_written():
 def test_artifact_hint_reports_paths_when_written():
     got = G._artifact_hint(True, "/tmp/a.json", "/tmp/a.md")
     assert "/tmp/a.json" in got[0] and "/tmp/a.md" in got[1]
+
+
+# ---------------------------------------------- 拦截/失败账本注记（2026-11-16 判例）
+def _src_jsonl_all():
+    return {"id": "guba", "label": "guba", "kind": "jsonl", "market": "all",
+            "dir": "unused", "queue": None, "ts_fields": ["ts"]}
+
+
+def test_load_blocked_books_missing_dir_returns_empty(tmp_path):
+    """无账本文件 = 无注记能力，返回空 dict——账本是增强信息，不是依赖。"""
+    srcs = [{"id": "guba", "dir": str(tmp_path)}]
+    import gap_scan as G
+    G.SOURCES_BACKUP = G.SOURCES
+    try:
+        G.SOURCES = srcs
+        assert G.load_blocked_books() == {}
+    finally:
+        G.SOURCES = G.SOURCES_BACKUP
+
+
+def test_judge_blocked_rec_annotates_detail():
+    """近期拦截记录 → det 附 blocked_at/blocked_kind，让人读报告时能分辨
+    「被拦截停更」与「从未采过/断供」——jsonl mtime 在这两种情形下同形。"""
+    import gap_scan as G
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    rec = {"ts": (now - timedelta(hours=1)).timestamp(), "status": "no_marker"}
+    st, det = G.judge("600519", _src_jsonl_all(), None, {}, {}, now, 96.0, 3,
+                      blocked_rec=rec)
+    assert det.get("blocked_kind") == "no_marker"
+    assert det.get("blocked_at")
+
+
+def test_judge_blocked_rec_stale_ignored():
+    """超过 48h 的拦截记录不注记——旧拦截大概率已恢复，注了反而误导归因。"""
+    import gap_scan as G
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    rec = {"ts": (now - timedelta(hours=49)).timestamp(), "status": "no_marker"}
+    st, det = G.judge("600519", _src_jsonl_all(), None, {}, {}, now, 96.0, 3,
+                      blocked_rec=rec)
+    assert "blocked_at" not in det
+    assert "blocked_kind" not in det
+
+
+# ---------------------------------------------- 拦截/失败账本注记（2026-11-16 判例）
+def _src_jsonl_all():
+    return {"id": "guba", "label": "guba", "kind": "jsonl", "market": "all",
+            "dir": "unused", "queue": None, "ts_fields": ["ts"]}
+
+
+def test_load_blocked_books_missing_dir_returns_empty(tmp_path):
+    """无账本文件 = 无注记能力，返回空 dict——账本是增强信息，不是依赖。"""
+    srcs = [{"id": "guba", "dir": str(tmp_path)}]
+    import gap_scan as G
+    G.SOURCES_BACKUP = G.SOURCES
+    try:
+        G.SOURCES = srcs
+        assert G.load_blocked_books() == {}
+    finally:
+        G.SOURCES = G.SOURCES_BACKUP
+
+
+def test_judge_blocked_rec_annotates_detail():
+    """近期拦截记录 → det 附 blocked_at/blocked_kind，让人读报告时能分辨
+    「被拦截停更」与「从未采过/断供」——jsonl mtime 在这两种情形下同形。"""
+    import gap_scan as G
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    rec = {"ts": (now - timedelta(hours=1)).timestamp(), "status": "no_marker"}
+    st, det = G.judge("600519", _src_jsonl_all(), None, {}, {}, now, 96.0, 3,
+                      blocked_rec=rec)
+    assert det.get("blocked_kind") == "no_marker"
+    assert det.get("blocked_at")
+
+
+def test_judge_blocked_rec_stale_ignored():
+    """超过 48h 的拦截记录不注记——旧拦截大概率已恢复，注了反而误导归因。"""
+    import gap_scan as G
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    rec = {"ts": (now - timedelta(hours=49)).timestamp(), "status": "no_marker"}
+    st, det = G.judge("600519", _src_jsonl_all(), None, {}, {}, now, 96.0, 3,
+                      blocked_rec=rec)
+    assert "blocked_at" not in det
+    assert "blocked_kind" not in det

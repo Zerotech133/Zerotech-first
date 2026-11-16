@@ -25,6 +25,26 @@ import guba_crawl as G
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 QUEUE_PATH = os.path.join(HERE, "target_queue_chanlun.json")
+# 失败账本：no_marker（拦截页）/exception 落这里，让缺口工具能区分
+# 「被拦截」与「从未采过」——两者在 jsonl mtime 上同形（都是停更），账本是唯一判据。
+BLOCKED_F = os.path.join(G.OUT_DIR, "_blocked.json")
+
+
+def record_blocked(code, status, ts=None):
+    """记失败账本（追加式覆盖同 code 旧记录）。账本故障不阻断采集。"""
+    try:
+        d = {}
+        if os.path.exists(BLOCKED_F):
+            with open(BLOCKED_F, "r", encoding="utf-8") as f:
+                d = json.load(f)
+        d[str(code)] = {"ts": round(float(ts if ts is not None else time.time()), 3),
+                        "status": str(status)[:60]}
+        tmp = BLOCKED_F + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=0)
+        os.replace(tmp, BLOCKED_F)
+    except Exception as e:  # noqa: BLE001
+        print("[guba] WARN 账本写入失败: %s" % str(e)[:60], flush=True)
 
 
 def queue_codes():
@@ -82,7 +102,7 @@ def main():
     print("定向采集 %d 只 × %d 页（Playwright 渲染版）" % (len(codes), pages),
           flush=True)
 
-    ok = err = n_new_total = 0
+    ok = err = n_new_total = n_block = 0
     t0 = time.time()
     with sync_playwright() as p:
         b = p.chromium.launch(headless=False,
@@ -110,6 +130,9 @@ def main():
                 status = "exception:%s" % str(e)[:60]
             if status != "ok":
                 err += 1
+                if status == "no_marker":
+                    n_block += 1          # 拦截页：外层熔断/降速的判据
+                record_blocked(c6, status)
                 print("[%d/%d] %s: FAIL %s" % (i, len(codes), c6, status),
                       flush=True)
             else:
@@ -130,8 +153,8 @@ def main():
             time.sleep(2.0)
         ctx.close()
         b.close()
-    print("DONE ok=%d fail=%d 新增=%d 耗时=%.0fs" % (ok, err, n_new_total,
-                                                     time.time() - t0))
+    print("DONE ok=%d fail=%d blocked=%d 新增=%d 耗时=%.0fs"
+          % (ok, err, n_block, n_new_total, time.time() - t0))
 
 
 if __name__ == "__main__":

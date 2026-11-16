@@ -64,3 +64,83 @@ def test_market_breadth_none_polarity_ignored():
 def test_market_breadth_missing_n_treated_as_zero():
     cards = [_card(雪球={"polarity": 1.0})]
     assert M.market_breadth(cards) is None
+
+
+# ---------------------------------------------- 采集器失败账本（2026-11-16 判例）
+def test_taoguba_record_blocked_writes_ledger(tmp_path, monkeypatch):
+    """拦截/HTTP/异常落 _blocked.json；账本故障只打印不阻断采集。
+    没有账本时，被拦截票与从未采过票在 mtime 上同形，缺口工具无法分辨。"""
+    import json as _json
+    import taoguba_collector as T
+    f = str(tmp_path / "_blocked.json")
+    monkeypatch.setattr(T, "BLOCKED_F", f)
+    T.record_blocked("600519", "blocked", ts=1700000000.0)
+    d = _json.load(open(f, encoding="utf-8"))
+    assert d["600519"]["kind"] == "blocked"
+    T.record_blocked("600519", "http_503", ts=1700000100.0)
+    d = _json.load(open(f, encoding="utf-8"))
+    assert d["600519"]["kind"] == "http_503"      # 覆盖旧记录
+
+
+def test_guba_pw_record_blocked_writes_ledger(tmp_path, monkeypatch):
+    import json as _json
+    import guba_pw as GP
+    f = str(tmp_path / "_blocked.json")
+    monkeypatch.setattr(GP, "BLOCKED_F", f)
+    GP.record_blocked("002737", "no_marker", ts=1700000000.0)
+    d = _json.load(open(f, encoding="utf-8"))
+    assert d["002737"]["status"] == "no_marker"
+    # 预写损坏账本 → 不抛异常（账本故障不阻断采集）
+    open(f, "w", encoding="utf-8").write("{broken")
+    GP.record_blocked("002737", "no_marker", ts=1700000000.0)   # 内部吞掉异常
+
+
+# ---------------------------------------------- batch_collect 熔断解析（2026-11-16 判例沉淀）
+def test_parse_guba_done_new_format():
+    import batch_collect as B
+    ok, fail, blocked = B.parse_guba_done("DONE ok=12 fail=1 blocked=1 新增=960 耗时=161s")
+    assert (ok, fail, blocked) == (12, 1, 1)
+
+
+def test_parse_guba_done_legacy_format():
+    """旧格式无 blocked= 字段 → 按 0 计，熔断靠 fail 兜底。"""
+    import batch_collect as B
+    ok, fail, blocked = B.parse_guba_done("DONE ok=13 fail=0 新增=1040 耗时=150s")
+    assert (ok, fail, blocked) == (13, 0, 0)
+
+
+def test_parse_guba_done_missing_done_counts_as_fail():
+    import batch_collect as B
+    ok, fail, blocked = B.parse_guba_done("no output")
+    assert ok == 0 and fail >= 1
+
+
+def test_parse_tgb_done_blocked_line():
+    import batch_collect as B
+    line = "[tgb] 完成: 20 标的, 新增 320 条, 失败 4, 拦截页 2 只, 首页解析0行 0/16 (0%), 结构失配 0, 耗时 152s"
+    ok, fail, blocked = B.parse_tgb_done(line)
+    assert fail == 4 and blocked == 1
+
+
+def test_parse_tgb_done_no_blocked():
+    import batch_collect as B
+    line = "[tgb] 完成: 20 标的, 新增 398 条, 失败 0, 拦截页 -, 首页解析0行 0/20 (0%), 结构失配 0, 耗时 92s"
+    ok, fail, blocked = B.parse_tgb_done(line)
+    assert fail == 0 and blocked == 0
+
+
+def test_batch_collect_rejects_dirty_codes(tmp_path):
+    """CRLF 判例：清单脏字符必须显形退出码 2，不能静默当不适用。
+
+    ⚠ 只测非法路径早退——首版本测试传合法票真跑了 guba_pw（2026-11-16
+    16:27 实锤触发 2 个东财请求），测试触网是事故：凡是会触达外部系统的
+    脚本，单测只锁「早退分支」，执行分支属集成验证，不进单测。"""
+    import batch_collect as B
+    f = tmp_path / "codes.txt"
+    f.write_text("600519\r\nabc\r\n1234567\r\n", encoding="utf-8")
+    rc = B.main(["--codes-file", str(f), "--sources", "guba"])
+    assert rc == 2
+    f2 = tmp_path / "empty.txt"
+    f2.write_text("", encoding="utf-8")
+    rc = B.main(["--codes-file", str(f2), "--sources", "guba"])
+    assert rc == 2

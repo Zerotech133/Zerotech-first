@@ -531,13 +531,52 @@ def load_queue_sets():
     return out
 
 
-def judge(code, src, rec, queue_sets, wl, now, stale_h, thin_n):
+BLOCKED_MAX_AGE_H = 48.0   # 账本记录的有效期：太久远的拦截记录不再注记
+
+
+def load_blocked_books(now=None):
+    """读各源 dir 下 _blocked.json（采集器失败账本），返回 {sid: {code: rec}}。
+
+    背景判例（2026-11-16）：guba 被拦截的票与从未采过的票在 jsonl mtime 上同形
+    （都是停更），缺口工具无法区分「被拦截」与「从未采过」。采集器侧已改为
+    失败/拦截时落 _blocked.json；本函数读取它作**注记**——不改变状态枚举，
+    只在 detail 上附 blocked_at/blocked_kind，让人读报告时能分辨两种停更。
+    账本缺失/损坏一律返回空（增强信息，不是依赖）。"""
+    now = now or datetime.now()
+    del now  # 保留参数以备未来按时间窗过滤；当前全量读入，新鲜度在 judge 内判
+    out = {}
+    for src in SOURCES:
+        p = os.path.join(src["dir"], "_blocked.json")
+        if not os.path.exists(p):
+            continue
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            if isinstance(d, dict):
+                out[src["id"]] = d
+        except Exception:
+            continue
+    return out
+
+
+def judge(code, src, rec, queue_sets, wl, now, stale_h, thin_n, blocked_rec=None):
     """单票单源判定。顺序即优先级：市场 → 数据 → 队列 → 新鲜度 → 厚度。"""
     det = {"n": 0, "last": None, "age_h": None, "in_queue": None}
     if not is_ashare(code):
         return STATE_NA_ASHARE, det
     if not market_ok(code, src["market"]):
         return STATE_NA_MARKET, det
+    # 拦截/失败账本注记：只对适用市场的票附（NA 源不注记，避免误导）。
+    # 48h 内的记录才注——更旧的拦截大概率已恢复，注了反而把人引向错误归因。
+    if blocked_rec:
+        try:
+            bt = float(blocked_rec.get("ts") or 0)
+            if bt > 0 and (now.timestamp() - bt) < BLOCKED_MAX_AGE_H * 3600:
+                det["blocked_at"] = datetime.fromtimestamp(bt).strftime("%Y-%m-%d %H:%M")
+                det["blocked_kind"] = str(
+                    blocked_rec.get("status") or blocked_rec.get("kind") or "?")[:40]
+        except Exception:
+            pass
 
     q = src["queue"]
     if q == "chanlun_actionable":
@@ -627,6 +666,7 @@ def build_report(now=None, stale_h=None, thin_n=None, fresh_cache=False, only=No
     thin_n = DEFAULTS["thin_n"] if thin_n is None else thin_n
     slack = 0.0 if no_slack else _weekend_slack(now, 24.0)
     stale_h = stale_raw + slack
+    blocked_books = load_blocked_books(now)
 
     pools, pool_stats, problems = load_pools()
     # --only 的语义是「体检这几只票」，不是「体检这几只里在池内的那些」。
@@ -670,7 +710,9 @@ def build_report(now=None, stale_h=None, thin_n=None, fresh_cache=False, only=No
         score, gaps = 0.0, []
         for src in SOURCES:
             sid = src["id"]
-            st, det = judge(code, src, idxs[sid].get(code), queues, wl, now, stale_h, thin_n)
+            st, det = judge(code, src, idxs[sid].get(code), queues, wl, now,
+                            stale_h, thin_n,
+                            blocked_rec=(blocked_books.get(sid) or {}).get(code))
             agg[sid][st] += 1
             det["state"] = st
             slot["srcs"][sid] = det
@@ -1045,6 +1087,9 @@ def main(argv=None):
                 print("    %-8s %-12s n=%-5s last=%-19s age_h=%s" % (
                     sid, STATE_LABEL.get(d["state"], d["state"]), d.get("n"),
                     d.get("last") or "-", d.get("age_h") if d.get("age_h") is not None else "-"))
+                if d.get("blocked_at"):
+                    print("             ⚠ 拦截/失败账本 %s @ %s —— 停更可能系源端拦截，非断供"
+                          % (d["blocked_kind"], d["blocked_at"]))
             print("")
         out = rep.get("pool_out") or []
         if out:
