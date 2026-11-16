@@ -275,8 +275,12 @@ def test_drill_ps1_parses_clean():
         "if($e -and $e.Count -gt 0){$e|ForEach-Object{Write-Output $_.Message};exit 1}else{exit 0}"
     )
     env = dict(os.environ, KILLSVC_PS1=ps1)
+    # Windows：pytest 捕获期 stdin 句柄可能已关闭，子进程继承会触发
+    # OSError [WinError 6] 句柄无效。显式 stdin=DEVNULL 根治
+    # （同 2026-11-15 t-engine、2026-11-16 insert_bar_gap 的修法）。
     r = subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", inner],
         capture_output=True, text=True, errors="replace", timeout=120, env=env,
+        stdin=subprocess.DEVNULL,
     )
     assert r.returncode == 0, "killsvc_drill.ps1 语法错误:\n%s\n%s" % (r.stdout, r.stderr)
