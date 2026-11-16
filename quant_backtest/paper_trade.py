@@ -317,6 +317,12 @@ def load_suppression(day):
         失效半个月的原因 —— 「读不到」被当成了「没有」。
       · 目录在、文件不在 → 真的今天没下抑制令，返回 None（合法）。
     """
+    # 2026-11-16 审查补：day 为空/非法时，拼出的是 preopen_suppressed_None.json，
+    # 目录在、该文件不在 ⇒ 走到 return None，与「当日无抑制」不可区分。
+    # 抑制令是门禁语义，参数错误必须抛错，不能静默放过。
+    if not day or len(str(day)) != 8 or not str(day).isdigit():
+        raise RuntimeError(
+            "load_suppression: day 必须是 8 位日期串（如 20261116），收到 %r" % (day,))
     p = os.path.join(DELIVERABLES, "preopen_suppressed_%s.json" % day)
     if not os.path.isfile(p):
         if not os.path.isdir(DELIVERABLES):
@@ -324,7 +330,10 @@ def load_suppression(day):
                 "抑制令目录不存在：%s —— 路径配置错误，不能当成「当日无抑制」（失败关闭）"
                 % DELIVERABLES)
         return None
-    j = json.load(open(p, encoding="utf-8"))
+    # 2026-11-16 审查补：原为 json.load(open(p, ...))，文件对象从未关闭
+    # （json.load 抛错时同样泄漏）。改 with 语句。
+    with open(p, encoding="utf-8") as fh:
+        j = json.load(fh)
     if j.get("schema") != SUP_SCHEMA:
         raise RuntimeError("抑制令 schema 不符：%s" % j.get("schema"))
     action = j.get("action")
