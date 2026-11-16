@@ -11,10 +11,19 @@
 #
 # 不做的事：不改任何选股口径、不回写选票产物、不注册自身。
 #
-# 两个码，别混（与 preopen_task.ps1 同源）：
-#   业务码（close_review.py 返回）：0 出了复盘 / 2 阻断（无篮子、行情日期不符）/ 3 脚本失败
-#   本脚本退出码（给 Task Scheduler 看）：0 = 已跑完（业务 0/1）/ 2 = 阻断 / 3 = 崩溃
+# 三个码，别混（与 preopen_task.ps1 同源）：
+#   业务码（close_review.py 返回）：0 出了复盘 / 1 出了但两源冲突（已剔出分母）
+#                                   / 2 真阻断（行情日期不符、样本不足）
+#                                   / 3 脚本崩溃
+#                                   / 4 今天没出票（NOPICK —— 抑制日的正常结果）
+#   本脚本退出码（给 Task Scheduler 看）：0 = 已跑完（业务 0/1/4）/ 2 = 阻断 / 3 = 崩溃
 #   LastTaskResult 问的是「跑完了吗」，不是「结论好不好」。
+#
+# 2026-11-16 补：为什么 4 要单列
+#   原先「今天没出票」与「行情日期不符」共用 rc=2，但处置**相反**：
+#   前者在抑制期间每天都会发生（不该告警），后者是真异常（必须告警）。
+#   共用一码 ⇒ 告警天天响 ⇒ 响到没人看 ⇒ 真异常一起被埋。
+#   现在 4 记 NOPICK、退出 0、不告警；2/3 才走 alert_fail。
 param(
     [switch]$WhatIf,
     [string]$Date = '',
@@ -92,10 +101,12 @@ $rc = $global:LASTEXITCODE
 
 $out | Out-File $Log -Append -Encoding utf8
 $skipped = (($out | Out-String) -match '\[SKIP\]')
+$nopick = (($out | Out-String) -match '\[NOPICK\]')
 Write-Log "=== close_review end 业务rc=$rc ==="
 if ($skipped) { Write-Log "抑制日按规则跳过（SKIP）：不产出复盘、不挂事件账" }
+if ($nopick) { Write-Log "今天没出票（NOPICK / rc=4）：无篮子且无可反推选票产物 —— 正常跳过，不告警、退出 0" }
 
-if ($rc -eq 2 -or $rc -eq 3) {
+if (($rc -eq 2 -or $rc -eq 3) -and (-not $nopick)) {
     if (Test-Path $alert) {
         & $py -X utf8 $alert 'close_review' $rc $Log | Out-Null
     } else {
@@ -103,17 +114,21 @@ if ($rc -eq 2 -or $rc -eq 3) {
     }
 }
 
-if ($rc -eq 0 -or $rc -eq 1) {
+if ($rc -eq 0 -or $rc -eq 1 -or $nopick) {
     # 复盘出结果后，把「评分排序」观测挂到信号日的既有事件上。
     # 失败不阻断主流程（报告已经出了），但必须落日志与 launch 落痕：
     # 「观测没攒上」与「今天没有观测」是两件事，不能都写成 DONE。
     $aRc = -1
     $attach = Join-Path $root 'tools\review\attach_close_review.py'
-    if ($skipped) {
+    if ($skipped -or $nopick) {
         # 没有复盘产物却去挂观测 = 造假证据；按规则跳过也要显式留痕，
         # 不能写成「今天没有观测」。
         $aRc = 0
-        Write-Log "SKIP：按抑制令跳过 attach_close_review（无复盘产物，不挂观测）"
+        if ($nopick) {
+            Write-Log "NOPICK：今天没出票，跳过 attach_close_review（无复盘产物，不挂观测）"
+        } else {
+            Write-Log "SKIP：按抑制令跳过 attach_close_review（无复盘产物，不挂观测）"
+        }
     } elseif (Test-Path $attach) {
         $aArgv = @('-X', 'utf8', $attach)
         if ($Date) { $aArgv += @('--exec-day', $Date) }
@@ -125,7 +140,7 @@ if ($rc -eq 0 -or $rc -eq 1) {
         Write-Log "attach_close_review.py missing - 观测未挂（不是没有观测）"
     }
     Write-Launch 'end' @{ rc = $rc; ts_rc = 0; stage = 'done'; attach_rc = $aRc
-                          skipped = [bool]$skipped
+                          skipped = [bool]$skipped; nopick = [bool]$nopick
                           dur_sec = [int](((Get-Date) - $T0).TotalSeconds) }
     exit 0
 }

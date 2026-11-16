@@ -94,19 +94,44 @@ INDEX = [("sh000001", "上证指数"), ("sz399001", "深证成指"), ("sz399006"
          ("sh000688", "科创50"), ("sh000300", "沪深300"), ("sh000852", "中证1000")]
 
 
-def die(msg: str) -> "None":
+def die(msg: str, code: int = 2) -> "None":
     """阻断：打印原因并以 2 退出。
 
     不用 raise SystemExit("字符串") —— 那会退成 rc=1，与脚本异常撞码，
     自动化就分不清「逻辑上不该出报告」和「代码炸了」。
+
+    code 参数是 2026-11-16 加的。此前「今天没出票」与「行情日期不符」共用 rc=2，
+    但两者的处置**相反**：前者是抑制日的正常结果（抑制期间每天都会发生，不该告警），
+    后者是真异常（必须告警）。共用一码 = 告警天天响 = 响到没人看，
+    于是真异常也一起被忽略。现在三码分开：
+        4 = 今天没出票（正常跳过，不告警）
+        2 = 真阻断（行情日期不符 / 样本不足）
+        3 = 脚本崩溃（见 __main__）
     """
     print(msg)
-    raise SystemExit(2)
+    raise SystemExit(code)
 
 
 # ---------------------------------------------------------------------------
 # 输入
 # ---------------------------------------------------------------------------
+def load_suppression(exec_day):
+    """当日盘前是否被人工抑制。抑制令是唯一真源；磁盘上的预演篮子不算实际出票。
+
+    抑制令存在但读不出来时必须显式报错，不能当「没有抑制」——
+    否则一次文件损坏就会让被抑制名单照常进入复盘台账。
+    """
+    p = os.path.join(DELIV, "preopen_suppressed_%s.json" % exec_day)
+    if not os.path.exists(p):
+        return None
+    try:
+        s = json.load(io.open(p, encoding="utf-8"))
+    except (ValueError, OSError) as e:
+        die("[FATAL] 抑制令存在但读不出来（拒绝按未抑制处理）：%s / %s" % (p, e))
+    if s.get("schema") != "preopen_suppressed/v1" or s.get("action") != "suppress":
+        die("[FATAL] 抑制令字段不符合约定：%s" % p)
+    return s
+
 def load_basket(exec_day: str) -> dict:
     """今天开盘到底用了哪份票。篮子优先，没有篮子才按交易日历反推。"""
     bp = os.path.join(DELIV, "preopen_basket_%s.json" % exec_day)
@@ -118,8 +143,11 @@ def load_basket(exec_day: str) -> dict:
     data_day = cal[cal.index(exec_day) - 1] if exec_day in cal and cal.index(exec_day) > 0 else None
     pp = os.path.join(DELIV, "preopen_pick15_v2_adj_check_%s.json" % data_day) if data_day else None
     if not (pp and os.path.exists(pp)):
-        die("[FATAL] 既无 %s，也找不到可反推的选票产物 —— 今天没出票，无从复盘"
-            % os.path.basename(bp))
+        # rc=4 而不是 2：「今天没出票」是抑制日/链路未启动的**正常结果**，
+        # 抑制期间每天都会走到这里。若与「行情日期不符」共用 rc=2，
+        # 告警会天天响，响到没人看 —— 那是把真异常一起埋掉。
+        die("[NOPICK] 既无 %s，也找不到可反推的选票产物 —— 今天没出票，无从复盘"
+            % os.path.basename(bp), code=4)
     return {"exec_day": exec_day, "data_day": data_day, "pick_json": pp,
             "reused": None, "picker_run_at": None, "_source": "derived"}
 
@@ -509,12 +537,113 @@ def read_ledger() -> list[dict]:
     return out
 
 
+def suppression_files() -> list[str]:
+    if not os.path.isdir(DELIV):
+        return []
+    return sorted(os.path.join(DELIV, n) for n in os.listdir(DELIV)
+                  if n.startswith("preopen_suppressed_") and n.endswith(".json"))
+
+
+def excluded_exec_days() -> dict:
+    """被抑制令显式排除在 40 日分母之外的**执行日** → {exec_day: {...}}。
+
+    为什么必须有这个消费者
+    ----------------------
+    抑制令从 11-13 那版起就有 `excluded_batches` 字段，但 close_review 一直只读
+    「今天有没有抑制令」，从不读「哪些日子不许计入分母」。于是 11-16：
+    复盘 15:40:05 落盘、抑制令 15:48:31 才写，一条预演批次就这样进了 40 日台账。
+    **只写不读的排除清单等于没有排除** —— 与「md5 锁没人校验就不是锁」同族。
+
+    键位约定（别想当然）
+    --------------------
+    既有两条 `excluded_batches` 的 `batch` 是**数据日**（PRE 批次的天然键）。
+    close_review 的行以**执行日**为键，两者不是同一把尺子，硬套会把
+    某天的数据日误当另一天的执行日。因此只有显式声明 `key="exec_day"` 的条目
+    才被采纳；历史条目（无 key 字段）一律不采纳 —— **宁可少排除，不可错排除**。
+    """
+    out = {}
+    for p in suppression_files():
+        try:
+            s = json.load(io.open(p, encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        for e in (s.get("excluded_batches") or []):
+            if not isinstance(e, dict) or e.get("key") != "exec_day":
+                continue
+            d = str(e.get("batch") or "")
+            if d:
+                out[d] = {"reason": e.get("reason") or "", "n": e.get("n"),
+                          "src": e.get("src"), "file": os.path.basename(p)}
+    return out
+
+
+def ledger_gate(exec_day: str, chain: dict, sup: dict, excluded: dict,
+                grace: int = 0, force: bool = False) -> dict:
+    """今天这一天到底该不该计入 40 日分母。返回 {allow, reason, detail}。
+
+    按序四条判据：
+      ① 抑制令排除清单命中          → 不入账（11-16 的形态）
+      ② 链路 NOT_STARTED / 未启动   → 不入账。这就是 D-2：报告自己写着
+                                      「启动 ✘ 落痕 0 次」，账本却照收 ——
+                                      **失败没被账本听见**。
+      ③ 链路体检失败（拿不到 verdict）→ 不入账。宁可报「不可测」，
+                                      也不把「不知道」写成「没问题」。
+      ④ 其余                        → 入账。
+
+    宽限重读（为什么需要）
+    ----------------------
+    抑制令由人工补记、时间不受控：11-16 是复盘 15:40:05 落盘、抑制令 15:48:31 才写。
+    所以在「看起来就是抑制日」（NOT_STARTED）时才等一小段再确认一次，把这种
+    分钟级窗口接住；healthy 的日子**不等待**，避免每天白等一分钟。
+    """
+    if force:
+        return {"allow": True, "reason": "FORCED",
+                "detail": "--force-ledger 显式指定：人工承担入账责任"}
+
+    looks_sup = ((chain.get("verdict") == "NOT_STARTED")
+                 or (chain.get("started") is False))
+    if grace > 0 and looks_sup and not sup:
+        t0 = time.time()
+        while time.time() - t0 < grace:
+            time.sleep(min(10.0, max(1.0, grace - (time.time() - t0))))
+            sup = load_suppression(exec_day)
+            if sup:
+                print("[SKIP-LEDGER] 宽限期内读到抑制令（等待 %.0fs）→ 本日按抑制日处置"
+                      % (time.time() - t0))
+                break
+
+    if sup:
+        return {"allow": False, "reason": "SUPPRESSED",
+                "detail": "抑制令在盘上：%s" % (sup.get("reason") or "无理由说明")[:120]}
+    if exec_day in excluded:
+        e = excluded[exec_day]
+        return {"allow": False, "reason": "EXCLUDED_BY_DECREE",
+                "detail": "抑制令 %s 显式排除本执行日（n=%s, src=%s）：%s"
+                          % (e["file"], e["n"], e["src"], e["reason"][:120])}
+    if chain.get("error"):
+        return {"allow": False, "reason": "CHAIN_UNKNOWN",
+                "detail": "链路体检失败，无法断言今天是否真的出过票：%s"
+                          % str(chain["error"])[:160]}
+    if looks_sup:
+        return {"allow": False, "reason": "NOT_STARTED",
+                "detail": "链路 verdict=%s / started=%s / 启动落痕 %s 次 —— "
+                          "预演产物不是实际出票，不计入 40 日分母"
+                          % (chain.get("verdict"), chain.get("started"),
+                             chain.get("n_start") or 0)}
+    return {"allow": True, "reason": "OK",
+            "detail": "链路 %s、已启动 %s 次，正常入账"
+                      % (chain.get("verdict"), chain.get("n_start") or 0)}
+
+
 def ledger_digest(exec_day: str) -> dict:
     """按执行日去重（同日重跑取最后一条），算累计与 40 日进度。
 
     冲突日不进分母 —— 这是口径，不是优化：既然已声明「两源差 >阈值 的日子不可信」，
     就必须真的把它从天数里剔掉，而不是统计时按 0 计入。否则「40 日」里掺进一堆
     自己都不信的日子，进度条就在撒谎，而且这种谎话没人会去核对。
+
+    抑制令显式排除的执行日同样不进分母（2026-11-16 补），理由完全一样：
+    **已声明不认的日子，不能只写在裁定文件里、账本照收。**
     """
     recs = {}
     for r in read_ledger():
@@ -523,7 +652,9 @@ def ledger_digest(exec_day: str) -> dict:
             recs[d] = r
     days = sorted(recs)
     bad = [d for d in days if recs[d].get("quote_conflict")]
-    ok_days = [d for d in days if not recs[d].get("quote_conflict")]
+    excl = excluded_exec_days()
+    excl_days = [d for d in days if d in excl]
+    ok_days = [d for d in days if not recs[d].get("quote_conflict") and d not in excl]
     ex = [recs[d].get("excess_o2c") for d in ok_days
           if recs[d].get("excess_o2c") is not None]
     return {"n_days": len(ok_days), "target": TARGET_DAYS,
@@ -532,9 +663,10 @@ def ledger_digest(exec_day: str) -> dict:
             "mean_excess": (sum(ex) / len(ex)) if ex else None,
             "day_win": sum(1 for x in ex if x > 0), "n_ex": len(ex),
             "n_conflict_days": len(bad), "conflict_days": bad, "n_rows": len(days),
+            "n_excluded_days": len(excl_days), "excluded_days": excl_days,
             "first_day": ok_days[0] if ok_days else None,
             "last_day": ok_days[-1] if ok_days else None,
-            "includes_today": exec_day in recs}
+            "includes_today": (exec_day in recs) and (exec_day not in excl)}
 
 
 def chain_state(exec_day: str) -> dict:
@@ -661,7 +793,7 @@ def _cross_label(cc: dict) -> str:
 
 def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
               rows: list[dict], dg: dict, qsrc: str, cross: dict, expo: dict,
-              ev: dict, chain: dict) -> str:
+              ev: dict, chain: dict, lg: dict | None = None) -> str:
     ex_o2c = (top_s["o2c_mean"] - pool_s["o2c_mean"]
               if top_s["o2c_mean"] is not None and pool_s["o2c_mean"] is not None else None)
     L = []
@@ -770,6 +902,20 @@ def render_md(b: dict, top_s: dict, pool_s: dict, idx: dict,
         A("> 另有 %d 个交易日因行情两源冲突**已排除在分母之外**：%s"
           % (dg["n_conflict_days"], "、".join(dg["conflict_days"])))
         A("")
+    if dg.get("n_excluded_days"):
+        A("> 另有 %d 个交易日因**抑制令显式排除**已排除在分母之外：%s"
+          "（裁定文件 `excluded_batches` 中声明 `key=exec_day` 的条目）"
+          % (dg["n_excluded_days"], "、".join(dg["excluded_days"])))
+        A("")
+    if lg:
+        if lg.get("allow"):
+            A("> 本日（%s）**已计入**分母：%s。" % (b["exec_day"], lg.get("detail")))
+        else:
+            A("> 本日（%s）**未计入**分母，原因 `%s`：%s。"
+              "报告照出（仍有诊断价值），但不进 40 日进度 —— "
+              "预演产物不是实际出票。" % (b["exec_day"], lg.get("reason"),
+                                          lg.get("detail")))
+        A("")
     if dg["n_days"] < dg["target"]:
         A("> 样本不足（%s），上面的日均与胜率**还不足以下结论**。"
           "这条链路要攒够 %d 个交易日才算被评价过 —— 单日数字只用来发现异常，不用来定性。"
@@ -811,9 +957,21 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="收盘复盘：当日选票成绩")
     ap.add_argument("--date", default=None, help="执行日 YYYYMMDD，缺省今天")
     ap.add_argument("--no-ledger", action="store_true", help="不写累计台账")
+    ap.add_argument("--force-ledger", action="store_true",
+                    help="明知链路未启动/受抑制，仍强行计入 40 日分母（人工承担）")
+    ap.add_argument("--sup-grace", type=int, default=60,
+                    help="链路疑似未启动时，等待抑制令落盘的重读秒数（0=不等，缺省 60）")
     a = ap.parse_args()
 
     exec_day = a.date or datetime.now().strftime("%Y%m%d")
+    sup = load_suppression(exec_day)
+    if sup:
+        # 抑制日「不出复盘」是按规则跳过，不是故障。业务码 0 给调度器的语义是
+        # 「任务跑完了」；SKIP 标记由 close_review_task.ps1 识别，据此不挂事件账。
+        print("[SKIP] %s 盘前已人工抑制（%s）：磁盘上的篮子/选票均为预演产物，"
+              "不代表实际出票 —— 不产出复盘、不写累计台账、不挂事件账。"
+              % (exec_day, sup.get("reason") or "无理由说明"))
+        return 0
     cal = audit.trade_cal()
     if exec_day not in cal:
         print("[SKIP] %s 非交易日" % exec_day)
@@ -877,16 +1035,31 @@ def main() -> int:
     # 先入账、再算摘要、最后渲染。
     # 反过来做（先算摘要再入账）会让报告里的累计永远慢一天 —— 首日甚至显示 0/40，
     # 这正是「产物看着正常、数字其实是旧的」那一类错误。
-    if not a.no_ledger:
+    #
+    # 但「入账」必须先过闸（2026-11-16 补）。原先是无条件 append_ledger，
+    # 于是一份自己写着 NOT_STARTED 的报告照样进了 40 日分母 ——
+    # 报告说了真话、账本没听，进度条就在替它撒谎。
+    lg = ledger_gate(exec_day, chain, sup, excluded_exec_days(),
+                     grace=a.sup_grace, force=a.force_ledger)
+    rec["ledger"] = lg
+    if a.no_ledger:
+        print("[SKIP-LEDGER] --no-ledger：本次不入账（%s）" % lg["reason"])
+    elif lg["allow"]:
         append_ledger({k: rec[k] for k in
                        ("schema", "exec_day", "data_day", "quote_source", "quote_check",
                         "quote_conflict", "picker_run_at",
                         "reused", "n", "n_miss", "top_o2c", "top_c2c", "pool_o2c",
                         "pool_c2c", "excess_o2c", "win_o2c", "exposure",
                         "evidence", "written_at")})
+        print("[LEDGER] 本日入账（%s）" % lg["reason"])
+    else:
+        # 报告照出（诊断价值还在），但不进分母。必须响亮：静默不入账
+        # 与「入账了但没人知道」一样无法审计。
+        print("[SKIP-LEDGER] %s 不入 40 日分母：%s — %s"
+              % (exec_day, lg["reason"], lg["detail"]))
 
     dg = ledger_digest(exec_day)
-    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, cross, expo, ev, chain)
+    md = render_md(b, top_s, pool_s, idx, rows, dg, qsrc, cross, expo, ev, chain, lg)
 
     md_path = os.path.join(DELIV, "close_review_%s.md" % exec_day)
     js_path = os.path.join(DELIV, "close_review_%s.json" % exec_day)
