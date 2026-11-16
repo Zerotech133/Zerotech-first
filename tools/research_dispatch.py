@@ -113,7 +113,35 @@ def slim_xsec(p: dict) -> dict:
     }
 
 
-def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None) -> tuple[str, str]:
+def finance_profile(code: str, timeout: int = 90) -> dict:
+    """调 tools/finance_profile.py 取基本面画像（本地 tushare，无需联网）。失败返回 {}。"""
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, "-X", "utf8",
+                            str(REPO / "tools" / "finance_profile.py"), code, "--json"],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", timeout=timeout, cwd=str(REPO))
+        if not (r.stdout or "").strip().startswith("{"):
+            return {}
+        doc = json.loads(r.stdout)
+        return doc if doc.get("available") else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def slim_fin(p: dict) -> dict:
+    """F1/T2 用得上的字段；不含推断值。"""
+    if not p:
+        return {}
+    keep = ("report", "profitability", "growth", "solvency", "cash", "valuation", "basic", "warnings")
+    out = {k: p[k] for k in keep if p.get(k)}
+    if p.get("trend"):
+        out["trend"] = p["trend"][-4:]
+    return out
+
+
+def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
+                 fin: dict | None = None) -> tuple[str, str]:
     role, focus = SEAT_SPEC[seat]
     system = (
         "你是数字军团投研席位 %s（%s），岗位：%s。%s\n"
@@ -130,6 +158,8 @@ def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None) ->
     }
     if xsec:
         material["xsec_profile"] = xsec
+    if fin and seat in ("F1", "T2"):     # 基本面给 F1；T2 需要估值/财报做反证
+        material["finance_profile"] = fin
     user = ("标的材料（ACAD1 池条目 + xsec 漏斗报告，均为原始字段）：\n%s\n\n"
             "请按此 JSON 结构输出你的结论：%s\n"
             "篇幅硬约束：points ≤ %d 条、risks ≤ %d 条、evidence_missing ≤ %d 条，"
@@ -211,8 +241,8 @@ def _call(client, system: str, user: str, model: str, max_tokens: int) -> dict:
 
 
 def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
-             xsec: dict | None = None) -> dict:
-    system, user = build_prompt(seat, item, card, xsec)
+             xsec: dict | None = None, fin: dict | None = None) -> dict:
+    system, user = build_prompt(seat, item, card, xsec, fin)
     out = _call(client, system, user, model, max_tokens)
     out["seat"] = seat
     out["phase"] = "open"
@@ -357,6 +387,7 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only", default="")
     ap.add_argument("--no-xsec", action="store_true")
+    ap.add_argument("--no-fin", action="store_true", help="不附带财务画像")
     ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
     args = ap.parse_args(argv)
 
@@ -388,12 +419,17 @@ def main(argv=None) -> int:
     for item in items:
         code = str(item.get("code"))
         xs = {} if args.no_xsec else slim_xsec(xsec_profile(code))
+        fin = {} if args.no_fin else slim_fin(finance_profile(code))
+        if fin:
+            log("  %s finance roe=%s margin=%s" % (code,
+                (fin.get("profitability") or {}).get("roe"),
+                (fin.get("profitability") or {}).get("net_margin")))
         if xs:
             log("  %s xsec primary=%s ops_hit=%s" % (code, xs.get("primary"),
                 {k: v for k, v in (xs.get("ops_hit") or {}).items() if v}))
         seats = {}
         for seat in SEATS:
-            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs)
+            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin)
             seats[seat] = r
             log("  %s %s ok=%s mode=%s %sms %s" % (code, seat, r["ok"], r["mode"], r["elapsed_ms"],
                                                    (r["result"] or {}).get("verdict", "")[:50]))
