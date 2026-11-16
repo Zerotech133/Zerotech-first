@@ -37,6 +37,11 @@ SELF_NAV_PAGES = {
                        r'<a\s+href="/zero_proto\.html#product"[^>]*>\s*← 返回产品建设'),
     "home_v3.html": (r'<nav\s+class="nav"[^>]*aria-label="主导航"',
                      r'href="/home\.html"[^>]*>打开旧总览'),
+    # 2026-11-16：home_v3 拆成「模板 + 产物」两份。模板 _templates/home_v3.src.html
+    # 是页面结构的真源（入库），产物 home_v3.html 由 build_platform_today.py 渲染
+    # （不入库）。两份都自带导航，都要登记——漏了模板，跑本脚本会把全局顶栏注进源文件。
+    "home_v3.src.html": (r'<nav\s+class="nav"[^>]*aria-label="主导航"',
+                         r'href="/home\.html"[^>]*>打开旧总览'),
     # JEV 情报工作台原型：嵌入式自有返回按钮，不注入全局深色顶栏（2026-11-09）
     "jev_intel.html": (r'id="embedBack"', r'←\s*返回板块总览'),
 }

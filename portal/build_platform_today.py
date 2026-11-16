@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 """宿主首页 · 三平台今日一句
 
-产出 portal/data/platform_today.json，供 home.html 的「三平台今日」区渲染。
+产出两件东西：
+  1) portal/data/platform_today.json —— 机读快照（生成物，已 gitignore）
+  2) portal/home_v3.html —— 由 _templates/home_v3.src.html 渲染而成（生成物，已 gitignore）
 
 设计判据：
 1) 只聚合，不重算。每个数字都必须是某平台自己的产物里已有的值，逐字复制。
 2) 一个平台读不到 -> 该平台记 unknown，其余照常出。整页不能因一家坏掉而空。
 3) 日期一律带 asof，落后交易日数按 DAILY 分片文件名算，不用 mtime、不用 today。
 4) 不写任何 verdict 之外的判断词。首页不替平台下结论。
+5) 页面结构归模板（入库），数据归产物（不入库）—— 否则数据每天变、
+   工作区每天 M，git 的变更信号就被噪声淹了。
 
 三平台的数据真源：
   侯风    daily_report/build_houfeng_today.py 的 build()（复用，不重写逻辑）
@@ -216,36 +220,43 @@ def build() -> dict:
     }
 
 
-# ---------------------------------------------------------------- 注入首页
-HOME_V3 = os.path.join(HERE, "home_v3.html")
+# ---------------------------------------------------------------- 渲染首页
+# 模板 / 产物分离（2026-11-16）：
+#   数据内联在页面里（该页既有约定：不依赖外部数据桥），而数据每天变 ——
+#   如果页面本身入库，工作区就会每天显示 M，`git add -A` 会顺带把数据噪声带走。
+#   所以：模板 _templates/home_v3.src.html 入库（页面结构有版本历史），
+#   产物 portal/home_v3.html 是生成物、不入库（.gitignore）。
+#   要改页面结构改模板；直接改产物会在下次生成时被覆盖。
+HOME_SRC = os.path.join(HERE, "_templates", "home_v3.src.html")
+HOME_OUT = os.path.join(HERE, "home_v3.html")
 PLAT_RE = re.compile(r'(<script id="plat-today" type="application/json">)(.*?)(</script>)', re.S)
 
 
-def inject_home(d: dict, strict: bool = True) -> tuple[bool, str]:
-    """把数据写进 home_v3.html 的内联块。
+def render_home(d: dict, strict: bool = True) -> tuple[bool, str]:
+    """模板 -> 产物。模板只读，产物只写。
 
-    只替换那段 json 正文，页面其余字节一律不动——首页不依赖外部数据桥
-    （该页 footer 的既有约定），所以数据必须内联，不能靠 fetch。
     写后读回校验：块能解析、平台数为 3、BOM 与总字节结构未被破坏。
 
     strict=False 仅供变异检验注入刻意异常的数据（空平台、多余平台）。
     生产调用方必须保持默认 True。
     """
-    if not os.path.exists(HOME_V3):
-        return False, "home_v3.html 不存在"
-    raw = open(HOME_V3, "rb").read()
+    assert os.path.abspath(HOME_SRC) != os.path.abspath(HOME_OUT), "模板与产物不能是同一文件"
+    if not os.path.exists(HOME_SRC):
+        return False, "模板 _templates/home_v3.src.html 不存在（产物未重建，原产物保持不动）"
+    raw = open(HOME_SRC, "rb").read()
     has_bom = raw[:3] == b"\xef\xbb\xbf"
     text = raw.decode("utf-8-sig")
-    if len(PLAT_RE.findall(text)) != 1:
-        return False, f"锚点应唯一，实际 {len(PLAT_RE.findall(text))} 处"
+    n = len(PLAT_RE.findall(text))
+    if n != 1:
+        return False, f"模板锚点应唯一，实际 {n} 处"
     body = json.dumps(d, ensure_ascii=False, separators=(",", ":"))
     body = body.replace("</", "<\\/")          # 防止提前闭合 script
     new = PLAT_RE.sub(lambda m: m.group(1) + body + m.group(3), text, count=1)
     out = new.encode("utf-8")
-    open(HOME_V3, "wb").write((b"\xef\xbb\xbf" + out) if has_bom else out)
+    open(HOME_OUT, "wb").write((b"\xef\xbb\xbf" + out) if has_bom else out)
 
-    # 读回校验
-    back = open(HOME_V3, "rb").read()
+    # 读回校验（对产物，不是对模板）
+    back = open(HOME_OUT, "rb").read()
     assert (back[:3] == b"\xef\xbb\xbf") == has_bom, "BOM 状态被改动"
     bt = back.decode("utf-8-sig")
     m = PLAT_RE.search(bt)
@@ -257,7 +268,7 @@ def inject_home(d: dict, strict: bool = True) -> tuple[bool, str]:
             return False, f"回读平台数 {len(got.get('platforms') or [])} != 3"
         if got.get("asof") != d.get("asof"):
             return False, f"回读 asof {got.get('asof')} != {d.get('asof')}"
-    return True, f"内联 {len(body)}B 已注入（{os.path.basename(HOME_V3)}，共 {len(back)}B）"
+    return True, f"内联 {len(body)}B 已注入（{os.path.basename(HOME_OUT)}，共 {len(back)}B）"
 
 
 def main() -> int:
@@ -274,7 +285,7 @@ def main() -> int:
     for p in d["platforms"]:
         assert "state" in p and "data_date" in p and "verdict" in p, p
 
-    ok, msg = inject_home(d)
+    ok, msg = render_home(d)
     print(f"OK {out}  asof={d['asof']}  "
           + "  ".join(f"{p['id']}={p['state']}/lag={p['lag']}" for p in d["platforms"]))
     print(f"{'HOME ' + msg if ok else 'HOME-FAIL ' + msg}")
