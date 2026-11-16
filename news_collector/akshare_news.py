@@ -291,14 +291,23 @@ def main(argv=None):
                 print("[%s] %d/%d %s: %d 行 +%d" % (seg, i, len(codes), c6,
                                                     len(rows), n))
             except Exception as e:
-                fail += 1
-                consec_fail += 1
-                print("[%s] %d/%d %s: FAIL %s" % (seg, i, len(codes), c6,
-                                                  str(e)[:80]), flush=True)
-                if consec_fail >= FAIL_CIRCUIT:
-                    print("[%s] 连续失败 %d → 熔断停段" % (seg, consec_fail))
-                    rc = 1
-                    break
+                # akshare 研报接口对无研报覆盖的票（多为次新）在内部
+                # big_df["infoCode"] 处抛 KeyError —— 这是「目录空」的内容事实，
+                # 不是断供：按合法空处理，不计失败、不进熔断（2026-11-16 判例）。
+                if seg == "research" and "infoCode" in str(e):
+                    ok += 1
+                    consec_fail = 0
+                    print("[%s] %d/%d %s: 无研报覆盖(合法空)" % (
+                        seg, i, len(codes), c6), flush=True)
+                else:
+                    fail += 1
+                    consec_fail += 1
+                    print("[%s] %d/%d %s: FAIL %s" % (seg, i, len(codes), c6,
+                                                      str(e)[:80]), flush=True)
+                    if consec_fail >= FAIL_CIRCUIT:
+                        print("[%s] 连续失败 %d → 熔断停段" % (seg, consec_fail))
+                        rc = 1
+                        break
             if i < len(codes):
                 time.sleep(SLEEP_S)
         print("[%s] DONE ok=%d fail=%d 新增=%d 耗时=%.0fs" % (

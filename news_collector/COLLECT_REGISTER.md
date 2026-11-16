@@ -2094,3 +2094,16 @@ batch_collect 边界 1）；gap_scan --no-write 全量回归正常；修复后 p
 - 沉淀工具：chanlun_queue_refresh.py（幂等/备份/原子写/--dry）、
   akshare_news.py（--sources/--codes-file/--quota/双熔断：连败 3 停段 +
   降级 raise）。
+
+#### 25-9.4 首批补齐结果与 infoCode 判例（22:00–22:40）
+
+- 首批并发跑两段**双双触发熔断**（research 连败 3、aknews 连败 3，均为 curl
+  超时）——同 IP 并发打东财系两个端点触发了限流。判例：**akshare_news 两段
+  不得并发**，冷却 90/60s 后串行补跑余量（research 61 只、aknews 526 只）。
+- 首批实绩：aknews ok=447 fail=5 新增 4434 条（落盘 448 票）；research
+  ok=53 fail=11 新增 2542 条（落盘 55 票）。
+- **infoCode 判例**：research 段的 11 个 fail 全是 akshare 内部
+  `big_df["infoCode"]` KeyError——无研报覆盖的票（001216 次新等，实测稳定
+  复现）目录为空是**内容事实**，不是断供。已修：infoCode 缺列按合法空处理
+  （不计失败、不进熔断）。与"不适用/空窗不能表现为故障"同族第三例。
+- 测试 255 passed 不变。
