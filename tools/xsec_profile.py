@@ -62,8 +62,9 @@ ORDER BY d DESC LIMIT 10""", c=code)
 # ── 线2：K线审美（缠论视角量化判据）──
 def line2_kline(code: str) -> dict:
     import pandas as pd
-    mkt = 'SH' if code.startswith('6') else ('SZ' if code[0] in '03' else 'SH')
-    df = pd.read_parquet(ROOT / f'quant_backtest/data/ashare/{code}_{mkt}.parquet').sort_values('trade_date')
+    bare = str(code).split(".")[0]          # parquet 文件名用裸码（不带 .SZ/.SH）
+    mkt = 'SH' if bare.startswith('6') else ('SZ' if bare[0] in '03' else 'SH')
+    df = pd.read_parquet(ROOT / f'quant_backtest/data/ashare/{bare}_{mkt}.parquet').sort_values('trade_date')
     last = df.iloc[-1]
     df.tail(20)
     w60 = df.tail(60)
@@ -119,7 +120,9 @@ RETURN seat.name AS seat, buy, sell, net""", c=code)
 
 def funnel_corroborate(code: str) -> dict:
     """K-ORG-120 四层漏斗：图形假设 → 事件/资金佐证三态。"""
-    ops = operators(load_kline(code))
+    # load_kline 期望不带交易所后缀的纯代码（它自己按首字母判 SH/SZ）；
+    # 入参常带 `.SZ`/`.SH`，这里剥掉，避免拼成 `300314.SZ_SZ.parquet`（2026-11-16 实测 FileNotFoundError）。
+    ops = operators(load_kline(str(code).split(".")[0]))
     prim = primary_hypothesis(ops)
     l1 = line1_events(code)
     l3 = line3_seats(code)

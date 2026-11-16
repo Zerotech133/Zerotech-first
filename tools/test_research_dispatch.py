@@ -80,6 +80,30 @@ def test_summarize_wording_distinguishes_causes():
     assert "四席均中性" in s3["rationale"]
 
 
+def test_slim_xsec_keeps_only_seat_relevant():
+    raw = {"funnel": {"primary_hypothesis": {"primary": "runup", "name": "抢跑异动",
+                                             "next_verification": "待事件耦合"},
+                      "ops": {"hypothesis_distribute": {"hit": True, "evidence": "x"},
+                              "hypothesis_runup": {"hit": True},
+                              "context": {"close": 15.04, "pos250": 0.99}}},
+           "line2_kline": {"close": 15.04, "pos250": 0.99, "noise": "drop me"}}
+    s = rd.slim_xsec(raw)
+    assert s["primary"] == "runup" and s["primary_name"] == "抢跑异动"
+    assert s["ops_hit"]["hypothesis_distribute"] is True
+    assert s["context"]["pos250"] == 0.99
+    assert "noise" not in s["kline_last"]          # 只保留白名单字段
+    assert rd.slim_xsec({}) == {}                  # 生成失败不阻塞
+
+
+def test_build_prompt_includes_xsec_when_present():
+    item = {"code": "001228.SZ", "name": "永泰运", "market": "CN", "signal": "CHAN_V7",
+            "score": 100.0, "selection_reason": "基础信号：买点", "risk_flags": []}
+    _, without = rd.build_prompt("T1", item, {}, None)
+    _, with_x = rd.build_prompt("T1", item, {}, {"primary": "runup", "context": {"pos250": 0.89}})
+    assert "xsec_profile" not in without
+    assert "xsec_profile" in with_x and "runup" in with_x and "0.89" in with_x
+
+
 def test_upsert_index_dedup(tmp_path, monkeypatch):
     idx = tmp_path / "research_index.jsonl"
     monkeypatch.setattr(rd, "INDEX", idx)

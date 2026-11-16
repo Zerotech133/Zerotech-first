@@ -85,7 +85,44 @@ def load_cards() -> dict:
     return {"agents": out}
 
 
-def build_prompt(seat: str, item: dict, card: dict) -> tuple[str, str]:
+def xsec_profile(code: str, timeout: int = 90) -> dict:
+    """调 tools/xsec_profile.py 取漏斗报告（图形假设 + 事件/资金佐证）。
+
+    失败返回 {}——材料不足时席位会自己写进 evidence_missing，不阻塞整轮。
+    """
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, "-X", "utf8",
+                            str(REPO / "tools" / "xsec_profile.py"), code, "--json"],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", timeout=timeout, cwd=str(REPO))
+        if r.returncode != 0 or not (r.stdout or "").strip().startswith("{"):
+            return {}
+        return json.loads(r.stdout)
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def slim_xsec(p: dict) -> dict:
+    """只保留席位用得上的部分，避免 prompt 过长。"""
+    if not p:
+        return {}
+    f = p.get("funnel") or {}
+    l2 = p.get("line2_kline") or {}
+    return {
+        "primary": (f.get("primary_hypothesis") or {}).get("primary"),
+        "primary_name": (f.get("primary_hypothesis") or {}).get("name"),
+        "next_verification": (f.get("primary_hypothesis") or {}).get("next_verification"),
+        "ops_hit": {k: (v.get("hit") if isinstance(v, dict) else None)
+                    for k, v in (f.get("ops") or {}).items() if isinstance(v, dict)},
+        "context": (f.get("ops") or {}).get("context"),
+        "kline_last": {k: l2.get(k) for k in
+                       ("close", "pos250", "vol20_vs_prev20", "ma20", "ma60", "trend")
+                       if l2.get(k) is not None},
+    }
+
+
+def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None) -> tuple[str, str]:
     role, focus = SEAT_SPEC[seat]
     system = (
         "你是数字军团投研席位 %s（%s），岗位：%s。%s\n"
@@ -100,13 +137,16 @@ def build_prompt(seat: str, item: dict, card: dict) -> tuple[str, str]:
         "data_date": item.get("data_date"), "pool_date": item.get("pool_date"),
         "risk_flags": item.get("risk_flags"),
     }
-    user = ("标的材料（ACAD1 池条目，原始字段）：\n%s\n\n"
+    if xsec:
+        material["xsec_profile"] = xsec
+    user = ("标的材料（ACAD1 池条目 + xsec 漏斗报告，均为原始字段）：\n%s\n\n"
             "请按此 JSON 结构输出你的结论：%s" % (json.dumps(material, ensure_ascii=False), SCHEMA))
     return system, user
 
 
-def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int) -> dict:
-    system, user = build_prompt(seat, item, card)
+def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
+             xsec: dict | None = None) -> dict:
+    system, user = build_prompt(seat, item, card, xsec)
     t0 = time.time()
     err = ""
     text = ""
@@ -214,6 +254,7 @@ def main(argv=None) -> int:
     ap.add_argument("--max-tokens", type=int, default=3000)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only", default="", help="只处理指定代码（逗号分隔）")
+    ap.add_argument("--no-xsec", action="store_true", help="不附带 xsec 漏斗报告")
     args = ap.parse_args(argv)
 
     pool = fetch_pool()
@@ -242,9 +283,13 @@ def main(argv=None) -> int:
     ok_n = 0
     for item in items:
         code = str(item.get("code"))
+        xs = {} if args.no_xsec else slim_xsec(xsec_profile(code))
+        if xs:
+            log("  %s xsec primary=%s ops_hit=%s" % (code, xs.get("primary"),
+                {k: v for k, v in (xs.get("ops_hit") or {}).items() if v}))
         seats = {}
         for seat in SEATS:
-            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens)
+            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs)
             seats[seat] = r
             log("  %s %s ok=%s %sms %s" % (code, seat, r["ok"], r["elapsed_ms"],
                                            (r["result"] or {}).get("verdict", "")[:60]))
