@@ -285,3 +285,24 @@ class AppSettings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> AppSettings:
     return AppSettings()
+
+
+def raw_psycopg2_dsn() -> str:
+    """返回 psycopg2 可直接使用的 DSN 字符串。
+
+    背景（2026-11-16）：`scheduler_jobs.py` 与 `infrastructure/market_data` 层共
+    12 处 `psycopg2.connect(...)` 已统一改为 `psycopg2.connect(raw_psycopg2_dsn())`，
+    但本函数当时未落地 —— 导致 `zhice_os_v2.scheduler` 导入即 ImportError，
+    调度器从未启动，US/HK/CRYPTO 的日线增量任务全部未执行（数据停在 11-06/11-09）。
+
+    单一真源：`db_main_url`（其口令已由 `.env.local` 纠正为容器实际值）。
+    psycopg2 不认 SQLAlchemy 的 `+psycopg2` 方言前缀，故此处剥掉。
+
+    同时保留对旧式 `postgresql+asyncpg://` 写法的归一，形成"等价归一化"，
+    供 12 处消费者统一使用。
+    """
+    url = get_settings().db_main_url
+    return (
+        url.replace("postgresql+psycopg2://", "postgresql://")
+        .replace("postgresql+asyncpg://", "postgresql://")
+    )

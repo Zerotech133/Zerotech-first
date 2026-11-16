@@ -33,6 +33,33 @@ Wrapper 尾部失败（PS1 的 acad1_rationale/agent_autopilot/agent_worker）
 """
 from __future__ import annotations
 
+# ── 2026-11-16 PG DSN bootstrap ─────────────────────────────────────────────
+# 背景：settings.db_main_url 的默认口令是轮换前旧值（10 位），11-16 03:15 日任务
+#       因此 PG 认证失败、19 步全 skipped。jev_common.DB_DSN（32 位）实测可连，
+#       是当前唯一正确真源（8091 同源）。此处注入 DB_MAIN_URL 环境变量，
+#       不改 settings.py、不落盘口令。读取失败静默跳过（保持原行为）。
+def _bootstrap_pg_dsn() -> None:
+    import os
+
+    if os.environ.get("DB_MAIN_URL"):
+        return
+    try:
+        import sys
+        _jev = r"C:/项目/老田的AI助手/jev-eval"
+        if _jev not in sys.path:
+            sys.path.insert(0, _jev)
+        import jev_common  # noqa: WPS433 — DSN 单一真源（同 portal/api_acad1_pool.py）
+
+        d = jev_common.DB_DSN
+        os.environ["DB_MAIN_URL"] = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (
+            d["user"], d["password"], d["host"], d["port"], d["dbname"],
+        )
+    except Exception:
+        pass
+
+
+_bootstrap_pg_dsn()
+
 import json
 import os
 import runpy
@@ -53,8 +80,25 @@ for _path in (str(CODE / "src"), str(SCRIPTS_DIR)):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+# 需要显式 --write 的步骤；runpy 不会自动带 CLI 参数
+WRITE_ARGS: dict[str, list[str]] = {
+    "backfill_security_names.py": ["--write"],
+    "build_base_signals.py": ["--write"],
+    "build_rule_base_signals.py": ["--write"],
+    "slot_sim_manage.py": ["--execute"],
+    "slot_sim_execute.py": ["--top-n", "3", "--execute"],
+}
+
 STEPS: tuple[str, ...] = (
+    # 2026-11-16 新增：先补齐 ashare parquet -> v2_bar_daily 的日期缺口。
+    # 此前该搬运靠手工执行，导致 11-09 之后行情停更 7 天而任务照常全绿。
+    "ingest_bar_gap.py",
+    # 2026-11-16 新增：从 TDX 数据服务补 HK 日线缺口（与上一条同病，长期靠手工）。
+    "ingest_hk_from_tdx.py",
+    # 2026-11-16 新增：US 日线缺口（Yahoo + 本地代理）。P1 池内必补 + P2 缺口轮转。
+    "ingest_us_gap.py",
     "ingest_strategy_workspace.py",
+    "adapt_dk.py",
     "adapt_platform_cn.py",
     "adapt_platform_global.py",
     "seed_selection_desk.py",
@@ -64,6 +108,8 @@ STEPS: tuple[str, ...] = (
     "build_base_signals.py",
     "build_rule_base_signals.py",
     "sync_candidate_to_acad1.py",
+    "slot_sim_manage.py",
+    "slot_sim_execute.py",
     "dw_adapter.py",
     "seed_acad1_research_cards.py",
     "acad1_evidence_bundle.py",
@@ -316,7 +362,9 @@ def main() -> int:
 
             if job_log:
                 job_log.mark_step(name, "running")
+            old_argv = sys.argv
             try:
+                sys.argv = [name] + WRITE_ARGS.get(name, [])
                 runpy.run_path(str(SCRIPTS_DIR / name), run_name="__main__")
             except SystemExit as exc:
                 code = exc.code if exc.code is not None else 0
@@ -343,6 +391,8 @@ def main() -> int:
             else:
                 if job_log:
                     job_log.mark_step(name, "success", rc=0)
+            finally:
+                sys.argv = old_argv
 
         if job_log:
             job_log.finish_run("success", rc=0, data_date=_latest_pool_date() or data_date)
