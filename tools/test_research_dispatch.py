@@ -214,6 +214,30 @@ def test_summarize_ignores_illegal_final_level():
     assert bad["decided_by"] == "rule"
 
 
+def test_critical_seat_degraded_blocks_directional_call():
+    """T1/T2 降级时不得出 BUY/SELL——否则 degraded 会被误当成'无空头反对'。"""
+    # T2 降级 + 两席 bull → 规则本会判 BUY，必须降为 HOLD
+    seats = {"T1": _seat("bull", 0.6), "T2": _seat("unknown", mode="degraded"),
+             "N1": _seat("neutral"), "F1": _seat("bull", 0.5)}
+    s = rd.summarize("X", seats)
+    assert s["recommendation_level"] == "HOLD"
+    assert s["rule_level_downgraded"] == "BUY"
+    assert "关键席位降级" in s["rationale"] and "T2" in s["rationale"]
+
+    # T1 降级 + 两席 bear → 本会判 SELL，也必须降为 HOLD
+    seats2 = {"T1": _seat("unknown", mode="degraded"), "T2": _seat("bear", 0.6),
+              "N1": _seat("bear", 0.5), "F1": _seat("unknown")}
+    s2 = rd.summarize("X", seats2)
+    assert s2["recommendation_level"] == "HOLD" and s2["rule_level_downgraded"] == "SELL"
+
+    # 非关键席位（N1）降级不影响方向性结论
+    seats3 = {"T1": _seat("bull", 0.6), "T2": _seat("bull", 0.5),
+              "N1": _seat("unknown", mode="degraded"), "F1": _seat("bull", 0.6)}
+    s3 = rd.summarize("X", seats3)
+    assert s3["recommendation_level"] in ("BUY", "STRONG_BUY")
+    assert "rule_level_downgraded" not in s3
+
+
 def test_upsert_index_dedup(tmp_path, monkeypatch):
     idx = tmp_path / "research_index.jsonl"
     monkeypatch.setattr(rd, "INDEX", idx)

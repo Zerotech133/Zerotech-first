@@ -453,6 +453,17 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
             why = "四席均无立场（证据不足；降级 %d 席）" % len(degraded)
 
     horizon = "SHORT" if level in ("BUY", "STRONG_BUY", "SELL", "STRONG_SELL") else "MEDIUM"
+    # 关键席位降级保护（2026-11-16 实测踩到）：T2 降级时 `bear=0` 会被误读成"无空头反对"，
+    # 从而抖动出假 BUY（603596.SH 就是这么出的）。关键席位缺席时不许出方向性结论。
+    downgraded = [k for k in DEBATE_PAIR
+                  if (seats.get(k) or {}).get("mode") == MODE_DEGRADED]
+    if downgraded and level in ("BUY", "STRONG_BUY", "SELL", "STRONG_SELL"):
+        rule_level_before = level
+        level = "HOLD"
+        why = "关键席位降级（%s）不足以定方向 → 由 %s 降为 HOLD" % ("/".join(downgraded), rule_level_before)
+    else:
+        rule_level_before = None
+
     out = {
         "recommendation_level": level,
         "confidence_score": conf,                      # 0-100
@@ -469,6 +480,9 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
         "debate_changed": bool(debate and debate.get("changed")),
         "decided_by": "rule",
     }
+    if rule_level_before:
+        out["rule_level_downgraded"] = rule_level_before
+        out["downgrade_reason"] = why
     # 决胜席有效时覆盖规则结论（保留 rule_* 以便随时对比）
     fr = (final or {}).get("result") or {}
     if (final or {}).get("ok") and fr.get("decision_level"):
