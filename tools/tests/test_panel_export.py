@@ -83,14 +83,14 @@ def test_cli_export_check_roundtrip_and_tamper(tmp_path):
     out = tmp_path / "report_panel.json"
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EXPORT_PATH), "export",
                            "--input", str(V3_JSON), "--out", str(out), "--check"],
-                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert out.exists()
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["candidates"] and data["reports"]
 
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EXPORT_PATH), "check", "--out", str(out)],
-                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert "check OK" in proc.stdout
 
@@ -98,7 +98,7 @@ def test_cli_export_check_roundtrip_and_tamper(tmp_path):
     data.pop("disclaimer")
     out.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EXPORT_PATH), "check", "--out", str(out)],
-                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 1
     assert "disclaimer" in (proc.stdout + proc.stderr)
 
@@ -110,7 +110,7 @@ def test_check_handles_missing_and_corrupt_files(tmp_path):
     bad.write_text("{not json", encoding="utf-8")
     assert pe.check_portal_json(bad)
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EXPORT_PATH), "check", "--out", str(bad)],
-                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 1
 
 
@@ -170,6 +170,6 @@ def test_validation_catches_missing_disclaimer_and_bad_rows():
 
 def test_cli_help():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EXPORT_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0
     assert "export" in proc.stdout and "check" in proc.stdout

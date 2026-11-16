@@ -79,7 +79,7 @@ def test_cli_stdout_clean(tmp_path):
     f = tmp_path / "cards.json"
     f.write_text(json.dumps({"cards": [_clean()]}), encoding="utf-8")
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "acad1_candidate_preflight.py"),
-                        "--cards", str(f), "--json"], capture_output=True, text=True, encoding="utf-8")
+                        "--cards", str(f), "--json"], capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert r.returncode == 0
     assert json.loads(r.stdout)["summary"]["review_ready"] == 1
 
@@ -89,7 +89,7 @@ def test_cli_out_dir_writes(tmp_path):
     f.write_text(json.dumps([_clean()]), encoding="utf-8")
     out = tmp_path / "out"
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "acad1_candidate_preflight.py"),
-                        "--cards", str(f), "--out-dir", str(out)], capture_output=True, text=True, encoding="utf-8")
+                        "--cards", str(f), "--out-dir", str(out)], capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert r.returncode == 0
     assert len(list(out.glob("ACAD1候选生成门预检_*.json"))) == 1
     assert len(list(out.glob("ACAD1候选生成门预检_*.md"))) == 1
@@ -99,5 +99,5 @@ def test_cli_bad_input_rc2(tmp_path):
     f = tmp_path / "bad.json"
     f.write_text("{oops", encoding="utf-8")
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "acad1_candidate_preflight.py"),
-                        "--cards", str(f)], capture_output=True, text=True, encoding="utf-8")
+                        "--cards", str(f)], capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert r.returncode == 2

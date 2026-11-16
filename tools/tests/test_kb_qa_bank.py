@@ -167,12 +167,12 @@ def test_write_bank_two_files_and_cli(tmp_path):
                            "--limit", "20", "--out", str(tmp_path / "r.json"),
                            "--portal-out", str(tmp_path / "p.json")],
                           capture_output=True, text=True, timeout=180,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert "questions=20" in proc.stdout and "answers=0" in proc.stdout
     data = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
     assert data["stats"]["total"] == 20 and data["answers"]["answered"] == 0
     # --help
     proc2 = subprocess.run([sys.executable, "-X", "utf8", str(BANK_PATH), "--help"],
-                           capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                           capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc2.returncode == 0 and "build" in proc2.stdout

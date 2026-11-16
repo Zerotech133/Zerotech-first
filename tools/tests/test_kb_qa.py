@@ -210,12 +210,12 @@ def test_build_samples_includes_no_evidence_and_failure_demos(tmp_path):
 # ---------------------------------------------------------------------------
 def test_cli_help_and_retrieval_only_json():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "ask" in proc.stdout and "samples" in proc.stdout
     proc = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "ask",
                            "M9 级覆铜板对 PCB 价值量有什么影响？", "--topk", "5",
                            "--retrieval-only", "--json"],
-                          capture_output=True, text=True, timeout=180, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=180, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     data = json.loads(proc.stdout)
     assert data["retrieved"], "真实知识库检索应有命中"
@@ -327,21 +327,21 @@ def test_invalid_mode_raises():
 def test_cli_mode_flags_and_single_alias():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "ask", "--help"],
                           capture_output=True, text=True, timeout=60,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0
     for flag in ("--mode", "--k", "--single", "multi"):
         assert flag in proc.stdout
     proc2 = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "ask", "M9 覆铜板",
                             "--single", "--retrieval-only", "--json"],
                            capture_output=True, text=True, timeout=180,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc2.returncode == 0, proc2.stderr
     data = json.loads(proc2.stdout)
     assert data["mode"] == "retrieval" and data["retrieved"]
     proc3 = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "ask", "M9 覆铜板",
                             "--mode", "single", "--retrieval-only", "--json"],
                            capture_output=True, text=True, timeout=180,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc3.returncode == 0
     assert json.loads(proc3.stdout)["mode"] == "retrieval"
 
@@ -458,7 +458,7 @@ def test_guard_invalid_action_raises(monkeypatch):
 def test_cli_guard_flags():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "ask", "--help"],
                           capture_output=True, text=True, timeout=60,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0
     for flag in ("--no-guard", "--on-guard-fail", "fallback"):
         assert flag in proc.stdout, flag

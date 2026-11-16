@@ -53,7 +53,7 @@ def test_route_inventory_still_zero_diff():
     # 把「零 diff」误判成失败（2026-10-31 WO-INTEL-BASELINE-20261031 加固）。
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     r = subprocess.run([sys.executable, str(ROOT / "tools" / "portal_route_inventory.py"), "--check"],
-                       capture_output=True, text=True, encoding="utf-8", env=env)
+                       capture_output=True, text=True, encoding="utf-8", env=env, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stdout or "") + (r.stderr or "")
     assert "零 diff" in (r.stdout or ""), r.stdout
 

@@ -173,5 +173,5 @@ def test_run_eval_empty_and_bad_preset(tmp_path):
 
 def test_cli_help():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(RANK_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "eval" in proc.stdout

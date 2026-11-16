@@ -149,5 +149,5 @@ def test_run_loadtest_schema_with_mock(tmp_path):
         assert anchor in md, anchor
     assert json.loads(jp.read_text(encoding="utf-8"))["config"]["concurrent_total"] == 200
     proc = subprocess.run([sys.executable, "-X", "utf8", str(LT_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout

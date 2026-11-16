@@ -149,7 +149,7 @@ def _tracked_copies():
     import subprocess
     try:
         out = subprocess.run(["git", "ls-files", "-z", "*safe_urlopen.py"],
-                             cwd=str(REPO), capture_output=True, check=True).stdout
+                             cwd=str(REPO), capture_output=True, check=True, stdin=subprocess.DEVNULL).stdout
     except Exception:  # pragma: no cover - 无 git 环境下跳过
         import pytest
         pytest.skip("git 不可用，跳过副本一致性检查")

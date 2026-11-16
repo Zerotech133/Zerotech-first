@@ -224,5 +224,5 @@ def test_build_payload_schema_and_writes(tmp_path):
     for anchor in ("claim 覆盖度", "v2 / v3 对比", "建议"):
         assert anchor in md, anchor
     proc = subprocess.run([sys.executable, "-X", "utf8", str(V3_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "build" in proc.stdout

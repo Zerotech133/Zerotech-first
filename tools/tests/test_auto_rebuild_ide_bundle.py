@@ -20,7 +20,7 @@ spec.loader.exec_module(m)
 
 def _git(repo, *args):
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
-                          text=True, encoding="utf-8", errors="replace")
+                          text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
 
 
 # ---------------------------------------------------------------- W5 P1-6 Phase2

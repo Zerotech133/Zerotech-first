@@ -412,7 +412,7 @@ def test_render_markdown_sections(env):
 def _cli(*args, timeout=120):
     return subprocess.run([sys.executable, "-X", "utf8", str(TOOL), *args],
                           cwd=str(REPO), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout)
+                          encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 def _cli_env_args(env):

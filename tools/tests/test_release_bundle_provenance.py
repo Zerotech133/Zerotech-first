@@ -55,7 +55,7 @@ def _make_junction(link: Path, target: Path) -> None:
     if os.name == "nt":
         proc = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
                               capture_output=True, text=True, encoding="utf-8",
-                              errors="replace")
+                              errors="replace", stdin=subprocess.DEVNULL)
         assert proc.returncode == 0, proc.stderr
     else:
         os.symlink(str(target), str(link), target_is_directory=True)

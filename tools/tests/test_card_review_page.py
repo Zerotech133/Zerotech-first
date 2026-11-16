@@ -124,7 +124,7 @@ def test_nav_integration():
 
     def run(*args):
         return subprocess.run([sys.executable, "-X", "utf8", *args], capture_output=True,
-                              text=True, encoding="utf-8", errors="replace", timeout=180, cwd=str(REPO))
+                              text=True, encoding="utf-8", errors="replace", timeout=180, cwd=str(REPO), stdin=subprocess.DEVNULL)
 
     proc = run("tools/unify_nav.py", "--check")
     assert proc.returncode == 0, proc.stdout + proc.stderr
@@ -145,7 +145,7 @@ def test_inline_js_syntax(tmp_path):
     p = tmp_path / "card_review_inline.js"
     p.write_text(js, encoding="utf-8")
     proc = subprocess.run(["node", "--check", str(p)], capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=60)
+                          encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
 
 

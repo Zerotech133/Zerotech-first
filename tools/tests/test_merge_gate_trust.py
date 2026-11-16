@@ -30,7 +30,7 @@ PREFLIGHT_SRC = (TOOLS / "merge_preflight.py").read_text(encoding="utf-8")
 
 def _git(repo, *args) -> str:
     r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True,
-                       encoding="utf-8", errors="replace")
+                       encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stdout, r.stderr)
     return (r.stdout or "").strip()
 

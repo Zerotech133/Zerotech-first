@@ -138,7 +138,7 @@ def test_preflight_missing_tool_fail_visible(preflight_mod, monkeypatch):
 def test_help_contains_train_force():
     p = subprocess.run([PY, "-X", "utf8", str(TOOLS / "devtask.py"), "--help"],
                        cwd=str(ROOT), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=60)
+                       encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert p.returncode == 0, p.stdout + p.stderr
     assert "--train-force" in p.stdout
 

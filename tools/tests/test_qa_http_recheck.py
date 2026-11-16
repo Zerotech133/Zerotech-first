@@ -147,5 +147,5 @@ def test_run_recheck_schema_with_mocks(tmp_path):
         assert anchor in md, anchor
     assert json.loads(jp.read_text(encoding="utf-8"))["recheck"]["meets"] is True
     proc = subprocess.run([sys.executable, "-X", "utf8", str(RC_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout

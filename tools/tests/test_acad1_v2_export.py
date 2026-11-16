@@ -94,7 +94,7 @@ def test_build_cards_ignores_non_numeric_low():
 def test_cli_missing_dsn():
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "acad1_v2_export.py"),
                         "--json"], capture_output=True, text=True, encoding="utf-8",
-                       env={"PYTHONIOENCODING": "utf-8"})
+                       env={"PYTHONIOENCODING": "utf-8"}, stdin=subprocess.DEVNULL)
     assert r.returncode == 2
     assert "missing_env" in r.stdout
 

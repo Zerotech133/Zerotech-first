@@ -353,7 +353,7 @@ def test_empty_data_tolerance():
 def test_cli_list():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(FACTOR_LIB), "list", "--json"],
                           capture_output=True, text=True, encoding="utf-8",
-                          cwd=str(ROOT), timeout=120)
+                          cwd=str(ROOT), timeout=120, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     rows = json.loads(proc.stdout)
     assert isinstance(rows, list)
@@ -362,7 +362,7 @@ def test_cli_list():
 
     proc2 = subprocess.run([sys.executable, "-X", "utf8", str(FACTOR_LIB), "list"],
                            capture_output=True, text=True, encoding="utf-8",
-                           cwd=str(ROOT), timeout=120)
+                           cwd=str(ROOT), timeout=120, stdin=subprocess.DEVNULL)
     assert proc2.returncode == 0, proc2.stderr
     assert "golden_pillar" in proc2.stdout
     assert "因子库" in proc2.stdout

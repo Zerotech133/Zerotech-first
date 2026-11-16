@@ -37,7 +37,7 @@ import worktree_invariant_check as wic  # noqa: E402
 # ---------------------------------------------------------------------------
 def _git(repo: Path, *args):
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
-                          text=True, encoding="utf-8", errors="replace")
+                          text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
 
 
 def _init_repo(repo: Path) -> Path:

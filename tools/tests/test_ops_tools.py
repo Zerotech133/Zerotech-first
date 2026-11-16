@@ -66,6 +66,7 @@ def _run_py(script: Path, *args: str, timeout: float = 120.0) -> subprocess.Comp
         cwd=str(REPO),
         env=env,
         check=False,
+    stdin=subprocess.DEVNULL,
     )
 
 
@@ -139,6 +140,7 @@ def _init_git_repo(path: Path) -> None:
             check=True,
             capture_output=True,
             text=True,
+        stdin=subprocess.DEVNULL,
         )
 
 
@@ -665,6 +667,7 @@ def _health_level_probe() -> dict:
         [PYTHON, "-B", "-c", _LEVEL_PROBE, str(HEALTH)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=60, cwd=str(REPO), env=env, check=False,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, "判级探针失败: %r" % (proc.stderr or "")
     return _json_stdout(proc, "health_card/levels")
@@ -744,6 +747,7 @@ def _run_trade_cal_probe(cal_path: Path) -> dict:
         [PYTHON, "-B", "-c", _TRADE_CAL_PROBE, str(HEALTH)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=60, cwd=str(REPO), env=env, check=False,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, "交易日历探针失败: %r" % (proc.stderr or "")
     return _json_stdout(proc, "health_card/trade_cal")
@@ -936,6 +940,7 @@ def _data_health_probe() -> dict:
         [PYTHON, "-B", "-c", _DATA_HEALTH_PROBE, str(HEALTH)],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         timeout=180, cwd=str(REPO), env=env, check=False,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, "数据底座探针失败:\n%s\n%s" % (
         proc.stdout, proc.stderr)
@@ -1453,6 +1458,7 @@ def _run_daily(repo: Path, *extra: str) -> subprocess.CompletedProcess:
         timeout=180,
         cwd=str(REPO),
         check=False,
+    stdin=subprocess.DEVNULL,
     )
 
 

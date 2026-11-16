@@ -39,7 +39,7 @@ def _load():
 
 def _git(*args):
     return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True,
-                          text=True, encoding="utf-8", errors="replace")
+                          text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
 
 
 def _sha(p: Path) -> str:

@@ -293,7 +293,7 @@ def test_preflight_merge_head_msg_safe(preflight_mod):
 def test_devtask_help_works():
     p = subprocess.run([PY, "-X", "utf8", str(TOOLS / "devtask.py"), "--help"],
                        cwd=str(ROOT), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=60)
+                       encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert p.returncode == 0, p.stdout + p.stderr
     assert "devtask" in p.stdout
     assert "merge <TID>" in p.stdout

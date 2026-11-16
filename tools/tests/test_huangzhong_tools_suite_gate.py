@@ -66,6 +66,6 @@ def test_huangzhong_tool_suite_green():
     cmd = [sys.executable, "-X", "utf8", "-m", "pytest", *FILES,
            "-q", "--timeout=300", "-p", "no:cacheprovider"]
     r = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=420)
+                       encoding="utf-8", errors="replace", timeout=420, stdin=subprocess.DEVNULL)
     tail = ((r.stdout or "")[-4000:] + "\n" + (r.stderr or "")[-2000:])
     assert r.returncode == 0, "黄忠工具测试未全绿（rc=%s）：\n%s" % (r.returncode, tail)

@@ -191,7 +191,7 @@ def test_run_ab50_schema_and_outputs(tmp_path):
     data = json.loads(jp.read_text(encoding="utf-8"))
     assert data["config"]["n_actual"] == 35
     proc = subprocess.run([sys.executable, "-X", "utf8", str(AB50_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
 
 

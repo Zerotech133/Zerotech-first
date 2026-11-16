@@ -44,7 +44,7 @@ def _make_junction(link: Path, target: Path) -> None:
     if os.name == "nt":
         proc = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
                               capture_output=True, text=True, encoding="utf-8",
-                              errors="replace")
+                              errors="replace", stdin=subprocess.DEVNULL)
         assert proc.returncode == 0, proc.stderr
     else:
         os.symlink(str(target), str(link), target_is_directory=True)
@@ -497,7 +497,7 @@ def test_render_markdown_sections(tmp_path):
 def _cli(*args, timeout=180):
     return subprocess.run([sys.executable, "-X", "utf8", str(TOOL), *args],
                           cwd=str(REPO), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout)
+                          encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 def test_cli_json_pass_and_exit_0(tmp_path):

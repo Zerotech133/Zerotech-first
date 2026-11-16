@@ -451,7 +451,7 @@ def test_output_paths_contract():
 def _cli(*args, timeout=120):
     return subprocess.run([sys.executable, "-X", "utf8", str(TOOL), *args],
                           cwd=str(REPO), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout)
+                          encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 def _mock_cli_args(mock, out_dir):

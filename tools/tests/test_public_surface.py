@@ -38,7 +38,7 @@ VAULT = "_" + "vault"
 
 def _git(cwd: Path, *args: str) -> None:
     subprocess.run(["git", *args], cwd=str(cwd), check=True,
-                   capture_output=True)
+                   capture_output=True, stdin=subprocess.DEVNULL)
 
 
 def _make_repo(tmp: Path, files: dict[str, str], baseline_rows) -> Path:
@@ -75,6 +75,7 @@ def _run(tmp: Path, *extra: str) -> tuple[int, str]:
         [sys.executable, "-X", "utf8", str(tmp / "tools" / "check_public_surface.py"),
          "--remote-url", "git@github.com:Zerotech133/Zerotech-first.git", *extra],
         cwd=str(tmp), capture_output=True,
+    stdin=subprocess.DEVNULL,
     )
     return proc.returncode, (proc.stdout + proc.stderr).decode("utf-8", "replace")
 
@@ -135,6 +136,7 @@ def case_non_github_skipped() -> None:
              str(tmp / "tools" / "check_public_surface.py"),
              "--remote-url", "git@qgit-aios:aios.git"],
             cwd=str(tmp), capture_output=True,
+        stdin=subprocess.DEVNULL,
         )
         out = (proc.stdout + proc.stderr).decode("utf-8", "replace")
         assert proc.returncode == 0, "非 github 远端应跳过，实际 rc=%s\n%s" % (proc.returncode, out)

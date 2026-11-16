@@ -141,7 +141,7 @@ def test_dryrun_does_not_write():
 
     proc = subprocess.run(
         [sys.executable, "-X", "utf8", str(SCRIPT), "decide", "--decisions", str(DECISIONS)],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO))
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert "dry-run" in proc.stdout and "决策 60 条" in proc.stdout
     assert hash_snapshot() == before, "CLI dry-run 不得写任何真实文件"

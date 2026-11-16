@@ -35,7 +35,7 @@ def _main_repo():
         out = subprocess.run(
             ["git", "-C", str(REPO), "rev-parse", "--path-format=absolute",
              "--git-common-dir"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace").stdout.strip()
+            capture_output=True, text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL).stdout.strip()
         if out:
             return os.path.dirname(out)
     except Exception:  # noqa: BLE001

@@ -106,6 +106,7 @@ def run_cli(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         cmd, cwd=str(cwd or ROOT), capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=180, env=env,
+    stdin=subprocess.DEVNULL,
     )
 
 
@@ -120,6 +121,7 @@ def cli(db: Path, *args: str, map_path: Path | None = None,
     return subprocess.run(
         base, cwd=str(cwd or ROOT), capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=180, env=env,
+    stdin=subprocess.DEVNULL,
     )
 
 

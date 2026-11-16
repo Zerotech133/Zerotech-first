@@ -164,7 +164,7 @@ def test_run_eval_with_mock_multi(tmp_path):
     for anchor in ("guard 结论", "guard 前后质量对比", "逐条对比", "下一步"):
         assert anchor in md, anchor
     proc = subprocess.run([sys.executable, "-X", "utf8", str(GUARD_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
 
 

@@ -208,7 +208,7 @@ def test_run_scale_schema_and_cli(tmp_path):
     payload2 = sc.write_outputs(payload, tmp_path / "a.json", tmp_path / "a.md")
     assert payload2[0].exists() and payload2[1].exists()
     proc = subprocess.run([sys.executable, "-X", "utf8", str(SCALE_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "combine" in proc.stdout
 
 

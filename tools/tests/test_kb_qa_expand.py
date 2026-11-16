@@ -209,7 +209,7 @@ def test_backup_original_first_only(tmp_path):
 # ---------------------------------------------------------------------------
 def test_cli_help_and_dry_run(tmp_path):
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EX_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
     proc = subprocess.run([sys.executable, "-X", "utf8", str(EX_PATH), "run", "--dry-run",
                            "--limit", "12", "--questions", str(BANK),
@@ -217,7 +217,7 @@ def test_cli_help_and_dry_run(tmp_path):
                            "--backup", str(tmp_path / "backup.json"),
                            "--portal", str(tmp_path / "portal.json")],
                           capture_output=True, text=True, timeout=180,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     data = json.loads((tmp_path / "expanded.json").read_text(encoding="utf-8"))
     assert data["kind"] == "kb_qa_samples_expanded"

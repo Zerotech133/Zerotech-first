@@ -54,6 +54,6 @@ def test_page_and_tool_registered():
 
 def test_engine_cli_help():
     r = subprocess.run([sys.executable, "-X", "utf8", str(CLI), "--help"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0
     assert "--date" in r.stdout and "--top" in r.stdout

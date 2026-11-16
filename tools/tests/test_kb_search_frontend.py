@@ -172,7 +172,7 @@ def test_inline_js_node_check(tmp_path):
     js_file = tmp_path / "kb_reports_inline.js"
     js_file.write_text("\n;\n".join(blocks), encoding="utf-8")
     proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True,
-                          timeout=30)
+                          timeout=30, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, f"node --check 失败：{proc.stderr[:800]}"
 
 

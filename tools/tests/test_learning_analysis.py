@@ -220,6 +220,7 @@ def test_run_writes_json_and_md(tmp_path):
         [sys.executable, "-X", "utf8", str(SCRIPT), "--json", "--no-write",
          "--units", str(units_path), "--cards", str(cards_path)],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO),
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, proc.stderr
     cli_payload = json.loads(proc.stdout)

@@ -32,7 +32,7 @@ MID_RE = re.compile(r"^hq-\d{8}-\d{6}$")
 def _run(args, cwd=ROOT):
     p = subprocess.run([PY, "-X", "utf8", str(TOOL), *args], cwd=str(cwd),
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=180)
+                       errors="replace", timeout=180, stdin=subprocess.DEVNULL)
     return p.returncode, p.stdout or "", p.stderr or ""
 
 
@@ -239,7 +239,7 @@ def test_real_prep_integration(tmp_path):
     agenda_path = tmp_path / "real_agenda.json"
     p = subprocess.run([PY, "-X", "utf8", str(PREP), "--json", "--out", str(agenda_path)],
                        cwd=str(ROOT), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=180)
+                       encoding="utf-8", errors="replace", timeout=180, stdin=subprocess.DEVNULL)
     if p.returncode != 0 and not agenda_path.is_file():
         # 上游暂无真源数据时不强求成功；但这里应正常（真实仓库有 directives）
         raise AssertionError("hq_meeting_prep failed: %s %s" % (p.returncode, p.stderr[:300]))

@@ -175,7 +175,7 @@ def test_run_acceptance_schema_and_outputs(tmp_path):
         assert anchor in md, anchor
     assert json.loads(jp.read_text(encoding="utf-8"))["cli"]["summary"]["actual"] == 3
     proc = subprocess.run([sys.executable, "-X", "utf8", str(ACC_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
     with _raises(acc.AcceptanceError):
         acc.load_questions(tmp_path / "nope.json")

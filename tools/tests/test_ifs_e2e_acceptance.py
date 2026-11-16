@@ -155,7 +155,7 @@ def test_cli_json_out_rc0(tmp_path):
     out = tmp_path / "report.json"
     r = subprocess.run([PY, "-X", "utf8", str(TOOL), "--pool", "fixture",
                         "--json", "--out", str(out), "--tmp-root", str(work)],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stdout or "") + (r.stderr or "")
     report = json.loads(r.stdout)
     assert report["ok"] is True
@@ -169,7 +169,7 @@ def test_cli_failure_rc1(tmp_path):
     r = subprocess.run([PY, "-X", "utf8", str(TOOL), "--pool", "fixture",
                         "--code", "NOT_IN_POOL_000000", "--json",
                         "--tmp-root", str(tmp_path / "cli_fail")],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert r.returncode == 1, (r.stdout or "")[:500] + (r.stderr or "")[:500]
     report = json.loads(r.stdout)
     assert report["ok"] is False

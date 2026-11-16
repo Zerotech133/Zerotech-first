@@ -121,7 +121,7 @@ def test_cli_json_and_exit(tmp_path):
     p = tmp_path / "cards.json"
     p.write_text(json.dumps({"cards": [_clean()]}), encoding="utf-8")
     out = subprocess.run([sys.executable, "-X", "utf8", str(GUARD),
-                          "--input", str(p), "--json"], capture_output=True, text=True, encoding="utf-8")
+                          "--input", str(p), "--json"], capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert out.returncode == 0
     rep = json.loads(out.stdout)
     assert rep["summary"]["cards"] == 1
@@ -131,7 +131,7 @@ def test_cli_bad_input_rc2(tmp_path):
     p = tmp_path / "bad.json"
     p.write_text("{oops", encoding="utf-8")
     out = subprocess.run([sys.executable, "-X", "utf8", str(GUARD),
-                          "--input", str(p)], capture_output=True, text=True, encoding="utf-8")
+                          "--input", str(p)], capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert out.returncode == 2
 
 
@@ -141,7 +141,7 @@ def test_cli_out_atomic(tmp_path):
     outpath = tmp_path / "report.json"
     out = subprocess.run([sys.executable, "-X", "utf8", str(GUARD),
                           "--input", str(p), "--json", "--out", str(outpath)],
-                         capture_output=True, text=True, encoding="utf-8")
+                         capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert out.returncode == 0
     assert outpath.is_file()
     assert json.loads(outpath.read_text(encoding="utf-8"))["summary"]["cards"] == 1
@@ -274,7 +274,7 @@ def test_cli_provenance_gate_exit_codes(tmp_path):
                          encoding="utf-8")
     fail_run = subprocess.run([sys.executable, "-X", "utf8", str(GUARD),
                                "--input", str(fail_path), "--json"],
-                              capture_output=True, text=True, encoding="utf-8")
+                              capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert fail_run.returncode == 1
     assert json.loads(fail_run.stdout)["summary"]["status"] == "fail"
 
@@ -285,7 +285,7 @@ def test_cli_provenance_gate_exit_codes(tmp_path):
                             encoding="utf-8")
     unknown_run = subprocess.run([sys.executable, "-X", "utf8", str(GUARD),
                                   "--input", str(unknown_path), "--json"],
-                                 capture_output=True, text=True, encoding="utf-8")
+                                 capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert unknown_run.returncode == 2
     assert json.loads(unknown_run.stdout)["summary"]["status"] == "unknown"
 
@@ -294,6 +294,6 @@ def test_cli_provenance_gate_exit_codes(tmp_path):
     pass_path.write_text(json.dumps([_clean()]), encoding="utf-8")
     pass_run = subprocess.run([sys.executable, "-X", "utf8", str(GUARD),
                                "--input", str(pass_path), "--json"],
-                              capture_output=True, text=True, encoding="utf-8")
+                              capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
     assert pass_run.returncode == 0
     assert json.loads(pass_run.stdout)["summary"]["status"] == "pass"

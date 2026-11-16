@@ -171,6 +171,7 @@ def test_dry_run_no_write(tmp_path):
          "--proposals", str(proposals_path), "--base", str(base_path),
          "--out-dir", str(tmp_path / "reports2"), "--json"],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO),
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, proc.stderr
     cli = json.loads(proc.stdout)

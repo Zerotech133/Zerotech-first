@@ -29,19 +29,19 @@ SH = shutil.which("sh")
 
 def _make_repo(tmp_path, attrs="*.conf text eol=crlf\n*.sh text eol=lf\n"):
     subprocess.run(["git", "init", "-q"], cwd=str(tmp_path), check=True,
-                   capture_output=True)
+                   capture_output=True, stdin=subprocess.DEVNULL)
     (tmp_path / ".gitattributes").write_bytes(attrs.encode("utf-8"))
     return tmp_path
 
 
 def _stage(repo):
     subprocess.run(["git", "add", "-A"], cwd=str(repo), check=True,
-                   capture_output=True)
+                   capture_output=True, stdin=subprocess.DEVNULL)
 
 
 def _run(args, cwd, env=None):
     return subprocess.run(args, cwd=str(cwd), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", env=env)
+                          encoding="utf-8", errors="replace", env=env, stdin=subprocess.DEVNULL)
 
 
 def test_fix_eol_converts_crlf_and_preserves_content(tmp_path):

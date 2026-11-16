@@ -162,6 +162,7 @@ def test_dry_run_no_network(monkeypatch):
     proc = subprocess.run(
         [sys.executable, "-X", "utf8", str(SCRIPT), "build", "--date", "20261101", "--no-write", "--json"],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO),
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, proc.stderr
     cli_payload = json.loads(proc.stdout)
@@ -197,6 +198,7 @@ def test_check_payload_file(tmp_path):
         return subprocess.run(
             [sys.executable, "-X", "utf8", str(SCRIPT), *args],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+        stdin=subprocess.DEVNULL,
         )
 
     assert cli("check", "--portal-out", str(portal_out)).returncode == 0

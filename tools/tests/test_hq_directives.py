@@ -24,7 +24,7 @@ spec.loader.exec_module(hd)
 def _run(args, cwd=ROOT):
     p = subprocess.run([PY, "-X", "utf8", str(TOOL), *args], cwd=str(cwd),
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=120)
+                       errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     return p.returncode, p.stdout or "", p.stderr or ""
 
 

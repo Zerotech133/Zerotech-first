@@ -230,6 +230,7 @@ def _run(*args):
         [sys.executable, "-X", "utf8", str(ROOT / "tools" / "composition.py"), *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=str(ROOT), timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     return proc.returncode, proc.stdout, proc.stderr
 

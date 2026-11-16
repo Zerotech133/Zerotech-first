@@ -259,7 +259,7 @@ def test_write_outputs_v3_and_cli_help(tmp_path):
     data = json.loads(jp.read_text(encoding="utf-8"))
     assert data["schema_version"] == 3 and data["review_checklist"]
     proc = subprocess.run([sys.executable, "-X", "utf8", str(V3_PATH), "run", "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0
     for flag in ("--reports", "--num-predict", "--deadline", "--retries", "--out-review"):
         assert flag in proc.stdout

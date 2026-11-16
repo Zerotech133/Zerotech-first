@@ -166,13 +166,13 @@ def test_validate_failures(tmp_path):
 
     # CLI：真实产物应通过；篡改后的临时文件应失败
     ok = subprocess.run([sys.executable, "-X", "utf8", str(SCRIPT), "validate"],
-                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO))
+                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert ok.returncode == 0, ok.stderr
     bad_path = tmp_path / "bad_proposals.json"
     bad_path.write_text(json.dumps(bad, ensure_ascii=False), encoding="utf-8")
     proc = subprocess.run([sys.executable, "-X", "utf8", str(SCRIPT), "validate",
                            "--out-json", str(bad_path), "--out-proposed", str(tmp_path / "missing.json")],
-                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO))
+                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert proc.returncode == 1
     assert "校验失败" in proc.stderr
 

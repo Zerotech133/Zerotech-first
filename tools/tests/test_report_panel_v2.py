@@ -245,7 +245,7 @@ def test_write_outputs_v2_and_cli_help(tmp_path):
     assert set(data) >= {"kind", "schema_version", "models", "llm", "selection", "reports",
                          "panel", "candidates", "comparison_v1", "fallback", "elapsed_seconds"}
     proc = subprocess.run([sys.executable, "-X", "utf8", str(V2_PATH), "run", "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0
     for flag in ("--reports", "--primary", "--cross", "--cross-fallback"):
         assert flag in proc.stdout

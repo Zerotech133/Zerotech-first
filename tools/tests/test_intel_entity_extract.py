@@ -69,6 +69,7 @@ def run_cli(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         cmd, cwd=str(cwd or ROOT), capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=120, env=env,
+    stdin=subprocess.DEVNULL,
     )
 
 

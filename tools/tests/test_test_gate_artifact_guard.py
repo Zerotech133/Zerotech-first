@@ -59,7 +59,7 @@ def test_ps1_parses_without_errors():
     )
     r = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
                        capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       timeout=60)
+                       timeout=60, stdin=subprocess.DEVNULL)
     assert "ERRS=0" in (r.stdout or ""), r.stdout + r.stderr
 
 
@@ -174,7 +174,7 @@ def test_guard_tool_contract():
     assert GUARD.is_file()
     r = subprocess.run([sys.executable, "-X", "utf8", str(GUARD), "--version"],
                        capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       timeout=60)
+                       timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr
     payload = json.loads(r.stdout)
     assert payload["schema"] == "release_artifact_guard/v1"

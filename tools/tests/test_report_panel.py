@@ -296,7 +296,7 @@ def test_report_title_skips_boilerplate_chapter():
 
 def test_cli_help_runs_without_network():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(PANEL_PATH), "run", "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0
     for flag in ("--reports", "--model", "--timeout", "--rule-only"):
         assert flag in proc.stdout

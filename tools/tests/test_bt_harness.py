@@ -411,6 +411,7 @@ def test_cli_help_available():
         encoding="utf-8",
         errors="replace",
         timeout=60,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, proc.stderr
     assert "run" in proc.stdout
@@ -421,6 +422,7 @@ def test_cli_help_available():
         encoding="utf-8",
         errors="replace",
         timeout=60,
+    stdin=subprocess.DEVNULL,
     )
     assert proc_run.returncode == 0, proc_run.stderr
     for flag in ("--factor", "--start", "--end", "--top", "--cost-bp", "--rebalance"):

@@ -43,7 +43,7 @@ def _make_junction(link: Path, target: Path) -> None:
     if os.name == "nt":
         proc = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
                               capture_output=True, text=True, encoding="utf-8",
-                              errors="replace")
+                              errors="replace", stdin=subprocess.DEVNULL)
         assert proc.returncode == 0, proc.stderr
     else:
         os.symlink(str(target), str(link), target_is_directory=True)
@@ -417,15 +417,15 @@ def test_git_dirty_detection(tmp_path):
     repo.mkdir()
     env = dict(os.environ)
     for cmd in (["git", "init", "-q"],):
-        subprocess.run(cmd, cwd=str(repo), capture_output=True, env=env)
+        subprocess.run(cmd, cwd=str(repo), capture_output=True, env=env, stdin=subprocess.DEVNULL)
     subprocess.run(["git", "config", "user.email", "t@t"], cwd=str(repo),
-                   capture_output=True)
+                   capture_output=True, stdin=subprocess.DEVNULL)
     subprocess.run(["git", "config", "user.name", "t"], cwd=str(repo),
-                   capture_output=True)
+                   capture_output=True, stdin=subprocess.DEVNULL)
     (repo / "f.txt").write_text("x", encoding="utf-8")
-    subprocess.run(["git", "add", "-A"], cwd=str(repo), capture_output=True)
+    subprocess.run(["git", "add", "-A"], cwd=str(repo), capture_output=True, stdin=subprocess.DEVNULL)
     subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=str(repo),
-                   capture_output=True)
+                   capture_output=True, stdin=subprocess.DEVNULL)
     clean = mod.git_state(repo)
     assert clean["ok"] is True and clean["dirty"] is False and clean["head"]
     release = _make_release(tmp_path / "rel_clean")
@@ -457,7 +457,7 @@ def test_render_markdown_sections(tmp_path):
 def _cli(*args, timeout=180):
     return subprocess.run([sys.executable, "-X", "utf8", str(TOOL), *args],
                           cwd=str(REPO), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout)
+                          encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 def test_cli_json_pass_and_exit_0(tmp_path):

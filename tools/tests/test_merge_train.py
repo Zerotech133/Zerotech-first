@@ -19,7 +19,7 @@ TOOL = "tools/merge_train.py"
 def _run(args):
     p = subprocess.run([PY, "-X", "utf8", TOOL, *args],
                        cwd=str(ROOT), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=60)
+                       encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     return p.returncode, p.stdout or "", p.stderr or ""
 
 

@@ -79,7 +79,7 @@ def _run_audit(*args, cwd=None):
     t0 = time.perf_counter()
     r = subprocess.run([sys.executable, "-X", "utf8", str(DEVTASK), "audit-worktrees", *args],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", cwd=str(cwd or REPO), timeout=120)
+                       errors="replace", cwd=str(cwd or REPO), timeout=120, stdin=subprocess.DEVNULL)
     return r, time.perf_counter() - t0
 
 

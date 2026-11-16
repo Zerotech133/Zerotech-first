@@ -37,6 +37,7 @@ def run_cli(*args: str) -> subprocess.CompletedProcess:
         errors="replace",
         timeout=120,
         cwd=str(REPO),
+    stdin=subprocess.DEVNULL,
     )
 
 

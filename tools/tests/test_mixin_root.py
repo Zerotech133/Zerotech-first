@@ -26,7 +26,7 @@ def _mkroot(tmp_path: Path, source: str, handlers, funcs=None) -> Path:
 
 def _run(root: Path):
     return subprocess.run([sys.executable, str(TOOL), "--check", "--root", str(root)],
-                          capture_output=True, text=True, encoding="utf-8")
+                          capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL)
 
 
 def test_clean_root(tmp_path):

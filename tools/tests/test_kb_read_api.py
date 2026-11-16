@@ -16,7 +16,7 @@ UNIT_SCHEMA = REPO / "agent_platform" / "contracts" / "kb_unit.schema.json"
 
 def run(*args: str):
     r = subprocess.run([sys.executable, "-X", "utf8", str(CLI), *args],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     try:
         payload = json.loads(r.stdout)
     except json.JSONDecodeError:

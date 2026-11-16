@@ -43,7 +43,7 @@ def _errors(instance: dict) -> list:
 def _run(args):
     p = subprocess.run([PY, "-X", "utf8", *args], cwd=str(ROOT),
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=120)
+                       errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     return p.returncode, p.stdout or "", p.stderr or ""
 
 

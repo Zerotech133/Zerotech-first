@@ -362,7 +362,7 @@ def test_wrapper_powershell_parses():
               "$env:PS_SCRIPT_PATH)); 'PS_PARSE_OK'")
     r = subprocess.run([_ps(), "-NoProfile", "-ExecutionPolicy", "Bypass",
                         "-Command", script], capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=120, env=env)
+                       encoding="utf-8", errors="replace", timeout=120, env=env, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stdout or "") + (r.stderr or "")
     assert "PS_PARSE_OK" in (r.stdout or "")
 
@@ -375,7 +375,7 @@ def test_wrapper_config_error_exit2_without_calling_tool(tmp_path):
                         "-File", str(WRAPPER), "-Limit", "0",
                         "-OutDir", str(out), "-LogDir", str(logs)],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=120)
+                       errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     assert r.returncode == 2, (r.stdout or "") + (r.stderr or "")
     assert logs.is_dir(), "参数错误前应已建目录并落日志（长跑输出落盘）"
     assert any(logs.iterdir()), "应有 run_<date>.log"

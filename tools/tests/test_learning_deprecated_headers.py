@@ -64,7 +64,7 @@ def test_replacements_and_list_doc():
 def test_only_comment_changes():
     procs = subprocess.run(["git", "diff", "--unified=0", "--"] + [f"tools/kb_corpus/{n}" for n in FILES],
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
-                           cwd=str(REPO), timeout=120)
+                           cwd=str(REPO), timeout=120, stdin=subprocess.DEVNULL)
     if procs.returncode != 0:
         # 非 git 环境降级：仅校验可编译
         for name in FILES:
@@ -93,6 +93,6 @@ def test_syntax_gate_pass():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "check_syntax.py"),
                            "--files", files_arg, "--fail-on-warning"],
                           capture_output=True, text=True, encoding="utf-8", errors="replace",
-                          cwd=str(REPO), timeout=180)
+                          cwd=str(REPO), timeout=180, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "PASS" in (proc.stdout or "") or "错误 0" in (proc.stdout or ""), proc.stdout

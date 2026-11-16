@@ -194,7 +194,7 @@ def test_classify_arms():
                                "direct_fact_markers": 2, "inference_markers": 1})
     assert m_mix["status"] == "success" and m_mix["answer_type"] == "direct_fact+inference"
     proc = subprocess.run([sys.executable, "-X", "utf8", str(AB_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
 
 

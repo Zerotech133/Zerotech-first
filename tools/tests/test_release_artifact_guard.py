@@ -40,7 +40,7 @@ def _sha(data: bytes) -> str:
 def _make_link(link: Path, target: Path) -> None:
     if os.name == "nt":
         r = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
         assert r.returncode == 0, r.stderr or r.stdout
     else:
         os.symlink(str(target), str(link), target_is_directory=True)
@@ -136,7 +136,7 @@ def test_check_detects_junction_drift(tmp_path):
         art2, _ = _make_artifact(rel, "v2")
         link = rel / "current"
         if os.name == "nt":
-            subprocess.run(["cmd", "/c", "rmdir", str(link)], capture_output=True)
+            subprocess.run(["cmd", "/c", "rmdir", str(link)], capture_output=True, stdin=subprocess.DEVNULL)
         else:
             os.unlink(str(link))
         _make_link(link, art2)

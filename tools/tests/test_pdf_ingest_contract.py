@@ -16,7 +16,7 @@ REGISTRY = REPO / "agent_platform" / "registry" / "skill_registry.json"
 def test_cli_exists_and_help():
     assert CLI.is_file(), "pdf_ingest.py 缺失"
     r = subprocess.run([sys.executable, "-X", "utf8", str(CLI), "--help"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr
     for cmd in ("scan", "ocr", "structure", "distill", "verify", "index", "all"):
         assert cmd in r.stdout, f"缺少子命令 {cmd}"
@@ -43,6 +43,6 @@ def test_verify_thresholds_constant():
     r = subprocess.run([sys.executable, "-X", "utf8", "-c",
                         "import sys;sys.path.insert(0,r'%s');import pdf_ingest;"
                         "print(pdf_ingest.SCHEMA_VERSION)" % str(CLI.parent)],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr
     assert r.stdout.strip().endswith("1")

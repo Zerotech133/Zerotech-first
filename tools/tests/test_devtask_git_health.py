@@ -17,7 +17,7 @@ def test_git_health_autofix_recovers_bare_true(tmp_path):
     import devtask
     assert devtask._git_health_autofix(repo) is True
     r = subprocess.run(["git", "-C", str(repo), "config", "core.bare"],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert r.stdout.strip() == "false"
 
 

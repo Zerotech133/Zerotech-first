@@ -31,7 +31,7 @@ REPO = Path(devtask.__file__).resolve().parents[1]
 def _run(*args, cwd=None):
     return subprocess.run([sys.executable, str(Path(devtask.__file__)), *args],
                           capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", cwd=str(cwd or REPO), timeout=180)
+                          errors="replace", cwd=str(cwd or REPO), timeout=180, stdin=subprocess.DEVNULL)
 
 
 # ---------- ① 纯函数规则 ----------

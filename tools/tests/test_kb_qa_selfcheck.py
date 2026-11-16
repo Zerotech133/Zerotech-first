@@ -171,7 +171,7 @@ def test_load_errors_and_cli(tmp_path):
         sc.load_questions(wrong)
     # CLI --help
     proc = subprocess.run([sys.executable, "-X", "utf8", str(SC_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "selfcheck" in proc.stdout
     # CLI 真实检索（limit=2，不调 LLM）→ 输出 JSON+MD
     qfile = tmp_path / "qs.json"
@@ -180,7 +180,7 @@ def test_load_errors_and_cli(tmp_path):
                            "--questions", str(qfile), "--topk", "5", "--limit", "2",
                            "--out-json", str(tmp_path / "o.json"), "--out-md", str(tmp_path / "o.md")],
                           capture_output=True, text=True, timeout=180,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     data = json.loads((tmp_path / "o.json").read_text(encoding="utf-8"))
     assert data["summary"]["total"] == 2

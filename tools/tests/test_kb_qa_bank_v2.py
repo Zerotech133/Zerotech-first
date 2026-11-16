@@ -200,5 +200,5 @@ def test_build_payload_schema_and_writes(tmp_path):
     # 不覆盖 v1：输出名不同（v2 独立路径）
     assert "v2" in jp.name and "v2" in pp.name
     proc = subprocess.run([sys.executable, "-X", "utf8", str(V2_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "build" in proc.stdout

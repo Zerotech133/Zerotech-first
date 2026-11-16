@@ -131,7 +131,7 @@ def test_run_study_schema_and_outputs(tmp_path):
     with _raises(st.StudyError):
         st.run_study(tmp_path / "nope.json")
     proc = subprocess.run([sys.executable, "-X", "utf8", str(STUDY_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
 
 

@@ -138,6 +138,6 @@ def test_route_registered_and_baseline():
 def test_route_inventory_check():
     proc = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "portal_route_inventory.py"), "--check"],
                           capture_output=True, text=True, encoding="utf-8", errors="replace",
-                          cwd=str(REPO), timeout=180)
+                          cwd=str(REPO), timeout=180, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "OK" in (proc.stdout or "") or "OK" in (proc.stderr or "")

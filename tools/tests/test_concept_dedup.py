@@ -179,7 +179,7 @@ def test_run_write_without_modifying_units(tmp_path):
     # CLI --json（默认不写盘）
     proc = subprocess.run([sys.executable, "-X", "utf8", str(SCRIPT), "audit", "--json",
                            "--units", str(units_path)],
-                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     cli = json.loads(proc.stdout)
     assert cli["stats"]["duplicate_groups"] == 5

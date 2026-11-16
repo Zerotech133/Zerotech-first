@@ -64,7 +64,7 @@ def _cli(*args, timeout=180):
     return subprocess.run(
         [sys.executable, "-X", "utf8", str(TOOL), *args],
         cwd=str(REPO), capture_output=True, text=True,
-        encoding="utf-8", errors="replace", timeout=timeout)
+        encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 # ---------------------------------------------------------------------------

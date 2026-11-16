@@ -123,7 +123,7 @@ def test_inline_js_syntax_node_check(tmp_path):
     js_file = tmp_path / "qa_inline.js"
     js_file.write_text(qa_script, encoding="utf-8")
     proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True,
-                          timeout=60, encoding="utf-8", errors="replace")
+                          timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
 
 

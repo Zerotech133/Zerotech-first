@@ -96,7 +96,7 @@ def _run_cli(args, registry=None):
     if registry is not None:
         cmd += ["--registry", str(registry)]
     return subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", cwd=str(ROOT), timeout=120)
+                          encoding="utf-8", errors="replace", cwd=str(ROOT), timeout=120, stdin=subprocess.DEVNULL)
 
 
 # ── 1) 真实登记表 JSON 合法 ──────────────────────────────

@@ -177,7 +177,7 @@ def test_cli_subprocess_run_and_help(tmp_path):
                            "--source", str(V3_JSON), "--portal", str(portal),
                            "--status", str(status)],
                           capture_output=True, text=True, timeout=120,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert "status=OK" in proc.stdout and "mode=run" in proc.stdout
     assert portal.exists() and status.exists()
@@ -185,10 +185,10 @@ def test_cli_subprocess_run_and_help(tmp_path):
                             "--source", str(V3_JSON), "--portal", str(portal),
                             "--status", str(status), "--check-only"],
                            capture_output=True, text=True, timeout=120,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc2.returncode == 0 and "mode=check_only" in proc2.stdout
     assert "change:" in proc2.stdout
     proc3 = subprocess.run([sys.executable, "-X", "utf8", str(DAILY_PATH), "--help"],
                            capture_output=True, text=True, timeout=60,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc3.returncode == 0 and "run" in proc3.stdout

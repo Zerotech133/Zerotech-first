@@ -166,7 +166,7 @@ def test_run_recheck_all_schema_and_outputs(tmp_path):
     for anchor in ("结论", "复评 vs 扩样基线", "灰度生效校验", "逐条结果", "风险与回退"):
         assert anchor in md, anchor
     proc = subprocess.run([sys.executable, "-X", "utf8", str(M_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "run" in proc.stdout
 
 

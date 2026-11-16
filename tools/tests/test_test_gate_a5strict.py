@@ -64,7 +64,7 @@ def test_budget_strict_currently_passes():
     assert tool.is_file()
     r = subprocess.run([sys.executable, "-X", "utf8", str(tool), "--strict"],
                        cwd=str(REPO), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=120)
+                       encoding="utf-8", errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, "strict 当前应 PASS，实为 rc=%d：%s" % (
         r.returncode, (r.stdout or r.stderr)[-500:])
     assert "PORTAL-SPLIT PASS" in r.stdout
@@ -105,6 +105,6 @@ def test_gate_ps1_bom_and_parser(tmp_path):
     r = subprocess.run([powershell, "-NoProfile", "-ExecutionPolicy", "Bypass",
                         "-File", str(checker)],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=120)
+                       errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stdout or "") + (r.stderr or "")
     assert "PARSE-OK" in r.stdout

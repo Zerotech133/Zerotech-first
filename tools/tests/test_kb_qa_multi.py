@@ -201,7 +201,7 @@ def test_load_baseline_errors_and_cli_help(tmp_path):
     with pytest_raises(mk.MultiError):
         mk.load_v3_baseline(bad)
     proc = subprocess.run([sys.executable, "-X", "utf8", str(MULTI_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "ask" in proc.stdout and "eval" in proc.stdout
 
 

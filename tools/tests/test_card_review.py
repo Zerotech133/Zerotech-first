@@ -221,14 +221,14 @@ def test_real_checklist_and_decide_cli(tmp_path):
         "REV-20261101-001": "pass", "CP2-20261101-001": "reject"}}, ensure_ascii=False), encoding="utf-8")
     proc = subprocess.run(
         [sys.executable, "-X", "utf8", str(SCRIPT), "decide", "--decisions", str(decisions)],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO))
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert proc.returncode == 0, proc.stderr
     assert "dry-run" in proc.stdout and "决策 2 条" in proc.stdout
     # 真实学习卡未被改动（dry-run）
     h1 = hashlib.sha256((REPO / "portal" / "static" / "kb_learning_cards.json").read_bytes()).hexdigest()
     proc2 = subprocess.run(
         [sys.executable, "-X", "utf8", str(SCRIPT), "check"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO))
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert proc2.returncode == 0
     h2 = hashlib.sha256((REPO / "portal" / "static" / "kb_learning_cards.json").read_bytes()).hexdigest()
     assert h1 == h2

@@ -110,7 +110,7 @@ def test_inline_js_syntax():
     tmp.parent.mkdir(parents=True, exist_ok=True)
     tmp.write_text(js, encoding="utf-8")
     try:
-        proc = subprocess.run([node, "--check", str(tmp)], capture_output=True, text=True)
+        proc = subprocess.run([node, "--check", str(tmp)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
         assert proc.returncode == 0, proc.stderr[-800:]
     finally:
         tmp.unlink(missing_ok=True)

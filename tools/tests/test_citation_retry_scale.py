@@ -149,7 +149,7 @@ def test_combine_files_schema_and_outputs(tmp_path):
     with _raises(sc.ScaleError):
         sc.combine_files(tmp_path / "nope.json", p_on)
     proc = subprocess.run([sys.executable, "-X", "utf8", str(SCALE_PATH), "--help"],
-                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, timeout=60, encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL)
     assert proc.returncode == 0 and "combine" in proc.stdout
 
 

@@ -202,6 +202,7 @@ def test_probe_real_d1_smoke_if_service_up():
         [sys.executable, "-X", "utf8", str(ROOT / "tools" / "q2_probe.py"),
          "--target", "d1", "--json"],
         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     assert proc.returncode == 0, proc.stderr
     payload = json.loads(proc.stdout)
@@ -304,7 +305,7 @@ def test_slo_main_json_d1(monkeypatch, capsys):
 # ══ 3. q2_rollback_dryrun：静态 dry-run，不执行回滚 ═══════════════════
 def test_rollback_dryrun_repo_ok(capsys):
     before = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
-                            capture_output=True, text=True, encoding="utf-8").stdout.strip()
+                            capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL).stdout.strip()
     rc = R.main(["--composition", D1, "--json"])
     assert rc == 0
     rep = json.loads(capsys.readouterr().out)
@@ -315,7 +316,7 @@ def test_rollback_dryrun_repo_ok(capsys):
     assert {"manifest_parsed", "rollback_steps", "rollback_commands",
             "target_commits", "composition_validate"} <= names
     after = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
-                           capture_output=True, text=True, encoding="utf-8").stdout.strip()
+                           capture_output=True, text=True, encoding="utf-8", stdin=subprocess.DEVNULL).stdout.strip()
     assert before == after  # dry-run 不得改动仓库
     assert rep["evidence_template"]["schema"] == R.EVIDENCE_SCHEMA
     assert rep["evidence_template"]["rollback_triggered"] is False

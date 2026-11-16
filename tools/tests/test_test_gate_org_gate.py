@@ -77,7 +77,7 @@ def test_org_tool_json_contract_readonly():
     assert ORG_TOOL.is_file(), "缺 tools/org_model_consistency.py"
     r = subprocess.run([sys.executable, "-X", "utf8", str(ORG_TOOL), "--json"],
                        cwd=str(REPO), capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=120)
+                       encoding="utf-8", errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     assert r.returncode in (0, 1), (r.stderr or "")[-500:]
     data = json.loads(r.stdout)
     assert data.get("schema") == "org_model_consistency/v1"
