@@ -34,7 +34,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 KINDS = {"file_exists", "file_contains", "not_contains", "json_field",
-         "regex_count", "count_equals", "cmd", "task_next_run", "text_equals_json"}
+         "regex_count", "count_equals", "cmd", "task_next_run", "text_equals_json",
+         "block_equals_cmd"}
 
 
 def _read(path: Path) -> str:
@@ -241,6 +242,35 @@ def check_text_equals_json(spec: dict, repo: Path) -> tuple[bool, str]:
                                             "一致" if ok else "**不一致**")
 
 
+def check_block_equals_cmd(spec: dict, repo: Path) -> tuple[bool, str]:
+    """文档里的代码块/表格块必须与命令输出**逐行一致**（防手敲漂移）。
+
+    spec: path(文档) / block(起始行，精确匹配且需唯一) / lines(块行数) /
+          cmd[] / expect_rc(默认0)
+    """
+    text = _read(_abs(repo, spec["path"]))
+    start_marker = spec["block"]
+    lines = text.splitlines()
+    idx = [i for i, l in enumerate(lines) if l.strip() == start_marker.strip()]
+    if len(idx) != 1:
+        return False, "起始行匹配 %d 次（需唯一）：%r" % (len(idx), start_marker[:60])
+    n = int(spec["lines"])
+    doc_block = [l.rstrip() for l in lines[idx[0]: idx[0] + n]]
+    try:
+        r, _attempts = _run_with_retry(spec["cmd"], str(repo), int(spec.get("timeout", 300)))
+    except Exception as exc:  # noqa: BLE001
+        return False, "命令执行失败 %s" % type(exc).__name__
+    if r.returncode != int(spec.get("expect_rc", 0)):
+        return False, "命令 rc=%d（期望 %s）" % (r.returncode, spec.get("expect_rc", 0))
+    cmd_block = [l.rstrip() for l in (r.stdout or "").splitlines()][:n]
+    if doc_block == cmd_block:
+        return True, "%d 行逐字一致" % n
+    for i in range(min(len(doc_block), len(cmd_block))):
+        if doc_block[i] != cmd_block[i]:
+            return False, "第 %d 行不一致：文档=%r 命令=%r" % (i + 1, doc_block[i][:70], cmd_block[i][:70])
+    return False, "行数不一致：文档 %d / 命令 %d" % (len(doc_block), len(cmd_block))
+
+
 HANDLERS = {
     "file_exists": check_file_exists,
     "file_contains": check_file_contains,
@@ -251,6 +281,7 @@ HANDLERS = {
     "cmd": check_cmd,
     "task_next_run": check_task_next_run,
     "text_equals_json": check_text_equals_json,
+    "block_equals_cmd": check_block_equals_cmd,
 }
 
 

@@ -167,6 +167,24 @@ def test_text_equals_json_detects_mismatch(tmp_path):
     assert ok3 is False and "未匹配" in ev3
 
 
+def test_block_equals_cmd_detects_drift(tmp_path):
+    """文档表格必须与命令输出逐行一致——手改一个字就 FAIL。"""
+    cmd = [sys.executable, "-c", "print('| a | 1 |'); print('| b | 2 |')"]
+    doc = tmp_path / "d.md"
+    doc.write_text("前文\n| a | 1 |\n| b | 2 |\n后文\n", encoding="utf-8")
+    spec = {"path": str(doc), "block": "| a | 1 |", "lines": 2, "cmd": cmd}
+    ok, ev = ac.check_block_equals_cmd(spec, tmp_path)
+    assert ok is True and "逐字一致" in ev
+
+    doc.write_text("前文\n| a | 1 |\n| b | 9 |\n后文\n", encoding="utf-8")  # 手改一个数字
+    ok2, ev2 = ac.check_block_equals_cmd(spec, tmp_path)
+    assert ok2 is False and "第 2 行不一致" in ev2
+
+    doc.write_text("| a | 1 |\n| a | 1 |\n", encoding="utf-8")  # 起始行不唯一
+    ok3, ev3 = ac.check_block_equals_cmd(spec, tmp_path)
+    assert ok3 is False and "需唯一" in ev3
+
+
 def test_run_spec_unknown_kind_and_exit_code(tmp_path):
     spec = {"checks": [
         {"id": "1", "section": "s", "name": "ok", "kind": "file_exists", "path": "a.txt"},
