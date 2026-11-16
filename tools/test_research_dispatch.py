@@ -60,6 +60,24 @@ def test_summarize_hold_on_divergence_or_partial():
     seats = {"T1": _seat("bull"), "T2": _seat("bear"), "N1": _seat("unknown"), "F1": {"ok": False, "result": None}}
     s = rd.summarize("X", seats)
     assert s["recommendation"] == "HOLD" and s["seats_ok"] == 3
+    assert "多空对立" in s["rationale"]          # 真有对冲才叫分歧
+
+
+def test_summarize_wording_distinguishes_causes():
+    """三种 HOLD 原因必须给不同文案——全未知 ≠ 分歧 ≠ 全中性。"""
+    all_unknown = {k: _seat("unknown") for k in rd.SEATS}
+    s1 = rd.summarize("X", all_unknown)
+    assert s1["recommendation"] == "HOLD" and "四席均无立场" in s1["rationale"]
+    assert s1["stance_counts"] == {"bull": 0, "bear": 0, "neutral": 0, "unknown": 4}
+
+    one_side = {"T1": _seat("bull"), "T2": _seat("unknown"),
+                "N1": _seat("unknown"), "F1": _seat("unknown")}
+    s2 = rd.summarize("X", one_side)
+    assert "单边有立场但反方无证据" in s2["rationale"]
+
+    all_neutral = {k: _seat("neutral") for k in rd.SEATS}
+    s3 = rd.summarize("X", all_neutral)
+    assert "四席均中性" in s3["rationale"]
 
 
 def test_upsert_index_dedup(tmp_path, monkeypatch):

@@ -178,6 +178,9 @@ def summarize(code: str, seats: dict) -> dict:
             pass
     bull = sum(1 for s in stances.values() if s == "bull")
     bear = sum(1 for s in stances.values() if s == "bear")
+    neu = sum(1 for s in stances.values() if s == "neutral")
+    unk = sum(1 for s in stances.values() if s == "unknown")
+    missing_seats = len(SEATS) - len(got)
     if not got:
         rec, conf = "UNKNOWN", 0.0
         why = "四席位均未产出可用结论"
@@ -189,9 +192,18 @@ def summarize(code: str, seats: dict) -> dict:
         why = "多头证据成立且无空头反对（%d 席看多）" % bull
     else:
         rec, conf = "HOLD", round(sum(confs) / max(1, len(confs)) * 0.9, 3)
-        why = "多空分歧或证据不足（多%d/空%d/缺%d）" % (bull, bear, len(SEATS) - len(got))
+        # 文案按实际构成分开写：全未知 ≠ 分歧 ≠ 全中性
+        if bull and bear:
+            why = "多空对立（多%d/空%d）" % (bull, bear)
+        elif bull or bear:
+            why = "单边有立场但反方无证据（多%d/空%d/中%d/未%d）" % (bull, bear, neu, unk)
+        elif neu:
+            why = "四席均中性，无方向（中%d/未%d）" % (neu, unk)
+        else:
+            why = "四席均无立场（证据不足；未产出 %d 席）" % missing_seats
     return {"recommendation": rec, "confidence": conf, "rationale": why,
-            "stances": stances, "seats_ok": len(got), "seats_total": len(SEATS)}
+            "stances": stances, "seats_ok": len(got), "seats_total": len(SEATS),
+            "stance_counts": {"bull": bull, "bear": bear, "neutral": neu, "unknown": unk}}
 
 
 def main(argv=None) -> int:
