@@ -332,8 +332,16 @@ def load_suppression(day):
         return None
     # 2026-11-16 审查补：原为 json.load(open(p, ...))，文件对象从未关闭
     # （json.load 抛错时同样泄漏）。改 with 语句。
-    with open(p, encoding="utf-8") as fh:
-        j = json.load(fh)
+    # 再加一层包装：文件存在但内容损坏时，JSONDecodeError / UnicodeDecodeError
+    # 对排查者只是「解码失败」，看不出是哪份抑制令坏了。方向本身是对的
+    # （失败关闭），这里只补可读性，不改语义。
+    # 注意不包 OSError：那是权限/占用问题，语义不同，应原样抛出。
+    try:
+        with open(p, encoding="utf-8") as fh:
+            j = json.load(fh)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise RuntimeError(
+            "抑制令文件损坏：%s —— %s: %s" % (p, type(exc).__name__, exc)) from exc
     if j.get("schema") != SUP_SCHEMA:
         raise RuntimeError("抑制令 schema 不符：%s" % j.get("schema"))
     action = j.get("action")

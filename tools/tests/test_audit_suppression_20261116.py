@@ -121,3 +121,61 @@ def test_v2b_valid_day_still_works():
 
     assert m.load_suppression(day) is not None          # 字符串
     assert m.load_suppression(int(day)) is not None     # int（str() 后仍是 8 位数字）
+
+def test_v3_corrupt_json_raises_runtime_error():
+    """V3：抑制令文件存在但内容损坏时，应抛 RuntimeError 并指出是哪个文件。
+
+    修复前：json.JSONDecodeError 直接传播 —— 方向对（失败关闭），
+            但报错只说「decode 失败」，看不出是哪份抑制令坏了。
+    """
+    import pytest
+
+    d = tempfile.mkdtemp()
+    day = "20261116"
+    p2 = os.path.join(d, "preopen_suppressed_%s.json" % day)
+    with open(p2, "w", encoding="utf-8") as fh:
+        fh.write('{"schema": "preopen_suppressed/v1", "action": ')   # 截断
+
+    m = _load(d)
+    with pytest.raises(RuntimeError, match="抑制令文件损坏"):
+        m.load_suppression(day)
+
+
+def test_v3b_non_utf8_file_raises_runtime_error():
+    """V3b：文件不是 UTF-8（UnicodeDecodeError）同样被包装。"""
+    import pytest
+
+    d = tempfile.mkdtemp()
+    day = "20261116"
+    p2 = os.path.join(d, "preopen_suppressed_%s.json" % day)
+    with open(p2, "wb") as fh:
+        fh.write(b"\xff\xfe\x00\x00 not utf-8")
+
+    m = _load(d)
+    with pytest.raises(RuntimeError, match="抑制令文件损坏"):
+        m.load_suppression(day)
+
+
+def test_v3c_os_error_not_wrapped():
+    """V3c：权限/占用问题（OSError）不应被包装成「文件损坏」，语义不同。"""
+    import pytest
+
+    d = tempfile.mkdtemp()
+    day = "20261116"
+    _write_sup(d, day)
+    m = _load(d)
+
+    import builtins
+    real_open = builtins.open
+
+    def _deny(path, *a, **k):
+        if str(path).endswith(".json"):
+            raise PermissionError(13, "denied")
+        return real_open(path, *a, **k)
+
+    builtins.open = _deny
+    try:
+        with pytest.raises(PermissionError):
+            m.load_suppression(day)
+    finally:
+        builtins.open = real_open
