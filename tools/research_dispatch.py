@@ -266,34 +266,75 @@ def _parse_json(text: str) -> dict | None:
         return None
 
 
-def _call(client, system: str, user: str, model: str, max_tokens: int) -> dict:
-    """统一调用 + 三态判定：normal 有 JSON；degraded 有输出但解析失败/异常；超时也算 degraded。"""
+TRANSIENT_MARKS = ("HTTP 0", "timeout", "Timeout", "Connection", "ConnectionError", "EOF")
+
+
+def _is_transient(err: str) -> bool:
+    """连接层抖动（不是内容问题）——这类要重试；`no_json` 属内容问题，重试无益。"""
+    return any(m in str(err) for m in TRANSIENT_MARKS)
+
+
+def _call(client, system: str, user: str, model: str, max_tokens: int,
+          transport_retries: int = 3, backoff: float = 1.5) -> dict:
+    """统一调用 + 三态判定。
+
+    - `normal`：拿到可解析 JSON；
+    - `degraded`：有输出但不可用（`no_json`）、或调用失败（`empty_reply`/连接错误）；
+    - **连接类错误额外重试**（`transport_retries` 次，指数退避）——2026-11-16 实测
+      `DeepSeek 调用失败（HTTP 0: ）` 会把整只标的四席全部打成 UNKNOWN，重跑即恢复，说明是抖动。
+    """
     t0 = time.time()
     raw = ""
     err = ""
-    for _ in range(2):
+    attempts = 0
+    for _ in range(2):                       # 内容层重试（空回复）
+        attempts += 1
         try:
             full = getattr(client, "chat_full", None)
             msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
             if callable(full):
                 data = full(msgs, model=model, temperature=0.2, max_tokens=max_tokens) or {}
-                raw = str(data.get("content") or "").strip()
+                got = str(data.get("content") or "").strip()
             else:
-                raw = str(client.chat(msgs, model=model, temperature=0.2,
+                got = str(client.chat(msgs, model=model, temperature=0.2,
                                       max_tokens=max_tokens) or "").strip()
+            if got:
+                raw = got          # 非空才覆盖：重试拿到空串不能抹掉上次的截断证据
         except Exception as exc:  # noqa: BLE001
             err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
-            raw = ""
-        if raw:
-            break
+        if raw and _parse_json(raw):
+            break                            # 解析成功才停；有内容但不闭合允许再试一次
+        if err and not _is_transient(err):
+            break                            # 非连接类错误，重试空回复无意义
+
+    # 连接层错误：退避重试
+    if not raw and err and _is_transient(err):
+        for i in range(transport_retries):
+            time.sleep(backoff * (2 ** i))
+            attempts += 1
+            try:
+                full = getattr(client, "chat_full", None)
+                msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+                if callable(full):
+                    data = full(msgs, model=model, temperature=0.2, max_tokens=max_tokens) or {}
+                    raw = str(data.get("content") or "").strip()
+                else:
+                    raw = str(client.chat(msgs, model=model, temperature=0.2,
+                                          max_tokens=max_tokens) or "").strip()
+                if raw:
+                    err = ""
+                    break
+            except Exception as exc:  # noqa: BLE001
+                err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+
     parsed = _parse_json(raw)
-    if parsed:
-        mode = MODE_NORMAL
-    else:
-        mode = MODE_DEGRADED          # 有输出但解析不了、或彻底失败，都算降级
-    return {"ok": bool(parsed), "mode": mode, "elapsed_ms": int((time.time() - t0) * 1000),
-            "raw_head": raw[:200], "result": parsed,
-            "error": err or ("" if parsed else ("no_json" if raw else "empty_reply"))}
+    mode = MODE_NORMAL if parsed else MODE_DEGRADED
+    out = {"ok": bool(parsed), "mode": mode, "elapsed_ms": int((time.time() - t0) * 1000),
+           "raw_head": raw[:200], "result": parsed, "attempts": attempts,
+           "error": err or ("" if parsed else ("no_json" if raw else "empty_reply"))}
+    if out["ok"] and attempts > 2:
+        out["recovered_by_retry"] = True
+    return out
 
 
 def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,

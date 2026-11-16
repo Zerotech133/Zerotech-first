@@ -238,6 +238,47 @@ def test_critical_seat_degraded_blocks_directional_call():
     assert "rule_level_downgraded" not in s3
 
 
+def test_is_transient_classification():
+    assert rd._is_transient("DeepSeekError: DeepSeek 调用失败（HTTP 0: ）") is True
+    assert rd._is_transient("TimeoutError: timeout") is True
+    assert rd._is_transient("ConnectionError: reset") is True
+    assert rd._is_transient("no_json") is False          # 内容问题，重试无益
+    assert rd._is_transient("empty_reply") is False
+
+
+def test_transport_error_retried_then_succeeds(monkeypatch):
+    """连接类错误要退避重试，恢复后标记 recovered_by_retry（不再整只标失效）。"""
+    calls = {"n": 0}
+
+    class Flaky:
+        def chat_full(self, messages, model=None, temperature=0.0, max_tokens=0):
+            calls["n"] += 1
+            if calls["n"] <= 2:
+                raise RuntimeError("DeepSeek 调用失败（HTTP 0: ）")
+            return {"content": '{"stance":"bull","confidence":0.5}'}
+
+    monkeypatch.setattr(rd.time, "sleep", lambda s: None)     # 不真等
+    out = rd._call(Flaky(), "s", "u", "m", 100, transport_retries=3)
+    assert out["ok"] is True and out["mode"] == "normal"
+    assert out["recovered_by_retry"] is True
+    assert calls["n"] == 3
+
+
+def test_no_json_not_retried_as_transport(monkeypatch):
+    """内容问题（截断）重试次数应保持在内容层，不触发连接层重试。"""
+    calls = {"n": 0}
+
+    class Truncated:
+        def chat_full(self, messages, model=None, temperature=0.0, max_tokens=0):
+            calls["n"] += 1
+            return {"content": '{"stance":"bull","points":["x"'}   # 永远不闭合
+
+    monkeypatch.setattr(rd.time, "sleep", lambda s: None)
+    out = rd._call(Truncated(), "s", "u", "m", 100, transport_retries=3)
+    assert out["ok"] is False and out["mode"] == "degraded" and out["error"] == "no_json"
+    assert calls["n"] == 2                                     # 只走内容层 2 次
+
+
 def test_upsert_index_dedup(tmp_path, monkeypatch):
     idx = tmp_path / "research_index.jsonl"
     monkeypatch.setattr(rd, "INDEX", idx)
