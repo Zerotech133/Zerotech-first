@@ -48,6 +48,10 @@ SEAT_SPEC = {
 SCHEMA = ("{\"stance\":\"bull|bear|neutral|unknown\",\"points\":[\"...\"],"
           "\"risks\":[\"...\"],\"evidence_missing\":[\"...\"],\"verdict\":\"一句话\","
           "\"confidence\":0.0}")
+# 输出长度硬约束：实测 T1 接 xsec 后会写超 3000 token 被截断 → JSON 解析失败（no_json），
+# 席位在汇总里"消失"。既提高 token 预算，也在 prompt 里限条数与字数。
+MAX_POINTS = 5
+MAX_CHARS_PER_POINT = 80
 
 
 def log(msg: str) -> None:
@@ -140,7 +144,11 @@ def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None) ->
     if xsec:
         material["xsec_profile"] = xsec
     user = ("标的材料（ACAD1 池条目 + xsec 漏斗报告，均为原始字段）：\n%s\n\n"
-            "请按此 JSON 结构输出你的结论：%s" % (json.dumps(material, ensure_ascii=False), SCHEMA))
+            "请按此 JSON 结构输出你的结论：%s\n"
+            "篇幅硬约束：points ≤ %d 条、risks ≤ %d 条、evidence_missing ≤ %d 条，"
+            "每条 ≤ %d 字；超出会导致解析失败。"
+            % (json.dumps(material, ensure_ascii=False), SCHEMA,
+               MAX_POINTS, MAX_POINTS, MAX_POINTS, MAX_CHARS_PER_POINT))
     return system, user
 
 
