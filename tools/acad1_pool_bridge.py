@@ -178,6 +178,12 @@ def main(argv=None) -> int:
             "先修 PG 或其投影。" % (mode, pool.get("degraded_reason")))
         return 2
     if not pool_date or not items:
+        # projection 是**单日视图**（实测 2026-11-16 的单日只有 HK10/CRYPTO1，CN 为 0），
+        # 而 CN 标的只在 PG 的聚合视图里。此时"0 条"不是"今天没活"，是"通道缺数据"。
+        if mode == "projection":
+            log("REFUSED 回退视图 projection 内没有 %s 标的（单日视图通常只含 HK/CRYPTO；"
+                "CN 需 PG 聚合视图）→ 修 PG 后重跑，勿按'无事可做'处理。" % args.market)
+            return 2
         log("NO_POOL 池为空或缺少 pool_date → 本轮无事可做")
         return 0
 
