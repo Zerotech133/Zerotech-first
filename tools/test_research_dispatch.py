@@ -327,6 +327,36 @@ def test_decide_final_level_requires_technical_bear():
     assert lvl2 == "SELL" and note2 == ""
 
 
+def test_two_sell_policies_differ():
+    """同一组论据：technical 口径降 HOLD，valuation 口径保留 SELL。"""
+    val = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["PE 887 倍", "主力净流出"], "verdict": "估值太高", "risks": []}}
+    seats = {"T1": _seat("bull"), "T2": val, "N1": val, "F1": _seat("unknown")}
+
+    tech = rd.summarize("X", seats, None, None, "technical")
+    assert tech["recommendation_level"] == "HOLD" and "缺技术面" in tech["rationale"]
+
+    valp = rd.summarize("X", seats, None, None, "valuation")
+    assert valp["recommendation_level"] in ("SELL", "STRONG_SELL")
+    assert not valp.get("rule_level_downgraded")
+
+    # 有技术面依据时两口径一致
+    techbear = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["跌破 12.8"], "verdict": "破位", "risks": []}}
+    seats2 = {"T1": _seat("bull"), "T2": techbear, "N1": _seat("bear"), "F1": _seat("unknown")}
+    assert rd.summarize("X", seats2, None, None, "technical")["recommendation_level"] == "SELL"
+    assert rd.summarize("X", seats2, None, None, "valuation")["recommendation_level"] == "SELL"
+
+
+def test_decide_final_level_valuation_policy():
+    val = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["PE 高"], "verdict": "贵", "risks": []}}
+    lvl, note = rd.decide_final_level("SELL", {"T2": val}, "valuation")
+    assert lvl == "SELL" and note == ""
+    lvl2, note2 = rd.decide_final_level("SELL", {"T2": val}, "technical")
+    assert lvl2 == "HOLD" and "缺技术面" in note2
+
+
 def test_upsert_index_dedup(tmp_path, monkeypatch):
     idx = tmp_path / "research_index.jsonl"
     monkeypatch.setattr(rd, "INDEX", idx)

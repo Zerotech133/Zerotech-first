@@ -396,11 +396,14 @@ def short_types(res: dict) -> set[str]:
             if any(_hit_positive(text, w) for w in kws)}
 
 
-def decide_final_level(level: str, seats: dict) -> tuple[str, str]:
-    """规则层再收一道：SELL 必须至少有一条「技术型」空头依据。
+def decide_final_level(level: str, seats: dict,
+                       sell_policy: str = "technical") -> tuple[str, str]:
+    """规则层再收一道：SELL 的依据要多严，由 `sell_policy` 决定。
 
-    只有估值/资金偏空（价格结构未坏）时，正确结论是「不买」而不是「卖出」，
-    因此把 SELL/STRONG_SELL 降为 HOLD，并写明原因。
+    - `technical`（保守，默认）：SELL 必须至少有一条「技术型」空头依据
+      （破位/跌破/新低/放量下跌…）——只有估值/资金偏空时，正确结论是「不买」而非「卖出」。
+    - `valuation`（激进）：只要空头里有估值或资金型依据即可 SELL，不要求价格已破位
+      （适合"基本面烂就该离场"的口径）。
     """
     if level not in ("SELL", "STRONG_SELL"):
         return level, ""
@@ -409,6 +412,10 @@ def decide_final_level(level: str, seats: dict) -> tuple[str, str]:
     types = set()
     for k, v in bears.items():
         types |= short_types(v)
+    if sell_policy == "valuation":
+        if types & {"valuation", "flow", "technical"}:
+            return level, ""
+        return "HOLD", "空头依据未识别出类型（%s）→ 降为 HOLD" % "、".join(sorted(bears))
     if "technical" in types:
         return level, ""
     detail = "、".join("%s=%s" % (k, "/".join(sorted(short_types(v))) or "未识别")
@@ -514,7 +521,7 @@ def _risk_level(bull: int, bear: int, unk: int, degraded: int) -> str:
 
 
 def summarize(code: str, seats: dict, debate: dict | None = None,
-              final: dict | None = None) -> dict:
+              final: dict | None = None, sell_policy: str = "technical") -> dict:
     """汇总为菜鸟式契约：五档 + 0-100 + risk_level + time_horizon。
 
     target_price 无可靠来源 → 一律 null 并注明（不编造）。
@@ -558,7 +565,7 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
     # 粒度收口：SELL 必须有技术型空头依据（只有估值/资金偏空 → 应为「不买」而非「卖出」）
     rule_level_before = None
     level_before_granularity = level
-    level, short_note = decide_final_level(level, seats)
+    level, short_note = decide_final_level(level, seats, sell_policy)
     if short_note:
         rule_level_before = level_before_granularity
         why = short_note
@@ -644,6 +651,8 @@ def main(argv=None) -> int:
     ap.add_argument("--no-sent", action="store_true", help="不附带舆情画像")
     ap.add_argument("--no-final", action="store_true", help="不启用决胜席（只用票数规则）")
     ap.add_argument("--no-events", action="store_true", help="不附带公告事件")
+    ap.add_argument("--sell-policy", choices=("technical", "valuation"), default="technical",
+                    help="SELL 依据口径：technical=需技术面破位（默认，保守）；valuation=估值/资金偏空即可")
     ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
     args = ap.parse_args(argv)
 
@@ -722,7 +731,7 @@ def main(argv=None) -> int:
             log("  %s 决胜席 -> %s conf=%s ok=%s | %s" % (code, fr.get("decision_level"),
                 fr.get("confidence"), final.get("ok"), str(fr.get("rationale"))[:70]))
 
-        summary = summarize(code, seats, debate, final)
+        summary = summarize(code, seats, debate, final, args.sell_policy)
         modes = {"normal": 0, "degraded": 0, "debate": 0}
         for v in seats.values():
             modes[v.get("mode") or "normal"] = modes.get(v.get("mode"), 0) + 1
