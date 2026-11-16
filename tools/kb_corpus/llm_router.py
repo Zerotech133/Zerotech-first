@@ -9,7 +9,7 @@
 降级触发：超时 / HTTP 429 / HTTP 5xx / 网络错误（URLError/ConnectionError）；
 每级记录耗时、状态、错误类型；全部失败返回 ok=False（调用方决定兜底话术）。
 
-密钥纪律：复用 C:/项目/_vault/secrets/dashscope_api_key.txt 与 dashscope_base_url.txt，
+密钥纪律：复用 KB_SECRETS_DIR 下的 dashscope_api_key.txt 与 dashscope_base_url.txt，
 只读不写；异常统一脱敏（sk-****），日志/返回值不含密钥。
 
 成本：每次成功调用追加一行到 research/reports/llm_cost_<date>.jsonl
@@ -29,7 +29,34 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-SECRETS = Path(r"C:/项目/_vault/secrets")
+def _load_env_local() -> None:
+    """把仓库根 .env.local 的键读进 os.environ（不覆盖已存在）。
+
+    2026-11-16：vault 路径原先硬编码，会随 push 暴露本机目录结构
+    （vault_path_inventory_20261116 A 级）。该文件被 .gitignore 的 `.env.*` 忽略。
+    """
+    for anc in Path(__file__).resolve().parents:
+        f = anc / ".env.local"
+        if not f.exists():
+            continue
+        try:
+            for raw in f.read_text(encoding="utf-8-sig").splitlines():
+                raw = raw.strip()
+                if not raw or raw.startswith("#") or "=" not in raw:
+                    continue
+                k, v = raw.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k and v and k not in os.environ:
+                    os.environ[k] = v
+        except OSError:
+            pass
+        return
+
+
+_load_env_local()
+SECRETS = Path(os.environ.get("KB_SECRETS_DIR", ""))
+# 2026-11-16：原硬编码 vault 路径，会随 push 暴露本机目录结构
+# （vault_path_inventory_20261116 A 级第 18 条）。空 Path 时下游按"文件不存在"降级。
 KEY_FILE = SECRETS / "dashscope_api_key.txt"
 BASE_FILE = SECRETS / "dashscope_base_url.txt"
 REPORTS = REPO / "research" / "reports"

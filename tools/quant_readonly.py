@@ -19,7 +19,35 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 PLATFORM = REPO / "agent_platform"
-VAULT_ENC = Path(r"C:\项目\_vault\secrets.enc\mcp\tushare_mcp_token.age")
+def _load_env_local() -> None:
+    """把仓库根 .env.local 的键读进 os.environ（不覆盖已存在）。
+
+    2026-11-16：vault 路径原先硬编码，会随 push 暴露本机目录结构
+    （vault_path_inventory_20261116 A 级）。该文件被 .gitignore 的 `.env.*` 忽略。
+    """
+    for anc in Path(__file__).resolve().parents:
+        f = anc / ".env.local"
+        if not f.exists():
+            continue
+        try:
+            for raw in f.read_text(encoding="utf-8-sig").splitlines():
+                raw = raw.strip()
+                if not raw or raw.startswith("#") or "=" not in raw:
+                    continue
+                k, v = raw.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k and v and k not in os.environ:
+                    os.environ[k] = v
+        except OSError:
+            pass
+        return
+
+
+_load_env_local()
+VAULT_ENC = Path(os.environ.get("TUSHARE_MCP_TOKEN_ENC", ""))
+# 2026-11-16：原硬编码 vault 加密路径，会随 push 暴露本机目录结构
+# （vault_path_inventory_20261116 A 级第 19 条）。空 Path 时 .exists() 为 False
+# -> _ensure_token() 返回 vault_enc_missing，与原先"文件不存在"语义一致。
 TOKEN_ENV = "TUSHARE_MCP_TOKEN"
 ALLOWED = ("stock_basic", "daily", "index_daily", "trade_cal", "daily_basic")
 MAX_ROWS = 200

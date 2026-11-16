@@ -41,9 +41,23 @@ if ($conn) {
 if ($DryRun) { Write-KeepLog "DRY-RUN: would start legion-ide port=$Port"; exit 0 }
 
 # 2026-10-31 P0-4：保活与手工启动参数必须一致，否则 /rw 无 token、cap 未启用
+# 2026-11-16：local_token 路径原先硬编码，会随 push 暴露本机目录结构
+# （vault_path_inventory_20261116 A 级第 8 条）。改为环境变量优先、仓库根 .env.local 兜底
+# （该文件被 .gitignore 的 `.env.*` 忽略）。取不到则不启用 /rw 与 cap（与原先"文件不存在"一致）。
 $startArgs = @('-Action', 'start', '-Port', $Port, '-Repo', $Repo, '-Python', $Python, '-EnableWrite')
-$tokenFile = 'C:\项目\_vault\legion_ide\local_token'
-if (Test-Path -LiteralPath $tokenFile) {
+$tokenFile = $env:LEGION_LOCAL_TOKEN_FILE
+if (-not $tokenFile) {
+    $envLocal = Join-Path (Split-Path -Parent $PSScriptRoot) '.env.local'
+    if (Test-Path -LiteralPath $envLocal) {
+        foreach ($line in (Get-Content -LiteralPath $envLocal -Encoding UTF8)) {
+            if ($line -match '^\s*LEGION_LOCAL_TOKEN_FILE\s*=') {
+                $tokenFile = ($line -split '=', 2)[1].Trim().Trim('"').Trim("'")
+                break
+            }
+        }
+    }
+}
+if ($tokenFile -and (Test-Path -LiteralPath $tokenFile)) {
     $startArgs += @('-LocalTokenFile', $tokenFile, '-EnableCap')
 }
 Write-KeepLog ("START args: " + ($startArgs -join ' '))
