@@ -55,7 +55,7 @@ def test_ifs_client_syntax():
     if not NODE:
         pytest.skip("node 不可用，跳过 JS 语法检查")
     r = subprocess.run([NODE, "--check", str(CLIENT)],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")
     assert r.returncode == 0, "ifs_client.js 语法错误: %s" % (r.stderr or r.stdout)
 
 
@@ -151,7 +151,7 @@ assert(legacyMeta.textContent === I.LEGACY_FALLBACK_TEXT, 'legacy meta text');
 console.log(JSON.stringify({ ok: true, version: I.VERSION }));
 """
     r = subprocess.run([NODE, "-e", script, str(CLIENT)],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")
     assert r.returncode == 0, "客户端行为校验失败: %s\n%s" % (
         r.stderr or "", r.stdout or "")
     assert json.loads(r.stdout.strip().splitlines()[-1])["ok"] is True

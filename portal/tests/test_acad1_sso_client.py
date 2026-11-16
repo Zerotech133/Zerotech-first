@@ -65,7 +65,7 @@ def test_client_syntax():
     if not NODE:
         pytest.skip("node 不可用，跳过 JS 语法检查")
     r = subprocess.run([NODE, "--check", str(CLIENT)],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")
     assert r.returncode == 0, "acad1_client.js 语法错误: %s" % (r.stderr or r.stdout)
 
 
@@ -214,7 +214,7 @@ const DATA_OK = { rows: [], pool_date: '2026-11-03' };
 })().catch(function (e) { console.error(e && e.stack || e); process.exit(1); });
 """
     r = subprocess.run([NODE, "-e", script, str(CLIENT)],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")
     assert r.returncode == 0, "客户端行为校验失败:\n%s\n%s" % (r.stderr or "", r.stdout or "")
     assert json.loads(r.stdout.strip().splitlines()[-1])["ok"] is True
 
@@ -254,7 +254,7 @@ def test_page_inline_js_syntax(tmp_path):
     target = tmp_path / "shuijing_inline.js"
     target.write_text("\n;\n".join(blocks), encoding="utf-8")
     r = subprocess.run([NODE, "--check", str(target)],
-                       capture_output=True, text=True, encoding="utf-8")
+                       capture_output=True, text=True, stdin=subprocess.DEVNULL, encoding="utf-8")
     assert r.returncode == 0, "shuijing 内联脚本语法错误: %s" % (r.stderr or r.stdout)
 
 
