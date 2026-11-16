@@ -35,6 +35,25 @@ KEY_FILE = Path(r"C:\项目\_vault\secrets\tdx_api_key")
 BASE = "http://rookie.xtcloud-tech.com:48088"
 DAY_LOOKBACK = 30          # 日线回看交易日数
 
+# ── 判据实测表现（2026-11-16 回放：200 只全市场随机 × 250 日，无偏样本）──────────────
+# 存在的意义：字段名本身在暗示"这是买点"。不把实测表现一并交给席位，它会拿已证伪的判据当证据。
+SIGNAL_VALIDITY = {
+    "breakout_with_volume": {
+        "n": 1389, "r5_mean_pct": -0.91, "r5_win_rate": 40.5,
+        "verdict": "已证伪：5 日平均 -0.91%，低于基准 -0.09%；不可作为买入依据，仅作当日量能描述",
+    },
+    "shrink_pullback": {
+        "n": 10597, "r5_mean_pct": -0.11, "r5_win_rate": 45.0,
+        "verdict": "无区分度：与基准几乎相同；不构成利好也不构成利空",
+    },
+    "gap_up": {
+        "n": 537, "r5_mean_pct": 2.97, "r5_win_rate": 51.5,
+        "verdict": "存活但弱：胜率仅 51.5%，均值靠少数大赢家拉动；不可单独作为买入依据",
+    },
+}
+BASELINE_R5 = -0.09        # 同期全样本基准
+VALIDITY_SOURCE = "200只全市场随机×250交易日 回放（2026-11-16，seed 20261116）"
+
 
 def _key() -> str:
     return KEY_FILE.read_text(encoding="utf-8").strip()
@@ -191,6 +210,13 @@ def profile(code: str, day: str | None = None) -> dict:
         except (KeyError, TypeError, ValueError):
             pass
     out["available"] = bool(out.get("daily") or out.get("intraday"))
+    # 把判据的历史实测表现一并交给席位——避免把已证伪的字段名当买点
+    out["signal_validity"] = {
+        "source": VALIDITY_SOURCE,
+        "baseline_r5_mean_pct": BASELINE_R5,
+        "note": "这些字段只描述当日量能特征，**不是买入信号**；下列为无偏样本回放结果",
+        "judgements": SIGNAL_VALIDITY,
+    }
     out["warnings"] = warns
     return out
 

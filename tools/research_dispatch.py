@@ -203,6 +203,12 @@ def slim_vol(p: dict) -> dict:
         out["intraday"] = {k: iv.get(k) for k in
                             ("date", "bars", "open30_share", "close30_share",
                              "am_share", "pm_share", "peak_time", "vol_unit") if iv.get(k) is not None}
+    # 判据实测表现必须一起传下去（含 baseline），否则席位会把已证伪的字段名当买点
+    sv = p.get("signal_validity") or {}
+    if sv:
+        out["signal_validity"] = {"baseline_r5_mean_pct": sv.get("baseline_r5_mean_pct"),
+                                   "note": sv.get("note"),
+                                   "judgements": sv.get("judgements")}
     for k in ("unit_check", "warnings"):
         if p.get(k):
             out[k] = p[k]

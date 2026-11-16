@@ -132,6 +132,32 @@ def test_profile_unavailable_when_both_fail(monkeypatch):
     assert len(p["warnings"]) >= 2
 
 
+def test_signal_validity_attached():
+    """判据实测表现必须随画像一起输出，避免席位把已证伪的字段名当买点。"""
+    assert "breakout_with_volume" in vp.SIGNAL_VALIDITY
+    assert vp.SIGNAL_VALIDITY["breakout_with_volume"]["r5_mean_pct"] < vp.BASELINE_R5
+    assert "证伪" in vp.SIGNAL_VALIDITY["breakout_with_volume"]["verdict"]
+    assert "弱" in vp.SIGNAL_VALIDITY["gap_up"]["verdict"]
+
+
+def test_profile_carries_validity(monkeypatch):
+    closes = [10.0] * 20 + [11.0]
+    vols = [1000.0] * 20 + [2000.0]
+    pcts = [0.0] * 20 + [5.0]
+
+    def fake(tbl, params, timeout=60):
+        if tbl == "ts_daily":
+            return _daily_rows(closes, vols, pcts)
+        return _mins_rows(n=240, vol_each=200000.0 / 240)
+
+    monkeypatch.setattr(vp, "_query", fake)
+    p = vp.profile(CODE, "2026-11-16")
+    sv = p["signal_validity"]
+    assert sv["baseline_r5_mean_pct"] == vp.BASELINE_R5
+    assert "不是买入信号" in sv["note"]
+    assert set(sv["judgements"]) == {"breakout_with_volume", "shrink_pullback", "gap_up"}
+
+
 def test_slim_vol_whitelist():
     spec = importlib.util.spec_from_file_location(
         "rd_vol_t", REPO / "tools" / "research_dispatch.py")
@@ -140,9 +166,12 @@ def test_slim_vol_whitelist():
     raw = {"code": "X", "source": "drop", "available": True,
            "daily": {"vol_ratio_20": 1.1, "volume_price": "量价中性", "vol_ma20": 1, "drop_me": 1},
            "intraday": {"bars": 241, "open30_share": 31.5, "drop_me": 1},
+           "signal_validity": {"baseline_r5_mean_pct": -0.09, "note": "n",
+                               "judgements": {"breakout_with_volume": {"r5_mean_pct": -0.91}}},
            "unit_check": "ok", "warnings": []}
     s = rd.slim_vol(raw)
     assert "vol_ratio_20" in s["daily"] and "drop_me" not in s["daily"]
     assert "open30_share" in s["intraday"] and "drop_me" not in s["intraday"]
+    assert s["signal_validity"]["baseline_r5_mean_pct"] == -0.09   # 判据表现必须随行
     assert s["unit_check"] == "ok"
     assert rd.slim_vol({}) == {}
