@@ -1,0 +1,29 @@
+{
+  "_note": "2026-11-16 建档：风控部原无团队册，按 org 投影回填；后续以本册为正式编制",
+  "team": "risk",
+  "dept": "risk",
+  "description": "风控部：R1 进攻哨 / R2 保守哨 / R3 仲裁",
+  "agents": [
+    {
+      "agent_id": "R1",
+      "name": "甘宁",
+      "role_profile": "risk_aggressive_sentinel",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "R2",
+      "name": "赵云·风控",
+      "role_profile": "risk_conservative_sentinel",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "R3",
+      "name": "陆逊",
+      "role_profile": "risk_arbiter",
+      "reports_to": "",
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "_note": "2026-11-16 建档：运行体部原无团队册，按 org 投影回填；后续以本册为正式编制",
+  "team": "ops_runtime",
+  "dept": "ops_runtime",
+  "description": "运行体部：JEV 链路 / LARK 卡片 / 记忆桥 / UI 网关 / 瞭望塔",
+  "agents": [
+    {
+      "agent_id": "JEV_GATE",
+      "name": "",
+      "role_profile": "jev_alert_gate",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "JEV_REVIEW",
+      "name": "",
+      "role_profile": "jev_signal_reviewer",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "JEV_QD",
+      "name": "",
+      "role_profile": "jev_quantdinger_bridge",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "LARK_CARDS",
+      "name": "",
+      "role_profile": "lark_card_listener",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "COWBRIDGE",
+      "name": "",
+      "role_profile": "cowbridge_memory_bridge",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "HERMES_UI",
+      "name": "",
+      "role_profile": "hermes_ui_gateway",
+      "reports_to": "",
+      "status": "active"
+    },
+    {
+      "agent_id": "WATCH_TOWER",
+      "name": "朱然",
+      "role_profile": "watchtower_arbiter",
+      "reports_to": "",
+      "status": "active"
+    }
+  ]
+}

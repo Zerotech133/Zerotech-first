@@ -209,6 +209,22 @@
      "enabled": true
     }
    ]
+  },
+  {
+   "agent_id": "FACTOR1",
+   "name": "",
+   "role_profile": "factor_miner",
+   "reports_to": "DATA1",
+   "status": "active",
+   "org_note": "2026-11-16 老田裁定：团队册补齐"
+  },
+  {
+   "agent_id": "MADAI1",
+   "name": "马岱·兰台",
+   "role_profile": "数据仓主办席",
+   "reports_to": "DATA1",
+   "status": "active",
+   "org_note": "2026-11-16 老田裁定：团队册补齐"
   }
  ]
 }

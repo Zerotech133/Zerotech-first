@@ -313,7 +313,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "庞统"
+          "cn_name": "庞统",
+          "reports_to": "D1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 量化交易部 lead=D1（已有汇报线））"
         },
         {
           "agent_id": "T2",
@@ -342,7 +344,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "贾诩"
+          "cn_name": "贾诩",
+          "reports_to": "D1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 量化交易部 lead=D1（已有汇报线））"
         },
         {
           "agent_id": "N1",
@@ -371,7 +375,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "许劭"
+          "cn_name": "许劭",
+          "reports_to": "D1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 量化交易部 lead=D1（已有汇报线））"
         },
         {
           "agent_id": "F1",
@@ -400,7 +406,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "荀彧"
+          "cn_name": "荀彧",
+          "reports_to": "D1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 量化交易部 lead=D1（已有汇报线））"
         },
         {
           "agent_id": "D1",
@@ -842,7 +850,12 @@
           "role_title": "后端工程师 · G1 组长",
           "group": "G1",
           "org_role": "G1组长",
-          "report_to": "ARCH1"
+          "report_to": "ARCH1",
+          "cn_name": "马钧",
+          "name": "马钧",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "ARCH1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部 lead=ARCH1（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "DEV6",
@@ -898,7 +911,12 @@
           "role_title": "后端工程师",
           "group": "G1",
           "org_role": "G1组员",
-          "report_to": "DEV1"
+          "report_to": "DEV1",
+          "cn_name": "胡昭",
+          "name": "胡昭",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·后端/AI/平台组 组内，组 lead=DEV1）"
         },
         {
           "agent_id": "DEV7",
@@ -954,7 +972,12 @@
           "role_title": "后端工程师（标准化交付）",
           "group": "G1",
           "org_role": "G1组员",
-          "report_to": "DEV1"
+          "report_to": "DEV1",
+          "cn_name": "姜维",
+          "name": "姜维",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·后端/AI/平台组 组内，组 lead=DEV1）"
         },
         {
           "agent_id": "DEV2",
@@ -1036,7 +1059,12 @@
             "deepseek/deepseek-v4-pro",
             "ollama/qwen3.5:9b"
           ],
-          "binding_source": "registry/model_policy.yaml"
+          "binding_source": "registry/model_policy.yaml",
+          "cn_name": "刘晔",
+          "name": "刘晔",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·后端/AI/平台组 组内，组 lead=DEV1）"
         },
         {
           "agent_id": "DEV3",
@@ -1129,7 +1157,12 @@
             "ollama/qwen3.5:9b"
           ],
           "binding_note": "Phase0 model_policy.yaml 20261104T061516",
-          "binding_source": "registry/model_policy.yaml"
+          "binding_source": "registry/model_policy.yaml",
+          "cn_name": "蒋济",
+          "name": "蒋济",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV5",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·前端/量化/文档组 组内，组 lead=DEV5）"
         },
         {
           "agent_id": "DEV4",
@@ -1212,7 +1245,12 @@
             "ollama/qwen3.5:9b"
           ],
           "binding_note": "Phase0 model_policy.yaml 20261104T061516",
-          "binding_source": "registry/model_policy.yaml"
+          "binding_source": "registry/model_policy.yaml",
+          "cn_name": "杜预",
+          "name": "杜预",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV5",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·前端/量化/文档组 组内，组 lead=DEV5）"
         },
         {
           "agent_id": "DEV5",
@@ -1274,7 +1312,12 @@
           "role_title": "前端工程师 · G2 组长",
           "group": "G2",
           "org_role": "G2组长",
-          "report_to": "ARCH1"
+          "report_to": "ARCH1",
+          "cn_name": "邓艾",
+          "name": "邓艾",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "ARCH1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部 lead=ARCH1（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "DEV8",
@@ -1330,7 +1373,12 @@
           "role_title": "前端工程师",
           "group": "G2",
           "org_role": "G2组员",
-          "report_to": "DEV5"
+          "report_to": "DEV5",
+          "cn_name": "郝昭",
+          "name": "郝昭",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV5",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·前端/量化/文档组 组内，组 lead=DEV5）"
         },
         {
           "agent_id": "ARCH1",
@@ -1500,7 +1548,9 @@
           "report_to": "A0",
           "llm_fallbacks": [
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部主官（lead_duty：每日汇总报 A0））"
         },
         {
           "agent_id": "OPS1",
@@ -1560,7 +1610,12 @@
           "role_title": "运维/SRE 工程师",
           "group": "G1",
           "org_role": "G1组员",
-          "report_to": "DEV1"
+          "report_to": "DEV1",
+          "cn_name": "王基",
+          "name": "王基",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·后端/AI/平台组 组内，组 lead=DEV1）"
         },
         {
           "agent_id": "DOC1",
@@ -1613,7 +1668,12 @@
           "role_title": "技术文档工程师",
           "group": "G2",
           "org_role": "G2组员",
-          "report_to": "DEV5"
+          "report_to": "DEV5",
+          "cn_name": "陈寿",
+          "name": "陈寿",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DEV5",
+          "reports_to_source": "2026-11-16 建议案落地（依据 研发部·前端/量化/文档组 组内，组 lead=DEV5）"
         }
       ],
       "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）",
@@ -1854,7 +1914,12 @@
               "execute": [],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "蒋琬",
+          "name": "蒋琬",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DATA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 数据智能部 lead=DATA1（已有汇报线））"
         },
         {
           "agent_id": "DATA2",
@@ -1905,7 +1970,12 @@
               ],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "刘巴",
+          "name": "刘巴",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DATA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 数据智能部 lead=DATA1（已有汇报线））"
         },
         {
           "agent_id": "DATA3",
@@ -1965,7 +2035,12 @@
               ],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "陈群",
+          "name": "陈群",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "DATA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 数据智能部 lead=DATA1（已有汇报线））"
         },
         {
           "agent_id": "MADAI1",
@@ -1980,7 +2055,9 @@
           "grade": "E1",
           "grade_note": "初立待调档（情绪产品 T01 验收为观察期 KPI）",
           "attributes": {},
-          "cn_name": "马岱·兰台"
+          "cn_name": "马岱·兰台",
+          "reports_to": "DATA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 数据智能部 lead=DATA1（已有汇报线））"
         }
       ],
       "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属",
@@ -2088,7 +2165,12 @@
           ],
           "llm_fallbacks": [
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "吕蒙",
+          "name": "吕蒙",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 产品管理部主官（lead_duty：每日汇总报 A0））"
         },
         {
           "agent_id": "DSGN1",
@@ -2144,7 +2226,12 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "曹植",
+          "name": "曹植",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "PM1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 产品管理部 lead=PM1（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "DSGN2",
@@ -2194,7 +2281,12 @@
               ],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "杨修",
+          "name": "杨修",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "PM1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 产品管理部 lead=PM1（该 lead 自身汇报线待补））"
         }
       ],
       "source": "K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队",
@@ -2302,7 +2394,12 @@
           ],
           "llm_fallbacks": [
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "于禁",
+          "name": "于禁",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 质量工程部主官（lead_duty：每日汇总报 A0））"
         },
         {
           "agent_id": "SEC1",
@@ -2351,7 +2448,12 @@
               ],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "李严",
+          "name": "李严",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "QA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 质量工程部 lead=QA1（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "QA2",
@@ -2394,7 +2496,12 @@
               ],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "郭淮",
+          "name": "郭淮",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "QA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 质量工程部 lead=QA1（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "SEC2",
@@ -2447,7 +2554,12 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "法正",
+          "name": "法正",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "QA1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 质量工程部 lead=QA1（该 lead 自身汇报线待补））"
         }
       ],
       "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田丰治理模型·研发质量对抗线）",
@@ -2611,7 +2723,12 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "简雍",
+          "name": "简雍",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 市场部主官（lead_duty：每日汇总报 A0））"
         }
       ],
       "lead": "MKT1",
@@ -2692,7 +2809,12 @@
           ],
           "llm_fallbacks": [
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "诸葛瑾",
+          "name": "诸葛瑾",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 合规法务部主官（lead_duty：每日汇总报 A0））"
         }
       ],
       "teams": [
@@ -2744,7 +2866,12 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "廖化",
+          "name": "廖化",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "JEV_REVIEW",
@@ -2760,7 +2887,12 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "蒋干",
+          "name": "蒋干",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "WATCH_TOWER",
@@ -2777,7 +2909,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "朱然"
+          "cn_name": "朱然",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "JEV_QD",
@@ -2793,7 +2927,12 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "伊籍",
+          "name": "伊籍",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "LARK_CARDS",
@@ -2809,7 +2948,12 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "秦宓",
+          "name": "秦宓",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "COWBRIDGE",
@@ -2825,7 +2969,12 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "桥玄",
+          "name": "桥玄",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "HERMES_UI",
@@ -2850,7 +2999,12 @@
           },
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "糜竺",
+          "name": "糜竺",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0A",
+          "reports_to_source": "2026-11-16 建议案落地（依据 运行体部 lead=A0A（该 lead 自身汇报线待补））"
         }
       ],
       "lead_appointed": {
@@ -3003,9 +3157,8 @@
         "COMM1",
         "INTEL1",
         "AI1",
-        "GUANYU",
         "PROD1",
-        "HUANGZHONG"
+        "STRAT2"
       ],
       "teams": [
         "academy_strategy",
@@ -3301,73 +3454,6 @@
           "status": "active"
         },
         {
-          "agent_id": "GUANYU",
-          "cn_name": "关羽",
-          "cn_name_note": "名号权威同 hr/GUANYU/resume.yaml（cn_origin=云长·武圣）；2026-10-27 老田令入编（工单 WO-GUANYU-SEAT-20261027）——研究院新增 E3 管理席，与 AI1 诸葛亮平级",
-          "role_profile": "guanyu_code_audit_governance",
-          "analysis_type": "code_audit_governance",
-          "charter_detail": "代码审计与系统整治席（E3 管理席，与 AI1 诸葛亮平级，汇报线 ACAD1→A0）：①代码审计（漏洞/规范/技术债，P0/P1/P2 定级）②测试大修复（失败基线/时间炸弹/flaky/隔离）③编码规范制定与门禁落地 ④无用代码清理与重复功能合并建议（L2 需 A0 批，删除走回收站）⑤只出报告与工单，不自行合并；开发权=独立 worktree 提交+跑测试，合并/上线须 L2 人签；danger=deny，不碰凭据/生产数据/运行中服务",
-          "llm_binding": "deepseek/deepseek-flash",
-          "binding_note": "2026-10-27 入编：DSH（DeepSeek Harness）会话载体，模型实名同 engine/deepseek.py DEFAULT_MODEL=deepseek-flash，org 绑定按 provider/model 写法用 deepseek/ 前缀；本席未接入 llm_gateway/_PREFIX_OWNS_MODEL（若后续接入 8796/会议厅须先补 deepseek 前缀路由，否则整串 binding 会被当 model 传入）",
-          "tools": [
-            "quality_gate",
-            "devtask",
-            "events"
-          ],
-          "tools_note": "均取 org 既有合法工具名（org 内无 code_audit/test_repair 独立工具，故用等价既有工具并如实标注）：quality_gate=只读质量门（compileall/端口注册/明文凭据扫描）；devtask=工单/worktree/评审门；events=事件层留痕。tools 校验：quality_gate 有 agent_platform/tools 实现，devtask/events 属平台内置工具；无危险工具，danger=deny",
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/*",
-              "agent/GUANYU/*"
-            ],
-            "write": [
-              "agent/GUANYU/*"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档·管理席：代码审计与系统整治席，与 AI1 诸葛亮平级（ACAD1→A0）；只出报告与工单，L2 人签",
-          "attributes": {
-            "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
-            "specialties": [
-              "代码审计（漏洞/规范/技术债）",
-              "测试大修复（失败基线/时间炸弹/flaky/隔离）",
-              "编码规范与门禁（pre-commit/AST/CI）",
-              "无用代码清理与重复功能合并建议",
-              "审计报告与工单闭环"
-            ],
-            "knowledge": [
-              "AI工程实践知识库.md",
-              "测试规范知识库.md"
-            ],
-            "tools_allowed": {
-              "read": [
-                "*"
-              ],
-              "write": [
-                "agent/GUANYU/**"
-              ],
-              "execute": [
-                "devtask",
-                "python",
-                "pytest"
-              ],
-              "danger": "deny"
-            }
-          },
-          "llm_fallback": [
-            "ollama/qwen3.5:9b"
-          ],
-          "reports_to": "A0",
-          "parent_node_keys": [],
-          "academy_status": "liaison",
-          "actual_position": "整治官（代码审计/技术债）",
-          "command_seat": "指挥部·整治官",
-          "onboarded_at": "2026-11-04",
-          "office_title": "整治官（代码审计/技术债）",
-          "command_reports_to": "A0"
-        },
-        {
           "agent_id": "PROD1",
           "role_profile": "strategy_product_manager",
           "analysis_type": "strategy_productization",
@@ -3406,50 +3492,47 @@
           "office_title": "策略产品经理"
         },
         {
-          "agent_id": "HUANGZHONG",
-          "cn_name": "黄忠",
-          "cn_name_note": "2026-10-27 老田令：指挥部五席之一，入编研究院",
-          "role_profile": "delivery_acceptance_chief",
-          "analysis_type": "delivery_acceptance",
-          "charter_detail": "指挥部老将·验收守门官（E3，与 AI1 诸葛亮平级）：独立验收/质量终检/上线前把关；只验不改、只退不批；观察模式不阻断 merge；对证据负责，最终准入由老田人工决定",
+          "agent_id": "STRAT2",
+          "role_profile": "strategy_researcher",
+          "analysis_type": "strategy_research",
+          "charter_detail": "把投研部的市场问题转成可验证策略假设，维护策略研究台账，交由 BACK1 做回测",
           "llm_binding": "glm/glm-5.3",
-          "binding_note": "2026-10-27 老田令入编指挥部（工单 K-QUANT-20261027-COMMANDHQ）",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
           "tools": [
-            "quality_gate",
-            "test_baseline",
-            "zhuge_redteam",
-            "huangzhong_accept",
-            "repair_lane_read",
-            "trace"
+            "events",
+            "datamart_read",
+            "datamart_latest",
+            "datamart_ready",
+            "market_snapshot",
+            "data_health",
+            "stock_info",
+            "recent_events",
+            "signal_precedents",
+            "pool_rows"
           ],
-          "tools_note": "只读验收：QualityGate/基线/红队/验收工具/修复车道读取/trace；不可写业务代码、不可改 org/bundle、不可代批",
+          "tools_note": "2026-10-27 ACAD1 P0 同口径授权：只读研究工具（见 quant_backtest/agent_tools.py）",
           "memory_grants": [],
-          "grade": "E3",
-          "grade_note": "指挥部老将席",
-          "attributes": {
-            "skills": [
-              "acceptance_criteria_design",
-              "quality_gate",
-              "test_baseline",
-              "redteam_review",
-              "rollback_evidence",
-              "readonly_boundary",
-              "pytest_triage",
-              "trace_observability",
-              "diff_review",
-              "kpi_metrics"
-            ],
-            "learning_path": "docs/plans/2026-10-28_黄忠技能清单与共享资能_v1.md",
-            "skill_manifest": "agent_platform/skills/huangzhong/SKILL.md"
-          },
-          "reports_to": "A0",
-          "parent_node_keys": [],
-          "academy_status": "liaison",
-          "actual_position": "验收官",
-          "command_seat": "指挥部·验收官",
-          "onboarded_at": "2026-11-04",
-          "office_title": "验收官",
-          "command_reports_to": "A0"
+          "grade": "E2",
+          "grade_note": "补档初始档，待 KPI 观察后调整",
+          "attributes": {},
+          "reports_to": "ACAD1",
+          "parent_node_keys": [
+            "acad1_core"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-v4-pro",
+            "ollama/qwen3.5:9b"
+          ],
+          "binding_source": "registry/model_policy.yaml",
+          "name": "庞统·策略",
+          "cn_name": "庞统·策略",
+          "actual_position": "市场策略研究员（US/CRYPTO）",
+          "command_seat": "研究院·策略研究",
+          "status": "active",
+          "onboarded_at": "2026-11-01",
+          "office_title": "市场策略研究员",
+          "cn_name_note": "与 T1「庞统」显式消歧（K-ORG-20261101-STRAT2FIX）；名号权威=hr/STRAT2/resume.yaml",
+          "org_note": "2026-11-16 老田裁定补入 org 正式编制（此前仅 team_academy，标 team_only）"
         }
       ],
       "lead_appointed": {
@@ -3543,7 +3626,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "水镜"
+          "cn_name": "水镜",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "TDX1",
@@ -3560,7 +3645,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "韦昭"
+          "cn_name": "韦昭",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "MANCHONG1",
@@ -3577,7 +3664,9 @@
           "memory_grants": [],
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "KGMAP1",
@@ -3594,7 +3683,9 @@
           "grade": "E2",
           "grade_note": "入编初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "郑玄"
+          "cn_name": "郑玄",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "WORDC1",
@@ -3611,7 +3702,9 @@
           "grade": "E2",
           "grade_note": "入编初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "陈琳"
+          "cn_name": "陈琳",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "LINEAGE1",
@@ -3628,7 +3721,9 @@
           "grade": "E2",
           "grade_note": "入编初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "谯周"
+          "cn_name": "谯周",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "INTEL0",
@@ -3651,7 +3746,12 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "马超",
+          "name": "马超",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部主官（lead_duty：每日汇总报 A0））"
         },
         {
           "agent_id": "BEACON1",
@@ -3666,7 +3766,9 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "周泰"
+          "cn_name": "周泰",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "OSINT1",
@@ -3683,7 +3785,9 @@
           "grade": "E1",
           "grade_note": "初立待调档（两天实测 KPI 已在 experience，观察期后议）",
           "attributes": {},
-          "cn_name": "马良·军情司"
+          "cn_name": "马良·军情司",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "ANALYST1",
@@ -3698,7 +3802,9 @@
           "grade": "E1",
           "grade_note": "初立待调档（632 code 存量消化与首批 track record 回填为观察期 KPI）",
           "attributes": {},
-          "cn_name": "马谡·军情司"
+          "cn_name": "马谡·军情司",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "MAJUN1",
@@ -3713,7 +3819,9 @@
           "grade": "E2",
           "grade_note": "KG 仓既有产出在案（因子工程 R1-R4），观察期后议调档",
           "attributes": {},
-          "cn_name": "马钧·军情司"
+          "cn_name": "马钧·军情司",
+          "reports_to": "INTEL0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 情报部 lead=INTEL0（该 lead 自身汇报线待补））"
         }
       ],
       "lead_appointed": {
@@ -3766,7 +3874,9 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 通信与客户服务部主官（lead_duty：每日汇总报 A0））"
         },
         {
           "agent_id": "DENGZHI1",
@@ -3783,7 +3893,12 @@
           "attributes": {},
           "persona": {
             "name": "邓芝"
-          }
+          },
+          "cn_name": "邓芝",
+          "name": "邓芝",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "LUSU1",
+          "reports_to_source": "2026-11-16 建议案落地（依据 通信与客户服务部 lead=LUSU1（该 lead 自身汇报线待补））"
         }
       ],
       "lead_appointed": {
@@ -3804,8 +3919,9 @@
       "charter": "直属参谋长田丰，独立表态（LEG1 判例）；MASS 喂养体系归口：流程优化（OPT1）与成对判读（A0 评估者席位）",
       "agents": [
         "OPT1",
-        "A0",
-        "A0A"
+        "A0A",
+        "GUANYU",
+        "HUANGZHONG"
       ],
       "agent_profiles": [
         {
@@ -3848,7 +3964,12 @@
               "execute": [],
               "danger": "deny"
             }
-          }
+          },
+          "cn_name": "枣祗",
+          "name": "枣祗",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 直属参谋长线 lead=A0（已有汇报线））"
         },
         {
           "agent_id": "A0",
@@ -3941,7 +4062,10 @@
           "command_seat": "指挥部·参谋长",
           "reports_to": "老田",
           "onboarded_at": "2026-11-04",
-          "office_title": "幕府参谋长"
+          "office_title": "幕府参谋长",
+          "cn_name": "田丰",
+          "name": "田丰",
+          "cn_name_source": "hr resume 回填（2026-11-16）"
         },
         {
           "agent_id": "A0A",
@@ -3997,7 +4121,127 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "董允",
+          "name": "董允",
+          "cn_name_source": "hr resume 回填（2026-11-16）",
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 直属参谋长线 lead=A0（已有汇报线））"
+        },
+        {
+          "agent_id": "GUANYU",
+          "cn_name": "关羽",
+          "cn_name_note": "名号权威同 hr/GUANYU/resume.yaml（cn_origin=云长·武圣）；2026-10-27 老田令入编（工单 WO-GUANYU-SEAT-20261027）——研究院新增 E3 管理席，与 AI1 诸葛亮平级",
+          "role_profile": "guanyu_code_audit_governance",
+          "analysis_type": "code_audit_governance",
+          "charter_detail": "代码审计与系统整治席（E3 管理席，与 AI1 诸葛亮平级，汇报线 ACAD1→A0）：①代码审计（漏洞/规范/技术债，P0/P1/P2 定级）②测试大修复（失败基线/时间炸弹/flaky/隔离）③编码规范制定与门禁落地 ④无用代码清理与重复功能合并建议（L2 需 A0 批，删除走回收站）⑤只出报告与工单，不自行合并；开发权=独立 worktree 提交+跑测试，合并/上线须 L2 人签；danger=deny，不碰凭据/生产数据/运行中服务",
+          "llm_binding": "deepseek/deepseek-flash",
+          "binding_note": "2026-10-27 入编：DSH（DeepSeek Harness）会话载体，模型实名同 engine/deepseek.py DEFAULT_MODEL=deepseek-flash，org 绑定按 provider/model 写法用 deepseek/ 前缀；本席未接入 llm_gateway/_PREFIX_OWNS_MODEL（若后续接入 8796/会议厅须先补 deepseek 前缀路由，否则整串 binding 会被当 model 传入）",
+          "tools": [
+            "quality_gate",
+            "devtask",
+            "events"
+          ],
+          "tools_note": "均取 org 既有合法工具名（org 内无 code_audit/test_repair 独立工具，故用等价既有工具并如实标注）：quality_gate=只读质量门（compileall/端口注册/明文凭据扫描）；devtask=工单/worktree/评审门；events=事件层留痕。tools 校验：quality_gate 有 agent_platform/tools 实现，devtask/events 属平台内置工具；无危险工具，danger=deny",
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/*",
+              "agent/GUANYU/*"
+            ],
+            "write": [
+              "agent/GUANYU/*"
+            ]
+          },
+          "grade": "E3",
+          "grade_note": "30年档·管理席：代码审计与系统整治席，与 AI1 诸葛亮平级（ACAD1→A0）；只出报告与工单，L2 人签",
+          "attributes": {
+            "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
+            "specialties": [
+              "代码审计（漏洞/规范/技术债）",
+              "测试大修复（失败基线/时间炸弹/flaky/隔离）",
+              "编码规范与门禁（pre-commit/AST/CI）",
+              "无用代码清理与重复功能合并建议",
+              "审计报告与工单闭环"
+            ],
+            "knowledge": [
+              "AI工程实践知识库.md",
+              "测试规范知识库.md"
+            ],
+            "tools_allowed": {
+              "read": [
+                "*"
+              ],
+              "write": [
+                "agent/GUANYU/**"
+              ],
+              "execute": [
+                "devtask",
+                "python",
+                "pytest"
+              ],
+              "danger": "deny"
+            }
+          },
+          "llm_fallback": [
+            "ollama/qwen3.5:9b"
+          ],
+          "reports_to": "A0",
+          "parent_node_keys": [],
+          "academy_status": "liaison",
+          "actual_position": "整治官（代码审计/技术债）",
+          "command_seat": "指挥部·整治官",
+          "onboarded_at": "2026-11-04",
+          "office_title": "整治官（代码审计/技术债）",
+          "command_reports_to": "A0",
+          "dept_reassign_note": "2026-11-16 老田裁定：指挥部直属，从研究院移出；command_seat 不变"
+        },
+        {
+          "agent_id": "HUANGZHONG",
+          "cn_name": "黄忠",
+          "cn_name_note": "2026-10-27 老田令：指挥部五席之一，入编研究院",
+          "role_profile": "delivery_acceptance_chief",
+          "analysis_type": "delivery_acceptance",
+          "charter_detail": "指挥部老将·验收守门官（E3，与 AI1 诸葛亮平级）：独立验收/质量终检/上线前把关；只验不改、只退不批；观察模式不阻断 merge；对证据负责，最终准入由老田人工决定",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "2026-10-27 老田令入编指挥部（工单 K-QUANT-20261027-COMMANDHQ）",
+          "tools": [
+            "quality_gate",
+            "test_baseline",
+            "zhuge_redteam",
+            "huangzhong_accept",
+            "repair_lane_read",
+            "trace"
+          ],
+          "tools_note": "只读验收：QualityGate/基线/红队/验收工具/修复车道读取/trace；不可写业务代码、不可改 org/bundle、不可代批",
+          "memory_grants": [],
+          "grade": "E3",
+          "grade_note": "指挥部老将席",
+          "attributes": {
+            "skills": [
+              "acceptance_criteria_design",
+              "quality_gate",
+              "test_baseline",
+              "redteam_review",
+              "rollback_evidence",
+              "readonly_boundary",
+              "pytest_triage",
+              "trace_observability",
+              "diff_review",
+              "kpi_metrics"
+            ],
+            "learning_path": "docs/plans/2026-10-28_黄忠技能清单与共享资能_v1.md",
+            "skill_manifest": "agent_platform/skills/huangzhong/SKILL.md"
+          },
+          "reports_to": "A0",
+          "parent_node_keys": [],
+          "academy_status": "liaison",
+          "actual_position": "验收官",
+          "command_seat": "指挥部·验收官",
+          "onboarded_at": "2026-11-04",
+          "office_title": "验收官",
+          "command_reports_to": "A0",
+          "dept_reassign_note": "2026-11-16 老田裁定：指挥部直属，从研究院移出；command_seat 不变"
         }
       ],
       "teams": [],
@@ -4067,12 +4311,14 @@
               "danger": "deny"
             }
           },
-          "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3"
+          "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3",
+          "reports_to": "R3",
+          "reports_to_source": "2026-11-16 建议案落地（依据 风控部 lead=R3（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "R2",
           "role_profile": "risk_conservative_sentinel",
-          "cn_name": "赵云",
+          "cn_name": "赵云·风控",
           "display_name": "赵云·风控R2",
           "charter_detail": "保守风控哨=子龙一身是胆稳字当头；保守线止损与回撤守门",
           "llm_binding": "ollama/qwen3.5:9b",
@@ -4109,7 +4355,11 @@
               "danger": "deny"
             }
           },
-          "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3"
+          "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3",
+          "name": "赵云·风控",
+          "cn_name_note": "与指挥部治理官 ZHAOYUN「赵云」显式消歧（老田 2026-11-16 02:03 裁定）；ZHAOYUN 属 profile_seats 不占编，R2 为风控部保守哨兵",
+          "reports_to": "R3",
+          "reports_to_source": "2026-11-16 建议案落地（依据 风控部 lead=R3（该 lead 自身汇报线待补））"
         },
         {
           "agent_id": "R3",
@@ -4158,7 +4408,9 @@
           ],
           "llm_fallbacks": [
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "reports_to": "A0",
+          "reports_to_source": "2026-11-16 建议案落地（依据 风控部主官（lead_duty：每日汇总报 A0））"
         }
       ],
       "teams": [],
