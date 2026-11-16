@@ -133,6 +133,39 @@ def test_debate_only_when_opposed(monkeypatch):
     assert res["changed"] is True                            # bull/bear → neutral
 
 
+def test_should_debate_gate():
+    """只在立场正好相反时触发；同向/未知/中性/关轮数都不辩。"""
+    assert rd.should_debate("bull", "bear", 2) is True
+    assert rd.should_debate("bear", "bull", 2) is True
+    assert rd.should_debate("bull", "bull", 2) is False
+    assert rd.should_debate("bear", "bear", 2) is False
+    assert rd.should_debate("bull", "unknown", 2) is False
+    assert rd.should_debate("unknown", "bear", 2) is False
+    assert rd.should_debate("neutral", "bear", 2) is False
+    assert rd.should_debate("bull", "bear", 0) is False      # --debate-rounds 0 关闭
+
+
+def test_debate_log_keeps_both_sides_text(monkeypatch):
+    """辩论日志必须同时留下双方原话（可复核），而不只是最终 stance。"""
+    seats = {"T1": _seat("bull"), "T2": _seat("bear"),
+             "N1": _seat("unknown"), "F1": _seat("unknown")}
+    seq = iter([
+        {"stance": "bull", "confidence": 0.5, "verdict": "T1轮1：我承认高位，但无派发信号"},
+        {"stance": "bear", "confidence": 0.6, "verdict": "T2轮1：无派发不等于安全，事件未核验"},
+    ])
+
+    def fake_call(client, system, user, model, max_tokens):
+        r = next(seq)
+        return {"ok": True, "mode": "normal", "elapsed_ms": 1, "raw_head": "",
+                "result": r, "error": ""}
+
+    monkeypatch.setattr(rd, "_call", fake_call)
+    res = rd.run_debate(FakeClient([]), {"code": "X"}, {}, seats, {}, "m", 100, rounds=1)
+    r0 = res["rounds"][0]
+    assert "我承认高位" in r0["T1"]["verdict"] and "无派发不等于安全" in r0["T2"]["verdict"]
+    assert r0["T1"]["mode"] == "normal" and r0["T2"]["mode"] == "normal"
+
+
 def test_upsert_index_dedup(tmp_path, monkeypatch):
     idx = tmp_path / "research_index.jsonl"
     monkeypatch.setattr(rd, "INDEX", idx)

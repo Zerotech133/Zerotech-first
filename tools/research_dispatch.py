@@ -219,6 +219,14 @@ def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: 
     return out
 
 
+def should_debate(t1_stance: str, t2_stance: str, rounds: int) -> bool:
+    """辩论触发条件：轮数>0 且 T1/T2 立场正好相反（bull vs bear）。
+
+    同向（如都 bull）或任一方 unknown/neutral 时不辩——避免无意义成本（每轮每只多 2 次调用）。
+    """
+    return rounds > 0 and {str(t1_stance), str(t2_stance)} == {"bull", "bear"}
+
+
 def _stance(res: dict) -> str:
     r = (res or {}).get("result") or {}
     return str(r.get("stance") or "unknown")
@@ -392,7 +400,7 @@ def main(argv=None) -> int:
 
         debate = None
         sa, sb = _stance(seats.get("T1")), _stance(seats.get("T2"))
-        if args.debate_rounds > 0 and {sa, sb} == {"bull", "bear"}:
+        if should_debate(sa, sb, args.debate_rounds):
             log("  %s 立场对立(T1=%s/T2=%s) → 辩论 %d 轮" % (code, sa, sb, args.debate_rounds))
             debate = run_debate(client, item, cards, seats, xs, args.model,
                                 args.max_tokens, args.debate_rounds)
