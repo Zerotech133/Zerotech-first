@@ -239,7 +239,13 @@ def test_upstream_normal(upstream_dir):
     assert p["total"] == 3
     assert p["by_verdict"] == {"OK": 1, "GONE": 1, "CALIBER": 1}
     assert p["by_state"] == {"ACTIVE": 1, "STALLED": 0, "GONE": 1, "UNDECIDABLE": 1}
-    assert "total_exact_note" in p and "估算下限" in p["total_exact_note"]
+    # 2026-11-16 勘误：note 不再声称 total 是「估算下限」——实测它偏高估
+    # （ts_daily +132.8%、ts_income ×51.8，判据为 offset 越过声称行数后返回空）。
+    # 两头都锁：新口径必须在，旧口径必须不在，否则文案被改回去测试不会响。
+    assert "total_exact_note" in p
+    _note = p["total_exact_note"]
+    assert "偏高估" in _note and "offset" in _note
+    assert "估算下限" not in _note and "下限" not in _note
     states = {it["table"]: it["state"] for it in p["items"]}
     assert states == {"adj_factor": "ACTIVE", "ts_delisted": "GONE", "shibor": "UNDECIDABLE"}
 

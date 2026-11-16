@@ -68,8 +68,14 @@ VERDICT_STATE = {
 SLA_NOTE = "stale 仅含超出频率 SLA 的表，非全表新鲜度总览；同源同日止步不等于批次未跑。"
 BATCH_NOTE = "batch_profile 回答『哪些表没被最近批次覆盖』，不能读成『采集挂了』。"
 TOTAL_EXACT_NOTE = (
-    "xtcloud /api/data/table 的 total_exact=false 时 remote_rows 为估算下限（48 张表受影响），"
-    "非精确行数；本响应为报告快照，非实时探测。"
+    # 2026-11-16 复核勘误：原文写「total_exact=false 时 remote_rows 为估算下限」，两处不实。
+    # ① remote_rows 取自 /api/data/status 的 rows，与 offset 越界实测一致，是可信值；
+    #    它和查询返回体的 total/total_exact 不是同一个数，不能拿后者给前者定性。
+    # ② total 不是「下限」而是偏高估：ts_daily 报 19,200,353 而真实约 8.25M（+132.8%），
+    #    ts_income 报 17,971,605 而真实 347,031（×51.8）。判据为 offset 越过声称行数后返回空。
+    "remote_rows 取自 xtcloud /api/data/status 的 rows（与 offset 越界实测一致，可作行数依据）；"
+    "接口查询返回体中的 total / total_exact 是另一个数，2026-11-16 实测 total 偏高估，"
+    "不得用于估算页数或容量，分页请以 offset 递增至返回空行为止。本响应为报告快照，非实时探测。"
 )
 
 # 进程内 TTL 缓存：{endpoint: {"ts": monotonic, "generated_at": iso, "data": {...}}}
