@@ -52,7 +52,46 @@ import threading
 import time
 
 DEFAULT_BASE = "http://rookie.xtcloud-tech.com:48088"
-INTRANET_BASE = "http://192.168.203.48:8088"
+# 2026-11-11 起内网直连机由 192.168.203.48 迁到 192.168.203.13（旧机仅留回滚备份）
+INTRANET_BASE = "http://192.168.203.13:8088"
+
+
+def _api_key():
+    """TDX 服务 API Key。
+
+    2026-11-16 起服务端 `auth_mode=enforce`：无凭证 `GET /api/*` 一律 401。
+
+    来源：环境变量 `TDX_API_KEY` > 向上找到的仓库根 `.env.local`（已 gitignore）。
+    缺 Key 立刻抛错 —— 不让请求静默 401 后被当成「这只票没数据」
+    （同 2026-11-16 抑制令判例：读不到 ≠ 没有）。
+    """
+    k = (os.environ.get("TDX_API_KEY") or "").strip()
+    if k:
+        return k
+    d = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        f = os.path.join(d, ".env.local")
+        if os.path.isfile(f):
+            try:
+                with open(f, encoding="utf-8-sig") as fh:
+                    for raw in fh:
+                        raw = raw.strip()
+                        if raw.startswith("TDX_API_KEY="):
+                            v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                            if v:
+                                return v
+            except OSError:
+                pass
+            # 不 break：本层 .env.local 没有该键就继续向上（就近优先，
+            # 避免浅层空文件遮住深层配置 —— quant_backtest/.env.local 就踩过这个）
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    raise RuntimeError(
+        "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权（auth_mode=enforce）。"
+        "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>"
+    )
 
 # 本地 stk_mins parquet 的列序（xtcloud 返回的是 freq 在前、close 在 low 后，
 # 顺序不同，写盘前必须重排，否则 datamart 读出来的 open/close 会错位）
@@ -89,7 +128,8 @@ class XtCloud:
                     # 坑 1：不走系统代理。7890 是给 github/pypi 的，内网服务走它会超时。
                     s.trust_env = False
                     s.proxies = {"http": None, "https": None}
-                    s.headers.update({"User-Agent": "jev-xtcloud/1.0"})
+                    s.headers.update({"User-Agent": "jev-xtcloud/1.0",
+                                      "X-API-Key": _api_key()})
                     self._sess = s
         return self._sess
 

@@ -33,7 +33,8 @@ CACHE_DIR = os.path.join(HERE, "data", "tdx_api", "ts_stk_limit")
 
 BASES = (
     "http://rookie.xtcloud-tech.com:48088",
-    "http://192.168.203.48:8088",
+    # 2026-11-11 起内网直连机由 192.168.203.48 迁到 192.168.203.13（旧机仅留回滚备份）
+    "http://192.168.203.13:8088",
 )
 PAGE_LIMIT = 5000
 RETRIES = 3
@@ -43,17 +44,66 @@ SESSION = requests.Session()
 SESSION.headers["User-Agent"] = "qpzm-p0/1.0 (tdx_api_client)"
 
 
+def _api_key():
+    """TDX 服务 API Key。
+
+    2026-11-16 起服务端 `auth_mode=enforce`：无凭证 `GET /api/*` 一律 401。
+    （本文件原注释写「该 API 无鉴权」——那条已于 2026-11-16 作废。）
+
+    来源：环境变量 `TDX_API_KEY` > 向上找到的仓库根 `.env.local`（已 gitignore）。
+    刻意不设默认值：缺 Key 立刻报错，而不是让请求静默 401 后被当成「没有数据」
+    （同 2026-11-16 抑制令判例：读不到 ≠ 没有）。
+    """
+    k = (os.environ.get("TDX_API_KEY") or "").strip()
+    if k:
+        return k
+    d = HERE
+    for _ in range(6):
+        f = os.path.join(d, ".env.local")
+        if os.path.isfile(f):
+            try:
+                with open(f, encoding="utf-8-sig") as fh:
+                    for raw in fh:
+                        raw = raw.strip()
+                        if raw.startswith("TDX_API_KEY="):
+                            v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                            if v:
+                                return v
+            except OSError:
+                pass
+            # 不 break：本层 .env.local 没有该键就继续向上（就近优先，
+            # 避免浅层空文件遮住深层配置 —— quant_backtest/.env.local 就踩过这个）
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    raise RuntimeError(
+        "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权（auth_mode=enforce）。"
+        "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>"
+    )
+
+
 def _get(path, params):
     """带重试 + 双 base 回退的 GET，返回 dict。"""
     last = None
+    headers = {"X-API-Key": _api_key()}
     for base in BASES:
         for i in range(RETRIES):
             try:
                 r = SESSION.get(
-                    base + path, params=params, timeout=TIMEOUT
+                    base + path, params=params, headers=headers, timeout=TIMEOUT
                 )
+                if r.status_code == 401:
+                    raise RuntimeError(
+                        "TDX 401 unauthorized —— API Key 无效/已停用/已过期"
+                        "（服务端 auth_mode=enforce）")
+                if r.status_code == 403:
+                    raise RuntimeError("TDX 403 forbidden —— 凭证有效但权限不足（需 read scope）")
                 r.raise_for_status()
                 return r.json()
+            except (RuntimeError, ValueError):
+                # 鉴权/解码失败不是网络抖动，重试无意义，直接抛出
+                raise
             except Exception as ex:  # noqa: BLE001 网络类异常统一退避重试
                 last = ex
                 time.sleep(2 ** i)
