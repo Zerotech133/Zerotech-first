@@ -172,6 +172,43 @@ def events_profile(code: str, timeout: int = 90) -> dict:
         return {}
 
 
+def volume_profile(code: str, timeout: int = 90) -> dict:
+    """调 tools/volume_profile.py 取量能画像（TDX 合作伙伴 API）。"""
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, "-X", "utf8",
+                            str(REPO / "tools" / "volume_profile.py"), code, "--json"],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", timeout=timeout, cwd=str(REPO))
+        if not (r.stdout or "").strip().startswith("{"):
+            return {}
+        doc = json.loads(r.stdout)
+        return doc if doc.get("available") else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def slim_vol(p: dict) -> dict:
+    if not p:
+        return {}
+    out = {}
+    d = p.get("daily") or {}
+    if d:
+        out["daily"] = {k: d.get(k) for k in
+                         ("last_date", "close", "pct_chg", "vol_ratio_20", "vol_ma20",
+                          "high20", "breakout_with_volume", "shrink_pullback",
+                          "volume_price", "vol_unit") if d.get(k) is not None}
+    iv = p.get("intraday") or {}
+    if iv:
+        out["intraday"] = {k: iv.get(k) for k in
+                            ("date", "bars", "open30_share", "close30_share",
+                             "am_share", "pm_share", "peak_time", "vol_unit") if iv.get(k) is not None}
+    for k in ("unit_check", "warnings"):
+        if p.get(k):
+            out[k] = p[k]
+    return out
+
+
 def slim_events(p: dict) -> dict:
     if not p:
         return {}
@@ -193,7 +230,7 @@ def slim_fin(p: dict) -> dict:
 
 def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
                  fin: dict | None = None, sent: dict | None = None,
-                 events: dict | None = None) -> tuple[str, str]:
+                 events: dict | None = None, vol: dict | None = None) -> tuple[str, str]:
     role, focus = SEAT_SPEC[seat]
     system = (
         "你是数字军团投研席位 %s（%s），岗位：%s。%s\n"
@@ -216,6 +253,8 @@ def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
         material["sentiment_profile"] = sent
     if events:                            # 公告对所有席位都相关（事件核验是共同前提）
         material["events_profile"] = events
+    if vol and seat in ("T1", "T2"):     # 量能给多空双方（T1 一直喊缺这个）
+        material["volume_profile"] = vol
     user = ("标的材料（ACAD1 池条目 + xsec 漏斗报告，均为原始字段）：\n%s\n\n"
             "请按此 JSON 结构输出你的结论：%s\n"
             "篇幅硬约束：points ≤ %d 条、risks ≤ %d 条、evidence_missing ≤ %d 条，"
@@ -339,8 +378,9 @@ def _call(client, system: str, user: str, model: str, max_tokens: int,
 
 def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
              xsec: dict | None = None, fin: dict | None = None,
-             sent: dict | None = None, events: dict | None = None) -> dict:
-    system, user = build_prompt(seat, item, card, xsec, fin, sent, events)
+             sent: dict | None = None, events: dict | None = None,
+             vol: dict | None = None) -> dict:
+    system, user = build_prompt(seat, item, card, xsec, fin, sent, events, vol)
     out = _call(client, system, user, model, max_tokens)
     out["seat"] = seat
     out["phase"] = "open"
@@ -659,7 +699,7 @@ def main(argv=None) -> int:
     ap.add_argument("--pool-date", default=None)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--model", default="deepseek-flash")
-    ap.add_argument("--max-tokens", type=int, default=4000)
+    ap.add_argument("--max-tokens", type=int, default=6000)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only", default="")
     ap.add_argument("--no-xsec", action="store_true")
@@ -667,6 +707,7 @@ def main(argv=None) -> int:
     ap.add_argument("--no-sent", action="store_true", help="不附带舆情画像")
     ap.add_argument("--no-final", action="store_true", help="不启用决胜席（只用票数规则）")
     ap.add_argument("--no-events", action="store_true", help="不附带公告事件")
+    ap.add_argument("--no-vol", action="store_true", help="不附带量能画像")
     ap.add_argument("--sell-policy", choices=("technical", "valuation"), default="technical",
                     help="SELL 依据口径：technical=需技术面破位（默认，保守）；valuation=估值/资金偏空即可")
     ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
@@ -703,6 +744,11 @@ def main(argv=None) -> int:
         fin = {} if args.no_fin else slim_fin(finance_profile(code))
         sent = {} if args.no_sent else slim_sent(sentiment_profile(code))
         ev = {} if args.no_events else slim_events(events_profile(code))
+        vl = {} if args.no_vol else slim_vol(volume_profile(code))
+        if vl:
+            log("  %s volume 量比=%s 结构=%s" % (code,
+                (vl.get("daily") or {}).get("vol_ratio_20"),
+                (vl.get("daily") or {}).get("volume_price")))
         if ev:
             log("  %s events 近%d天%d条 last=%s" % (code, ev.get("window_days"),
                 ev.get("window_count") or 0, ev.get("last_date")))
@@ -719,7 +765,7 @@ def main(argv=None) -> int:
                 {k: v for k, v in (xs.get("ops_hit") or {}).items() if v}))
         seats = {}
         for seat in SEATS:
-            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin, sent, ev)
+            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin, sent, ev, vl)
             seats[seat] = r
             log("  %s %s ok=%s mode=%s %sms %s" % (code, seat, r["ok"], r["mode"], r["elapsed_ms"],
                                                    (r["result"] or {}).get("verdict", "")[:50]))
