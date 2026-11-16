@@ -340,6 +340,30 @@ try {
             foreach ($l in $fnLines) { Write-TaskLog $l }
         }
     }
+    # 发布集自检：对外三页的 md5 锁有没有被改动过。
+    # 为什么必须每天跑：这把锁此前只是一份记录 —— 全仓没有任何程序读过 publish_set
+    # 里的 md5/size，页面被悄悄改掉也不会响。check_houfeng_publish.py 是唯一读它的地方。
+    # 失败不改退出码：发布集被改动不是产线故障，是「需要重新批准的事实」——
+    # 退出码只答产线跑完了吗。但必须留下可 grep 的 PUB: 行，否则等于没跑。
+    # 注意这里不能只看 $LASTEXITCODE：校验器 FAIL 时正常返回 1，脚本崩溃也可能返回 1，
+    # 两者处置完全不同（前者是要人来批的事，后者是自检本身坏了），故按输出行判定。
+    $pubPy  = Join-Path $root 'portal\check_houfeng_publish.py'
+    $pubOut = (& $py -X utf8 $pubPy 2>&1 | Out-String -Width 4096)
+    $pubFails = @($pubOut -split "`r?`n" | Where-Object { $_ -match '^\[FAIL\]' })
+    $pubSum   = ($pubOut -split "`r?`n" | Where-Object { $_ -match '^结论 ' } | Select-Object -Last 1)
+    if ($pubOut -match 'Traceback') {
+        Write-TaskOut 'pub' $pubOut 8
+        Write-TaskLog 'WARN: 发布集自检崩溃（Traceback），本次未验证锁'
+    } elseif ($pubFails.Count -gt 0) {
+        Write-TaskOut 'pub' $pubOut 8
+        foreach ($f in $pubFails) { Write-TaskLog ('PUB: ' + $f.Trim()) }
+        Write-TaskLog ('PUB: FAIL ' + $pubSum + ' | 发布集已变更，需重新批准后方可视为对外承诺')
+    } elseif ($pubSum) {
+        Write-TaskLog ('PUB: ' + $pubSum)
+    } else {
+        Write-TaskOut 'pub' $pubOut 8
+        Write-TaskLog 'WARN: 发布集自检既无结论行也无 FAIL 行，按未验证处理'
+    }
     Write-TaskLog '===== houfeng_daily done ====='
     exit 0
 } catch {
