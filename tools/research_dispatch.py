@@ -1,27 +1,18 @@
 # -*- coding: utf-8 -*-
-"""投研派活器：把池内标的真正送进 T1/T2/N1/F1 四席位（2026-11-16 WO-RESEARCH-DISPATCH）。
+"""投研派活器：池内标的 → T1/T2/N1/F1 四席位 →（对立时）辩论 → 结构化结果
 
-## 背景
+2026-11-16 WO-RESEARCH-DISPATCH v2：按「菜鸟系统」的 Agent 团队契约补齐三项——
+- **C 执行三态**：`normal / debate / degraded`（`no_json`/超时不再混成"席位缺席"）
+- **A 结果契约**：`recommendation_level` 五档 + `confidence_score` 0-100 +
+  `risk_level` + `time_horizon`（`target_price` 无可靠源时留 null，不编造）
+- **B 辩论**：T1↔T2 立场相反时互辩 2 轮，落 `debate_log`，用辩论后立场汇总
 
-诊断结论（2026-11-16）：
-- 12 席**在岗**（09:20 心跳全绿）；
-- 但池内 30 只全是 `action=pending_analysis`、`analyses={}`、`recommendation=null`
-  —— **有工人、有工位、没有工单**。
+参考：`C:\\项目\\_archive\\2026-10-27_code-cleanup\\菜鸟\\菜鸟系统深度研究_选股与情报体系.md`
+（`ai_team_role` 的 is_debate_node/debate_partner_key/max_debate_rounds、
+ `ai_team_node_execute` 的 execution_mode/debate_log、
+ `ai_team_result_summary` 的五档+confidence_score+risk_level+target_price+time_horizon）
 
-本工具补的就是"工单通道"：读池 → 生成四席位工单 → 调席位 → 汇总 → 落可追溯文件。
-
-## 边界（重要）
-
-- **不写 PG**：`v2_acad1_pool` 是 ACAD1 的只读真源（projection 里写明"不写库"）。
-  `action=analyzed` 只能由 ACAD1 侧改；本工具把结果落到
-  `agent_platform/data/research/<date>/<code>.json` 与 `research_index.jsonl`，供下游消费。
-- 每个席位**只出结构化结论**（JSON），不写长文、不调工具；
-- 缺数据时明确说"缺"，不许编；
-- 一次一只、可 `--limit` 控制，失败不影响其他。
-
-    python -X utf8 tools/research_dispatch.py --limit 1 --dry-run   # 看 prompt
-    python -X utf8 tools/research_dispatch.py --limit 1             # 真跑一只
-    python -X utf8 tools/research_dispatch.py                       # 跑池内全部 CN
+边界：不写 PG；不许编造；产出落 `data/research/<date>/<code>.json`；索引按 (code, pool_date) 去重。
 """
 from __future__ import annotations
 
@@ -38,7 +29,9 @@ DATA = PLATFORM / "data"
 OUT_ROOT = DATA / "research"
 INDEX = DATA / "research_index.jsonl"
 POOL_API = "http://127.0.0.1:8091/api/acad1/pool"
+
 SEATS = ("T1", "T2", "N1", "F1")
+DEBATE_PAIR = ("T1", "T2")          # 多头 ↔ 空头
 SEAT_SPEC = {
     "T1": ("多头研究员", "只找**支持买入**的证据：结构/量价/资金/催化。没有就直说没有。"),
     "T2": ("空头研究员", "只找**反对买入**的证据：破位/背离/估值/筹码/利空。没有就直说没有。"),
@@ -48,10 +41,14 @@ SEAT_SPEC = {
 SCHEMA = ("{\"stance\":\"bull|bear|neutral|unknown\",\"points\":[\"...\"],"
           "\"risks\":[\"...\"],\"evidence_missing\":[\"...\"],\"verdict\":\"一句话\","
           "\"confidence\":0.0}")
-# 输出长度硬约束：实测 T1 接 xsec 后会写超 3000 token 被截断 → JSON 解析失败（no_json），
-# 席位在汇总里"消失"。既提高 token 预算，也在 prompt 里限条数与字数。
 MAX_POINTS = 5
 MAX_CHARS_PER_POINT = 80
+
+# 执行三态（对齐菜鸟 ai_team_node_execute.execution_mode）
+MODE_NORMAL, MODE_DEBATE, MODE_DEGRADED = "normal", "debate", "degraded"
+
+SEAT_CARD_FILE = {"T1": "t1_bull.md", "T2": "t2_bear.md",
+                  "N1": "n1_sentiment.md", "F1": "f1_fundamental.md"}
 
 
 def log(msg: str) -> None:
@@ -71,12 +68,7 @@ def _client():
     return deepseek.DeepSeekClient()
 
 
-SEAT_CARD_FILE = {"T1": "t1_bull.md", "T2": "t2_bear.md",
-                  "N1": "n1_sentiment.md", "F1": "f1_fundamental.md"}
-
-
 def load_cards() -> dict:
-    """席位卡真源 = `agent_platform/prompts/<seat>.md`（心跳配置只有名单，没有职责正文）。"""
     out = {}
     for seat, fn in SEAT_CARD_FILE.items():
         p = PLATFORM / "prompts" / fn
@@ -90,10 +82,6 @@ def load_cards() -> dict:
 
 
 def xsec_profile(code: str, timeout: int = 90) -> dict:
-    """调 tools/xsec_profile.py 取漏斗报告（图形假设 + 事件/资金佐证）。
-
-    失败返回 {}——材料不足时席位会自己写进 evidence_missing，不阻塞整轮。
-    """
     import subprocess
     try:
         r = subprocess.run([sys.executable, "-X", "utf8",
@@ -108,7 +96,6 @@ def xsec_profile(code: str, timeout: int = 90) -> dict:
 
 
 def slim_xsec(p: dict) -> dict:
-    """只保留席位用得上的部分，避免 prompt 过长。"""
     if not p:
         return {}
     f = p.get("funnel") or {}
@@ -152,33 +139,28 @@ def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None) ->
     return system, user
 
 
-def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
-             xsec: dict | None = None) -> dict:
-    system, user = build_prompt(seat, item, card, xsec)
-    t0 = time.time()
-    err = ""
-    text = ""
-    for _ in range(2):
-        try:
-            full = getattr(client, "chat_full", None)
-            if callable(full):
-                data = full([{"role": "system", "content": system},
-                             {"role": "user", "content": user}],
-                            model=model, temperature=0.2, max_tokens=max_tokens) or {}
-                text = str(data.get("content") or "").strip()
-            else:
-                text = str(client.chat([{"role": "system", "content": system},
-                                        {"role": "user", "content": user}],
-                                       model=model, temperature=0.2,
-                                       max_tokens=max_tokens) or "").strip()
-        except Exception as exc:  # noqa: BLE001
-            err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
-            text = ""
-        if text:
-            break
-    payload = _parse_json(text)
-    return {"seat": seat, "ok": bool(payload), "elapsed_ms": int((time.time() - t0) * 1000),
-            "raw_head": text[:200], "result": payload, "error": err or ("" if payload else "no_json")}
+def build_debate_prompt(seat: str, item: dict, card: dict, mine: dict, theirs: dict,
+                        opponent: str, round_no: int, rounds: int, xsec: dict | None) -> tuple[str, str]:
+    """辩论轮：把对方论据摆给对方，要求针对性反驳并可修正立场（对齐菜鸟 debate 节点）。"""
+    role, focus = SEAT_SPEC[seat]
+    system = (
+        "你是数字军团投研席位 %s（%s），岗位：%s。%s\n"
+        "现在是第 %d/%d 轮辩论：对手 %s 已给出如下结论。你必须**逐条针对性回应**——"
+        "承认对方成立的点、指出你不认同的点及依据；允许据实修改自己的 stance，但不得为了『和稀泥』而改。\n"
+        "硬规则：只用给定材料与对方论据；不许编造；只输出 JSON。"
+        % (seat, card.get("cn_name") or seat, card.get("role_cn") or role, focus,
+           round_no, rounds, opponent)
+    )
+    material = {
+        "code": item.get("code"),
+        "my_previous": mine,
+        "opponent_previous": theirs,
+        "xsec_profile": xsec or {},
+    }
+    user = ("辩论材料：\n%s\n\n请按此 JSON 结构输出本轮结论：%s\n"
+            "篇幅硬约束：points ≤ %d 条、每条 ≤ %d 字。"
+            % (json.dumps(material, ensure_ascii=False), SCHEMA, MAX_POINTS, MAX_CHARS_PER_POINT))
+    return system, user
 
 
 def _parse_json(text: str) -> dict | None:
@@ -198,8 +180,150 @@ def _parse_json(text: str) -> dict | None:
         return None
 
 
+def _call(client, system: str, user: str, model: str, max_tokens: int) -> dict:
+    """统一调用 + 三态判定：normal 有 JSON；degraded 有输出但解析失败/异常；超时也算 degraded。"""
+    t0 = time.time()
+    raw = ""
+    err = ""
+    for _ in range(2):
+        try:
+            full = getattr(client, "chat_full", None)
+            msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+            if callable(full):
+                data = full(msgs, model=model, temperature=0.2, max_tokens=max_tokens) or {}
+                raw = str(data.get("content") or "").strip()
+            else:
+                raw = str(client.chat(msgs, model=model, temperature=0.2,
+                                      max_tokens=max_tokens) or "").strip()
+        except Exception as exc:  # noqa: BLE001
+            err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+            raw = ""
+        if raw:
+            break
+    parsed = _parse_json(raw)
+    if parsed:
+        mode = MODE_NORMAL
+    else:
+        mode = MODE_DEGRADED          # 有输出但解析不了、或彻底失败，都算降级
+    return {"ok": bool(parsed), "mode": mode, "elapsed_ms": int((time.time() - t0) * 1000),
+            "raw_head": raw[:200], "result": parsed,
+            "error": err or ("" if parsed else ("no_json" if raw else "empty_reply"))}
+
+
+def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
+             xsec: dict | None = None) -> dict:
+    system, user = build_prompt(seat, item, card, xsec)
+    out = _call(client, system, user, model, max_tokens)
+    out["seat"] = seat
+    out["phase"] = "open"
+    return out
+
+
+def _stance(res: dict) -> str:
+    r = (res or {}).get("result") or {}
+    return str(r.get("stance") or "unknown")
+
+
+def run_debate(client, item: dict, cards: dict, seats: dict, xsec: dict | None,
+               model: str, max_tokens: int, rounds: int = 2) -> dict:
+    """T1↔T2 互辩。返回 {rounds:[{round, a, b}], final:{T1,T2}, changed:bool}。"""
+    a, b = DEBATE_PAIR
+    log_rounds = []
+    changed = False
+    cur = {a: seats[a], b: seats[b]}
+    for r in range(1, rounds + 1):
+        new = {}
+        for me, opp in ((a, b), (b, a)):
+            mine = (cur[me].get("result") or {})
+            theirs = (cur[opp].get("result") or {})
+            system, user = build_debate_prompt(me, item, cards.get(me) or {}, mine, theirs,
+                                               opp, r, rounds, xsec)
+            got = _call(client, system, user, model, max_tokens)
+            got["seat"] = me
+            got["phase"] = "debate_r%d" % r
+            new[me] = got
+            log("    %s %s 轮%d stance=%s ok=%s" % (item.get("code"), me, r,
+                                                    _stance(got), got["ok"]))
+        if _stance(new[a]) != _stance(cur[a]) or _stance(new[b]) != _stance(cur[b]):
+            changed = True
+        log_rounds.append({"round": r,
+                           a: {"stance": _stance(new[a]), "verdict": ((new[a].get("result") or {}).get("verdict") or "")[:200],
+                               "ok": new[a]["ok"], "mode": new[a]["mode"]},
+                           b: {"stance": _stance(new[b]), "verdict": ((new[b].get("result") or {}).get("verdict") or "")[:200],
+                               "ok": new[b]["ok"], "mode": new[b]["mode"]}})
+        cur = {a: new[a] if new[a]["ok"] else cur[a],
+               b: new[b] if new[b]["ok"] else cur[b]}
+    return {"rounds": log_rounds, "final": cur, "changed": changed}
+
+
+def _risk_level(bull: int, bear: int, unk: int, degraded: int) -> str:
+    """风险等级：空头占优或席位大面积降级 → HIGH；分歧/部分未知 → MEDIUM；其余 LOW。"""
+    if bear >= 2 or degraded >= 2:
+        return "HIGH"
+    if bear >= 1 or unk >= 2 or degraded == 1:
+        return "MEDIUM"
+    return "LOW"
+
+
+def summarize(code: str, seats: dict, debate: dict | None = None) -> dict:
+    """汇总为菜鸟式契约：五档 + 0-100 + risk_level + time_horizon。
+
+    target_price 无可靠来源 → 一律 null 并注明（不编造）。
+    """
+    got = {k: v for k, v in seats.items() if v.get("ok") and isinstance(v.get("result"), dict)}
+    degraded = [k for k, v in seats.items() if v.get("mode") == MODE_DEGRADED]
+    stances = {k: _stance(v) for k, v in got.items()}
+    confs = []
+    for v in got.values():
+        try:
+            c = float((v.get("result") or {}).get("confidence") or 0)
+        except (TypeError, ValueError):
+            c = 0.0
+        confs.append(c if c > 1 else c * 100)      # 席位给 0-1，统一到 0-100
+    bull = sum(1 for s in stances.values() if s == "bull")
+    bear = sum(1 for s in stances.values() if s == "bear")
+    neu = sum(1 for s in stances.values() if s == "neutral")
+    unk = sum(1 for s in stances.values() if s == "unknown")
+    avg = round(sum(confs) / len(confs), 1) if confs else 0.0
+
+    if not got:
+        level, conf, why = "UNKNOWN", 0.0, "四席位均未产出可用结论"
+    elif bear >= 2:
+        level = "STRONG_SELL" if (bear >= 3 or avg >= 60) else "SELL"
+        conf, why = round(avg * 0.8, 1), "空头证据占多数（%d 席看空）" % bear
+    elif bull >= 2 and bear == 0:
+        level = "STRONG_BUY" if (bull >= 3 and avg >= 60) else "BUY"
+        conf, why = avg, "多头证据成立且无空头反对（%d 席看多）" % bull
+    else:
+        level, conf = "HOLD", round(avg * 0.9, 1)
+        if bull and bear:
+            why = "多空对立（多%d/空%d）" % (bull, bear)
+        elif bull or bear:
+            why = "单边有立场但反方无证据（多%d/空%d/中%d/未%d）" % (bull, bear, neu, unk)
+        elif neu:
+            why = "四席均中性，无方向（中%d/未%d）" % (neu, unk)
+        else:
+            why = "四席均无立场（证据不足；降级 %d 席）" % len(degraded)
+
+    horizon = "SHORT" if level in ("BUY", "STRONG_BUY", "SELL", "STRONG_SELL") else "MEDIUM"
+    return {
+        "recommendation_level": level,
+        "confidence_score": conf,                      # 0-100
+        "risk_level": _risk_level(bull, bear, unk, len(degraded)),
+        "time_horizon": horizon,
+        "target_price_min": None,                      # 无可靠来源，留空不编造
+        "target_price_max": None,
+        "target_price_note": "缺行情/估值模型输出，按规则留空",
+        "rationale": why,
+        "stances": stances,
+        "stance_counts": {"bull": bull, "bear": bear, "neutral": neu, "unknown": unk},
+        "seats_ok": len(got), "seats_degraded": len(degraded), "seats_total": len(SEATS),
+        "debated": bool(debate and debate.get("rounds")),
+        "debate_changed": bool(debate and debate.get("changed")),
+    }
+
+
 def upsert_index(row: dict) -> None:
-    """按 (code, pool_date) 去重后重写——重跑同一只不产生重复行。"""
     key = (row["code"], row["pool_date"])
     rows = {}
     if INDEX.is_file():
@@ -214,55 +338,18 @@ def upsert_index(row: dict) -> None:
     with INDEX.open("w", encoding="utf-8") as fh:
         for k in sorted(rows):
             fh.write(json.dumps(rows[k], ensure_ascii=False) + "\n")
-def summarize(code: str, seats: dict) -> dict:
-    """汇总四席位 → 一句合计结论。规则透明、可复核。"""
-    got = {k: v for k, v in seats.items() if v.get("ok") and isinstance(v.get("result"), dict)}
-    stances = {k: str(v["result"].get("stance") or "unknown") for k, v in got.items()}
-    confs = []
-    for v in got.values():
-        try:
-            confs.append(float(v["result"].get("confidence") or 0))
-        except (TypeError, ValueError):
-            pass
-    bull = sum(1 for s in stances.values() if s == "bull")
-    bear = sum(1 for s in stances.values() if s == "bear")
-    neu = sum(1 for s in stances.values() if s == "neutral")
-    unk = sum(1 for s in stances.values() if s == "unknown")
-    missing_seats = len(SEATS) - len(got)
-    if not got:
-        rec, conf = "UNKNOWN", 0.0
-        why = "四席位均未产出可用结论"
-    elif bear >= 2:
-        rec, conf = "AVOID", round(sum(confs) / max(1, len(confs)) * 0.8, 3)
-        why = "空头证据占多数（%d 席看空）" % bear
-    elif bull >= 2 and bear == 0:
-        rec, conf = "BUY", round(sum(confs) / max(1, len(confs)), 3)
-        why = "多头证据成立且无空头反对（%d 席看多）" % bull
-    else:
-        rec, conf = "HOLD", round(sum(confs) / max(1, len(confs)) * 0.9, 3)
-        # 文案按实际构成分开写：全未知 ≠ 分歧 ≠ 全中性
-        if bull and bear:
-            why = "多空对立（多%d/空%d）" % (bull, bear)
-        elif bull or bear:
-            why = "单边有立场但反方无证据（多%d/空%d/中%d/未%d）" % (bull, bear, neu, unk)
-        elif neu:
-            why = "四席均中性，无方向（中%d/未%d）" % (neu, unk)
-        else:
-            why = "四席均无立场（证据不足；未产出 %d 席）" % missing_seats
-    return {"recommendation": rec, "confidence": conf, "rationale": why,
-            "stances": stances, "seats_ok": len(got), "seats_total": len(SEATS),
-            "stance_counts": {"bull": bull, "bear": bear, "neutral": neu, "unknown": unk}}
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="投研派活：池内标的 → T1/T2/N1/F1")
-    ap.add_argument("--pool-date", default=None, help="缺省取池的 pool_date")
-    ap.add_argument("--limit", type=int, default=0, help="只处理前 N 只（0=全部 CN）")
+    ap = argparse.ArgumentParser(description="投研派活：池内标的 → 四席位 → 辩论 → 结构化结果")
+    ap.add_argument("--pool-date", default=None)
+    ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--model", default="deepseek-flash")
-    ap.add_argument("--max-tokens", type=int, default=3000)
+    ap.add_argument("--max-tokens", type=int, default=4000)
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--only", default="", help="只处理指定代码（逗号分隔）")
-    ap.add_argument("--no-xsec", action="store_true", help="不附带 xsec 漏斗报告")
+    ap.add_argument("--only", default="")
+    ap.add_argument("--no-xsec", action="store_true")
+    ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
     args = ap.parse_args(argv)
 
     pool = fetch_pool()
@@ -274,7 +361,8 @@ def main(argv=None) -> int:
         items = [x for x in items if str(x.get("code")) in want]
     if args.limit:
         items = items[: args.limit]
-    log("POOL day=%s CN=%d source_mode=%s" % (day, len(items), pool.get("source_mode")))
+    log("POOL day=%s CN=%d source_mode=%s debate_rounds=%d"
+        % (day, len(items), pool.get("source_mode"), args.debate_rounds))
     if not items:
         log("NO_ITEMS 无可处理标的")
         return 0
@@ -299,24 +387,45 @@ def main(argv=None) -> int:
         for seat in SEATS:
             r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs)
             seats[seat] = r
-            log("  %s %s ok=%s %sms %s" % (code, seat, r["ok"], r["elapsed_ms"],
-                                           (r["result"] or {}).get("verdict", "")[:60]))
-        summary = summarize(code, seats)
-        doc = {"schema": "research_dispatch/v1", "code": code, "name": item.get("name"),
+            log("  %s %s ok=%s mode=%s %sms %s" % (code, seat, r["ok"], r["mode"], r["elapsed_ms"],
+                                                   (r["result"] or {}).get("verdict", "")[:50]))
+
+        debate = None
+        sa, sb = _stance(seats.get("T1")), _stance(seats.get("T2"))
+        if args.debate_rounds > 0 and {sa, sb} == {"bull", "bear"}:
+            log("  %s 立场对立(T1=%s/T2=%s) → 辩论 %d 轮" % (code, sa, sb, args.debate_rounds))
+            debate = run_debate(client, item, cards, seats, xs, args.model,
+                                args.max_tokens, args.debate_rounds)
+            for k, v in debate["final"].items():
+                seats[k] = v
+            log("  %s 辩论后 T1=%s T2=%s 改变=%s"
+                % (code, _stance(debate["final"].get("T1")), _stance(debate["final"].get("T2")),
+                   debate["changed"]))
+
+        summary = summarize(code, seats, debate)
+        modes = {"normal": 0, "degraded": 0, "debate": 0}
+        for v in seats.values():
+            modes[v.get("mode") or "normal"] = modes.get(v.get("mode"), 0) + 1
+        doc = {"schema": "research_dispatch/v2", "code": code, "name": item.get("name"),
                "pool_date": day, "data_date": item.get("data_date"),
-               "seats": seats, "summary": summary,
+               "seats": seats, "debate_log": (debate or {}).get("rounds"),
+               "summary": summary, "modes": modes,
                "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
                "model": args.model, "paper_only": True, "not_a_trade": True,
-               "source_note": "ACAD1 池条目 + 四席位结论；不写 PG、不构成交易指令"}
+               "source_note": "ACAD1 池条目 + xsec 漏斗 + 四席位（含辩论）；不写 PG、不构成交易指令"}
         path = out_dir / ("%s.json" % code)
         path.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         upsert_index({"code": code, "pool_date": day,
-                      "recommendation": summary["recommendation"],
-                      "confidence": summary["confidence"],
+                      "recommendation": summary["recommendation_level"],
+                      "confidence": summary["confidence_score"],
+                      "risk_level": summary["risk_level"],
                       "seats_ok": summary["seats_ok"],
+                      "seats_degraded": summary["seats_degraded"],
                       "file": str(path.relative_to(REPO))})
-        log("  -> %s %s conf=%.2f (%s)" % (code, summary["recommendation"],
-                                           summary["confidence"], path.name))
+        log("  -> %s %s conf=%.1f risk=%s ok=%d/4 degraded=%d%s"
+            % (code, summary["recommendation_level"], summary["confidence_score"],
+               summary["risk_level"], summary["seats_ok"], summary["seats_degraded"],
+               " 辩论过" if summary["debated"] else ""))
         ok_n += 1 if summary["seats_ok"] else 0
 
     log("SUMMARY processed=%d seats_productive=%d out=%s" % (len(items), ok_n, out_dir))
