@@ -158,6 +158,8 @@ def main(argv=None) -> int:
     ap.add_argument("--market", default="CN",
                     help="只处理该市场（默认 CN；HK/US/CRYPTO 暂无行情源，交棒会跳过）")
     ap.add_argument("--no-handoff", action="store_true", help="只写裁决不交棒")
+    ap.add_argument("--max-age-days", type=int, default=3,
+                    help="池日距今超过该天数则拒绝裁决（默认 3，防用过期池）")
     ap.add_argument("--handoff-only", action="store_true",
                     help="补交棒模式：跳过「已判」过滤，对池内 BUY 全部走一次（裁决 POST 幂等返回原记录）")
     ap.add_argument("--interval", type=float, default=INTERVAL)
@@ -177,6 +179,23 @@ def main(argv=None) -> int:
         log("REFUSED 池来源已退化（source_mode=%s, degraded_reason=%s）→ 不拿退化数据裁决；"
             "先修 PG 或其投影。" % (mode, pool.get("degraded_reason")))
         return 2
+    # 陈旧守卫（时间维度）：池日距今过久、或上游自标 stale → 不裁过期数据。
+    # 注意：池 API 的 `stale` 只算「数据日 vs 池日」的滞后，抓不到「projection 文件本身停在几天前」，
+    # 所以这里额外按 pool_date 距今的天数兜一层。
+    age = 999
+    try:
+        age = (dt.date.today() - dt.date.fromisoformat(pool_date)).days
+    except ValueError:
+        pass
+    if age > args.max_age_days:
+        log("REFUSED 池日 %s 距今 %d 天 > 阈值 %d 天 → 不用过期池裁决（修上游后重跑）"
+            % (pool_date, age, args.max_age_days))
+        return 2
+    if pool.get("stale") is True:
+        # `stale` 是「池内数据日 vs 池日」的滞后提示（实测 2026-11-16 的 CN 用的还是 11-13 行情，
+        # freshness_days=3 → stale=True），周末/盘前属正常，**不能据此硬拒**，只留痕。
+        log("WARN 上游自标 stale=true（freshness_days=%s, data_date=%s）→ 数据滞后属常态，继续但留痕"
+            % (pool.get("freshness_days"), pool.get("data_date")))
     if not pool_date or not items:
         # projection 是**单日视图**（实测 2026-11-16 的单日只有 HK10/CRYPTO1，CN 为 0），
         # 而 CN 标的只在 PG 的聚合视图里。此时"0 条"不是"今天没活"，是"通道缺数据"。

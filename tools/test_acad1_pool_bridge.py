@@ -96,6 +96,35 @@ def test_shadow_source_refused(monkeypatch, tmp_path):
     assert "池来源已退化" in text and "shadow" in text
 
 
+def test_pool_too_old_refused(monkeypatch, tmp_path):
+    """池日距今超过 max_age_days → REFUSED（防用过期池）。"""
+    monkeypatch.setattr(br, "LOG", tmp_path / "log.txt")
+    monkeypatch.setattr(br, "fetch_pool", lambda timeout=20: {
+        "pool_date": "2026-11-10", "source_mode": "pg_official_aggregated",
+        "stale": True, "freshness_days": 6, "count": 1,
+        "items": [{"code": "001326.SZ", "market": "CN"}],
+    })
+    assert br.main(["--dry-run"]) == 2
+    assert "不用过期池裁决" in (tmp_path / "log.txt").read_text(encoding="utf-8")
+
+
+def test_stale_true_but_fresh_is_only_warned(monkeypatch, tmp_path):
+    """pool_date=今天但上游标 stale（周末/盘前常态）→ 只 WARN，不拒。"""
+    import datetime as _dt
+    today = _dt.date.today().isoformat()
+    monkeypatch.setattr(br, "LOG", tmp_path / "log.txt")
+    monkeypatch.setattr(br, "fetch_pool", lambda timeout=20: {
+        "pool_date": today, "data_date": today, "source_mode": "pg_official_aggregated",
+        "stale": True, "freshness_days": 3, "count": 1,
+        "items": [{"code": "001326.SZ", "market": "CN", "signal": "CHAN",
+                   "selection_reason": "基础信号：买点", "score": 100.0}],
+    })
+    rc = br.main(["--dry-run"])
+    assert rc == 0
+    text = (tmp_path / "log.txt").read_text(encoding="utf-8")
+    assert "WARN 上游自标 stale=true" in text and "数据滞后属常态" in text
+
+
 def test_judged_reads_source_and_pool_date(tmp_path, monkeypatch):
     f = tmp_path / "d.jsonl"
     f.write_text("\n".join([
