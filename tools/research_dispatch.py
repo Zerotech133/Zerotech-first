@@ -129,6 +129,29 @@ def finance_profile(code: str, timeout: int = 90) -> dict:
         return {}
 
 
+def sentiment_profile(code: str, timeout: int = 90) -> dict:
+    """调 tools/sentiment_profile.py 取舆情/关注度信号（本地互动易/户数/资金流）。"""
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, "-X", "utf8",
+                            str(REPO / "tools" / "sentiment_profile.py"), code, "--json"],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", timeout=timeout, cwd=str(REPO))
+        if not (r.stdout or "").strip().startswith("{"):
+            return {}
+        doc = json.loads(r.stdout)
+        return doc if doc.get("available") else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def slim_sent(p: dict) -> dict:
+    if not p:
+        return {}
+    keep = ("qa", "holders", "moneyflow", "warnings")
+    return {k: p[k] for k in keep if p.get(k)}
+
+
 def slim_fin(p: dict) -> dict:
     """F1/T2 用得上的字段；不含推断值。"""
     if not p:
@@ -141,7 +164,7 @@ def slim_fin(p: dict) -> dict:
 
 
 def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
-                 fin: dict | None = None) -> tuple[str, str]:
+                 fin: dict | None = None, sent: dict | None = None) -> tuple[str, str]:
     role, focus = SEAT_SPEC[seat]
     system = (
         "你是数字军团投研席位 %s（%s），岗位：%s。%s\n"
@@ -160,6 +183,8 @@ def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
         material["xsec_profile"] = xsec
     if fin and seat in ("F1", "T2"):     # 基本面给 F1；T2 需要估值/财报做反证
         material["finance_profile"] = fin
+    if sent and seat in ("N1", "T2"):    # 舆情给 N1；T2 也要看资金/关注度
+        material["sentiment_profile"] = sent
     user = ("标的材料（ACAD1 池条目 + xsec 漏斗报告，均为原始字段）：\n%s\n\n"
             "请按此 JSON 结构输出你的结论：%s\n"
             "篇幅硬约束：points ≤ %d 条、risks ≤ %d 条、evidence_missing ≤ %d 条，"
@@ -241,8 +266,9 @@ def _call(client, system: str, user: str, model: str, max_tokens: int) -> dict:
 
 
 def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
-             xsec: dict | None = None, fin: dict | None = None) -> dict:
-    system, user = build_prompt(seat, item, card, xsec, fin)
+             xsec: dict | None = None, fin: dict | None = None,
+             sent: dict | None = None) -> dict:
+    system, user = build_prompt(seat, item, card, xsec, fin, sent)
     out = _call(client, system, user, model, max_tokens)
     out["seat"] = seat
     out["phase"] = "open"
@@ -388,6 +414,7 @@ def main(argv=None) -> int:
     ap.add_argument("--only", default="")
     ap.add_argument("--no-xsec", action="store_true")
     ap.add_argument("--no-fin", action="store_true", help="不附带财务画像")
+    ap.add_argument("--no-sent", action="store_true", help="不附带舆情画像")
     ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
     args = ap.parse_args(argv)
 
@@ -420,6 +447,11 @@ def main(argv=None) -> int:
         code = str(item.get("code"))
         xs = {} if args.no_xsec else slim_xsec(xsec_profile(code))
         fin = {} if args.no_fin else slim_fin(finance_profile(code))
+        sent = {} if args.no_sent else slim_sent(sentiment_profile(code))
+        if sent:
+            log("  %s sentiment qa=%s holders=%s" % (code,
+                (sent.get("qa") or {}).get("window_qa"),
+                (sent.get("holders") or {}).get("holder_num")))
         if fin:
             log("  %s finance roe=%s margin=%s" % (code,
                 (fin.get("profitability") or {}).get("roe"),
@@ -429,7 +461,7 @@ def main(argv=None) -> int:
                 {k: v for k, v in (xs.get("ops_hit") or {}).items() if v}))
         seats = {}
         for seat in SEATS:
-            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin)
+            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin, sent)
             seats[seat] = r
             log("  %s %s ok=%s mode=%s %sms %s" % (code, seat, r["ok"], r["mode"], r["elapsed_ms"],
                                                    (r["result"] or {}).get("verdict", "")[:50]))
