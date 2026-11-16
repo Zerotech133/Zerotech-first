@@ -92,7 +92,7 @@ def test_reconcile_detects_code_set_mismatch(tmp_path, monkeypatch):
 
 def test_main_check_returns_nonzero_on_mismatch(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(rc, "DATA", _seed(tmp_path, n=2, dup=True))
-    monkeypatch.setattr(rc, "pool_cn_count", lambda timeout=15: 2)
+    monkeypatch.setattr(rc, "pool_cn_codes", lambda timeout=15: {"600000.SH", "600001.SH"})
     assert rc.main(["--pool-date", DATE, "--check"]) == 1
     out = capsys.readouterr().out
     assert "RECONCILE FAIL" in out
@@ -100,7 +100,7 @@ def test_main_check_returns_nonzero_on_mismatch(tmp_path, monkeypatch, capsys):
 
 def test_main_markdown_output(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(rc, "DATA", _seed(tmp_path, n=1))
-    monkeypatch.setattr(rc, "pool_cn_count", lambda timeout=15: 1)
+    monkeypatch.setattr(rc, "pool_cn_codes", lambda timeout=15: {"600000.SH"})
     assert rc.main(["--pool-date", DATE, "--markdown"]) == 0
     out = capsys.readouterr().out
     assert out.startswith("| 产出 | 实测 | 期望 | 结果 |")
