@@ -49,6 +49,13 @@
       "label": "四组统一总榜40(部分种子)",
       "xq_include": false,
       "note": "当前仅含 R20 确认 16 只盲区(13 已补+3 合法空/源边界)，全 40 只 v3 总榜待老田补登后 xq_include 再评估"
+    },
+    "picks_daily": {
+      "file": "target_queue_picks.json",
+      "scope": "all",
+      "label": "中台出票(n_hit>=2 ∪ T2，49只)",
+      "xq_include": true,
+      "note": "CR-20261116-02 选项A，老田 2026-11-16 10:22 配准。逐日滚动，由 build_queue_picks.py 生成（含 generator/rule/source_file 溯源字段）。只纳入高命中子集，全量 649 只超 07:00 单轮窗口，未纳入。"
     }
   }
 }

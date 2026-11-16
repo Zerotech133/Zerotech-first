@@ -5,6 +5,7 @@ sentiment_card.py（六源情绪卡）→ market_sentiment.py（市场级指数�
 顺序执行，日志落 logs/sentiment_snapshot.log（append）。
 设计约束：pythonw 无控制台（print 落 None 安全 no-op），全程落文件。
 """
+import json
 import subprocess
 import sys
 import os
@@ -35,9 +36,100 @@ def _clean_env():
     return env
 
 
+# ── 雪球当日覆盖完整性（CR-20261114-02 选项 C，老田 2026-11-16 10:22 配准）
+# 背景：SentimentSnapshot 固定 08:00 读当日雪球落盘。正常档 37 分钟（07:37 完成）有余量；
+# 降速档 89 分钟（08:29 完成）会跨过 08:00，快照读到半截数据而**无从察觉**。
+# 本判据只做「显式标注」，不改任何调度时间、不改 sentiment_card 既有 schema——
+# 完整性以独立文件承载，避免动到下游门户正在读的结构。
+XQ_MIN_RATIO = 0.95   # DEFAULT 经验值，非裁定；改阈值归上级
+COMPLETE_F = os.path.join(HERE, "data", "sentiment_completeness.json")
+
+
+def xq_completeness(now=None):
+    """读「雪球全队列」与「尝试账本」，判断当日 08:00 时是否已跑完。
+
+    返回 xq_complete：True 跑完 / False 未跑完 / None 无法判定（队列或账本不可读）。
+    None 不等于 False——「不知道」不能冒充「不完整」，否则天天报假警。
+    """
+    now = now or datetime.now()
+    info = {"asof": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "xq_queue": None, "xq_attempted_today": 0, "xq_coverage": None,
+            "threshold": XQ_MIN_RATIO, "xq_complete": None, "reason": ""}
+    try:
+        if HERE not in sys.path:
+            sys.path.insert(0, HERE)
+        import xq_stock_timeline as X   # 必须复用采集器口径，避免两套分母
+        queue = X.load_queue("all")
+    except Exception as exc:  # noqa: BLE001
+        info["reason"] = "队列读取失败 %s: %s" % (type(exc).__name__, exc)
+        return info
+    n = len(queue)
+    info["xq_queue"] = n
+    if not n:
+        info["reason"] = "队列为空"
+        return info
+
+    ledger = os.path.join(HERE, "data", "xq_timeline", "_attempt.json")
+    if not os.path.exists(ledger):
+        info["reason"] = "尝试账本不存在（雪球当日可能尚未运行）"
+        return info
+    try:
+        d = json.load(open(ledger, encoding="utf-8"))
+        box = d.get("stocks") or d.get("codes") or d
+        today = now.date().isoformat()
+        tried = 0
+        for k in queue:
+            v = box.get(k)
+            if v is None:
+                continue
+            try:
+                dt = datetime.fromtimestamp(float(v))
+            except (TypeError, ValueError):
+                continue
+            if dt.date().isoformat() == today:
+                tried += 1
+    except Exception as exc:  # noqa: BLE001
+        info["reason"] = "账本读取失败 %s: %s" % (type(exc).__name__, exc)
+        return info
+
+    info["xq_attempted_today"] = tried
+    info["xq_coverage"] = round(1.0 * tried / n, 4)
+    info["xq_complete"] = info["xq_coverage"] >= XQ_MIN_RATIO
+    if not info["xq_complete"]:
+        info["reason"] = ("当日覆盖 %d/%d = %.1f%%，未达阈值 %.0f%%，"
+                          "快照可能读到半截数据" % (tried, n, 100.0 * tried / n,
+                                                    XQ_MIN_RATIO * 100))
+    return info
+
+
+def _save_completeness(info):
+    """原子写；失败只吞掉，绝不因「标注失败」阻断快照本身。"""
+    try:
+        os.makedirs(os.path.dirname(COMPLETE_F), exist_ok=True)
+        tmp = COMPLETE_F + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(info, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, COMPLETE_F)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _fmt_comp(info):
+    if info.get("xq_complete") is None:
+        return "unknown（%s）" % (info.get("reason") or "-")
+    return "%d/%d = %.1f%% → %s" % (
+        info["xq_attempted_today"], info["xq_queue"], info["xq_coverage"] * 100,
+        "complete" if info["xq_complete"] else "INCOMPLETE")
+
+
 def main():
     os.makedirs(os.path.dirname(LOG_F), exist_ok=True)
     lines = ["== run %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+    comp = xq_completeness()
+    _save_completeness(comp)
+    lines.append("== xq 完整性 " + _fmt_comp(comp))
     rcs = []
     for script in SCRIPTS:
         try:

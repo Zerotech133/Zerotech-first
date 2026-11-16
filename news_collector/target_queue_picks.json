@@ -1,0 +1,554 @@
+{
+ "asof": "2026-11-13",
+ "generator": "build_queue_picks.py",
+ "rule": "n_hit>=2 or tier==T2",
+ "source_file": "todays_20261113.json",
+ "source_generated_at": "2026-11-13 18:20:16",
+ "source_trade_basis": "2026-11-13 收盘（行情湖 ts_daily 最新可得交易日）",
+ "n_source": 649,
+ "n_picked": 49,
+ "built_at": "2026-11-16 10:24:03",
+ "all": [
+  {
+   "code": "000710",
+   "name": "贝瑞基因",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "医疗保健"
+  },
+  {
+   "code": "000782",
+   "name": "恒申新材",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "qpzm"
+   ],
+   "industry": "化纤"
+  },
+  {
+   "code": "000993",
+   "name": "闽东电力",
+   "tier": "T3",
+   "n_hit": 3,
+   "strategies": [
+    "ninedim",
+    "qpzm",
+    "weak"
+   ],
+   "industry": "水力发电"
+  },
+  {
+   "code": "001216",
+   "name": "华瓷股份",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "家居用品"
+  },
+  {
+   "code": "001330",
+   "name": "博纳影业",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "weak"
+   ],
+   "industry": "影视音像"
+  },
+  {
+   "code": "002029",
+   "name": "七匹狼",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "服饰"
+  },
+  {
+   "code": "002058",
+   "name": "紫竹高科",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "电气设备"
+  },
+  {
+   "code": "002172",
+   "name": "澳洋健康",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "医疗保健"
+  },
+  {
+   "code": "002349",
+   "name": "精华制药",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "weak"
+   ],
+   "industry": "中成药"
+  },
+  {
+   "code": "002614",
+   "name": "奥佳华",
+   "tier": "T2",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "ninedim"
+   ],
+   "industry": "家用电器"
+  },
+  {
+   "code": "002811",
+   "name": "郑中设计",
+   "tier": "T2",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "ninedim"
+   ],
+   "industry": "装修装饰"
+  },
+  {
+   "code": "002815",
+   "name": "崇达技术",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "元器件"
+  },
+  {
+   "code": "002913",
+   "name": "奥士康",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "元器件"
+  },
+  {
+   "code": "300364",
+   "name": "中文在线",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "出版业"
+  },
+  {
+   "code": "300413",
+   "name": "芒果超媒",
+   "tier": "T2",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "ninedim"
+   ],
+   "industry": "影视音像"
+  },
+  {
+   "code": "300489",
+   "name": "光智科技",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "专用机械"
+  },
+  {
+   "code": "300788",
+   "name": "中信出版",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "出版业"
+  },
+  {
+   "code": "300951",
+   "name": "博硕科技",
+   "tier": "T2",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "weak"
+   ],
+   "industry": "元器件"
+  },
+  {
+   "code": "301025",
+   "name": "读客文化",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "出版业"
+  },
+  {
+   "code": "301046",
+   "name": "能辉科技",
+   "tier": "T3",
+   "n_hit": 3,
+   "strategies": [
+    "ninedim",
+    "qpzm",
+    "weak"
+   ],
+   "industry": "建筑工程"
+  },
+  {
+   "code": "301047",
+   "name": "义翘神州",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "生物制药"
+  },
+  {
+   "code": "301080",
+   "name": "百普赛斯",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "生物制药"
+  },
+  {
+   "code": "301234",
+   "name": "五洲医疗",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "医疗保健"
+  },
+  {
+   "code": "301313",
+   "name": "凡拓数创",
+   "tier": "T2",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "ninedim"
+   ],
+   "industry": "文教休闲"
+  },
+  {
+   "code": "301513",
+   "name": "尚水智能",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "专用机械"
+  },
+  {
+   "code": "600127",
+   "name": "金健米业",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "农业综合"
+  },
+  {
+   "code": "600241",
+   "name": "时代万恒",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "电气设备"
+  },
+  {
+   "code": "600371",
+   "name": "万向德农",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "种植业"
+  },
+  {
+   "code": "600400",
+   "name": "红豆股份",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "服饰"
+  },
+  {
+   "code": "600403",
+   "name": "大有能源",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "weak"
+   ],
+   "industry": "煤炭开采"
+  },
+  {
+   "code": "600540",
+   "name": "新赛股份",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "种植业"
+  },
+  {
+   "code": "600641",
+   "name": "先导基电",
+   "tier": "T3",
+   "n_hit": 3,
+   "strategies": [
+    "ninedim",
+    "qpzm",
+    "weak"
+   ],
+   "industry": "半导体"
+  },
+  {
+   "code": "600825",
+   "name": "新华传媒",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "出版业"
+  },
+  {
+   "code": "601086",
+   "name": "国芳集团",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "百货"
+  },
+  {
+   "code": "601118",
+   "name": "海南橡胶",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "weak"
+   ],
+   "industry": "橡胶"
+  },
+  {
+   "code": "601811",
+   "name": "新华文轩",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "出版业"
+  },
+  {
+   "code": "601929",
+   "name": "吉视传媒",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "影视音像"
+  },
+  {
+   "code": "603122",
+   "name": "合富中国",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "医药商业"
+  },
+  {
+   "code": "603175",
+   "name": "超颖电子",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "qpzm"
+   ],
+   "industry": "元器件"
+  },
+  {
+   "code": "603268",
+   "name": "松发股份",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "船舶"
+  },
+  {
+   "code": "603727",
+   "name": "博迈科",
+   "tier": "T2",
+   "n_hit": 1,
+   "strategies": [
+    "chanlun"
+   ],
+   "industry": ""
+  },
+  {
+   "code": "605577",
+   "name": "龙版传媒",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "出版业"
+  },
+  {
+   "code": "688004",
+   "name": "博汇科技",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "qpzm"
+   ],
+   "industry": "软件服务"
+  },
+  {
+   "code": "688018",
+   "name": "乐鑫科技",
+   "tier": "T2",
+   "n_hit": 2,
+   "strategies": [
+    "chanlun",
+    "ninedim"
+   ],
+   "industry": "半导体"
+  },
+  {
+   "code": "688025",
+   "name": "杰普特",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "专用机械"
+  },
+  {
+   "code": "688026",
+   "name": "洁特生物",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "医疗保健"
+  },
+  {
+   "code": "688112",
+   "name": "鼎阳科技",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "qpzm",
+    "weak"
+   ],
+   "industry": "电器仪表"
+  },
+  {
+   "code": "688137",
+   "name": "近岸蛋白",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "生物制药"
+  },
+  {
+   "code": "688203",
+   "name": "海正生材",
+   "tier": "T3",
+   "n_hit": 2,
+   "strategies": [
+    "ninedim",
+    "weak"
+   ],
+   "industry": "塑料"
+  }
+ ]
+}
