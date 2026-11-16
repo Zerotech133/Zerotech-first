@@ -113,8 +113,17 @@ def market_breadth(cards):
         for name in SRC_WEIGHTS:
             v = (c.get("src") or {}).get(name)
             if v and isinstance(v, dict) and v.get("polarity") is not None:
-                ps.append(float(v["polarity"]) * v["n"])
-                ws.append(v["n"])
+                try:
+                    n = float(v.get("n") or 0)
+                except (TypeError, ValueError):
+                    n = 0.0
+                # n<=0 的源没有样本量，既不该进权重也不该进极性：
+                # 若照单全收，ws 非空但 sum(ws)==0，下一行 sum(ps)/sum(ws) 直接除零，
+                # 整个市场情绪段落崩掉（2026-11-16 08:13 判例：rc=1 连续中断）。
+                if n <= 0:
+                    continue
+                ps.append(float(v["polarity"]) * n)
+                ws.append(n)
         if not ws:
             continue
         tot += 1

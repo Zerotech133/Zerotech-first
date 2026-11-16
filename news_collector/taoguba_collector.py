@@ -50,6 +50,10 @@ _GAP = 2.0
 PARSE_EMPTY_PCT = 0.30      # 首页解析 0 行的占比上限
 PARSE_MIN_SAMPLE = 5        # 样本不足不判（手动跑 2-3 只不触发）
 
+# 源不覆盖的市场：这些前缀在淘股吧无个股版面，页面为「错误页面_淘股吧」。
+# 排除在护栏分母之外——否则「不适用」会被读成「解析失效」。
+UNSUPPORTED_PREFIX = ("92", "43", "83", "87", "88")
+
 RE_BLOCK = re.compile(r'<img class="headImg"', re.S)
 RE_AUTHOR = re.compile(r'href="https://www\.tgb\.cn/blog/(\d+)"[^>]*>([^<]{1,30})</a>')
 RE_TIME = re.compile(r'class="related-sources">(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*([^<]{2,6})<')
@@ -157,6 +161,13 @@ def judge_parse_empty(p1_ok, p1_empty, struct_bad, pct_limit=None,
     return "", 0
 
 
+def split_unsupported(queue):
+    """把源不覆盖的标的拆出来：(保留, 跳过)。纯函数，便于单测锁死 11-16 判例。"""
+    keep = [c for c in queue if str(c[0])[:2] not in UNSUPPORTED_PREFIX]
+    drop = [c for c in queue if str(c[0])[:2] in UNSUPPORTED_PREFIX]
+    return keep, drop
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("codes", nargs="?", default="", help="逗号分隔 6 位代码；缺省用队列")
@@ -174,6 +185,17 @@ def main():
         q = json.load(open(QUEUE_FILE, encoding="utf-8"))
         items = q.get("actionable") if args.queue == "actionable" else q.get("all")
         queue = [(it["code"].split(".")[0], it.get("name", "")) for it in items]
+
+    # 源不覆盖的市场必须先剔除，不能让它们进 parse_empty 护栏的分母（2026-11-16 判例）：
+    # 北交所 92/43/83/87/88 前缀在淘股吧没有个股版面，/quotes/<code> 返回
+    # 「错误页面_淘股吧」（实测 29739 字节、无 headImg 块），被计成「解析 0 行」后
+    # 13/16=81% > 30% → 每次 kstock 轮次都 rc=2 假警报，掩盖真正的挑战页故障。
+    unsupported = [c for c in queue if c[0][:2] in UNSUPPORTED_PREFIX]
+    queue, unsupported = split_unsupported(queue)
+    if unsupported:
+        print("[tgb] 跳过 %d 只：源不覆盖该市场（北交所 92/43/83/87/88 前缀无个股版面，"
+              "页面为「错误页面_淘股吧」），不计入 parse_empty 护栏分母：%s"
+              % (len(unsupported), ",".join(c[0] for c in unsupported[:12])), flush=True)
 
     os.makedirs(OUT_DIR, exist_ok=True)
     sess = requests.Session()
