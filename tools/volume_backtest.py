@@ -129,14 +129,42 @@ def summarize(hits: list[dict], kind: str) -> dict:
     return out
 
 
+def _universe(n: int, seed: int = 20261116) -> list[str]:
+    """从 ts_stock_basic 随机抽 n 只（排除北交所 92xxxx 与退市），可复现（固定 seed）。
+
+    扩大样本的目的：12 只池内标的的回放存在选择偏差（它们本身是今天被选中的票）。
+    """
+    import random
+    doc = vp._query("ts_stock_basic", {"limit": 6000})
+    rows = vp._rows(doc)
+    codes = []
+    for r in rows:
+        code = str(r.get("ts_code") or "")
+        if not code or code.startswith("92") or code.startswith("8"):
+            continue
+        if str(r.get("list_status") or "L") != "L":
+            continue
+        codes.append(code)
+    codes = sorted(set(codes))
+    random.Random(seed).shuffle(codes)
+    return codes[:n]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="量能信号历史回放")
     ap.add_argument("--codes", default="")
+    ap.add_argument("--universe", type=int, default=0,
+                    help="改为从全市场随机抽 N 只（排除北交所/退市），用于扩大样本")
+    ap.add_argument("--seed", type=int, default=20261116)
     ap.add_argument("--days", type=int, default=120, help="每只回看的交易日数")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 
-    codes = [c.strip() for c in args.codes.split(",") if c.strip()] or _pool_cn()
+    if args.universe:
+        codes = _universe(args.universe, args.seed)
+        print("UNIVERSE 随机抽样 %d 只（seed=%d）" % (len(codes), args.seed))
+    else:
+        codes = [c.strip() for c in args.codes.split(",") if c.strip()] or _pool_cn()
     if not codes:
         print("NO_CODES 池取不到，且未指定 --codes")
         return 2
