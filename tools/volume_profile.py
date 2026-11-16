@@ -31,7 +31,10 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-KEY_FILE = Path(r"C:\项目\_vault\secrets\tdx_api_key")
+# 2026-11-16：原为硬编码的本机私有区绝对路径，命中公开面 VAULT_PATH 规则
+# （路径会随 push 暴露本机目录结构）。改为配置化，与其余 9 个 TDX 调用方同一套：
+#   环境变量 TDX_API_KEY > 仓库根 .env.local 的同名项（.gitignore 已忽略）
+#   兜底才是本机约定文件（用 TDX_API_KEY_FILE 指定，仍不入库）
 BASE = "http://rookie.xtcloud-tech.com:48088"
 DAY_LOOKBACK = 30          # 日线回看交易日数
 
@@ -56,7 +59,39 @@ VALIDITY_SOURCE = "200只全市场随机×250交易日 回放（2026-11-16，see
 
 
 def _key() -> str:
-    return KEY_FILE.read_text(encoding="utf-8").strip()
+    """TDX 服务 API Key（2026-11-16 起服务端 auth_mode=enforce）。
+
+    顺序：环境变量 TDX_API_KEY > 仓库根 .env.local 的同名项
+          > 本机 vault 约定文件（TDX_API_KEY_FILE 指定）。
+    缺 Key 立刻抛错 —— 不让请求静默 401 后被当成「这只票没数据」。
+    """
+    k = (os.environ.get("TDX_API_KEY") or "").strip()
+    if k:
+        return k
+    d = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        envf = os.path.join(d, ".env.local")
+        if os.path.isfile(envf):
+            try:
+                with open(envf, encoding="utf-8-sig") as fh:
+                    for raw in fh:
+                        raw = raw.strip()
+                        if raw.startswith("TDX_API_KEY="):
+                            v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                            if v:
+                                return v
+            except OSError:
+                pass
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    legacy = os.environ.get("TDX_API_KEY_FILE")
+    if legacy and os.path.isfile(legacy):
+        return Path(legacy).read_text(encoding="utf-8").strip()
+    raise RuntimeError(
+        "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权。"
+        "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>")
 
 
 def _query(tbl: str, params: dict, timeout: int = 60) -> dict:
