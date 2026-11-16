@@ -156,6 +156,30 @@ def slim_sent(p: dict) -> dict:
     return {k: p[k] for k in keep if p.get(k)}
 
 
+def events_profile(code: str, timeout: int = 90) -> dict:
+    """调 tools/events_profile.py 取近期公告归类（本地 anns_d）。"""
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, "-X", "utf8",
+                            str(REPO / "tools" / "events_profile.py"), code, "--json"],
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8", errors="replace", timeout=timeout, cwd=str(REPO))
+        if not (r.stdout or "").strip().startswith("{"):
+            return {}
+        doc = json.loads(r.stdout)
+        return doc if doc.get("available") else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def slim_events(p: dict) -> dict:
+    if not p:
+        return {}
+    keep = ("window_days", "window_count", "last_date", "last_title",
+            "by_category", "attention_categories", "recent", "warnings")
+    return {k: p[k] for k in keep if p.get(k)}
+
+
 def slim_fin(p: dict) -> dict:
     """F1/T2 用得上的字段；不含推断值。"""
     if not p:
@@ -168,7 +192,8 @@ def slim_fin(p: dict) -> dict:
 
 
 def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
-                 fin: dict | None = None, sent: dict | None = None) -> tuple[str, str]:
+                 fin: dict | None = None, sent: dict | None = None,
+                 events: dict | None = None) -> tuple[str, str]:
     role, focus = SEAT_SPEC[seat]
     system = (
         "你是数字军团投研席位 %s（%s），岗位：%s。%s\n"
@@ -189,6 +214,8 @@ def build_prompt(seat: str, item: dict, card: dict, xsec: dict | None = None,
         material["finance_profile"] = fin
     if sent and seat in ("N1", "T2"):    # 舆情给 N1；T2 也要看资金/关注度
         material["sentiment_profile"] = sent
+    if events:                            # 公告对所有席位都相关（事件核验是共同前提）
+        material["events_profile"] = events
     user = ("标的材料（ACAD1 池条目 + xsec 漏斗报告，均为原始字段）：\n%s\n\n"
             "请按此 JSON 结构输出你的结论：%s\n"
             "篇幅硬约束：points ≤ %d 条、risks ≤ %d 条、evidence_missing ≤ %d 条，"
@@ -271,8 +298,8 @@ def _call(client, system: str, user: str, model: str, max_tokens: int) -> dict:
 
 def ask_seat(client, seat: str, item: dict, card: dict, model: str, max_tokens: int,
              xsec: dict | None = None, fin: dict | None = None,
-             sent: dict | None = None) -> dict:
-    system, user = build_prompt(seat, item, card, xsec, fin, sent)
+             sent: dict | None = None, events: dict | None = None) -> dict:
+    system, user = build_prompt(seat, item, card, xsec, fin, sent, events)
     out = _call(client, system, user, model, max_tokens)
     out["seat"] = seat
     out["phase"] = "open"
@@ -495,6 +522,7 @@ def main(argv=None) -> int:
     ap.add_argument("--no-fin", action="store_true", help="不附带财务画像")
     ap.add_argument("--no-sent", action="store_true", help="不附带舆情画像")
     ap.add_argument("--no-final", action="store_true", help="不启用决胜席（只用票数规则）")
+    ap.add_argument("--no-events", action="store_true", help="不附带公告事件")
     ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
     args = ap.parse_args(argv)
 
@@ -528,6 +556,10 @@ def main(argv=None) -> int:
         xs = {} if args.no_xsec else slim_xsec(xsec_profile(code))
         fin = {} if args.no_fin else slim_fin(finance_profile(code))
         sent = {} if args.no_sent else slim_sent(sentiment_profile(code))
+        ev = {} if args.no_events else slim_events(events_profile(code))
+        if ev:
+            log("  %s events 近%d天%d条 last=%s" % (code, ev.get("window_days"),
+                ev.get("window_count") or 0, ev.get("last_date")))
         if sent:
             log("  %s sentiment qa=%s holders=%s" % (code,
                 (sent.get("qa") or {}).get("window_qa"),
@@ -541,7 +573,7 @@ def main(argv=None) -> int:
                 {k: v for k, v in (xs.get("ops_hit") or {}).items() if v}))
         seats = {}
         for seat in SEATS:
-            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin, sent)
+            r = ask_seat(client, seat, item, cards.get(seat) or {}, args.model, args.max_tokens, xs, fin, sent, ev)
             seats[seat] = r
             log("  %s %s ok=%s mode=%s %sms %s" % (code, seat, r["ok"], r["mode"], r["elapsed_ms"],
                                                    (r["result"] or {}).get("verdict", "")[:50]))
