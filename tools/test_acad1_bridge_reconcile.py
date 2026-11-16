@@ -90,6 +90,24 @@ def test_reconcile_detects_code_set_mismatch(tmp_path, monkeypatch):
     assert any("代码集合" in c["item"] and not c["ok"] for c in res["checks"])
 
 
+def test_coverage_names_missing_codes(tmp_path, monkeypatch):
+    """覆盖率为 P2 独立判定：池内多出未裁标的 → 只该项 FAIL，并指名缺失代码。"""
+    monkeypatch.setattr(rc, "DATA", _seed(tmp_path, n=2))
+    res = rc.reconcile(DATE, None, {"600000.SH", "600001.SH", "999999.SZ"})
+    cov = [c for c in res["checks"] if c["item"].startswith("覆盖率")][0]
+    assert cov["ok"] is False and cov["detail"] == ["999999.SZ"]
+    # 其余项不受影响（这正是"单独红"的含义）
+    assert all(c["ok"] for c in res["checks"] if not c["item"].startswith("覆盖率"))
+    assert res["ok"] is False
+
+
+def test_coverage_pass_when_pool_subset(tmp_path, monkeypatch):
+    monkeypatch.setattr(rc, "DATA", _seed(tmp_path, n=3))
+    res = rc.reconcile(DATE, None, {"600000.SH", "600001.SH"})  # 池只是已判的子集
+    cov = [c for c in res["checks"] if c["item"].startswith("覆盖率")][0]
+    assert cov["ok"] is True and res["ok"] is True
+
+
 def test_main_check_returns_nonzero_on_mismatch(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(rc, "DATA", _seed(tmp_path, n=2, dup=True))
     monkeypatch.setattr(rc, "pool_cn_codes", lambda timeout=15: {"600000.SH", "600001.SH"})
