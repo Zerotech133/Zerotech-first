@@ -108,7 +108,7 @@ footer b{color:var(--muted);font-weight:500}
 <!--TODAY_END-->
 
 <section>
-  <div class="sech"><h2>这套方法</h2><span>版本级 · 方法改了才动，不是每天变</span></div>
+  <div class="sech"><h2>这套方法</h2><!--ASOF_METHOD_BEGIN--><span>版本级 · 方法改了才动，不是每天变</span><!--ASOF_METHOD_END--></div>
   <div class="grid2">
     <a class="card" href="M2_DASHBOARD.html">
       <h3>规则与冻结口径<span class="tagx">FROZEN 2026-11-07</span></h3>
@@ -133,7 +133,7 @@ footer b{color:var(--muted);font-weight:500}
 </section>
 
 <section>
-  <div class="sech"><h2>账</h2><span>按批次累积 · 日更</span></div>
+  <div class="sech"><h2>账</h2><!--ASOF_LEDGER_BEGIN--><span>按批次累积 · 日更</span><!--ASOF_LEDGER_END--></div>
   <div class="grid3">
     <a class="card" href="../daily_report/houfeng.html">
       <h3>信号台账</h3>
@@ -170,18 +170,16 @@ footer b{color:var(--muted);font-weight:500}
 </section>
 
 <section>
-  <div class="sech"><h2>还缺的两页</h2><span>缺就是缺，不藏</span></div>
+  <div class="sech"><h2>边界与证伪</h2><span>只报成绩不报风险，等于没有边界</span></div>
   <div class="grid2">
-    <div class="card todo">
-      <h3>成本口径</h3>
-      <p>未建。现在按单边 0.30pct 计入，但那是假设值、没有真实成交回报支撑。
-        这一页该说清：假设从哪来、真实成本可能高多少。</p>
-    </div>
-    <div class="card todo">
-      <h3>失效判据</h3>
-      <p>未建。一个方法平台最该有的一页：什么条件下这套方法就算错了。
-        没有这一页，等于只报成绩、不报风险。</p>
-    </div>
+    <a class="card" href="boundary.html#cost">
+      <h3>成本口径<!--COST_TAG_BEGIN--><span class="tagx">未采集</span><!--COST_TAG_END--></h3>
+      <!--COST_LEDE_BEGIN--><p>未采集。生成器未能读取冻结口径，本卡不作任何陈述。</p><!--COST_LEDE_END-->
+    </a>
+    <a class="card" href="boundary.html#reject">
+      <h3>失效判据<!--REJ_TAG_BEGIN--><span class="tagx">未采集</span><!--REJ_TAG_END--></h3>
+      <!--REJ_LEDE_BEGIN--><p>未采集。生成器未能读取冻结口径，本卡不作任何陈述。</p><!--REJ_LEDE_END-->
+    </a>
   </div>
 </section>
 

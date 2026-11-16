@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!-- 本页由 portal/build_houfeng_index.py 渲染：模板 _templates/houfeng_boundary.src.html -> 产物 houfeng/boundary.html。
+     要改页面请改模板；直接改产物会在下次生成时被覆盖（产物不入库）。
+     五个占位块（STAMP / COST / REJECT / DISC / GATE）由生成器从 quant_backtest/_qpzm_rd_20261106/M2_FROZEN.json
+     读出来替换。模板里放的是「未采集」骨架——单独打开模板也不会显示带结论色彩的假话。
+     这一页不放任何手写数字：冻结口径改一次，这页跟着改一次，不靠人记得来改。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f7fc">
+<title>候风 · 方法与边界</title>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.65 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:26px 24px 64px}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.kicker{font-size:11px;letter-spacing:1.5px;color:var(--dim)}
+.crumb{margin-bottom:16px;font-size:12px}
+.crumb a{color:var(--muted);border-bottom:1px solid transparent;padding-bottom:1px}
+.crumb a:hover{color:var(--brand);border-bottom-color:var(--brand);text-decoration:none}
+.crumb span{color:var(--dim);margin-left:8px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+  flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.top h1{font-size:24px;margin:5px 0 0;font-weight:600;letter-spacing:.5px}
+.top .sub{margin:6px 0 0;font-size:13px;color:var(--muted);max-width:640px}
+.stamp{text-align:right;font-size:12px;color:var(--dim);flex-shrink:0}
+.stamp .badge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:20px;
+  background:var(--panel2);border:1px solid var(--border)}
+.stamp .badge b{font-variant-numeric:tabular-nums;color:var(--text)}
+.stamp .gen{margin-top:6px;font-size:11px}
+.sech{display:flex;align-items:baseline;gap:10px;margin:32px 0 12px;flex-wrap:wrap}
+.sech h2{font-size:15px;font-weight:600;margin:0}
+.sech span{font-size:11.5px;color:var(--dim)}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.panel p{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.panel p:last-child{margin-bottom:0}
+.lede{font-size:14px;color:var(--text);margin:0 0 10px}
+table.kv{width:100%;border-collapse:collapse;font-size:12.5px}
+table.kv th{text-align:left;font-weight:500;color:var(--dim);padding:5px 10px 5px 0;
+  white-space:nowrap;vertical-align:top;width:34%}
+table.kv td{padding:5px 0;font-variant-numeric:tabular-nums}
+table.kv tr+tr th,table.kv tr+tr td{border-top:1px solid var(--panel2)}
+.mono{font-family:var(--mono);font-size:12px}
+.big{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.big small{font-size:12px;font-weight:400;color:var(--dim);margin-left:6px;letter-spacing:0}
+.item{border-left:3px solid var(--border);padding:2px 0 2px 12px;margin:0 0 14px}
+.item:last-child{margin-bottom:0}
+.item.bad{border-left-color:var(--err)}
+.item.warn{border-left-color:var(--gold)}
+.item .hd{font-size:13.5px;font-weight:500;margin:0}
+.item .vd{font-size:11px;color:var(--err);margin-left:6px;font-weight:600}
+.item .ev{font-size:12px;color:var(--muted);margin:3px 0 0}
+ol.disc{margin:0;padding-left:20px}
+ol.disc li{font-size:12.5px;color:var(--muted);margin-bottom:9px;line-height:1.6}
+ol.disc li:last-child{margin-bottom:0}
+.note{font-size:12px;color:var(--dim);margin:12px 0 0;line-height:1.6}
+.lede-q{font-size:13px;color:var(--muted);margin:0 0 12px}
+.gate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gate .g{background:var(--panel2);border-radius:9px;padding:11px 13px}
+.gate .g .t{font-size:11.5px;color:var(--dim);margin-bottom:3px}
+.gate .g .c{font-size:12.5px;color:var(--text);line-height:1.55}
+footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--dim);line-height:1.75}
+footer b{color:var(--muted);font-weight:500}
+code{font-family:var(--mono);font-size:11.5px;background:var(--panel2);
+  padding:1px 5px;border-radius:4px}
+@media(max-width:720px){
+  .gate{grid-template-columns:1fr}
+  .wrap{padding:20px 16px 48px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="crumb" aria-label="主导航">
+  <a href="/">← 零界工作站</a><a href="/houfeng/">候风</a><span>方法与边界</span>
+</nav>
+
+<header class="top">
+  <div>
+    <div class="kicker">候风 · 内部研究页 · 不对外</div>
+    <h1>方法与边界</h1>
+    <p class="sub">这套方法是怎么算的、哪些做法试过但不成立、哪些偏差已经知道、
+      什么条件下它要推倒重来。这一页只搬事实，不做解释性美化。</p>
+  </div>
+  <div class="stamp">
+    <!--STAMP_BEGIN--><div class="badge">冻结口径 <b>未采集</b></div><!--STAMP_END-->
+    <div class="gen">本页每次生成重读冻结文件</div>
+  </div>
+</header>
+
+<section id="cost">
+  <div class="sech"><h2>一 · 成本怎么算的</h2><span>往返成本，买卖各扣一半</span></div>
+  <div class="panel">
+    <!--COST_BEGIN-->
+    <p>未采集。生成器未能读取冻结口径文件，本页不对成本作任何陈述。</p>
+    <!--COST_END-->
+  </div>
+</section>
+
+<section id="reject">
+  <div class="sech"><h2>二 · 试过、但不成立的三条</h2><span>否决即结论，不再重复实验</span></div>
+  <div class="panel">
+    <p class="lede-q">每一条都按同一套判据跑过回测，结果是变差。写在这里是为了不被下一轮重新捡起来。</p>
+    <!--REJECT_BEGIN-->
+    <p>未采集。</p>
+    <!--REJECT_END-->
+  </div>
+</section>
+
+<section>
+  <div class="sech"><h2>三 · 已经知道的偏差</h2><span>哪些方向高估、哪些还没建模</span></div>
+  <div class="panel">
+    <p class="lede-q">以下都是对这套方法<b>不利</b>的事实，原文摘自冻结文件的披露项，不改写、不删减。</p>
+    <!--DISC_BEGIN-->
+    <p>未采集。</p>
+    <!--DISC_END-->
+  </div>
+</section>
+
+<section>
+  <div class="sech"><h2>四 · 什么情况下要回炉</h2><span>冻结之后改口径，只有这一条路</span></div>
+  <div class="panel">
+    <p class="lede-q">冻结不是"定稿"，是"改要付代价"。下面两件事同时成立，才允许动这套方法。</p>
+    <!--GATE_BEGIN-->
+    <p>未采集。</p>
+    <!--GATE_END-->
+  </div>
+</section>
+
+<footer>
+  <b>这一页为什么不放收益数字</b>：收益在「今日」和「竞技场」两页，那些数字每天变。
+  这一页放的是<b>不随行情变的东西</b>——成本怎么扣、什么被证伪、什么会高估、什么条件要重来。
+  一个方法平台如果只报成绩不报风险，就等于没有边界。<br>
+  <b>数字从哪来</b>：全部读自 <code>quant_backtest/_qpzm_rd_20261106/M2_FROZEN.json</code>，
+  一个字都不手写。冻结口径改一次，这页跟着改一次。<br>
+  <b>不是什么</b>：这里没有买入建议。成本口径与失效判据都是研究方法的一部分，
+  不构成任何委托依据。
+</footer>
+
+</div>
+</body>
+</html>

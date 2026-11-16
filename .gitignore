@@ -346,6 +346,11 @@ portal/home_v3.html
 # 先跑一次 portal/build_houfeng_index.py。
 portal/houfeng/index.html
 
+# 2026-11-16：候风「方法与边界」页同理——内容全部读自 M2_FROZEN.json，
+# 冻结口径或披露项一改，产物即变。入库等于每天一个新快照，噪声。
+# 删了不会 404（入口页里是硬链接，点进去会是 404），先跑一次 build_houfeng_index.py。
+portal/houfeng/boundary.html
+
 # evals runtime reports (regenerable)
 agent_platform/evals/reports/
 

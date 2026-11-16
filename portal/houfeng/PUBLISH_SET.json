@@ -22,7 +22,8 @@
  "excluded": {
   "HOUFENG_DIVIDEND.html": "实验档·未冻结（上轮门 2 结论：不进发布集）",
   "HOUFENG_ARENA.html / HOUFENG_ARENA_36M.html / HOUFENG_HOLDGRID.html / HOUFENG_PICK_20261106.html / HOUFENG_PLAYBOOK.html": "内部页，正文含内部符号，不对外",
-  "index.html": "平台入口页（2026-11-16 起由 build_houfeng_index.py 生成）：只汇总「今日一句」与各页链接，正文不含因子代号与样本外数值；是否纳入对外发布集待裁定，当前不纳入",
+  "index.html": "平台入口页（2026-11-16 起由 build_houfeng_index.py 生成）：只汇总「今日一句」与各页链接，正文不含因子代号与样本外数值。**判定不纳入**——发布集的定义是 md5 锁定的稳定交付件（上面三页的 md5/size 就是这条锁），而本页每天重写、md5 天天变，纳入等于让锁失效；且它链到的内部页含因子代号。要对外时另出一份静态对外入口，不复用这一页",
+  "boundary.html": "方法与边界（2026-11-16 起由 build_houfeng_index.py 生成）：成本口径 / 已否决 3 项 / 已披露 6 条 / 回炉条件，逐字摘自 M2_FROZEN.json，正文含内部口径与样本外 pp 差，明确不对外（页面首行已标「内部研究页 · 不对外」）",
   "HOUFENG_TODAY.html": "内部页·含因子代号与样本外数值，每日重写，不对外（2026-11-16 登记）"
  },
  "note": "发布=纳入对外可访问集合的资格认定；真实外网通道部署另行审批（涉及生产变更五要素）"

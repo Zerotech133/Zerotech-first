@@ -331,8 +331,14 @@ try {
         Write-TaskOut 'idx' $idxOut 6
         Write-TaskLog 'WARN: 候风入口页生成失败，/houfeng/ 可能停在上一交易日'
     } else {
-        $idxLine = ($idxOut -split "`r?`n" | Where-Object { $_ -match '^IDX:' } | Select-Object -Last 1)
-        Write-TaskLog ('IDX: ' + $idxLine)
+        # 生成器现在出两页（入口页 IDX + 边界页 BND），两行都要落日志：
+        # 只记 IDX 就等于对边界页没有任何可核对的痕迹，而 rc=0 本身不证明它刷了。
+        $fnLines = @($idxOut -split "`r?`n" | Where-Object { $_ -match '^(IDX|BND):' })
+        if ($fnLines.Count -eq 0) {
+            Write-TaskLog 'WARN: 生成器 rc=0 但既无 IDX 行也无 BND 行，按未刷新处理'
+        } else {
+            foreach ($l in $fnLines) { Write-TaskLog $l }
+        }
     }
     Write-TaskLog '===== houfeng_daily done ====='
     exit 0
