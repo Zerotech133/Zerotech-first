@@ -122,8 +122,12 @@ def main() -> int:
     for d in gaps:
         cmd = [str(PY), "-X", "utf8", str(INGEST), "--date", d.isoformat(), "--write"]
         try:
+            # Windows：pytest 捕获期 stdin 句柄可能已关闭，子进程继承会触发
+            # OSError [WinError 6] 句柄无效（表现为「单跑过、整套偶发红」）。
+            # 显式 stdin=DEVNULL 根治。见 t-engine 2026-11-15 同款修复。
             proc = subprocess.run(cmd, cwd=str(CODE), capture_output=True,
                                   text=True, encoding="utf-8", errors="replace",
+                                  stdin=subprocess.DEVNULL,
                                   timeout=300)
         except Exception as exc:  # noqa: BLE001
             fail.append((d.isoformat(), "exception:%s" % str(exc)[:80]))

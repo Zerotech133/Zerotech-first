@@ -171,14 +171,18 @@ def main() -> int:
             continue
         ins = 0
         for rec in recs:
+            # 2026-11-16 修复：原来单条失败直接 conn.rollback()，会把本批**已插入但
+            # 未提交**的行一起回滚掉（但 ins 计数已加），造成静默丢数据 + 统计虚高。
+            # 改用 SAVEPOINT：只回滚出错的那一条，其余照常提交。
+            cur.execute("SAVEPOINT sp_rec")
             try:
                 cur.execute(INSERT_SQL, _to_row(rec))
                 if cur.rowcount:
                     ins += 1
+                cur.execute("RELEASE SAVEPOINT sp_rec")
             except Exception as exc:  # noqa: BLE001
-                conn.rollback()
+                cur.execute("ROLLBACK TO SAVEPOINT sp_rec")
                 err.append((day, "%s:%s" % (rec.get("ts_code"), str(exc)[:80])))
-                continue
         conn.commit()
         ok += ins
         skip += len(recs) - ins

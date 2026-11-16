@@ -161,6 +161,9 @@ def main() -> int:
             continue
         ins = 0
         for b in new:
+            # 同 ingest_hk_from_tdx：单条失败只回滚该条（SAVEPOINT），
+            # 不能用 conn.rollback() 把本批已插入的行一起丢掉。
+            cur.execute("SAVEPOINT sp_rec")
             try:
                 cur.execute(INSERT_SQL, (
                     f"US:{sym}", "US", sym, b["date"], b["open"], b["high"], b["low"],
@@ -168,8 +171,9 @@ def main() -> int:
                 ))
                 if cur.rowcount:
                     ins += 1
+                cur.execute("RELEASE SAVEPOINT sp_rec")
             except Exception:  # noqa: BLE001
-                conn.rollback()
+                cur.execute("ROLLBACK TO SAVEPOINT sp_rec")
         conn.commit()
         rows += ins
         ok += 1
