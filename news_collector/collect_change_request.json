@@ -1,97 +1,144 @@
 {
-  "schema": "collect_change_request/v1",
-  "requester": "OSINT1 马良",
-  "approver": "INTEL0 马超",
-  "requests": [
-    {
-      "level": "L2",
-      "kind": "schedule",
-      "title": "雪球分片调度：新增 12:30 第二段，达成全队列当日覆盖",
-      "background": "2026-11-14 07:00 生产轮实测：起点 600929 符合陈旧优先、07:32 结束、连续 3 只整只被拒触发 SESSION_DEAD，仅覆盖 400/666。四次观测撞墙点分别在第 401/401/400/425 只，与请求数吻合、与耗时无关，指向单会话约 400 次请求预算。单轮覆盖上限 < 队列长度，是结构性缺口，非参数问题。",
-      "five": {
-        "command": "新增每日 12:30 调度项（脚本不改，只加调度）：\n\"pythonw.exe\" -X utf8 \"C:\\项目\\老田的AI助手\\news_collector\\run_xq_daily.py\" --quota 300\n\n脚本内部固定参数（已就位）：--queue all --pages 1 --order attempt，并白名单透传 --quota 300。\n第二段起点 = 07:00 停轮点之后的 266 只 + deferred 3 只，quota 300 恰好覆盖余量，不在同一会话内重复采前 400 只。",
-        "impact": "每日雪球会话 1 → 2 次，请求量约 400 → 700 次/日。第二段预计 12:30 启动、15–20 分钟结束，全程在单会话约 400 次预算内，不撞限流。单票刷新周期由 666/400≈1.67 天回到 1.0 天。与 08:00 SentimentSnapshot、21:00 XqExpandedShard（队列 246、游标域不同）无时序交叉；attempt 模式不启用游标，不与既有断点域互相干扰。",
-        "irreversible": "无数据不可逆项：append-on-new 重复采不落盘，停任务即止。唯一外部风险是对方限流策略可能随请求量上升而收紧——把单日请求从 400 提到 700 是有代价的，若观测到 HTTP 401/403 或 403 持续升级，应视为已触发对方风控，须立即停第二段并回退。此为账号/IP 层面风险，不在本机可控范围。",
-        "alternatives": "A 维持现状：接受 1.67 天刷新周期，尾部靠次日补——代价是策略线读不到当日新帖。\nB 收窄队列至 ≤400：与 R8/R10 扩源方向相反，需砍源。\nC 复用 21:00 XqExpandedShard 改跑全量余量：少一个任务，但改变该轮「扩源补齐」既有用途，两种用途混在一处不利排查。\nD 本方案：新增 12:30 第二段，职责单一、可独立停用。",
-        "rollback": "1) 停用/删除该调度项即止，XqTimelineDaily（07:00）不受影响；\n2) 数据无需回滚（append-on-new）；\n3) 留痕：collect_change.py rollback CR-20261114-01 --note \"...\"。"
-      },
-      "evidence": [
-        "logs/xq_timeline_daily.log 07:00 轮：400/666、SESSION_DEAD、rc=2",
-        "logs/xq_timeline_daily.log 19:52 轮：427/666、撞墙第 425 只",
-        "COLLECT_REGISTER.md §23.1 四次撞墙观测表",
-        "2026-11-14 当日覆盖核验：714 文件中位 mtime 0.6h，队列内 666 只全部 ≤12h"
-      ],
-      "status": "pending",
-      "id": "CR-20261114-01",
-      "created_at": "2026-11-14 21:34:50",
-      "requester": "OSINT1 马良",
-      "approver": "INTEL0 马超"
+ "schema": "collect_change_request/v1",
+ "requester": "OSINT1 马良",
+ "approver": "INTEL0 马超",
+ "requests": [
+  {
+   "level": "L2",
+   "kind": "schedule",
+   "title": "雪球分片调度：新增 12:30 第二段，达成全队列当日覆盖",
+   "background": "2026-11-14 07:00 生产轮实测：起点 600929 符合陈旧优先、07:32 结束、连续 3 只整只被拒触发 SESSION_DEAD，仅覆盖 400/666。四次观测撞墙点分别在第 401/401/400/425 只，与请求数吻合、与耗时无关，指向单会话约 400 次请求预算。单轮覆盖上限 < 队列长度，是结构性缺口，非参数问题。",
+   "five": {
+    "command": "新增每日 12:30 调度项（脚本不改，只加调度）：\n\"pythonw.exe\" -X utf8 \"C:\\项目\\老田的AI助手\\news_collector\\run_xq_daily.py\" --quota 300\n\n脚本内部固定参数（已就位）：--queue all --pages 1 --order attempt，并白名单透传 --quota 300。\n第二段起点 = 07:00 停轮点之后的 266 只 + deferred 3 只，quota 300 恰好覆盖余量，不在同一会话内重复采前 400 只。",
+    "impact": "每日雪球会话 1 → 2 次，请求量约 400 → 700 次/日。第二段预计 12:30 启动、15–20 分钟结束，全程在单会话约 400 次预算内，不撞限流。单票刷新周期由 666/400≈1.67 天回到 1.0 天。与 08:00 SentimentSnapshot、21:00 XqExpandedShard（队列 246、游标域不同）无时序交叉；attempt 模式不启用游标，不与既有断点域互相干扰。",
+    "irreversible": "无数据不可逆项：append-on-new 重复采不落盘，停任务即止。唯一外部风险是对方限流策略可能随请求量上升而收紧——把单日请求从 400 提到 700 是有代价的，若观测到 HTTP 401/403 或 403 持续升级，应视为已触发对方风控，须立即停第二段并回退。此为账号/IP 层面风险，不在本机可控范围。",
+    "alternatives": "A 维持现状：接受 1.67 天刷新周期，尾部靠次日补——代价是策略线读不到当日新帖。\nB 收窄队列至 ≤400：与 R8/R10 扩源方向相反，需砍源。\nC 复用 21:00 XqExpandedShard 改跑全量余量：少一个任务，但改变该轮「扩源补齐」既有用途，两种用途混在一处不利排查。\nD 本方案：新增 12:30 第二段，职责单一、可独立停用。",
+    "rollback": "1) 停用/删除该调度项即止，XqTimelineDaily（07:00）不受影响；\n2) 数据无需回滚（append-on-new）；\n3) 留痕：collect_change.py rollback CR-20261114-01 --note \"...\"。"
+   },
+   "evidence": [
+    "logs/xq_timeline_daily.log 07:00 轮：400/666、SESSION_DEAD、rc=2",
+    "logs/xq_timeline_daily.log 19:52 轮：427/666、撞墙第 425 只",
+    "COLLECT_REGISTER.md §23.1 四次撞墙观测表",
+    "2026-11-14 当日覆盖核验：714 文件中位 mtime 0.6h，队列内 666 只全部 ≤12h"
+   ],
+   "status": "pending",
+   "id": "CR-20261114-01",
+   "created_at": "2026-11-14 21:34:50",
+   "requester": "OSINT1 马良",
+   "approver": "INTEL0 马超"
+  },
+  {
+   "level": "L2",
+   "kind": "schedule",
+   "title": "08:00 情绪快照与雪球完成时刻的依赖：择一方案",
+   "background": "SentimentSnapshot 固定 08:00 读取当日雪球落盘。正常档 666 只约 37 分钟（07:37 完成，余 23 分钟）；降速档维持 8 秒/只则 89 分钟（08:29 完成），跨过 08:00，快照会读到半截数据。11-14 实测 07:32 完成未触发，但降速档或撞墙晚停时会触发。",
+   "five": {
+    "command": "候选（按配准结论执行其一）：\nA 雪球提前到 06:30\n  Set-ScheduledTask -TaskName XqTimelineDaily -Trigger (New-ScheduledTaskTrigger -Daily -At 06:30)\nB 情绪快照后移到 09:00\n  Set-ScheduledTask -TaskName SentimentSnapshot -Trigger (New-ScheduledTaskTrigger -Daily -At 09:00)\nC 不改调度，在 run_sentiment_snapshot.py 增加「当日雪球轮是否跑完」判据，未跑完则情绪卡标注 incomplete（输出口径变更，故列 L2）\nD 不动，接受降速档下偶发读到半截数据",
+    "impact": "A：雪球 06:30 起跑，正常 37 分钟（07:07）完成、快照前余 53 分钟；最慢档 89 分钟（07:59）仍可赶上但只剩 1 分钟余量——改善显著，非绝对根治。\nB：快照 09:00 出数，08:00–09:00 情绪卡为空窗，09:30 开盘前仍可用。\nC：时间不变，完整性问题转为显式标注，由分析侧决定是否采信。\nD：现状。11-14 实测 07:32 完成未触发。",
+    "irreversible": "均无数据不可逆。B 的可逆代价是 08:00–09:00 情绪卡空窗——若下游存在 09:00 前取数的调用方（策略线/门户），需其确认；本席不掌握下游调用清单，该点须配准人判断。",
+    "alternatives": "A 改善有限但最稳，不动下游；B 彻底但产生 1 小时空窗；C 最保守，不承担调度风险但需改输出口径；D 零改动，带偶发风险。四者取舍取决于「08:00–09:00 是否有人读情绪卡」，此项不在本席职权。",
+    "rollback": "A/B 改回原触发时间即恢复（XqTimelineDaily 07:00 / SentimentSnapshot 08:00）；C 去掉判据字段即恢复；D 无需回滚。"
+   },
+   "evidence": [
+    "SentimentSnapshot 触发器 2026-11-09T08:00:00+08:00，11-14 08:00:01 rc=1",
+    "XqTimelineDaily 正常档实测 07:32 完成（约 32 分钟 / 400 只）",
+    "COLLECT_REGISTER.md §22.4 依赖风险与四选项"
+   ],
+   "status": "pending",
+   "id": "CR-20261114-02",
+   "created_at": "2026-11-14 21:34:50",
+   "requester": "OSINT1 马良",
+   "approver": "INTEL0 马超"
+  },
+  {
+   "level": "L2",
+   "kind": "queue",
+   "title": "缠论采集队列刷新：asof 停在 2026-11-06，当日买点票覆盖率仅 7.8%",
+   "background": "2026-11-16 02:45 实测（老田交来 10 只票逐源体检时暴露）：\n\n1) target_queue_chanlun.json 字段 asof=2026-11-06，文件 mtime=2026-11-09 09:03，至今 7 天未重生成。队列 all 字段 489 条、去重 465 只。\n2) 策略侧信号库 quant_backtest/data/chanlun_pool.jsonl 最新 detect_date=2026-11-13，该批次 1/2/3 买点票 308 只（同一票可有多条，按代码去重）。\n3) 队列与当日买点集合：交集 24 只，队列漏掉 284 只 → 覆盖率 24/308 = 7.8%；Jaccard = 24/749 = 3.2%（并集 749 = 465+308-24）。\n4) 老田交来 10 只中 8 只（000782/002737/300688/300804/600511/600641/601668/603175）不在任何采集池内，只有 300234（houfeng_cand164）、600400（kstock_orders）被覆盖——与前一条完全吻合。\n5) 本仓 grep 全类型文件（py/ps1/cmd/json/md）无任何脚本写该队列，git 历史仅一次「积压同步」入库。判断：队列是外部产出物放入，本仓无生成器。\n\n即：不是采不到，是队列没跟上策略侧。本轮已用单票直采临时补齐这 10 只（+888 条），但补采是时点快照，下轮不续采，8 只仍会掉回零覆盖。",
+   "five": {
+    "command": "三选一，命令不同：\n\nA（推荐，口径不变）：请策略线用其原生成器重出 11-13 队列，覆盖本仓同名文件。本席无命令可执行，只做写入后校验：\npython news_collector/gap_scan.py --top 20   # 复核覆盖率与缺口分变化\npython -c \"import json;d=json.load(open('news_collector/target_queue_chanlun.json',encoding='utf-8'));print(d['asof'],len(d['all']))\"\n\nB（本席自建生成器，需先写代码）：\npython news_collector/build_queue_chanlun.py --src quant_backtest/data/chanlun_pool.jsonl --detect-date 2026-11-13 --out news_collector/target_queue_chanlun.json --dry-run\n确认后去掉 --dry-run 落地。该脚本当前不存在，属新增 L1 代码；但替换队列文件是 L2，故整件仍需配准。\n\nC（不动作）：本轮补采清单转下轮待办，队列维持 11-06 快照，覆盖率缺口保留。",
+    "impact": "A/B 成功后：采集分母由 465 → 约 308（或两批并集），每日 irm/sse/taoguba/guba/xq 的采集对象整体换血。按现有单票成本估算，队列规模从 465 降到 308，采集耗时应下降约 1/3；但「当日买点」逐日滚动，队列会天天变，下游 collect_sla 的 24h 未刷新口径会出现逐日抖动（今日在队、明日在队外），需要在 SLA 里区分「队列变更」与「真断供」。\nC：维持现状，每日 284 只当日买点票零覆盖，策略线读不到对应帖子/问答。\n注意：xq 只按队列跑，队列换血后雪球覆盖对象同日变化，与 CR-20261114-01（分片调度）叠加时需一起核配额。",
+    "irreversible": "替换 target_queue_chanlun.json 本身可逆（备份即恢复）。真正的不可逆风险在认知层：一旦队列口径由本席自建（选项 B），此后「缠论队列」的来源就有两个版本（策略线原版 vs 本席重建版），历史读数不可比，且容易在后续复盘中被误当同一口径。若选 B，必须在文件内写入 generator 字段与生成参数，否则无法追溯。\n数据侧无不可逆：append-on-new 重复采不落盘。",
+    "alternatives": "A 请策略线重出：口径最干净，缺点是要等外部。\nB 本席按信号库重建：当天可用，缺点是我要替策略侧定义「哪些算当日队列」——这是研判动作，越出本席「收集者/治理者」边界，除非上级明确授权我按 chanlun_pool.jsonl 的口径代生成。\nC 不动作：零风险，但缺口留存。\nD 中间路线：不改队列，改为「队列 ∪ 当日买点」的采集并集，队列仍由策略侧维护，本席只在采集侧做并集扩展（改动落在 run_target_queue_intel.py 的入队逻辑，不动队列文件）。并集上限需评估：308+465 去重后可能超 600，irm/sse 单票成本低可承受，taoguba 需限页。",
+    "rollback": "1) 替换前先备份：cp target_queue_chanlun.json target_queue_chanlun.json.bak_20261116\n2) 回滚 = 备份覆盖回原位，并删去由此产生的 data/gap_scan.json 缓存（rm 走回收站，不硬删）\n3) 若选 B：同时删除 build_queue_chanlun.py，避免下次被误跑\n4) 回滚后复核：gap_scan --top 5 的 A 类（应采未采）应回到 0，队列 asof 应回到 2026-11-06"
+   },
+   "evidence": {
+    "queue_asof": "2026-11-06",
+    "queue_unique_codes": 465,
+    "queue_all_rows": 489,
+    "queue_mtime": "2026-11-09 09:03",
+    "strategy_latest_batch": "2026-11-13",
+    "strategy_buy_codes": 308,
+    "intersection": 24,
+    "missing": 284,
+    "coverage_pct": 7.8,
+    "jaccard_pct": 3.2,
+    "generator_in_repo": false,
+    "sample_pool_out": [
+     "000782",
+     "002737",
+     "300688",
+     "300804",
+     "600511",
+     "600641",
+     "601668",
+     "603175"
+    ],
+    "ledger": "COLLECT_REGISTER.md §25-2.2 / §25-2.6"
+   },
+   "status": "pending",
+   "id": "CR-20261116-01",
+   "created_at": "2026-11-16 03:00:46",
+   "requester": "OSINT1 马良",
+   "approver": "INTEL0 马超"
+  },
+  {
+   "level": "L2",
+   "kind": "queue",
+   "title": "把策略中台每日出票（todays_*.json）纳入采集池：649 只中 432 只不在任何池内",
+   "background": "2026-11-16 08:10 实测（老田要求「读取更新策略中台今天选股的数据」）：\n\n1) 中台出票文件 portal/data/picks_history/todays_20261113.json：generated_at=2026-11-13 18:20:16，trade_basis=2026-11-13 收盘，stocks 649 只（T2 7 / T3 642），n_hit>=2 共 48 只。11-14/11-15 为周末无出票；11-16 批次尚未生成（中台约 18:20 出票）。\n2) 这 649 只与现注册池（989 只，10 个池声明）比对：**432 只（66.6%）不在任何池内**，仅 217 只在池。\n3) 逐源覆盖（649 为分母，已剔除跨市场不适用项）：irm 适用 361 只有 36 只有数据（10.0%）、sse 适用 278 只 1 只（0.4%）、taoguba 639 只 155 只（24.3%）、guba 适用 639 只 12 只（1.9%）、xq 639 只 134 只（21.0%）、qianping 639 只 636 只（99.5%）（10 只为北交所 92 前缀，上述四源均不覆盖）。\n4) 本轮已 L1 定向补采 n_hit>=2 ∪ T2 共 49 只：irm +89、sse +4、taoguba +247、guba +3613（39 只新落盘、零拦截），五源合计 +3953 条；49 只 × 7 源缺口项由 172 降至 116（净减 56）。\n5) 但补采是时点快照：这 49 只仍不在任何队列内，下一轮 07:00 不会续采，会掉回零覆盖。**结构问题是队列，不是采集器。**\n6) 雪球侧今日 07:00 轮三次尝试均停在 403/666（连续被拒 3 只、尝试账本 400 只），会话配额被标记，故本轮**未动雪球**，34 只零覆盖票留待冷却后补。",
+   "five": {
+    "command": "拟新增一个池声明（不改现有池、不改任何采集器代码）：\n\npython news_collector/picks_pool.py --out news_collector/picks_daily.txt            # 读最新可得批次\ntype news_collector\\picks_daily.txt                                                  # 人工核对\npython news_collector/picks_pool.py --min-hit 2 --json > news_collector/data/picks_hi.json\n\n若配准「并入现有队列」，则只需在 target_queue_*.json 增加一个 picks 段，或在 selection_universe.json 注册源 picks_daily（file=portal/data/picks_history/todays_*.json, glob 取最新），由桥生成器按日刷新。本呈批**不含**任何直接改队列的命令；全部待配准后执行。",
+    "impact": "配准后：每日 07:00 的采集分母由 666（缠论 465 ∪ 侯风 89 ∪ 两池 82 ∪ k_stock）扩到最多 1315 只（+649）。按现测单票成本（guba 约 12s/只、taoguba 约 5.6s/只、irm/sse 约 2.6s/只）估算，四源全量新增约 3.5–4 小时，超出 07:00 单轮窗口，**必须分片或分层**（建议先只纳入 n_hit>=2 的 48 只 + T2，约 25 分钟）。\n不入池：这 649 只每日仅千股千评覆盖（98.5%），问答/股吧/雪球几乎空白；策略线下单后要读舆情时读不到东西。\n副作用：collect_sla 的 24h 未刷新分母同步扩大，短期红灯数量会上升——这是**照出真实缺口**，不是恶化。",
+    "irreversible": "队列/池声明改动本身可逆（备份即恢复）。真正不可逆的是口径：一旦把「中台当日出票」写成采集池，此后 SLA 覆盖率的分子分母都跟着逐日滚动，历史覆盖率数字与新口径**不可直接比较**，需在台账标注口径切换日。另外补采过的 3953 条已落盘，不会因撤销呈批而消失（这部分是既成事实）。",
+    "alternatives": "A（推荐，最小改动）：只把 n_hit>=2 的 48 只并入采集队列，逐日滚动；T3 单命中 601 只维持千股千评覆盖。改动小、耗时可控（约 25 分钟）。\nB（全量）：649 只全入队列，需配分片调度（与 CR-20261114-01 合并评估），单轮必然跑不完。\nC（不动作）：仅在老田点名时逐票补采，日常零覆盖。\nD（只读不采）：每日出票后由 gap_scan 出缺口报告供策略线自查，不改队列。\n本席倾向 A：先让「有共振的票」有数据，再评估是否值得为 601 只单命中票付每日 4 小时采集成本。",
+    "rollback": "1) 备份：cp news_collector/selection_universe.json news_collector/selection_universe.json.bak-20261116（或对应 target_queue_*.json）。\n2) 回退：还原备份文件 + 重启「AI工作站门户API」使注册表内存缓存失效（flag 文件 + Start-ScheduledTask，按既定重启协议）。\n3) 核验：python news_collector/picks_pool.py / python news_collector/gap_scan.py --top 10 复核池规模回到 989。\n4) 已补的 3953 条不回滚（数据本身有效，仅队列归属撤销）。"
+   },
+   "evidence": {
+    "picks_file": "portal/data/picks_history/todays_20261113.json",
+    "picks_generated_at": "2026-11-13 18:20:16",
+    "picks_trade_basis": "2026-11-13 收盘",
+    "picks_total": 649,
+    "picks_tier_t2": 7,
+    "picks_tier_t3": 642,
+    "picks_n_hit_ge2": 48,
+    "pool_registered": 989,
+    "pool_out_of_649": 432,
+    "pool_in_of_649": 217,
+    "cover_irm": "36/361 = 10.0%",
+    "cover_sse": "1/278 = 0.4%",
+    "cover_taoguba": "155/639 = 24.3%",
+    "cover_guba": "12/639 = 1.9%",
+    "cover_xq": "134/639 = 21.0%",
+    "cover_qianping": "636/639 = 99.5%",
+    "supplement_rows": {
+     "irm": 89,
+     "sse": 4,
+     "taoguba": 247,
+     "guba": 3613,
+     "total": 3953
     },
-    {
-      "level": "L2",
-      "kind": "schedule",
-      "title": "08:00 情绪快照与雪球完成时刻的依赖：择一方案",
-      "background": "SentimentSnapshot 固定 08:00 读取当日雪球落盘。正常档 666 只约 37 分钟（07:37 完成，余 23 分钟）；降速档维持 8 秒/只则 89 分钟（08:29 完成），跨过 08:00，快照会读到半截数据。11-14 实测 07:32 完成未触发，但降速档或撞墙晚停时会触发。",
-      "five": {
-        "command": "候选（按配准结论执行其一）：\nA 雪球提前到 06:30\n  Set-ScheduledTask -TaskName XqTimelineDaily -Trigger (New-ScheduledTaskTrigger -Daily -At 06:30)\nB 情绪快照后移到 09:00\n  Set-ScheduledTask -TaskName SentimentSnapshot -Trigger (New-ScheduledTaskTrigger -Daily -At 09:00)\nC 不改调度，在 run_sentiment_snapshot.py 增加「当日雪球轮是否跑完」判据，未跑完则情绪卡标注 incomplete（输出口径变更，故列 L2）\nD 不动，接受降速档下偶发读到半截数据",
-        "impact": "A：雪球 06:30 起跑，正常 37 分钟（07:07）完成、快照前余 53 分钟；最慢档 89 分钟（07:59）仍可赶上但只剩 1 分钟余量——改善显著，非绝对根治。\nB：快照 09:00 出数，08:00–09:00 情绪卡为空窗，09:30 开盘前仍可用。\nC：时间不变，完整性问题转为显式标注，由分析侧决定是否采信。\nD：现状。11-14 实测 07:32 完成未触发。",
-        "irreversible": "均无数据不可逆。B 的可逆代价是 08:00–09:00 情绪卡空窗——若下游存在 09:00 前取数的调用方（策略线/门户），需其确认；本席不掌握下游调用清单，该点须配准人判断。",
-        "alternatives": "A 改善有限但最稳，不动下游；B 彻底但产生 1 小时空窗；C 最保守，不承担调度风险但需改输出口径；D 零改动，带偶发风险。四者取舍取决于「08:00–09:00 是否有人读情绪卡」，此项不在本席职权。",
-        "rollback": "A/B 改回原触发时间即恢复（XqTimelineDaily 07:00 / SentimentSnapshot 08:00）；C 去掉判据字段即恢复；D 无需回滚。"
-      },
-      "evidence": [
-        "SentimentSnapshot 触发器 2026-11-09T08:00:00+08:00，11-14 08:00:01 rc=1",
-        "XqTimelineDaily 正常档实测 07:32 完成（约 32 分钟 / 400 只）",
-        "COLLECT_REGISTER.md §22.4 依赖风险与四选项"
-      ],
-      "status": "pending",
-      "id": "CR-20261114-02",
-      "created_at": "2026-11-14 21:34:50",
-      "requester": "OSINT1 马良",
-      "approver": "INTEL0 马超"
-    },
-    {
-      "level": "L2",
-      "kind": "queue",
-      "title": "缠论采集队列刷新：asof 停在 2026-11-06，当日买点票覆盖率仅 7.8%",
-      "background": "2026-11-16 02:45 实测（老田交来 10 只票逐源体检时暴露）：\n\n1) target_queue_chanlun.json 字段 asof=2026-11-06，文件 mtime=2026-11-09 09:03，至今 7 天未重生成。队列 all 字段 489 条、去重 465 只。\n2) 策略侧信号库 quant_backtest/data/chanlun_pool.jsonl 最新 detect_date=2026-11-13，该批次 1/2/3 买点票 308 只（同一票可有多条，按代码去重）。\n3) 队列与当日买点集合：交集 24 只，队列漏掉 284 只 → 覆盖率 24/308 = 7.8%；Jaccard = 24/749 = 3.2%（并集 749 = 465+308-24）。\n4) 老田交来 10 只中 8 只（000782/002737/300688/300804/600511/600641/601668/603175）不在任何采集池内，只有 300234（houfeng_cand164）、600400（kstock_orders）被覆盖——与前一条完全吻合。\n5) 本仓 grep 全类型文件（py/ps1/cmd/json/md）无任何脚本写该队列，git 历史仅一次「积压同步」入库。判断：队列是外部产出物放入，本仓无生成器。\n\n即：不是采不到，是队列没跟上策略侧。本轮已用单票直采临时补齐这 10 只（+888 条），但补采是时点快照，下轮不续采，8 只仍会掉回零覆盖。",
-      "five": {
-        "command": "三选一，命令不同：\n\nA（推荐，口径不变）：请策略线用其原生成器重出 11-13 队列，覆盖本仓同名文件。本席无命令可执行，只做写入后校验：\npython news_collector/gap_scan.py --top 20   # 复核覆盖率与缺口分变化\npython -c \"import json;d=json.load(open('news_collector/target_queue_chanlun.json',encoding='utf-8'));print(d['asof'],len(d['all']))\"\n\nB（本席自建生成器，需先写代码）：\npython news_collector/build_queue_chanlun.py --src quant_backtest/data/chanlun_pool.jsonl --detect-date 2026-11-13 --out news_collector/target_queue_chanlun.json --dry-run\n确认后去掉 --dry-run 落地。该脚本当前不存在，属新增 L1 代码；但替换队列文件是 L2，故整件仍需配准。\n\nC（不动作）：本轮补采清单转下轮待办，队列维持 11-06 快照，覆盖率缺口保留。",
-        "impact": "A/B 成功后：采集分母由 465 → 约 308（或两批并集），每日 irm/sse/taoguba/guba/xq 的采集对象整体换血。按现有单票成本估算，队列规模从 465 降到 308，采集耗时应下降约 1/3；但「当日买点」逐日滚动，队列会天天变，下游 collect_sla 的 24h 未刷新口径会出现逐日抖动（今日在队、明日在队外），需要在 SLA 里区分「队列变更」与「真断供」。\nC：维持现状，每日 284 只当日买点票零覆盖，策略线读不到对应帖子/问答。\n注意：xq 只按队列跑，队列换血后雪球覆盖对象同日变化，与 CR-20261114-01（分片调度）叠加时需一起核配额。",
-        "irreversible": "替换 target_queue_chanlun.json 本身可逆（备份即恢复）。真正的不可逆风险在认知层：一旦队列口径由本席自建（选项 B），此后「缠论队列」的来源就有两个版本（策略线原版 vs 本席重建版），历史读数不可比，且容易在后续复盘中被误当同一口径。若选 B，必须在文件内写入 generator 字段与生成参数，否则无法追溯。\n数据侧无不可逆：append-on-new 重复采不落盘。",
-        "alternatives": "A 请策略线重出：口径最干净，缺点是要等外部。\nB 本席按信号库重建：当天可用，缺点是我要替策略侧定义「哪些算当日队列」——这是研判动作，越出本席「收集者/治理者」边界，除非上级明确授权我按 chanlun_pool.jsonl 的口径代生成。\nC 不动作：零风险，但缺口留存。\nD 中间路线：不改队列，改为「队列 ∪ 当日买点」的采集并集，队列仍由策略侧维护，本席只在采集侧做并集扩展（改动落在 run_target_queue_intel.py 的入队逻辑，不动队列文件）。并集上限需评估：308+465 去重后可能超 600，irm/sse 单票成本低可承受，taoguba 需限页。",
-        "rollback": "1) 替换前先备份：cp target_queue_chanlun.json target_queue_chanlun.json.bak_20261116\n2) 回滚 = 备份覆盖回原位，并删去由此产生的 data/gap_scan.json 缓存（rm 走回收站，不硬删）\n3) 若选 B：同时删除 build_queue_chanlun.py，避免下次被误跑\n4) 回滚后复核：gap_scan --top 5 的 A 类（应采未采）应回到 0，队列 asof 应回到 2026-11-06"
-      },
-      "evidence": {
-        "queue_asof": "2026-11-06",
-        "queue_unique_codes": 465,
-        "queue_all_rows": 489,
-        "queue_mtime": "2026-11-09 09:03",
-        "strategy_latest_batch": "2026-11-13",
-        "strategy_buy_codes": 308,
-        "intersection": 24,
-        "missing": 284,
-        "coverage_pct": 7.8,
-        "jaccard_pct": 3.2,
-        "generator_in_repo": false,
-        "sample_pool_out": [
-          "000782",
-          "002737",
-          "300688",
-          "300804",
-          "600511",
-          "600641",
-          "601668",
-          "603175"
-        ],
-        "ledger": "COLLECT_REGISTER.md §25-2.2 / §25-2.6"
-      },
-      "status": "pending",
-      "id": "CR-20261116-01",
-      "created_at": "2026-11-16 03:00:46",
-      "requester": "OSINT1 马良",
-      "approver": "INTEL0 马超"
-    }
-  ],
-  "updated_at": "2026-11-16 03:00:46"
+    "gap_items_before_after": "172 -> 116 (49 只 × 7 源)",
+    "xq_today": "07:00 轮三次尝试均停在 403/666，SESSION_DEAD，未续跑",
+    "ledger": "COLLECT_REGISTER.md §25-3",
+    "market_prefix": "00:179 30:182 60:185 68:93 92(北交所):10 → 非北交所适用 639"
+   },
+   "status": "pending",
+   "id": "CR-20261116-02",
+   "created_at": "2026-11-16 08:39:12",
+   "requester": "OSINT1 马良",
+   "approver": "INTEL0 马超"
+  }
+ ],
+ "updated_at": "2026-11-16 08:39:12"
 }

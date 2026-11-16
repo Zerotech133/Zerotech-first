@@ -232,6 +232,22 @@ def _parse_dt(s):
         return None
 
 
+def norm_code(x):
+    """把各种写法的标的码归一成 6 位数字；归一不了返回 ""（由调用方决定报错还是跳过）。
+
+    必须剥全部空白（含 CR/LF）：11-16 判例 —— CRLF 文本经 `tr '\\n' ' '` 后每只票尾随
+    "\\r"，zfill(6) 把 "000011\\r" 变成 7 字符，市场判定全部落到 NA，649 只票被静默
+    判成「不适用该源」，报告看起来是「零缺口」。**输入脏字符不能表现为「没问题」**
+    （同族：--only 静默丢弃池外票，见 apply_only_filter）。
+    """
+    v = str(x).split(".")[0]
+    v = "".join(ch for ch in v if not ch.isspace())
+    if not v:
+        return ""
+    v = v.zfill(6)
+    return v if (len(v) == 6 and v.isdigit()) else ""
+
+
 def _code_of(it, field="code"):
     if isinstance(it, str):
         v = it
@@ -239,8 +255,7 @@ def _code_of(it, field="code"):
         v = it.get(field) or it.get("ts_code") or it.get("symbol") or it.get("stock") or ""
     else:
         return ""
-    v = str(v).split(".")[0].strip()
-    return v.zfill(6) if v else ""
+    return norm_code(v)
 
 
 def _codes6(items, field="code"):
@@ -585,7 +600,18 @@ def apply_only_filter(pools, only):
     """
     if not only:
         return pools, set()
-    want = {str(x).split(".")[0].zfill(6) for x in only}
+    want, bad = set(), []
+    for x in only:
+        c = norm_code(x)
+        if c:
+            want.add(c)
+        else:
+            bad.append(x)
+    if bad:
+        # fail-loud：归一不了的代码必须报错，不能悄悄当成「不适用」
+        raise ValueError("--only 中无法识别的标的代码 %d 个：%r" % (len(bad), bad[:10]))
+    if not want:
+        return pools, set()
     pool_out = {c for c in want if c not in pools}
     merged = {k: v for k, v in pools.items() if k in want}
     for c in sorted(pool_out):
@@ -603,6 +629,10 @@ def build_report(now=None, stale_h=None, thin_n=None, fresh_cache=False, only=No
     stale_h = stale_raw + slack
 
     pools, pool_stats, problems = load_pools()
+    # --only 的语义是「体检这几只票」，不是「体检这几只里在池内的那些」。
+    # 池外票必须显式补空 entry 并打 pool_out 标记（详见 apply_only_filter 注释）。
+    # 放在建索引之前，让非法输入 fail-fast（不必先扫全盘再报错）。
+    pools, pool_out = apply_only_filter(pools, only)
     queues = load_queue_sets()
     wl = load_whitelist(now)
     observed = _observed_queue()
@@ -626,10 +656,6 @@ def build_report(now=None, stale_h=None, thin_n=None, fresh_cache=False, only=No
         idxs[sid] = idx
         src_stats[sid] = st
     _cache_snapshot = cache
-
-    # --only 的语义是「体检这几只票」，不是「体检这几只里在池内的那些」。
-    # 池外票必须显式补空 entry 并打 pool_out 标记（详见 apply_only_filter 注释）。
-    pools, pool_out = apply_only_filter(pools, only)
 
     all_states = (STATE_OK, STATE_MISSING, STATE_EMPTY, STATE_STALE_Q, STATE_THIN_Q,
                   STATE_NO_QUEUE, STATE_STALE_OFFQ, STATE_THIN_OFFQ, STATE_NO_NEWS,
@@ -974,8 +1000,12 @@ def main(argv=None):
 
     now = _parse_dt(a.now) if a.now else datetime.now()
     t0 = time.time()
-    rep = build_report(now=now, stale_h=a.stale_hours, thin_n=a.thin,
-                       fresh_cache=a.no_cache, only=a.only, no_slack=a.no_slack)
+    try:
+        rep = build_report(now=now, stale_h=a.stale_hours, thin_n=a.thin,
+                           fresh_cache=a.no_cache, only=a.only, no_slack=a.no_slack)
+    except ValueError as e:
+        print("[FATAL] %s" % e, file=sys.stderr)
+        return 2
     rep["elapsed_s"] = round(time.time() - t0, 1)
 
     if not a.no_write and not a.only:

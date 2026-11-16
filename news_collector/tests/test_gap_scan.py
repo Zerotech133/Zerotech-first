@@ -259,3 +259,38 @@ def test_only_filter_empty_only_list_keeps_everything():
     got, out = G.apply_only_filter(pools, [])
     assert got is pools
     assert out == set()
+
+
+# ---------------------------------------------- 输入脏字符 / 非法代码（11-16 判例）
+def test_norm_code_strips_cr_from_crlf_input():
+    """CRLF 导出的代码清单经 shell 传递后每只票尾随 \\r；
+    首版不剥空白 → zfill(6) 得 7 字符 → 市场判定全落 NA → 649 只票静默「零缺口」。"""
+    assert G.norm_code("000011\r") == "000011"
+    assert G.norm_code("600519\r\n") == "600519"
+
+
+def test_norm_code_accepts_common_forms():
+    assert G.norm_code("000001.SZ") == "000001"
+    assert G.norm_code(" 600519 ") == "600519"
+    assert G.norm_code("1") == "000001"
+
+
+def test_norm_code_rejects_garbage():
+    assert G.norm_code("abc") == ""
+    assert G.norm_code("") == ""
+    assert G.norm_code("1234567") == ""
+    assert G.norm_code(None) == ""
+
+
+def test_only_filter_raises_on_unparsable_code():
+    """归一不了必须报错，不能当成「不适用」静默吞掉。"""
+    import pytest
+    with pytest.raises(ValueError):
+        G.apply_only_filter(_pools(["000001"]), ["000001", "abc"])
+
+
+def test_only_filter_cr_suffixed_codes_hit_pool():
+    """带 CR 的代码仍应命中池内，而不是被标成池外。"""
+    got, out = G.apply_only_filter(_pools(["000011"]), ["000011\r"])
+    assert out == set()
+    assert "000011" in got
