@@ -170,7 +170,46 @@ $PY = "C:\Program Files\Python311\python.exe"; cd e:\老田的AI助手\quant_bac
 
 ---
 
-## 七、深入文档索引
+## 七、TDX 数据服务（2026-11-16 起强制鉴权）
+
+服务端 `auth_mode` 已由 `shadow` 切 `enforce`：无 `X-API-Key` 的 `GET /api/*`
+一律 **401**（此前放行）。本仓所有调用方已全部接入。
+
+| 项 | 状态 |
+|---|---|
+| 真调用方 | **9 个，全部带 `X-API-Key`** |
+| Key 存放 | 仓库根 `.env.local` 的 `TDX_API_KEY`（`.gitignore` 的 `.env.*` 已忽略，**未进仓库**） |
+| 缺 Key 时 | **抛错**，不静默 —— 不让请求 401 后被当成「今天没数据」 |
+
+**调用方清单**
+
+- 两个客户端（多消费者入口）
+  - `quant_backtest/tdx_api_client.py` —— 被 `qpzm_backtest` / `check_dep_closure` 使用
+  - `tools/xtcloud_client.py` —— 被 `portal/jev_{chain,flow,graph}`、
+    `tools/jev_concept_fetch`、`jev_mins_fetch`、`top_list_fetch` 等 7+ 处使用
+- 7 个独立脚本（各自发请求）
+  - `quant_backtest/{tdx_sync, ths_dc_incr_sync, _pull_tsdaily_monthly,`
+    `upstream_health, contract_health, linkage, sector_minute_gap_backfill}.py`
+
+**配置方法**
+
+```bash
+# 仓库根 .env.local（已被 .gitignore 忽略，不入库）
+TDX_API_KEY=tdx_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+或直接设环境变量 `TDX_API_KEY`。Key 由服务方通过安全渠道单独发放，
+形如 `tdx_` + 43 位字符，**不要提交到 Git、不要拼进 URL、不要写进前端代码**。
+
+内网直连（排障用）`http://192.168.203.13:8088`；
+旧地址 `192.168.203.48` 已于 2026-11-11 停用（仅留回滚备份）。
+
+> 排查提示：若看到 `401 unauthorized`，先查 `TDX_API_KEY` 是否配到；
+> 若看到「未配置 TDX_API_KEY」，说明 `.env.local` 里缺这一项或 Key 已轮换。
+
+---
+
+## 八、深入文档索引
 
 - `quant_backtest/INTEL_RD_PLAN.md` —— 开发日志唯一真相（K 系列编号，含全部判例）
 - `quant_backtest/linkage_weak_review_template.md` —— weak 产线九节规格模板（§1-§9 SOP 与命令块）
