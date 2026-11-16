@@ -184,6 +184,17 @@ class AppSettings(BaseSettings):
                         raise ValueError(
                             "生产环境公网 BEPUSDT_NOTIFY_BASE_URL 必须为可信 https://"
                         )
+            # 2026-11-17：空 INTERNAL_API_KEY 会让 api/main.py 的 internal_key_auth
+            # 中间件整个短路（`if settings.internal_api_key and ...`）—— 所有非豁免
+            # /api/* 都不再校验 X-Internal-Key。
+            # 当前的安全实际靠「8105 只绑 127.0.0.1」这个**部署事实**，而不是配置约束；
+            # 一旦有人改 --host 0.0.0.0、加反代或做端口映射，没有任何地方会提醒。
+            # 与 telegram_webhook_secret / bepusdt_api_token 的处理对齐：prod 必填。
+            if not self.internal_api_key:
+                raise ValueError(
+                    "生产环境必须配置 INTERNAL_API_KEY —— 否则 /api/* 内部接口"
+                    "不校验 X-Internal-Key（8105 一旦对外暴露即无鉴权入口）"
+                )
         return self
 
     @model_validator(mode="after")

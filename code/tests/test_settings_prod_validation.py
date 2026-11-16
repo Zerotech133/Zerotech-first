@@ -15,6 +15,8 @@ _OK = dict(
     admin_password="StrongPass9",
     persistence_backend="sql",
     db_main_url="postgresql://u:strongpw@h:5432/d",
+    # 2026-11-17：prod 强制要求内部接口鉴权键（空则 /api/* 不校验 X-Internal-Key）
+    internal_api_key="ik-strong-internal-key",
 )
 
 
@@ -74,3 +76,18 @@ def test_non_prod_ignores_new_assertions():
     # local-dev 下 memory + 默认弱口令 + 空支付 token 均不拦截。
     s = AppSettings(app_env="local-dev", persistence_backend="memory")
     assert s.persistence_backend == "memory"
+
+def test_prod_rejects_missing_internal_api_key():
+    """prod 缺 INTERNAL_API_KEY 必须拒绝启动。
+
+    为空时 api/main.py 的 internal_key_auth 整个短路，所有非豁免 /api/*
+    不再校验 X-Internal-Key —— 8105 一旦对外暴露就是无鉴权入口。
+    """
+    with pytest.raises(ValueError, match="INTERNAL_API_KEY"):
+        _mk(internal_api_key="")
+
+
+def test_prod_allows_any_non_empty_internal_api_key():
+    """非空即可（不设长度下限，与 telegram_webhook_secret 同口径）。"""
+    s = _mk(internal_api_key="x")
+    assert s.internal_api_key == "x"
