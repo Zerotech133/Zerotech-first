@@ -114,8 +114,15 @@ EQUITY = os.path.join(PAPER_DIR, "equity.jsonl")
 # 分钟行情：每根 K 的 time 是该分钟起点，close 要等这一分钟走完才可见。
 # 因此「决策时刻 T 可见」= time < T 的最后一根，绝不能取 time == T。
 MINUTE_ROOT = os.path.join(HERE, "data", "tdx", "ts_rt_min_roll")
+# ★ 必须 realpath：HERE 走的是 abspath，不解析符号链接。
+#   计划任务 PaperTrade 的启动命令是 C:\aios\quant_backtest\run_paper_trade.ps1，
+#   而 C:\aios 是指向项目目录的软链 ⇒ 从软链往上退两层落到 C:\deliverables（不存在），
+#   抑制令永远读不到，而「读不到」被 load_suppression 当成「当日无抑制」。
+#   实测（2026-11-16）：软链入口 None / 实体入口 SUPPRESS，同一份文件两个结论。
+#   PAPER_DIR / MINUTE_ROOT / ADJ_ROOT 仍用 HERE 不动：经软链读写落到同一实体目录，
+#   行为无差异，改它们只会扩大改动面。
 DELIVERABLES = os.environ.get("ZB_DELIVERABLES") or os.path.abspath(
-    os.path.join(HERE, "..", "..", "deliverables"))
+    os.path.join(os.path.realpath(HERE), "..", "..", "deliverables"))
 SUP_CONSUMER_ID = "quant_backtest/paper_trade.py"
 SUP_SCHEMA = "preopen_suppressed/v1"
 # 交易时段：不在时段内一律拒绝成交（封死「盘后补录开盘单」这条回填路径）
@@ -302,9 +309,20 @@ def _audit_meta(quote, day, decision_time):
 
 
 def load_suppression(day):
-    """读人工抑制令。字段不符一律抛错阻断（失败关闭），绝不静默当「今日无抑制」。"""
+    """读人工抑制令。字段不符一律抛错阻断（失败关闭），绝不静默当「今日无抑制」。
+
+    这里刻意区分两种「没有文件」：
+      · 目录本身不存在  → 一定是路径算错了（deliverables 目录永远在），抛错。
+        此前把这种情况也当成「非抑制日」返回 None，正是软链路径偏移能静默
+        失效半个月的原因 —— 「读不到」被当成了「没有」。
+      · 目录在、文件不在 → 真的今天没下抑制令，返回 None（合法）。
+    """
     p = os.path.join(DELIVERABLES, "preopen_suppressed_%s.json" % day)
     if not os.path.isfile(p):
+        if not os.path.isdir(DELIVERABLES):
+            raise RuntimeError(
+                "抑制令目录不存在：%s —— 路径配置错误，不能当成「当日无抑制」（失败关闭）"
+                % DELIVERABLES)
         return None
     j = json.load(open(p, encoding="utf-8"))
     if j.get("schema") != SUP_SCHEMA:
