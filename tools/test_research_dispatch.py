@@ -197,7 +197,10 @@ def _final(level="SELL", conf=72, ok=True, mode="normal"):
 
 
 def test_summarize_final_overrides_and_keeps_rule():
-    seats = {"T1": _seat("bull", 0.5), "T2": _seat("bear", 0.6),
+    # T2 需带技术面依据，否则决胜席的 SELL 会被口径收口（这是新规则的正确行为）
+    tech_bear = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["跌破 12.8 支撑"], "verdict": "价格破位", "risks": []}}
+    seats = {"T1": _seat("bull", 0.5), "T2": tech_bear,
              "N1": _seat("neutral", 0.4), "F1": _seat("unknown", 0.3)}
     base = rd.summarize("X", seats)
     assert base["decided_by"] == "rule" and "rule_level" not in base
@@ -355,6 +358,32 @@ def test_decide_final_level_valuation_policy():
     assert lvl == "SELL" and note == ""
     lvl2, note2 = rd.decide_final_level("SELL", {"T2": val}, "technical")
     assert lvl2 == "HOLD" and "缺技术面" in note2
+
+
+def test_policy_also_constrains_final_seat():
+    """决胜席给的 SELL 也要过同一道口径检查，否则切了口径影响不到最终档。"""
+    val = {"ok": True, "mode": "normal", "result": {
+        "stance": "bear", "points": ["PE 887 倍"], "verdict": "估值太高", "risks": []}}
+    seats = {"T1": _seat("bull"), "T2": val, "N1": val, "F1": _seat("unknown")}
+    final = {"ok": True, "mode": "normal", "seat": "FD", "phase": "final",
+             "result": {"decision_level": "SELL", "confidence": 66,
+                        "decisive_evidence": ["估值"], "rejected_arguments": ["技术"], "rationale": "定 SELL"}}
+
+    tech = rd.summarize("X", seats, None, final, "technical")
+    assert tech["recommendation_level"] == "HOLD"
+    assert tech["final_level_before_policy"] == "SELL"
+    assert "口径收口" in tech["rationale"]
+    assert tech["sell_policy"] == "technical"
+
+    valp = rd.summarize("X", seats, None, final, "valuation")
+    assert valp["recommendation_level"] == "SELL"
+    assert "final_level_before_policy" not in valp
+
+
+def test_sell_policy_recorded_in_output():
+    seats = {"T1": _seat("bull"), "T2": _seat("bear"), "N1": _seat("unknown"), "F1": _seat("unknown")}
+    assert rd.summarize("X", seats, None, None, "valuation")["sell_policy"] == "valuation"
+    assert rd.summarize("X", seats, None, None)["sell_policy"] == "technical"   # 默认
 
 
 def test_upsert_index_dedup(tmp_path, monkeypatch):

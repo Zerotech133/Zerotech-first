@@ -602,6 +602,18 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
     if (final or {}).get("ok") and fr.get("decision_level"):
         lvl = str(fr["decision_level"])
         if lvl in ("STRONG_BUY", "BUY", "HOLD", "SELL", "STRONG_SELL"):
+            # 口径必须全程一致：决胜席给的 SELL 也要过同一道粒度检查，
+            # 否则 `--sell-policy technical` 会被裁决者绕过（用户以为切了口径却影响不到最终档）。
+            if lvl in ("SELL", "STRONG_SELL"):
+                lvl_checked, note = decide_final_level(lvl, seats, sell_policy)
+                if lvl_checked != lvl:
+                    out_final_policy = {"final_level_before_policy": lvl,
+                                        "final_policy_note": note}
+                else:
+                    out_final_policy = {}
+                lvl = lvl_checked
+            else:
+                out_final_policy = {}
             out["rule_level"] = level
             out["rule_confidence"] = conf
             out["recommendation_level"] = lvl
@@ -614,10 +626,14 @@ def summarize(code: str, seats: dict, debate: dict | None = None,
             out["decided_by"] = "final_seat"
             out["decisive_evidence"] = (fr.get("decisive_evidence") or [])[:3]
             out["rejected_arguments"] = (fr.get("rejected_arguments") or [])[:3]
+            if out_final_policy:
+                out.update(out_final_policy)
+                out["rationale"] += "｜口径收口：%s" % out_final_policy["final_policy_note"]
             if lvl in ("SELL", "STRONG_SELL") and out["risk_level"] == "LOW":
                 out["risk_level"] = "MEDIUM"
     elif final:
         out["final_seat_status"] = (final or {}).get("mode") or "degraded"
+    out["sell_policy"] = sell_policy
     return out
 
 
