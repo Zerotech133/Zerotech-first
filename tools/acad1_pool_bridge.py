@@ -38,9 +38,9 @@ REPO = Path(__file__).resolve().parent.parent
 def _resolve_token_file() -> Path:
     """凭据文件路径：环境变量优先，其次仓库根 .env.local。
 
-    2026-11-16：原为硬编码 `Path(r"C:\\项目\\_vault\\secrets\\portal_api_token")`，
-    会把本地 vault 目录结构推进 PUBLIC 仓库（pre-push 公开面护栏阻断）。
-    改为配置化，两者都不入库：
+    2026-11-16：原为硬编码的本地 vault 绝对路径（已移除）。
+    那样会把本机目录结构一起推进 PUBLIC 仓库，被 pre-push 公开面护栏阻断。
+    改为配置化后，两者都不入库：
       - 环境变量 ACAD1_PORTAL_TOKEN_FILE
       - 或仓库根 .env.local 中的同名项（.gitignore 规则 `.env.*` 已忽略）
     """
