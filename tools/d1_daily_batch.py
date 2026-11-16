@@ -145,7 +145,7 @@ def arm_plans(dry_run: bool) -> dict:
            "--status", str(REPO / "agent_platform" / "data" / "watch_engine" / "autoarm_status.json"),
            "--json"]
     try:
-        r = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True,
+        r = subprocess.run(cmd, cwd=str(REPO), capture_output=True, stdin=subprocess.DEVNULL, text=True,
                            encoding="utf-8", errors="replace", timeout=180)
         # autoarm 的 --json 是 indent 输出的多行 JSON：整段解析，不能取最后一行。
         doc = json.loads((r.stdout or "").strip())

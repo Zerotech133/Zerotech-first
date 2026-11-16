@@ -75,11 +75,13 @@ def rebase_branch(tid: str, timeout: int = 600) -> dict:
         return {"ok": False, "tail": "worktree_missing:%s" % wt}
     try:
         r = subprocess.run(["git", "-C", str(wt), "rebase", "master"],
-                           capture_output=True, text=True, encoding="utf-8",
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           encoding="utf-8",
                            errors="replace", timeout=timeout)
         if r.returncode != 0:
             subprocess.run(["git", "-C", str(wt), "rebase", "--abort"],
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           timeout=120)
             return {"ok": False, "tail": "rebase_conflict（已 abort，未改 master）"}
         return {"ok": True, "tail": "rebased"}
     except Exception as exc:  # noqa: BLE001
@@ -91,6 +93,7 @@ def run_merge(tid: str, timeout: int) -> dict:
     try:
         r = subprocess.run([sys.executable, "-X", "utf8", "tools/devtask.py", "merge", tid],
                            cwd=str(REPO), capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL,
                            encoding="utf-8", errors="replace", timeout=timeout)
         out = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
         tail = out[-1][:200] if out else ""

@@ -34,7 +34,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 KINDS = {"file_exists", "file_contains", "not_contains", "json_field",
-         "regex_count", "count_equals", "cmd", "task_next_run"}
+         "regex_count", "count_equals", "cmd", "task_next_run", "text_equals_json"}
 
 
 def _read(path: Path) -> str:
@@ -42,6 +42,12 @@ def _read(path: Path) -> str:
         return path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return ""
+
+
+def _abs(repo: Path, path: str) -> Path:
+    """绝对路径原样使用，相对路径按 repo 解析。"""
+    p = Path(path)
+    return p if p.is_absolute() else repo / p
 
 
 def _first_hit(text: str, pattern: str) -> str:
@@ -121,7 +127,7 @@ def _dir_snapshot(path: Path) -> dict:
     return out
 
 
-def _run_with_retry(cmd, cwd: str, timeout: int, retries: int = 1):
+def _run_with_retry(cmd, cwd: str, timeout: int, retries: int = 2):
     """跑命令；对**瞬时句柄错误**（Windows WinError 6）重试一次。
 
     本机连续调用 subprocess 时偶发 `OSError: [WinError 6] 句柄无效`
@@ -132,7 +138,10 @@ def _run_with_retry(cmd, cwd: str, timeout: int, retries: int = 1):
     last = None
     for attempt in range(1, retries + 2):
         try:
+            # stdin=DEVNULL：pytest 捕获期 stdin 句柄可能已关闭，子进程继承时会
+            # 触发 `[WinError 6] 句柄无效`；显式给 /dev/null 可根治（实测 9/9 稳定）。
             return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True,
+                                  stdin=subprocess.DEVNULL,
                                   encoding="utf-8", errors="replace", timeout=timeout), attempt
         except OSError as exc:  # noqa: BLE001 — 仅句柄类瞬时错误重试
             last = exc
@@ -209,6 +218,29 @@ def check_task_next_run(spec: dict, repo: Path) -> tuple[bool, str]:
     return ok, ev
 
 
+def check_text_equals_json(spec: dict, repo: Path) -> tuple[bool, str]:
+    """正文里写的数字必须等于 JSON 里的值（防"报告与数据脱节"）。
+
+    spec: path(正文) / pattern(含一个捕获数字组) / json_path / pointer
+    """
+    text = _read(_abs(repo, spec["path"]))
+    m = re.search(spec["pattern"], text)
+    if not m:
+        return False, "正文未匹配到 /%s/" % spec["pattern"]
+    try:
+        said = int(m.group(1))
+    except (IndexError, ValueError):
+        return False, "正则未捕获到数字组"
+    try:
+        doc = json.loads(_read(_abs(repo, spec["json_path"])))
+    except ValueError:
+        return False, "JSON 解析失败"
+    actual = _dig(doc, spec["pointer"])
+    ok = said == actual
+    return ok, "正文=%d vs JSON %s=%r %s" % (said, spec["pointer"], actual,
+                                            "一致" if ok else "**不一致**")
+
+
 HANDLERS = {
     "file_exists": check_file_exists,
     "file_contains": check_file_contains,
@@ -218,6 +250,7 @@ HANDLERS = {
     "count_equals": check_count_equals,
     "cmd": check_cmd,
     "task_next_run": check_task_next_run,
+    "text_equals_json": check_text_equals_json,
 }
 
 

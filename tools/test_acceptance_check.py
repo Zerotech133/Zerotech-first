@@ -145,6 +145,28 @@ def test_cmd_unchanged_dir_relative_to_repo(tmp_path):
     assert ok is True and "dir deliv unchanged=True" in ev
 
 
+def test_text_equals_json_detects_mismatch(tmp_path):
+    """正文里写的数字必须等于 JSON 值——防"报告与数据脱节"。"""
+    md = tmp_path / "r.md"
+    md.write_text("本轮真正变成「可合」的分支数：**0 条**\n", encoding="utf-8")
+    js = tmp_path / "d.json"
+    js.write_text(json.dumps({"really_mergeable": 0}), encoding="utf-8")
+    spec = {"path": str(md), "pattern": r"分支数[：:]\s*\*{0,2}(\d+)\s*条",
+            "json_path": str(js), "pointer": "really_mergeable"}
+    ok, ev = ac.check_text_equals_json(spec, tmp_path)
+    assert ok is True and "一致" in ev
+
+    # 正文写 2、JSON 写 0 → 必须 FAIL
+    md.write_text("本轮真正变成「可合」的分支数：**2 条**\n", encoding="utf-8")
+    ok2, ev2 = ac.check_text_equals_json(spec, tmp_path)
+    assert ok2 is False and "不一致" in ev2
+
+    # 正文没有该句式 → FAIL（不能默认通过）
+    md.write_text("啥也没说\n", encoding="utf-8")
+    ok3, ev3 = ac.check_text_equals_json(spec, tmp_path)
+    assert ok3 is False and "未匹配" in ev3
+
+
 def test_run_spec_unknown_kind_and_exit_code(tmp_path):
     spec = {"checks": [
         {"id": "1", "section": "s", "name": "ok", "kind": "file_exists", "path": "a.txt"},

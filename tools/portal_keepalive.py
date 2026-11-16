@@ -76,7 +76,7 @@ def owner_pid(port: int) -> int | None:
     避免 text=True 默认 utf-8 解码失败（2026-11-16 实测 0xbb 报错）。
     """
     try:
-        raw = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True,
+        raw = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True, stdin=subprocess.DEVNULL,
                              timeout=10).stdout or b""
     except Exception:  # noqa: BLE001
         return None
