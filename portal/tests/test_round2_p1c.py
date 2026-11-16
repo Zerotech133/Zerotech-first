@@ -265,7 +265,7 @@ def test_lineage_urn_parse_source_and_node_exec():
     try:
         with open(path, "wb") as f:
             f.write(js.encode("utf-8"))
-        r = subprocess.run(["node", path], capture_output=True, text=True)
+        r = subprocess.run(["node", path], capture_output=True, text=True, stdin=subprocess.DEVNULL)
         assert r.returncode == 0, "node 执行 URN 解析失败: " + r.stderr
         out = json.loads(r.stdout.strip())
     finally:
@@ -302,7 +302,7 @@ def test_inline_scripts_node_check():
             try:
                 with open(path, "wb") as f:
                     f.write(s.encode("utf-8"))
-                r = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+                r = subprocess.run(["node", "--check", path], capture_output=True, text=True, stdin=subprocess.DEVNULL)
                 assert r.returncode == 0, name + " 内联 script 语法错误: " + r.stderr
             finally:
                 os.remove(path)

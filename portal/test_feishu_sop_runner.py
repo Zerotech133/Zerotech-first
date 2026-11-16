@@ -69,6 +69,7 @@ def test_cli_dry_run_json():
         [sys.executable, script, "--dry-run", "--json"],
         capture_output=True,
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["total"] == 7 and data["verdict"] == "PASS"

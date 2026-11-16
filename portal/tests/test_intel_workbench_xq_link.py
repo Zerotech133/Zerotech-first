@@ -56,7 +56,7 @@ if(url.searchParams.get('code')!==EXPECTED||!kg[1].includes(CODE))process.exit(3
     )
     script_file = tmp_path / "link.cjs"
     script_file.write_text(script, encoding="utf-8")
-    result = subprocess.run([node, str(script_file)], capture_output=True, text=True)
+    result = subprocess.run([node, str(script_file)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert result.returncode == 0, result.stderr + result.stdout
 
 
@@ -80,5 +80,5 @@ const safe=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':
     )
     script_file = tmp_path / "invalid.cjs"
     script_file.write_text(script, encoding="utf-8")
-    result = subprocess.run([node, str(script_file)], capture_output=True, text=True)
+    result = subprocess.run([node, str(script_file)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert result.returncode == 0, result.stderr + result.stdout

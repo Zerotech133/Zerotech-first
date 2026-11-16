@@ -41,6 +41,7 @@ def _wip_present(rel):
         out = subprocess.run(
             ["git", "status", "--porcelain", "--", rel],
             cwd=str(PORTAL), capture_output=True, text=True, timeout=10,
+        stdin=subprocess.DEVNULL,
         )
     except Exception:
         return True

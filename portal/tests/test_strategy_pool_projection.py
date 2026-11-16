@@ -139,5 +139,6 @@ def test_real_http_router_isolated(tmp_path: Path) -> None:
         [sys.executable, "-c", _HTTP_PROBE, str(PORTAL.parent), str(tmp_path)],
         env={**os.environ, "PORTAL_NO_WARMUP": "1", "PYTHONDONTWRITEBYTECODE": "1"},
         capture_output=True, text=True, timeout=60, check=False,
+    stdin=subprocess.DEVNULL,
     )
     assert result.returncode == 0, result.stdout + result.stderr

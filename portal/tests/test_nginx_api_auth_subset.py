@@ -265,6 +265,7 @@ def _nginx_test_container(conf: Path) -> tuple:
              "nginx:alpine", "nginx", "-t"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=120,
+        stdin=subprocess.DEVNULL,
         )
         return r.returncode == 0, (r.stderr or "") + (r.stdout or "")
     finally:
@@ -274,7 +275,7 @@ def _nginx_test_container(conf: Path) -> tuple:
 def test_nginx_syntax_if_available():
     if shutil.which("docker"):
         probe = subprocess.run(["docker", "image", "inspect", "nginx:alpine"],
-                               capture_output=True, timeout=60)
+                               capture_output=True, timeout=60, stdin=subprocess.DEVNULL)
         if probe.returncode == 0:
             ok, out = _nginx_test_container(CONF)
             assert ok, "docker nginx -t 失败:\n%s" % out[-2000:]
@@ -283,6 +284,6 @@ def test_nginx_syntax_if_available():
     if not nginx:
         pytest.skip("host 无 nginx 二进制且 docker nginx:alpine 不可用（未改生产 nginx）")
     r = subprocess.run([nginx, "-t", "-c", str(CONF)], capture_output=True,
-                       text=True, encoding="utf-8", errors="replace", timeout=60)
+                       text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stderr or r.stdout)[-2000:]
 

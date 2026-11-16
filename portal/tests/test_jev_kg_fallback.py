@@ -105,7 +105,7 @@ def test_probe_js_syntax():
     if not node:
         pytest.skip("node 不在 PATH")
     p = subprocess.run([node, "--check", PROBE], capture_output=True,
-                       encoding="utf-8", errors="replace", timeout=60)
+                       encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert p.returncode == 0, p.stderr
 
 
@@ -116,7 +116,7 @@ def test_probe_behavior_all_cases_pass():
         pytest.skip("node 不在 PATH（静态门禁仍生效）")
     p = subprocess.run([node, PROBE, INTEL, GRAPH_FIXTURE],
                        capture_output=True, encoding="utf-8", errors="replace",
-                       timeout=120)
+                       timeout=120, stdin=subprocess.DEVNULL)
     assert p.returncode == 0, "探针崩溃: " + (p.stderr or "")[:400]
     line = [x for x in p.stdout.splitlines() if x.strip().startswith("{")]
     assert line, "探针没输出 JSON: " + p.stdout[:300]

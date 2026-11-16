@@ -99,7 +99,7 @@ def _rerun_in_fresh_process() -> None:
         [sys.executable, "-m", "pytest", str(Path(__file__)), "-q",
          "-p", "no:cacheprovider", "--timeout=180"],
         cwd=str(REPO), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", timeout=300, env=env)
+        errors="replace", timeout=300, env=env, stdin=subprocess.DEVNULL)
     assert result.returncode == 0, (
         "隔离子进程运行失败：\n" + (result.stdout or result.stderr or "")[-3000:])
 

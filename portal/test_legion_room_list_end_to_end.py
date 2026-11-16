@@ -94,6 +94,7 @@ def _page_view(status, body, detail=None):
         input=json.dumps({"status": status, "body": body, **({"detail": detail} if detail is not None else {})},
                          ensure_ascii=False),
         text=True, capture_output=True, timeout=10, check=True,
+    stdin=subprocess.DEVNULL,
     )
     view = json.loads(result.stdout)
     assert view["calls"] == [{"url": "/legion-api/api/legion/room/list", "cache": "no-store"}]

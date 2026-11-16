@@ -88,7 +88,7 @@ def test_inline_script_syntax_if_node_available():
         js.write_text(m.group(1), encoding="utf-8")
         r = subprocess.run([node, "--check", str(js)], capture_output=True,
                            text=True, encoding="utf-8", errors="replace",
-                           timeout=60)
+                           timeout=60, stdin=subprocess.DEVNULL)
         assert r.returncode == 0, "JEV 内联 JS 语法错误:\n%s" % (r.stderr or r.stdout)
     finally:
         shutil.rmtree(td, ignore_errors=True)

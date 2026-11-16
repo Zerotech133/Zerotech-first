@@ -141,7 +141,7 @@ def _node():
 def test_a0_mainchat_syntax():
     """node --check：语法可执行断言（不依赖浏览器/生产）。"""
     r = subprocess.run([_node(), "--check", str(A0_MAINCHAT)], capture_output=True,
-                       text=True, encoding="utf-8", errors="replace", timeout=60)
+                       text=True, encoding="utf-8", errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stderr or r.stdout)[-2000:]
 
 
@@ -208,7 +208,7 @@ def test_a0_mainchat_direct_readonly_executable():
     env["A0_JS"] = str(A0_MAINCHAT)
     r = subprocess.run([node, "-e", _A0_NODE_HARNESS], cwd=str(REPO), env=env,
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=60)
+                       errors="replace", timeout=60, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stderr or r.stdout)[-3000:]
     assert "A0_MAINCHAT_DIRECT_READONLY_OK" in (r.stdout or "")
 

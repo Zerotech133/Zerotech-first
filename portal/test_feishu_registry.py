@@ -132,6 +132,6 @@ def test_cli_check_exit_zero():
     script = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "feishu_registry.py"
     )
-    r = subprocess.run([py, script, "--check"], capture_output=True)
+    r = subprocess.run([py, script, "--check"], capture_output=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "zb.owner.exec" in r.stdout.decode("utf-8", "replace")

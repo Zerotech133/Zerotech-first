@@ -70,6 +70,7 @@ def test_cli_json_runs():
         [sys.executable, script, "--json", "--skip-tests"],
         capture_output=True,
         timeout=300,
+    stdin=subprocess.DEVNULL,
     )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["total"] >= 6

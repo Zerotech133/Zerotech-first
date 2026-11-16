@@ -146,5 +146,5 @@ def test_inline_script_syntax(pages, name, tmp_path):
     js = _inline_script(g if name == "jev_graph.html" else i)
     p = tmp_path / (name + ".js")
     p.write_text(js, encoding="utf-8")
-    r = subprocess.run([node, "--check", str(p)], capture_output=True, text=True)
+    r = subprocess.run([node, "--check", str(p)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, "%s 内联脚本语法错误: %s" % (name, r.stderr[:400])

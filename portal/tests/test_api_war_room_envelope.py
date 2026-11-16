@@ -236,6 +236,7 @@ class TestIfsClientStatic:
         result = subprocess.run(
             [node, "--check", str(IFS_CLIENT_JS)],
             capture_output=True, text=True, timeout=60,
+        stdin=subprocess.DEVNULL,
         )
         assert result.returncode == 0, result.stderr
 
@@ -257,6 +258,7 @@ class TestIfsClientStatic:
         result = subprocess.run(
             [node, "-e", script, str(IFS_CLIENT_JS)],
             capture_output=True, text=True, timeout=60,
+        stdin=subprocess.DEVNULL,
         )
         assert result.returncode == 0, result.stderr
         assert "OK" in result.stdout

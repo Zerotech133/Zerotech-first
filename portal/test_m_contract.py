@@ -93,6 +93,7 @@ def test_contract_check_cli():
         ],
         capture_output=True,
         timeout=60,
+    stdin=subprocess.DEVNULL,
     )
     assert p.returncode == 0
     assert "契约校验通过" in p.stdout.decode("utf-8", "replace")

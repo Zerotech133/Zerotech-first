@@ -68,7 +68,8 @@ def test_cli_json():
         os.path.dirname(os.path.abspath(__file__)), "feishu_w3_preflight.py"
     )
     r = subprocess.run(
-        [sys.executable, script, "--json"], capture_output=True, timeout=300
+        [sys.executable, script, "--json"], capture_output=True, timeout=300,
+    stdin=subprocess.DEVNULL,
     )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["verdict"] in ("GO", "PARTIAL-GO", "NO-GO")

@@ -63,6 +63,7 @@ def _run_smoke(args=None, env_over=None):
         env=env,
         cwd=ROOT,
         timeout=180,
+    stdin=subprocess.DEVNULL,
     )
 
 

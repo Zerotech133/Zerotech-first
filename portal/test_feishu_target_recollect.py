@@ -99,6 +99,7 @@ def test_cli_json_without_creds_returns_nonzero():
         [sys.executable, script, "--role", "zb.no.such.role", "--json"],
         capture_output=True,
         timeout=60,
+    stdin=subprocess.DEVNULL,
     )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["ok"] is False

@@ -122,7 +122,7 @@ def test_cli_runs(monkeypatch):
     script = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "feishu_app_pool.py"
     )
-    r = subprocess.run([py, script], capture_output=True)
+    r = subprocess.run([py, script], capture_output=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert "canonical_app" in data and isinstance(data["roles"], list)

@@ -92,5 +92,5 @@ def test_inline_script_syntax(g, tmp_path):
     assert m, "找不到内联 script 块"
     p = tmp_path / "jev_graph.js"
     p.write_text(m.group(1), encoding="utf-8")
-    r = subprocess.run([node, "--check", str(p)], capture_output=True, text=True)
+    r = subprocess.run([node, "--check", str(p)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, "内联脚本语法错误: %s" % r.stderr[:400]

@@ -79,7 +79,7 @@ def test_json_cli():
     script = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "feishu_console.py"
     )
-    r = subprocess.run([py, script, "--json"], capture_output=True)
+    r = subprocess.run([py, script, "--json"], capture_output=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["gateway"]["push_24h"] >= 0
@@ -91,6 +91,6 @@ def test_html_cli_writes_file(ws_tmp):
         os.path.dirname(os.path.abspath(__file__)), "feishu_console.py"
     )
     out = os.path.join(ws_tmp, "console.html")
-    r = subprocess.run([py, script, "--out", out], capture_output=True)
+    r = subprocess.run([py, script, "--out", out], capture_output=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr
     assert os.path.exists(out) and os.path.getsize(out) > 1000

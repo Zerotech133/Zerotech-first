@@ -55,7 +55,8 @@ def test_cli_json_runs():
         os.path.dirname(os.path.abspath(__file__)), "feishu_rollback_drill.py"
     )
     r = subprocess.run(
-        [sys.executable, script, "--json"], capture_output=True, timeout=120
+        [sys.executable, script, "--json"], capture_output=True, timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["verdict"] in ("READY", "NOT-READY")

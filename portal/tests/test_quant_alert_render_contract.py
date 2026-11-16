@@ -285,6 +285,7 @@ def test_quant_alert_loader_offline() -> None:
         encoding="utf-8",
         timeout=15,
         check=False,
+    stdin=subprocess.DEVNULL,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     for rendered in json.loads(result.stdout):

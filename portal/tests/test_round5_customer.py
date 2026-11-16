@@ -319,7 +319,7 @@ def test_inline_scripts_node_check():
         try:
             with open(path, "wb") as f:
                 f.write(s.encode("utf-8"))
-            r = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+            r = subprocess.run(["node", "--check", path], capture_output=True, text=True, stdin=subprocess.DEVNULL)
             assert r.returncode == 0, "内联 script 语法错误: " + r.stderr
         finally:
             os.remove(path)

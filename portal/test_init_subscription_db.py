@@ -365,6 +365,7 @@ def test_12_subprocess_real_exit_codes(tmp_path):
             text=True,
             env=full_env,
             timeout=120,
+        stdin=subprocess.DEVNULL,
         )
 
     r = run("--check", "--json")

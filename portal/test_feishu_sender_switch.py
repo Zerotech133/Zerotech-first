@@ -94,7 +94,8 @@ def test_cli_json_status():
         os.path.dirname(os.path.abspath(__file__)), "feishu_sender_switch.py"
     )
     r = subprocess.run(
-        [sys.executable, script, "--status", "--json"], capture_output=True, timeout=120
+        [sys.executable, script, "--status", "--json"], capture_output=True, timeout=120,
+    stdin=subprocess.DEVNULL,
     )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["canonical_app"]
