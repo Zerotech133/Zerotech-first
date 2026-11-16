@@ -32,6 +32,10 @@ POOL_API = "http://127.0.0.1:8091/api/acad1/pool"
 
 SEATS = ("T1", "T2", "N1", "F1")
 DEBATE_PAIR = ("T1", "T2")          # 多头 ↔ 空头
+FINAL_SEAT = "FD"                   # 决胜席（对齐菜鸟 final_decision 节点）
+FINAL_SCHEMA = ("{\"decision_level\":\"STRONG_BUY|BUY|HOLD|SELL|STRONG_SELL\","
+                "\"confidence\":0-100,\"decisive_evidence\":[\"...\"],"
+                "\"rejected_arguments\":[\"...\"],\"rationale\":\"一句话\"}")
 SEAT_SPEC = {
     "T1": ("多头研究员", "只找**支持买入**的证据：结构/量价/资金/催化。没有就直说没有。"),
     "T2": ("空头研究员", "只找**反对买入**的证据：破位/背离/估值/筹码/利空。没有就直说没有。"),
@@ -283,6 +287,57 @@ def should_debate(t1_stance: str, t2_stance: str, rounds: int) -> bool:
     return rounds > 0 and {str(t1_stance), str(t2_stance)} == {"bull", "bear"}
 
 
+def should_finalize(bull: int, bear: int) -> bool:
+    """何时启用决胜席：四席里同时存在看多与看空（真对立），否则规则已能定。
+
+    背景：T2 恒 bear 使 `bear>=2 → SELL` 实际由 F1 一票决定，`BUY` 永不成立；
+    对齐菜鸟的 final_decision 节点，在多空对立时由决胜席拍板，而不是靠票数门槛。
+    """
+    return bull >= 1 and bear >= 1
+
+
+def _seat_brief_for_final(seats: dict) -> dict:
+    """给决胜席看：每席立场 + 论据 + 缺失。不塞原始长文，只给可判断的要点。"""
+    out = {}
+    for k in SEATS:
+        r = (seats.get(k) or {}).get("result") or {}
+        out[k] = {"stance": r.get("stance"), "confidence": r.get("confidence"),
+                  "points": (r.get("points") or [])[:4],
+                  "risks": (r.get("risks") or [])[:3],
+                  "evidence_missing": (r.get("evidence_missing") or [])[:3],
+                  "verdict": str(r.get("verdict") or "")[:160]}
+    return out
+
+
+def run_final_decision(client, item: dict, seats: dict, debate: dict | None,
+                       xsec: dict | None, fin: dict | None, sent: dict | None,
+                       model: str, max_tokens: int) -> dict:
+    """决胜席：在多空对立时给出最终五档，必须指出决定性证据与被否定的论据。"""
+    system = (
+        "你是数字军团**最终决策席（FD）**。四位研究员已给出结论，现在由你拍板。\n"
+        "硬规则：\n"
+        "1) 必须选出一个档位（STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL），**不允许 unknown**；\n"
+        "2) 必须指出「决定性证据」——是哪一方哪条材料真正左右了结论；\n"
+        "3) 必须指出「被否定的论据」——你为什么不采纳对方的核心论点；\n"
+        "4) 只用给定材料，不许编造；只输出 JSON。"
+    )
+    material = {
+        "code": item.get("code"), "name": item.get("name"),
+        "seats": _seat_brief_for_final(seats),
+        "debate": (debate or {}).get("rounds") or [],
+        "xsec_profile": xsec or {},
+        "finance_profile": fin or {},
+        "sentiment_profile": sent or {},
+    }
+    user = ("四席结论与辩论纪要：\n%s\n\n请按此 JSON 输出最终决策：%s\n"
+            "篇幅硬约束：decisive_evidence ≤ 3 条、rejected_arguments ≤ 3 条，每条 ≤ 80 字。"
+            % (json.dumps(material, ensure_ascii=False), FINAL_SCHEMA))
+    out = _call(client, system, user, model, max_tokens)
+    out["seat"] = FINAL_SEAT
+    out["phase"] = "final"
+    return out
+
+
 def _stance(res: dict) -> str:
     r = (res or {}).get("result") or {}
     return str(r.get("stance") or "unknown")
@@ -329,7 +384,8 @@ def _risk_level(bull: int, bear: int, unk: int, degraded: int) -> str:
     return "LOW"
 
 
-def summarize(code: str, seats: dict, debate: dict | None = None) -> dict:
+def summarize(code: str, seats: dict, debate: dict | None = None,
+              final: dict | None = None) -> dict:
     """汇总为菜鸟式契约：五档 + 0-100 + risk_level + time_horizon。
 
     target_price 无可靠来源 → 一律 null 并注明（不编造）。
@@ -370,7 +426,7 @@ def summarize(code: str, seats: dict, debate: dict | None = None) -> dict:
             why = "四席均无立场（证据不足；降级 %d 席）" % len(degraded)
 
     horizon = "SHORT" if level in ("BUY", "STRONG_BUY", "SELL", "STRONG_SELL") else "MEDIUM"
-    return {
+    out = {
         "recommendation_level": level,
         "confidence_score": conf,                      # 0-100
         "risk_level": _risk_level(bull, bear, unk, len(degraded)),
@@ -384,7 +440,30 @@ def summarize(code: str, seats: dict, debate: dict | None = None) -> dict:
         "seats_ok": len(got), "seats_degraded": len(degraded), "seats_total": len(SEATS),
         "debated": bool(debate and debate.get("rounds")),
         "debate_changed": bool(debate and debate.get("changed")),
+        "decided_by": "rule",
     }
+    # 决胜席有效时覆盖规则结论（保留 rule_* 以便随时对比）
+    fr = (final or {}).get("result") or {}
+    if (final or {}).get("ok") and fr.get("decision_level"):
+        lvl = str(fr["decision_level"])
+        if lvl in ("STRONG_BUY", "BUY", "HOLD", "SELL", "STRONG_SELL"):
+            out["rule_level"] = level
+            out["rule_confidence"] = conf
+            out["recommendation_level"] = lvl
+            try:
+                f_conf = float(fr.get("confidence") or 0)
+                out["confidence_score"] = round(f_conf if f_conf > 1 else f_conf * 100, 1)
+            except (TypeError, ValueError):
+                pass
+            out["rationale"] = "决胜席：%s" % str(fr.get("rationale") or "")[:200]
+            out["decided_by"] = "final_seat"
+            out["decisive_evidence"] = (fr.get("decisive_evidence") or [])[:3]
+            out["rejected_arguments"] = (fr.get("rejected_arguments") or [])[:3]
+            if lvl in ("SELL", "STRONG_SELL") and out["risk_level"] == "LOW":
+                out["risk_level"] = "MEDIUM"
+    elif final:
+        out["final_seat_status"] = (final or {}).get("mode") or "degraded"
+    return out
 
 
 def upsert_index(row: dict) -> None:
@@ -415,6 +494,7 @@ def main(argv=None) -> int:
     ap.add_argument("--no-xsec", action="store_true")
     ap.add_argument("--no-fin", action="store_true", help="不附带财务画像")
     ap.add_argument("--no-sent", action="store_true", help="不附带舆情画像")
+    ap.add_argument("--no-final", action="store_true", help="不启用决胜席（只用票数规则）")
     ap.add_argument("--debate-rounds", type=int, default=2, help="T1↔T2 互辩轮数（0=不辩）")
     args = ap.parse_args(argv)
 
@@ -478,13 +558,25 @@ def main(argv=None) -> int:
                 % (code, _stance(debate["final"].get("T1")), _stance(debate["final"].get("T2")),
                    debate["changed"]))
 
-        summary = summarize(code, seats, debate)
+        final = None
+        cnt = {"bull": sum(1 for v in seats.values() if _stance(v) == "bull"),
+               "bear": sum(1 for v in seats.values() if _stance(v) == "bear")}
+        if not args.no_final and should_finalize(cnt["bull"], cnt["bear"]):
+            log("  %s 多空对立(多%d/空%d) → 决胜席拍板" % (code, cnt["bull"], cnt["bear"]))
+            final = run_final_decision(client, item, seats, debate, xs, fin, sent,
+                                       args.model, args.max_tokens)
+            fr = (final.get("result") or {})
+            log("  %s 决胜席 -> %s conf=%s ok=%s | %s" % (code, fr.get("decision_level"),
+                fr.get("confidence"), final.get("ok"), str(fr.get("rationale"))[:70]))
+
+        summary = summarize(code, seats, debate, final)
         modes = {"normal": 0, "degraded": 0, "debate": 0}
         for v in seats.values():
             modes[v.get("mode") or "normal"] = modes.get(v.get("mode"), 0) + 1
         doc = {"schema": "research_dispatch/v2", "code": code, "name": item.get("name"),
                "pool_date": day, "data_date": item.get("data_date"),
                "seats": seats, "debate_log": (debate or {}).get("rounds"),
+               "final_decision": (final or {}).get("result"),
                "summary": summary, "modes": modes,
                "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
                "model": args.model, "paper_only": True, "not_a_trade": True,

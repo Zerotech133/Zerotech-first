@@ -166,6 +166,54 @@ def test_debate_log_keeps_both_sides_text(monkeypatch):
     assert r0["T1"]["mode"] == "normal" and r0["T2"]["mode"] == "normal"
 
 
+def test_should_finalize_gate():
+    """有对立就启用决胜席；单边/全同向不需要。"""
+    assert rd.should_finalize(1, 1) is True
+    assert rd.should_finalize(2, 1) is True
+    assert rd.should_finalize(1, 2) is True
+    assert rd.should_finalize(0, 2) is False        # 纯空头：规则已能定 SELL
+    assert rd.should_finalize(3, 0) is False        # 纯多头
+    assert rd.should_finalize(0, 0) is False
+
+
+def _final(level="SELL", conf=72, ok=True, mode="normal"):
+    return {"ok": ok, "mode": mode, "seat": "FD", "phase": "final",
+            "result": {"decision_level": level, "confidence": conf,
+                       "decisive_evidence": ["e1"], "rejected_arguments": ["r1"],
+                       "rationale": "终结理由"} if ok else None}
+
+
+def test_summarize_final_overrides_and_keeps_rule():
+    seats = {"T1": _seat("bull", 0.5), "T2": _seat("bear", 0.6),
+             "N1": _seat("neutral", 0.4), "F1": _seat("unknown", 0.3)}
+    base = rd.summarize("X", seats)
+    assert base["decided_by"] == "rule" and "rule_level" not in base
+
+    over = rd.summarize("X", seats, None, _final("SELL", 72))
+    assert over["decided_by"] == "final_seat"
+    assert over["recommendation_level"] == "SELL"
+    assert over["confidence_score"] == 72.0
+    assert over["rule_level"] == base["recommendation_level"]      # 规则结论仍可查
+    assert over["decisive_evidence"] == ["e1"] and over["rejected_arguments"] == ["r1"]
+
+
+def test_summarize_falls_back_when_final_degraded():
+    seats = {"T1": _seat("bull"), "T2": _seat("bear"), "N1": _seat("unknown"), "F1": _seat("unknown")}
+    rule = rd.summarize("X", seats)
+    deg = rd.summarize("X", seats, None, _final(ok=False, mode="degraded"))
+    assert deg["recommendation_level"] == rule["recommendation_level"]   # 回落规则
+    assert deg["decided_by"] == "rule"
+    assert deg["final_seat_status"] == "degraded"
+
+
+def test_summarize_ignores_illegal_final_level():
+    seats = {"T1": _seat("bull"), "T2": _seat("bear"), "N1": _seat("unknown"), "F1": _seat("unknown")}
+    rule = rd.summarize("X", seats)
+    bad = rd.summarize("X", seats, None, _final("MAYBE", 50))
+    assert bad["recommendation_level"] == rule["recommendation_level"]
+    assert bad["decided_by"] == "rule"
+
+
 def test_upsert_index_dedup(tmp_path, monkeypatch):
     idx = tmp_path / "research_index.jsonl"
     monkeypatch.setattr(rd, "INDEX", idx)
