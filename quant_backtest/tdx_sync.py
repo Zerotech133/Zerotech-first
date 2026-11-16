@@ -34,6 +34,40 @@ import requests
 import logging
 
 BASE = "http://rookie.xtcloud-tech.com:48088"
+
+def _api_key():
+    """TDX 服务 API Key（2026-11-16 起服务端 auth_mode=enforce，无 Key 一律 401）。
+
+    来源：环境变量 TDX_API_KEY > 向上找到的 .env.local（已 gitignore）。
+    缺 Key 立刻抛错 —— 不让请求静默 401 后被当成「没有数据」
+    （同 2026-11-16 抑制令判例：读不到 ≠ 没有）。
+    """
+    k = (os.environ.get("TDX_API_KEY") or "").strip()
+    if k:
+        return k
+    d = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        f = os.path.join(d, ".env.local")
+        if os.path.isfile(f):
+            try:
+                with open(f, encoding="utf-8-sig") as fh:
+                    for raw in fh:
+                        raw = raw.strip()
+                        if raw.startswith("TDX_API_KEY="):
+                            v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                            if v:
+                                return v
+            except OSError:
+                pass
+            # 不 break：本层没有该键就继续向上（就近优先）
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    raise RuntimeError(
+        "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权。"
+        "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>")
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "tdx")
 INFO_DB = os.path.join(OUT, "tdx_info.db")
@@ -66,6 +100,7 @@ SKIP_DEFAULT = {
 }  # K53: ts_moneyflow 移出（done 表走增量续拉，不再全量翻页）
 
 SESS = requests.Session()
+SESS.headers.update({"X-API-Key": _api_key()})
 # 2026-11-05 补位修复：xtcloud 是直连可达的公网域名（实测 0.2s/页），
 # 但 Session 默认 trust_env=True 会继承宿主 http(s)_proxy，经代理被拒
 # 403 或挂到 60s 超时 ×3 重试 → 表现为「无输出卡死 5 分钟」。

@@ -60,6 +60,39 @@ REPORTS = os.path.join(HERE, "reports")
 MANIFEST = os.path.join(HERE, "data", "tdx", "_manifest.json")
 SQLITE_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
 UPSTREAM = "http://rookie.xtcloud-tech.com:48088"
+
+def _api_key():
+    """TDX 服务 API Key（2026-11-16 起服务端 auth_mode=enforce，无 Key 一律 401）。
+
+    来源：环境变量 TDX_API_KEY > 向上找到的 .env.local（已 gitignore）。
+    缺 Key 立刻抛错 —— 不让请求静默 401 后被当成「没有数据」。
+    """
+    k = (os.environ.get("TDX_API_KEY") or "").strip()
+    if k:
+        return k
+    d = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        f = os.path.join(d, ".env.local")
+        if os.path.isfile(f):
+            try:
+                with open(f, encoding="utf-8-sig") as fh:
+                    for raw in fh:
+                        raw = raw.strip()
+                        if raw.startswith("TDX_API_KEY="):
+                            v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                            if v:
+                                return v
+            except OSError:
+                pass
+            # 不 break：本层没有该键就继续向上（就近优先）
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    raise RuntimeError(
+        "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权。"
+        "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>")
+
 CONS_CACHE = os.path.join(HERE, "reports", "_consumers_cache.json")
 SKIP_DIRS = ("__pycache__", ".git", "data", "reports", "h5_daily",
              "node_modules", ".workbuddy", "logs")
@@ -378,7 +411,8 @@ def _upstream(tbl, timeout=12, use_cache=True):
 
     url = "%s/api/data/table/%s?%s" % (
         UPSTREAM, tbl, urllib.parse.urlencode({"limit": 1, "offset": 0}))
-    req = urllib.request.Request(url, headers={"User-Agent": "contract-health/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "contract-health/1.0",
+                                       "X-API-Key": _api_key()})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             d = json.loads(r.read().decode("utf-8"))
