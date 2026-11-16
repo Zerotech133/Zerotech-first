@@ -2,7 +2,7 @@
  "asof": "2026-11-06",
  "generated_at": "2026-11-09T09:03:00",
  "regime": "RED",
- "total": 489,
+ "total": 773,
  "all": [
   {
    "code": "301563.SZ",
@@ -3915,6 +3915,2846 @@
    "type": "3买",
    "stage": "broken",
    "sig_dt": "2026-10-08"
+  },
+  {
+   "code": "000011.SZ",
+   "name": "深物业A",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:29Z"
+  },
+  {
+   "code": "000028.SZ",
+   "name": "国药一致",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:29Z"
+  },
+  {
+   "code": "000029.SZ",
+   "name": "深深房A",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:29Z"
+  },
+  {
+   "code": "000058.SZ",
+   "name": "深赛格",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:30Z"
+  },
+  {
+   "code": "000560.SZ",
+   "name": "我爱我家",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:34Z"
+  },
+  {
+   "code": "000636.SZ",
+   "name": "风华高科",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-07-07",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:36Z"
+  },
+  {
+   "code": "000637.SZ",
+   "name": "茂化实华",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:36Z"
+  },
+  {
+   "code": "000663.SZ",
+   "name": "永安林业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:36Z"
+  },
+  {
+   "code": "000692.SZ",
+   "name": "惠天热电",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:37Z"
+  },
+  {
+   "code": "000722.SZ",
+   "name": "湖南发展",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:38Z"
+  },
+  {
+   "code": "000768.SZ",
+   "name": "中航西飞",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-28",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:39Z"
+  },
+  {
+   "code": "000798.SZ",
+   "name": "中水渔业",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:39Z"
+  },
+  {
+   "code": "000850.SZ",
+   "name": "华茂股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:41Z"
+  },
+  {
+   "code": "000856.SZ",
+   "name": "冀东装备",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-23",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:41Z"
+  },
+  {
+   "code": "000931.SZ",
+   "name": "中关村",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:43Z"
+  },
+  {
+   "code": "000978.SZ",
+   "name": "桂林旅游",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:44Z"
+  },
+  {
+   "code": "000985.SZ",
+   "name": "大庆华科",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:44Z"
+  },
+  {
+   "code": "001202.SZ",
+   "name": "炬申股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:45Z"
+  },
+  {
+   "code": "001217.SZ",
+   "name": "华尔泰",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-07",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:45Z"
+  },
+  {
+   "code": "001255.SZ",
+   "name": "博菲电气",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:46Z"
+  },
+  {
+   "code": "001319.SZ",
+   "name": "铭科精技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-10",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:47Z"
+  },
+  {
+   "code": "001323.SZ",
+   "name": "慕思股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:47Z"
+  },
+  {
+   "code": "001325.SZ",
+   "name": "元创股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:47Z"
+  },
+  {
+   "code": "001368.SZ",
+   "name": "通达创智",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:48Z"
+  },
+  {
+   "code": "002041.SZ",
+   "name": "登海种业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:50Z"
+  },
+  {
+   "code": "002080.SZ",
+   "name": "中材科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:51Z"
+  },
+  {
+   "code": "002174.SZ",
+   "name": "游族网络",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:55Z"
+  },
+  {
+   "code": "002198.SZ",
+   "name": "ST嘉应",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:56Z"
+  },
+  {
+   "code": "002228.SZ",
+   "name": "合兴包装",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:57Z"
+  },
+  {
+   "code": "002278.SZ",
+   "name": "神开股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:58Z"
+  },
+  {
+   "code": "002282.SZ",
+   "name": "博深股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:58Z"
+  },
+  {
+   "code": "002284.SZ",
+   "name": "亚太股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:58Z"
+  },
+  {
+   "code": "002298.SZ",
+   "name": "中电鑫龙",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:27:59Z"
+  },
+  {
+   "code": "002343.SZ",
+   "name": "慈文传媒",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:00Z"
+  },
+  {
+   "code": "002394.SZ",
+   "name": "联发股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:00Z"
+  },
+  {
+   "code": "002443.SZ",
+   "name": "金洲管道",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:01Z"
+  },
+  {
+   "code": "002454.SZ",
+   "name": "松芝股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:01Z"
+  },
+  {
+   "code": "002494.SZ",
+   "name": "华斯股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:02Z"
+  },
+  {
+   "code": "002513.SZ",
+   "name": "蓝丰生化",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:02Z"
+  },
+  {
+   "code": "002515.SZ",
+   "name": "金字火腿",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-06-01",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:03Z"
+  },
+  {
+   "code": "002564.SZ",
+   "name": "天沃科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-31",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:04Z"
+  },
+  {
+   "code": "002590.SZ",
+   "name": "万安科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:05Z"
+  },
+  {
+   "code": "002622.SZ",
+   "name": "皓宸医疗",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:06Z"
+  },
+  {
+   "code": "002651.SZ",
+   "name": "利君股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-13",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:07Z"
+  },
+  {
+   "code": "002678.SZ",
+   "name": "珠江钢琴",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:09Z"
+  },
+  {
+   "code": "002702.SZ",
+   "name": "海欣食品",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:09Z"
+  },
+  {
+   "code": "002737.SZ",
+   "name": "葵花药业",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-23",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:10Z"
+  },
+  {
+   "code": "002742.SZ",
+   "name": "冀衡医药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:11Z"
+  },
+  {
+   "code": "002799.SZ",
+   "name": "环球印务",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:12Z"
+  },
+  {
+   "code": "002820.SZ",
+   "name": "桂发祥",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:13Z"
+  },
+  {
+   "code": "002825.SZ",
+   "name": "纳尔股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:13Z"
+  },
+  {
+   "code": "002835.SZ",
+   "name": "同为股份",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:14Z"
+  },
+  {
+   "code": "002852.SZ",
+   "name": "道道全",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-06",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:14Z"
+  },
+  {
+   "code": "002855.SZ",
+   "name": "捷荣技术",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:14Z"
+  },
+  {
+   "code": "002857.SZ",
+   "name": "三晖电气",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:14Z"
+  },
+  {
+   "code": "002873.SZ",
+   "name": "新天药业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-31",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:15Z"
+  },
+  {
+   "code": "002909.SZ",
+   "name": "集泰股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:16Z"
+  },
+  {
+   "code": "002968.SZ",
+   "name": "新大正",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:18Z"
+  },
+  {
+   "code": "002999.SZ",
+   "name": "天禾股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:19Z"
+  },
+  {
+   "code": "003003.SZ",
+   "name": "天元股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:19Z"
+  },
+  {
+   "code": "003008.SZ",
+   "name": "开普检测",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:20Z"
+  },
+  {
+   "code": "003029.SZ",
+   "name": "吉大正元",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:20Z"
+  },
+  {
+   "code": "003036.SZ",
+   "name": "泰坦股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-01-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:21Z"
+  },
+  {
+   "code": "003037.SZ",
+   "name": "三和管桩",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:21Z"
+  },
+  {
+   "code": "003042.SZ",
+   "name": "中农联合",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:21Z"
+  },
+  {
+   "code": "300071.SZ",
+   "name": "福石控股",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:23Z"
+  },
+  {
+   "code": "300074.SZ",
+   "name": "华平股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:23Z"
+  },
+  {
+   "code": "300082.SZ",
+   "name": "奥克股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:24Z"
+  },
+  {
+   "code": "300086.SZ",
+   "name": "康芝药业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-23",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:24Z"
+  },
+  {
+   "code": "300110.SZ",
+   "name": "华仁药业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:25Z"
+  },
+  {
+   "code": "300128.SZ",
+   "name": "锦富技术",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:25Z"
+  },
+  {
+   "code": "300155.SZ",
+   "name": "安居宝",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:26Z"
+  },
+  {
+   "code": "300176.SZ",
+   "name": "鸿特科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:27Z"
+  },
+  {
+   "code": "300195.SZ",
+   "name": "长荣股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:28Z"
+  },
+  {
+   "code": "300199.SZ",
+   "name": "翰宇药业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-03-26",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:28Z"
+  },
+  {
+   "code": "300209.SZ",
+   "name": "行云科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-01-08",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:28Z"
+  },
+  {
+   "code": "300234.SZ",
+   "name": "开尔新材",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-23",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:29Z"
+  },
+  {
+   "code": "300250.SZ",
+   "name": "初灵信息",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:29Z"
+  },
+  {
+   "code": "300254.SZ",
+   "name": "仟源医药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:30Z"
+  },
+  {
+   "code": "300257.SZ",
+   "name": "开山股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:30Z"
+  },
+  {
+   "code": "300301.SZ",
+   "name": "ST长方",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-04-13",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:31Z"
+  },
+  {
+   "code": "300371.SZ",
+   "name": "汇中股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:33Z"
+  },
+  {
+   "code": "300387.SZ",
+   "name": "富邦科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:34Z"
+  },
+  {
+   "code": "300395.SZ",
+   "name": "菲利华",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:34Z"
+  },
+  {
+   "code": "300479.SZ",
+   "name": "神思电子",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:37Z"
+  },
+  {
+   "code": "300491.SZ",
+   "name": "通合科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:38Z"
+  },
+  {
+   "code": "300492.SZ",
+   "name": "华图山鼎",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:38Z"
+  },
+  {
+   "code": "300509.SZ",
+   "name": "新美星",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:38Z"
+  },
+  {
+   "code": "300512.SZ",
+   "name": "中亚股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:38Z"
+  },
+  {
+   "code": "300514.SZ",
+   "name": "友讯达",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:38Z"
+  },
+  {
+   "code": "300518.SZ",
+   "name": "新迅达",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:39Z"
+  },
+  {
+   "code": "300535.SZ",
+   "name": "达威股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:39Z"
+  },
+  {
+   "code": "300546.SZ",
+   "name": "雄帝科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-20",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:40Z"
+  },
+  {
+   "code": "300598.SZ",
+   "name": "诚迈科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300599.SZ",
+   "name": "雄塑科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300600.SZ",
+   "name": "国瑞科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300603.SZ",
+   "name": "立昂技术",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300614.SZ",
+   "name": "百川畅银",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300621.SZ",
+   "name": "维业股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300625.SZ",
+   "name": "三雄极光",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:42Z"
+  },
+  {
+   "code": "300732.SZ",
+   "name": "设研院",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:46Z"
+  },
+  {
+   "code": "300736.SZ",
+   "name": "百邦科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:46Z"
+  },
+  {
+   "code": "300746.SZ",
+   "name": "汉嘉数智",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:47Z"
+  },
+  {
+   "code": "300791.SZ",
+   "name": "仙乐健康",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:48Z"
+  },
+  {
+   "code": "300798.SZ",
+   "name": "锦鸡股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:49Z"
+  },
+  {
+   "code": "300800.SZ",
+   "name": "力合科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:49Z"
+  },
+  {
+   "code": "300804.SZ",
+   "name": "广康生化",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:49Z"
+  },
+  {
+   "code": "300828.SZ",
+   "name": "锐新科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:50Z"
+  },
+  {
+   "code": "300851.SZ",
+   "name": "交大思诺",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:50Z"
+  },
+  {
+   "code": "300858.SZ",
+   "name": "科拓生物",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:51Z"
+  },
+  {
+   "code": "300884.SZ",
+   "name": "狄耐克",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:52Z"
+  },
+  {
+   "code": "300897.SZ",
+   "name": "山科智能",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:52Z"
+  },
+  {
+   "code": "300922.SZ",
+   "name": "天秦装备",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:53Z"
+  },
+  {
+   "code": "300929.SZ",
+   "name": "华骐环保",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:53Z"
+  },
+  {
+   "code": "300950.SZ",
+   "name": "德固特",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:54Z"
+  },
+  {
+   "code": "301008.SZ",
+   "name": "宏昌科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:56Z"
+  },
+  {
+   "code": "301013.SZ",
+   "name": "利和兴",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:56Z"
+  },
+  {
+   "code": "301016.SZ",
+   "name": "雷尔伟",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:57Z"
+  },
+  {
+   "code": "301025.SZ",
+   "name": "读客文化",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-20",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:57Z"
+  },
+  {
+   "code": "301032.SZ",
+   "name": "新柴股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:57Z"
+  },
+  {
+   "code": "301037.SZ",
+   "name": "保立佳",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:57Z"
+  },
+  {
+   "code": "301045.SZ",
+   "name": "天禄科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:58Z"
+  },
+  {
+   "code": "301063.SZ",
+   "name": "海锅股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:58Z"
+  },
+  {
+   "code": "301075.SZ",
+   "name": "多瑞医药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:59Z"
+  },
+  {
+   "code": "301080.SZ",
+   "name": "百普赛斯",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:59Z"
+  },
+  {
+   "code": "301083.SZ",
+   "name": "百胜智能",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:59Z"
+  },
+  {
+   "code": "301090.SZ",
+   "name": "华润材料",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:59Z"
+  },
+  {
+   "code": "301091.SZ",
+   "name": "深城交",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:59Z"
+  },
+  {
+   "code": "301098.SZ",
+   "name": "金埔园林",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:28:59Z"
+  },
+  {
+   "code": "301115.SZ",
+   "name": "联检科技",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:00Z"
+  },
+  {
+   "code": "301130.SZ",
+   "name": "西点药业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:00Z"
+  },
+  {
+   "code": "301132.SZ",
+   "name": "满坤科技",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-29",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:00Z"
+  },
+  {
+   "code": "301157.SZ",
+   "name": "华塑科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:01Z"
+  },
+  {
+   "code": "301163.SZ",
+   "name": "宏德股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:02Z"
+  },
+  {
+   "code": "301193.SZ",
+   "name": "家联科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:03Z"
+  },
+  {
+   "code": "301208.SZ",
+   "name": "中亦科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:03Z"
+  },
+  {
+   "code": "301230.SZ",
+   "name": "泓博医药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:04Z"
+  },
+  {
+   "code": "301233.SZ",
+   "name": "盛帮股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:04Z"
+  },
+  {
+   "code": "301239.SZ",
+   "name": "普瑞眼科",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:04Z"
+  },
+  {
+   "code": "301270.SZ",
+   "name": "汉仪股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:05Z"
+  },
+  {
+   "code": "301272.SZ",
+   "name": "英华特",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:05Z"
+  },
+  {
+   "code": "301287.SZ",
+   "name": "康力源",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:05Z"
+  },
+  {
+   "code": "301298.SZ",
+   "name": "东利机械",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:06Z"
+  },
+  {
+   "code": "301319.SZ",
+   "name": "唯特偶",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:07Z"
+  },
+  {
+   "code": "301320.SZ",
+   "name": "豪江智能",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:07Z"
+  },
+  {
+   "code": "301321.SZ",
+   "name": "翰博高新",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:07Z"
+  },
+  {
+   "code": "301336.SZ",
+   "name": "趣睡科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-31",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:07Z"
+  },
+  {
+   "code": "301338.SZ",
+   "name": "凯格精机",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:07Z"
+  },
+  {
+   "code": "301370.SZ",
+   "name": "国科恒泰",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:08Z"
+  },
+  {
+   "code": "301377.SZ",
+   "name": "鼎泰高科",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:08Z"
+  },
+  {
+   "code": "301399.SZ",
+   "name": "英特科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:09Z"
+  },
+  {
+   "code": "301429.SZ",
+   "name": "森泰股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:09Z"
+  },
+  {
+   "code": "301511.SZ",
+   "name": "德福科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:10Z"
+  },
+  {
+   "code": "301519.SZ",
+   "name": "舜禹股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:10Z"
+  },
+  {
+   "code": "301526.SZ",
+   "name": "国际复材",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-12-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:10Z"
+  },
+  {
+   "code": "301528.SZ",
+   "name": "多浦乐",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:10Z"
+  },
+  {
+   "code": "301539.SZ",
+   "name": "宏鑫科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:11Z"
+  },
+  {
+   "code": "301601.SZ",
+   "name": "惠通科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:12Z"
+  },
+  {
+   "code": "301611.SZ",
+   "name": "珂玛科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:12Z"
+  },
+  {
+   "code": "600012.SH",
+   "name": "皖通高速",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-22",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:14Z"
+  },
+  {
+   "code": "600051.SH",
+   "name": "宁波联合",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:15Z"
+  },
+  {
+   "code": "600097.SH",
+   "name": "开创国际",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:16Z"
+  },
+  {
+   "code": "600099.SH",
+   "name": "林海股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:16Z"
+  },
+  {
+   "code": "600152.SH",
+   "name": "维科技术",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-20",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:18Z"
+  },
+  {
+   "code": "600176.SH",
+   "name": "中国巨石",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:18Z"
+  },
+  {
+   "code": "600218.SH",
+   "name": "全柴动力",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:20Z"
+  },
+  {
+   "code": "600235.SH",
+   "name": "民丰特纸",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:20Z"
+  },
+  {
+   "code": "600250.SH",
+   "name": "南京商旅",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:21Z"
+  },
+  {
+   "code": "600258.SH",
+   "name": "首旅酒店",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-06-29",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:21Z"
+  },
+  {
+   "code": "600353.SH",
+   "name": "旭光电子",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-12-23",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:23Z"
+  },
+  {
+   "code": "600367.SH",
+   "name": "红星发展",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-01-05",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:24Z"
+  },
+  {
+   "code": "600396.SH",
+   "name": "华电辽能",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-04-10",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:25Z"
+  },
+  {
+   "code": "600448.SH",
+   "name": "华纺股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:26Z"
+  },
+  {
+   "code": "600449.SH",
+   "name": "宁夏建材",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:26Z"
+  },
+  {
+   "code": "600463.SH",
+   "name": "空港股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:26Z"
+  },
+  {
+   "code": "600511.SH",
+   "name": "国药股份",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-28",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:28Z"
+  },
+  {
+   "code": "600579.SH",
+   "name": "中化装备",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-20",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:30Z"
+  },
+  {
+   "code": "600613.SH",
+   "name": "神奇制药",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:31Z"
+  },
+  {
+   "code": "600707.SH",
+   "name": "彩虹股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:33Z"
+  },
+  {
+   "code": "600716.SH",
+   "name": "凤凰股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-31",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:34Z"
+  },
+  {
+   "code": "600734.SH",
+   "name": "*ST实达",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:34Z"
+  },
+  {
+   "code": "600751.SH",
+   "name": "海航科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:35Z"
+  },
+  {
+   "code": "600764.SH",
+   "name": "中国海防",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:35Z"
+  },
+  {
+   "code": "600774.SH",
+   "name": "汉商集团",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:36Z"
+  },
+  {
+   "code": "600785.SH",
+   "name": "新华百货",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:36Z"
+  },
+  {
+   "code": "600800.SH",
+   "name": "渤海化学",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:36Z"
+  },
+  {
+   "code": "600815.SH",
+   "name": "厦工股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:37Z"
+  },
+  {
+   "code": "600825.SH",
+   "name": "新华传媒",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:37Z"
+  },
+  {
+   "code": "600844.SH",
+   "name": "金煤科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-20",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:38Z"
+  },
+  {
+   "code": "600854.SH",
+   "name": "春兰股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:38Z"
+  },
+  {
+   "code": "600860.SH",
+   "name": "京城股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:38Z"
+  },
+  {
+   "code": "601208.SH",
+   "name": "东材科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:44Z"
+  },
+  {
+   "code": "601279.SH",
+   "name": "英利汽车",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:45Z"
+  },
+  {
+   "code": "601616.SH",
+   "name": "广电电气",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:46Z"
+  },
+  {
+   "code": "601668.SH",
+   "name": "中国建筑",
+   "grade": "pool",
+   "type": "1买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-28",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:47Z"
+  },
+  {
+   "code": "601996.SH",
+   "name": "丰林集团",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:50Z"
+  },
+  {
+   "code": "603029.SH",
+   "name": "天鹅股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:51Z"
+  },
+  {
+   "code": "603030.SH",
+   "name": "全筑股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:51Z"
+  },
+  {
+   "code": "603031.SH",
+   "name": "安孚科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:51Z"
+  },
+  {
+   "code": "603041.SH",
+   "name": "美思德",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:51Z"
+  },
+  {
+   "code": "603059.SH",
+   "name": "倍加洁",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:52Z"
+  },
+  {
+   "code": "603109.SH",
+   "name": "神驰机电",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:53Z"
+  },
+  {
+   "code": "603127.SH",
+   "name": "昭衍新药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-04-29",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:54Z"
+  },
+  {
+   "code": "603172.SH",
+   "name": "万丰股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:55Z"
+  },
+  {
+   "code": "603176.SH",
+   "name": "汇通集团",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:55Z"
+  },
+  {
+   "code": "603180.SH",
+   "name": "金牌家居",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:55Z"
+  },
+  {
+   "code": "603182.SH",
+   "name": "嘉华股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-05",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:55Z"
+  },
+  {
+   "code": "603188.SH",
+   "name": "亚邦股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:56Z"
+  },
+  {
+   "code": "603197.SH",
+   "name": "保隆科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:56Z"
+  },
+  {
+   "code": "603217.SH",
+   "name": "元利科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:57Z"
+  },
+  {
+   "code": "603221.SH",
+   "name": "爱丽家居",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:57Z"
+  },
+  {
+   "code": "603238.SH",
+   "name": "诺邦股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-26",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:57Z"
+  },
+  {
+   "code": "603256.SH",
+   "name": "宏和科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-07",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:57Z"
+  },
+  {
+   "code": "603282.SH",
+   "name": "亚光股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-07",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:58Z"
+  },
+  {
+   "code": "603291.SH",
+   "name": "联合水务",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-31",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:29:58Z"
+  },
+  {
+   "code": "603331.SH",
+   "name": "百达精工",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:00Z"
+  },
+  {
+   "code": "603385.SH",
+   "name": "惠达卫浴",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:01Z"
+  },
+  {
+   "code": "603400.SH",
+   "name": "华之杰",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:02Z"
+  },
+  {
+   "code": "603506.SH",
+   "name": "南都物业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:02Z"
+  },
+  {
+   "code": "603655.SH",
+   "name": "朗博科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:05Z"
+  },
+  {
+   "code": "603663.SH",
+   "name": "三祥新材",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-01-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:05Z"
+  },
+  {
+   "code": "603678.SH",
+   "name": "火炬电子",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-04-29",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:05Z"
+  },
+  {
+   "code": "603757.SH",
+   "name": "大元泵业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-03-31",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:08Z"
+  },
+  {
+   "code": "603779.SH",
+   "name": "威龙股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:08Z"
+  },
+  {
+   "code": "603801.SH",
+   "name": "志邦家居",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:09Z"
+  },
+  {
+   "code": "603810.SH",
+   "name": "丰山集团",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:09Z"
+  },
+  {
+   "code": "603818.SH",
+   "name": "曲美家居",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:09Z"
+  },
+  {
+   "code": "603860.SH",
+   "name": "中公高科",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:10Z"
+  },
+  {
+   "code": "603900.SH",
+   "name": "莱绅通灵",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:11Z"
+  },
+  {
+   "code": "603908.SH",
+   "name": "牧高笛",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:11Z"
+  },
+  {
+   "code": "603909.SH",
+   "name": "建发合诚",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:11Z"
+  },
+  {
+   "code": "603912.SH",
+   "name": "佳力图",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:11Z"
+  },
+  {
+   "code": "603982.SH",
+   "name": "泉峰汽车",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:13Z"
+  },
+  {
+   "code": "605068.SH",
+   "name": "明新旭腾",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:14Z"
+  },
+  {
+   "code": "605136.SH",
+   "name": "丽人丽妆",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:15Z"
+  },
+  {
+   "code": "605151.SH",
+   "name": "西上海",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-15",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:15Z"
+  },
+  {
+   "code": "605158.SH",
+   "name": "华达新材",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:16Z"
+  },
+  {
+   "code": "605268.SH",
+   "name": "王力安防",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:17Z"
+  },
+  {
+   "code": "605589.SH",
+   "name": "圣泉集团",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-01-13",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:18Z"
+  },
+  {
+   "code": "688015.SH",
+   "name": "交控科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:19Z"
+  },
+  {
+   "code": "688022.SH",
+   "name": "ST瀚川",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:19Z"
+  },
+  {
+   "code": "688030.SH",
+   "name": "山石网科",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:20Z"
+  },
+  {
+   "code": "688033.SH",
+   "name": "*ST天宜",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:20Z"
+  },
+  {
+   "code": "688037.SH",
+   "name": "芯源微",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:20Z"
+  },
+  {
+   "code": "688038.SH",
+   "name": "中科通达",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:20Z"
+  },
+  {
+   "code": "688067.SH",
+   "name": "爱威科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:21Z"
+  },
+  {
+   "code": "688078.SH",
+   "name": "龙软科技",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:21Z"
+  },
+  {
+   "code": "688082.SH",
+   "name": "盛美上海",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:21Z"
+  },
+  {
+   "code": "688115.SH",
+   "name": "思林杰",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-10-23",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:23Z"
+  },
+  {
+   "code": "688120.SH",
+   "name": "华海清科",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-06-08",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:23Z"
+  },
+  {
+   "code": "688123.SH",
+   "name": "聚辰股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:23Z"
+  },
+  {
+   "code": "688147.SH",
+   "name": "微导纳米",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:24Z"
+  },
+  {
+   "code": "688176.SH",
+   "name": "亚虹医药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-30",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:25Z"
+  },
+  {
+   "code": "688200.SH",
+   "name": "华峰测控",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:26Z"
+  },
+  {
+   "code": "688280.SH",
+   "name": "精进电动",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:28Z"
+  },
+  {
+   "code": "688296.SH",
+   "name": "和达科技",
+   "grade": "pool",
+   "type": "3买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-11-04",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:29Z"
+  },
+  {
+   "code": "688356.SH",
+   "name": "键凯科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:31Z"
+  },
+  {
+   "code": "688393.SH",
+   "name": "安必平",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:32Z"
+  },
+  {
+   "code": "688395.SH",
+   "name": "正弦电气",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:32Z"
+  },
+  {
+   "code": "688403.SH",
+   "name": "汇成股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-06-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:32Z"
+  },
+  {
+   "code": "688409.SH",
+   "name": "富创精密",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:32Z"
+  },
+  {
+   "code": "688426.SH",
+   "name": "康为世纪",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:33Z"
+  },
+  {
+   "code": "688432.SH",
+   "name": "有研硅",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-02-06",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:33Z"
+  },
+  {
+   "code": "688448.SH",
+   "name": "磁谷科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-11-10",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:33Z"
+  },
+  {
+   "code": "688455.SH",
+   "name": "科捷智能",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:33Z"
+  },
+  {
+   "code": "688468.SH",
+   "name": "科美诊断",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:33Z"
+  },
+  {
+   "code": "688488.SH",
+   "name": "艾迪药业",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:34Z"
+  },
+  {
+   "code": "688509.SH",
+   "name": "正元地信",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:34Z"
+  },
+  {
+   "code": "688531.SH",
+   "name": "日联科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:35Z"
+  },
+  {
+   "code": "688535.SH",
+   "name": "华海诚科",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:35Z"
+  },
+  {
+   "code": "688551.SH",
+   "name": "科威尔",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-02",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:36Z"
+  },
+  {
+   "code": "688584.SH",
+   "name": "上海合晶",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:37Z"
+  },
+  {
+   "code": "688593.SH",
+   "name": "新相微",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-03",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:37Z"
+  },
+  {
+   "code": "688616.SH",
+   "name": "西力科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:38Z"
+  },
+  {
+   "code": "688620.SH",
+   "name": "安凯微",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2025-12-17",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:38Z"
+  },
+  {
+   "code": "688621.SH",
+   "name": "阳光诺和",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-14",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:38Z"
+  },
+  {
+   "code": "688627.SH",
+   "name": "精智达",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-25",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:38Z"
+  },
+  {
+   "code": "688630.SH",
+   "name": "芯碁微装",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-02-06",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:38Z"
+  },
+  {
+   "code": "688670.SH",
+   "name": "金迪克",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-24",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:39Z"
+  },
+  {
+   "code": "688683.SH",
+   "name": "莱尔科技",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-11",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:39Z"
+  },
+  {
+   "code": "688701.SH",
+   "name": "卓锦股份",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-09-16",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:40Z"
+  },
+  {
+   "code": "920010.BJ",
+   "name": "凯添燃气",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-27",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:42Z"
+  },
+  {
+   "code": "920016.BJ",
+   "name": "中草香料",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-08-19",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:43Z"
+  },
+  {
+   "code": "920230.BJ",
+   "name": "欧康医药",
+   "grade": "pool",
+   "type": "2买",
+   "stage": "pool_scan",
+   "sig_dt": "2026-07-21",
+   "detect_date": "2026-11-13",
+   "first_seen": "2026-11-13T23:30:46Z"
   }
  ],
  "actionable": [
@@ -4373,5 +7213,9 @@
    "type": "1买",
    "stage": "running"
   }
- ]
+ ],
+ "coverage_asof": "2026-11-13",
+ "refreshed_at": "2026-11-16T20:38:01",
+ "refresh_mode": "append_only_latest_round",
+ "refresh_note": "本席(马良/OSINT1)按CR-20261116-01追加最新扫描轮买点标的，grade=pool/stage=pool_scan 表示未评级；评级与 actionable 归策略线重出。"
 }

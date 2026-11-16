@@ -2035,3 +2035,62 @@ CRLF/非法代码显形退出码 2；DONE 行解析兼容新旧格式。下次�
 **验证**：全量测试 **244 passed**（原 233 + 账本 3 + 注记 2 + 熔断解析 5 +
 batch_collect 边界 1）；gap_scan --no-write 全量回归正常；修复后 pytest 4.1s
 （首版 62s 即触网铁证），guba jsonl mtime 不再变化。
+
+## §25-9 CR-20261116-01/03/04 落地（2026-11-16 20:25–22:00，配准人老田）
+
+用户令「执行 CR-20261116-03 等马超配准；CR-01 待推策略线」，按前例由老田
+行使配准权（decided_by=老田），三件全部执行落地。
+
+#### 25-9.1 CR-01 缠论队列刷新（执行方法调整，留痕）
+
+- 原选 A（策略线重出）。取证发现策略侧扫描宇宙已变：用户 10 只票中 5 只
+  （603175/600641/000782/600400/300688）只有旧记录（detect 06-05~10-14），
+  未再入 2026-11-13 最新扫描轮——策略线重出无期限，改由本席按批准的刷新
+  目标执行 **append_only_latest_round**：新工具 chanlun_queue_refresh.py
+  把最新扫描轮（池中最大 detect_date 当日）买点标的并入 all。
+- 口径边界：grade=pool / stage=pool_scan 显式**未评级**（评级是策略线产物，
+  池记录到队列条目的 (code,type,dt) 1:1 映射已验证，但 avoid/watch/observe
+  与 expired/broken/running/new 是策略判断，不代评）；actionable 65 不动；
+  卖点不入（队列历史 489 条全为买点）。
+- 结果：all 489→773 条（唯一代码 465→749，+284 只，恰为 CR-01 文本里的
+  308 只当日买点票中未覆盖的 284 只）；refresh_note 写入队列文件；幂等复跑
+  +0。备份 target_queue_chanlun.json.bak-20261116-203801。
+- 用户 10 只票：5 只入队（601668/600511/002737/300234/300804），5 只未入
+  （策略线最新轮未扫，非本席可裁，已定向补采一次见 §25-2）。
+
+#### 25-9.2 CR-04 雪球第三分片（配套产能）
+
+- 队列刷新放大注册表并集 700→974（load_queue('all') 实测），日产能
+  400+350=750 不足。注册 XqTimelineShardEvening：每日 17:30 --quota 300，
+  pythonw 直启（无 .ps1，无中文注释启动器风险），Interactive+Limited 同午盘片。
+  读回 State=Ready、Next=11-17 17:30；中文路径经码点+全字符串断言
+  （9879 76EE 8001 7530... 无插空格）。产能 400+350+300=1050 ≥ 974+余量。
+
+#### 25-9.3 CR-03 akshare 三源接入（四处口径偏差，全部留痕）
+
+1. akshare 1.18.40→1.20.65；cls 接口已改名 stock_news_global_cls（1.20.41），
+   新版报错信息自带指引，直接适配。
+2. **ak.stock_news_em 在本机崩**：pandas 3.0.1 + pyarrow 26.0.0 组合下，
+   akshare 内部 str.replace 委托 pyarrow/RE2，`\u` 转义 RE2 不认 →
+   ArrowInvalid（1.18.40/1.20.65 双双命中）。处置：直连同源端点
+   search-api-web.eastmoney.com，请求层借 akshare 内部 http.curl_get
+   （curl_cffi TLS 指纹）——**裸 requests 必被反爬降级**（result 只剩
+   passportWeb），已加降级 fail-loud 守卫（raise，不当"无新闻"落盘）。
+   pandas 后处理绕开，纯 Python 归一。
+3. **flash（财联社电报）不进 gap_scan 个股分母**：快讯无个股归因维度，注册
+   会制造全池假 MISSING（"不适用不能表现为故障"同族）。落盘
+   data/flash/flash_YYYYMMDD.jsonl，以源级自报代之（行数/新增/最新时间戳）。
+4. research 实测每票 1-8 页不等（非固定 8 页）；落 data/research/{code6}.jsonl。
+
+- gap_scan 注册 aknews/research 两源（queue=registry_xq，market=all），
+  SOURCES 7→9；顺手修 **_re_for 日期型 ts 不匹配判例**：原正则要求必带时刻，
+  research 的 "2024-06-24" 整行不匹配 → max_ts 恒空 → 假 STALE 风险；
+  改时间段可选。
+- 冒烟：flash 20 条/次；aknews 3 票 30 条；research 2 票 111 条。首批补齐：
+  aknews 注册表 974 只全量后台跑；research 优先票 114 只（actionable 65 ∪
+  picks 49）。
+- 测试：新增 test_cr_20261116_landing.py 11 条（刷新纯函数 4 + 正则 2 +
+  采集器纯函数 5），全量 **255 passed**（244→255）。
+- 沉淀工具：chanlun_queue_refresh.py（幂等/备份/原子写/--dry）、
+  akshare_news.py（--sources/--codes-file/--quota/双熔断：连败 3 停段 +
+  降级 raise）。

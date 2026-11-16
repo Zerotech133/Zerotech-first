@@ -124,6 +124,16 @@ SOURCES = [
      "dir": os.path.join(HERE, "news.db"), "queue": None,
      "ts_fields": ["ts"],
      "data_class": "全市场快讯/公告转载（按票打标，命中即留痕）"},
+    {"id": "aknews", "label": "东财个股新闻(CR-03)", "kind": "jsonl", "market": "all",
+     "dir": os.path.join(DATA, "aknews"), "queue": "registry_xq",
+     "ts_fields": ["ts"],
+     "data_class": "东财搜索个股新闻（标题/摘要/来源，与 ak.stock_news_em 同源）"},
+    {"id": "research", "label": "东财研报目录(CR-03)", "kind": "jsonl", "market": "all",
+     "dir": os.path.join(DATA, "research"), "queue": "registry_xq",
+     "ts_fields": ["ts"],
+     "data_class": "东财研报目录（机构/评级/盈利预测，研报 PDF 原文别线 anns_pdf 管）"},
+    # flash（财联社电报）不注册为个股源：快讯无个股归因维度，注册会造成全池
+    # 假 MISSING（与"不适用不能表现为故障"同族）；以 akshare_news.py 源级自报代之。
 ]
 
 MARKET_FILTERS = {
@@ -210,8 +220,10 @@ RE_TS_CACHE = {}
 
 def _re_for(field):
     if field not in RE_TS_CACHE:
+        # 时间段可选：research/公告类 ts 是日期型（2024-06-24），原正则要求
+        # 必带时刻导致整行不匹配、max_ts 恒空（2026-11-16 判例）。
         RE_TS_CACHE[field] = re.compile(
-            r'"%s"\s*:\s*"([0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9:]{4,8})"' % field)
+            r'"%s"\s*:\s*"([0-9]{4}-[0-9]{2}-[0-9]{2}(?:[ T][0-9:]{4,8})?)"' % field)
     return RE_TS_CACHE[field]
 
 
