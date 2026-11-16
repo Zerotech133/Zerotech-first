@@ -256,6 +256,7 @@ class TestDeclaredAndManifests:
              str(COMP / name), "--strict", "--json"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             cwd=str(REPO),
+        stdin=subprocess.DEVNULL,
         )
         results = json.loads(proc.stdout)
         assert isinstance(results, list) and results, proc.stdout

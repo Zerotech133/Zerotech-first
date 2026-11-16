@@ -13,5 +13,5 @@ def test_nav_js_node_syntax():
     node = shutil.which("node")
     if not node:
         pytest.skip("node 不可用，跳过 JS 语法检查")
-    r = subprocess.run([node, "--check", str(NAV)], capture_output=True, text=True)
+    r = subprocess.run([node, "--check", str(NAV)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr[-800:]

@@ -154,7 +154,7 @@ def test_calls_do_not_modify_yt_db():
 
 def test_selftest_exit_zero():
     r = subprocess.run([sys.executable, "-X", "utf8", str(SCRIPT), "--selftest"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, (r.stdout or "")[-800:] + (r.stderr or "")[-400:]
     report = json.loads(r.stdout)
     assert report["ok"] is True

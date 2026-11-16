@@ -11,7 +11,7 @@ import logging
 
 def _git(repo, *args):
     subprocess.run(["git", "-C", str(repo)] + list(args), check=True,
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, stdin=subprocess.DEVNULL)
 
 
 def test_sandbox_run(tmp_path):

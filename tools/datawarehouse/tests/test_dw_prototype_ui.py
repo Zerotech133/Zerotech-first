@@ -27,6 +27,7 @@ def _run_checker():
         encoding="utf-8",
         errors="replace",
         timeout=120,
+    stdin=subprocess.DEVNULL,
     )
 
 

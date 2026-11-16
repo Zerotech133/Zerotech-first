@@ -184,7 +184,7 @@ def test_calls_are_readonly():
 def test_selftest():
     r = subprocess.run([sys.executable, "-X", "utf8", str(SCRIPT), "--selftest"],
                        capture_output=True, text=True, encoding="utf-8",
-                       errors="replace", timeout=120)
+                       errors="replace", timeout=120, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr[-400:]
     out = json.loads(r.stdout)
     assert out["server"] == "dw-catalog"

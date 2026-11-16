@@ -31,6 +31,7 @@ def _run_py(code, extra_env):
         [sys.executable, "-c", code],
         env=_clean_env(extra_env),
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+    stdin=subprocess.DEVNULL,
     )
     assert r.returncode == 0, (r.stdout or "") + (r.stderr or "")
     return r

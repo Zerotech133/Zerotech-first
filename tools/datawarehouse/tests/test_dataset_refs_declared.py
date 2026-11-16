@@ -190,6 +190,7 @@ class TestCli:
             encoding="utf-8",
             errors="replace",
             timeout=120,
+        stdin=subprocess.DEVNULL,
         )
 
     def test_cli_resolve_all_six_ok(self):

@@ -115,7 +115,7 @@ def test_selftest_reports_tool_count():
     r = subprocess.run(
         [sys.executable, "-X", "utf8", str(SCRIPT), "--selftest"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=120, cwd=str(REPO))
+        timeout=120, cwd=str(REPO), stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr[-800:]
     report = json.loads(r.stdout)
     assert report["server"] == "dw-quality"

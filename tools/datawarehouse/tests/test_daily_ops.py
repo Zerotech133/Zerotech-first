@@ -12,7 +12,7 @@ def test_quality_daily(tmp_path):
     out = tmp_path / "quality_daily_20990101.json"
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools/datawarehouse/quality_daily.py"),
                         "--out", str(out), "--date", "20990101"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr[-400:]
     d = json.loads(out.read_text(encoding="utf-8"))
     assert d["date"] == "20990101"
@@ -24,7 +24,7 @@ def test_etl_dryrun_daily(tmp_path):
     out = tmp_path / "etl_dryrun.jsonl"
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools/datawarehouse/etl_dryrun_daily.py"),
                         "--out", str(out)],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, stdin=subprocess.DEVNULL)
     assert r.returncode == 0, r.stderr[-400:]
     lines = [json.loads(x) for x in out.read_text(encoding="utf-8").splitlines() if x.strip()]
     assert lines and all(x.get("dry_run_only") is True for x in lines)

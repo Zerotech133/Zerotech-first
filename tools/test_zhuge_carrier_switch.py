@@ -18,7 +18,7 @@ def _run(args, timeout=120):
     return subprocess.run(
         [PS, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(SCRIPT)] + args,
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=timeout)
+        timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 def _json_out(cp):

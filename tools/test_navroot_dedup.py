@@ -30,7 +30,7 @@ def _run_unify(root=None, timeout=120):
     if root:
         cmd += ["--root", root]
     return subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout)
+                          encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
 
 
 def _make_synthetic_root(base):

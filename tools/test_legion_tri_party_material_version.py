@@ -124,7 +124,7 @@ def test_two_processes_competing_confirmations_only_one_wins(tmp_path):
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).resolve().parent) + os.pathsep + env.get("PYTHONPATH", "")
     workers = [subprocess.Popen([sys.executable, "-c", script, str(tmp_path), fingerprint, by],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env, stdin=subprocess.DEVNULL)
                for by in ("甲", "乙")]
     outputs = [worker.communicate(timeout=15) for worker in workers]
     assert all(worker.returncode == 0 for worker in workers), outputs
