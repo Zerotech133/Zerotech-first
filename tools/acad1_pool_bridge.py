@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import time
@@ -32,7 +33,35 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-TOKEN_FILE = Path(r"C:\项目\_vault\secrets\portal_api_token")
+
+
+def _resolve_token_file() -> Path:
+    """凭据文件路径：环境变量优先，其次仓库根 .env.local。
+
+    2026-11-16：原为硬编码 `Path(r"C:\\项目\\_vault\\secrets\\portal_api_token")`，
+    会把本地 vault 目录结构推进 PUBLIC 仓库（pre-push 公开面护栏阻断）。
+    改为配置化，两者都不入库：
+      - 环境变量 ACAD1_PORTAL_TOKEN_FILE
+      - 或仓库根 .env.local 中的同名项（.gitignore 规则 `.env.*` 已忽略）
+    """
+    p = os.environ.get("ACAD1_PORTAL_TOKEN_FILE")
+    if p:
+        return Path(p)
+    envf = REPO / ".env.local"
+    if envf.exists():
+        for raw in envf.read_text(encoding="utf-8-sig").splitlines():
+            line = raw.strip()
+            if line.startswith("ACAD1_PORTAL_TOKEN_FILE="):
+                v = line.split("=", 1)[1].strip().strip('"').strip("'")
+                if v:
+                    return Path(v)
+    raise SystemExit(
+        "未配置凭据路径：请设置环境变量 ACAD1_PORTAL_TOKEN_FILE，"
+        r"或在仓库根 .env.local 写 ACAD1_PORTAL_TOKEN_FILE=<path>（该文件已被 .gitignore 忽略）"
+    )
+
+
+TOKEN_FILE = _resolve_token_file()
 DECISIONS = REPO / "agent_platform" / "data" / "d1_decisions.jsonl"
 LOG = REPO / "logs" / "acad1_d1_bridge.log"
 BASE = "http://127.0.0.1:8091"
