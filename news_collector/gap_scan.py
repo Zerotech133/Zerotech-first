@@ -984,6 +984,13 @@ def _atomic_write_json(path, obj):
 _cache_snapshot = {}
 
 
+def _artifact_hint(written, json_path, md_path):
+    """产物提示行。没写文件就不许报路径——上一轮的旧产物会被当成这次的结果。"""
+    if not written:
+        return ["（未落盘：--no-write 或 --only 模式，产物路径不适用）"]
+    return ["JSON → %s" % json_path, "MD   → %s" % md_path]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="池内标的 × 数据源 缺口发现器（只读）")
     ap.add_argument("--stale-hours", type=float, default=DEFAULTS["stale_hours"])
@@ -1055,8 +1062,10 @@ def main(argv=None):
             ", ".join("%s:%s" % (g, STATE_LABEL.get(r["detail"][g]["state"], ""))
                       for g in r["gaps"])))
     print("")
-    print("JSON → %s" % OUT_JSON)
-    print("MD   → %s" % a.md)
+    # 只在真的写了文件时才报路径。否则读的人会去翻上一轮的旧产物，
+    # 把旧读数当成这次的结果——与「不适用冒充故障」同族：假报比不报更危险。
+    for _line in _artifact_hint(not a.no_write and not a.only, OUT_JSON, a.md):
+        print(_line)
     print("耗时 %.1fs　索引缓存 %d 文件" % (rep["elapsed_s"], rep["cache_files"]))
     return 0
 

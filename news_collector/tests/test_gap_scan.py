@@ -294,3 +294,17 @@ def test_only_filter_cr_suffixed_codes_hit_pool():
     got, out = G.apply_only_filter(_pools(["000011"]), ["000011\r"])
     assert out == set()
     assert "000011" in got
+
+
+# ---------------------------------------------- 假报产物路径（11-16 判例）
+def test_artifact_hint_silent_when_not_written():
+    """--no-write 时不落盘，但仍打印「JSON → 路径」→ 读的人会翻上一轮旧产物，
+    把旧读数当这次结果。假报比不报更危险：必须什么都不说，或明说未落盘。"""
+    got = G._artifact_hint(False, "/tmp/a.json", "/tmp/a.md")
+    assert all("→" not in line for line in got)
+    assert any("未落盘" in line for line in got)
+
+
+def test_artifact_hint_reports_paths_when_written():
+    got = G._artifact_hint(True, "/tmp/a.json", "/tmp/a.md")
+    assert "/tmp/a.json" in got[0] and "/tmp/a.md" in got[1]
