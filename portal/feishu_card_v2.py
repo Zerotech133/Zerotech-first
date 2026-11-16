@@ -15,7 +15,33 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-VAULT_DIR = r"C:\项目\_vault\secrets"
+
+
+def _resolve_secrets_dir() -> str:
+    """本地私有区目录：环境变量 PORTAL_VAULT_DIR > 仓库根 .env.local > 空串。
+
+    2026-11-16：原为硬编码绝对路径，会随 push 把本机目录结构暴露到 PUBLIC 仓
+    （与 tools/acad1_pool_bridge.py、tools/d1_daily_batch.py 同一判例）。
+    返回空串是**有意**的 fail-safe：os.path.join("", "portal_key.json") 得到相对
+    文件名，open 失败即 continue，不会让长跑中的 portal 因缺配置而崩。
+    """
+    p = os.environ.get("PORTAL_VAULT_DIR")
+    if p:
+        return p
+    envf = os.path.join(os.path.dirname(HERE), ".env.local")
+    try:
+        with open(envf, encoding="utf-8-sig") as fh:
+            for raw in fh:
+                if raw.strip().startswith("PORTAL_VAULT_DIR="):
+                    v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                    if v:
+                        return v
+    except OSError:
+        pass
+    return ""
+
+
+VAULT_DIR = _resolve_secrets_dir()
 NEWS = os.path.join(os.path.dirname(HERE), "news_collector")
 sys.path.insert(0, NEWS)
 from send_feishu import USER_ID  # noqa: E402
