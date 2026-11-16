@@ -22,7 +22,8 @@
  "excluded": {
   "HOUFENG_DIVIDEND.html": "实验档·未冻结（上轮门 2 结论：不进发布集）",
   "HOUFENG_ARENA.html / HOUFENG_ARENA_36M.html / HOUFENG_HOLDGRID.html / HOUFENG_PICK_20261106.html / HOUFENG_PLAYBOOK.html": "内部页，正文含内部符号，不对外",
-  "index.html": "合规数据层，不对外"
+  "index.html": "合规数据层，不对外",
+  "HOUFENG_TODAY.html": "内部页·含因子代号与样本外数值，每日重写，不对外（2026-11-16 登记）"
  },
  "note": "发布=纳入对外可访问集合的资格认定；真实外网通道部署另行审批（涉及生产变更五要素）"
 }
