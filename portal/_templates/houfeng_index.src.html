@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!-- 本页由 portal/build_houfeng_index.py 渲染：模板 _templates/houfeng_index.src.html -> 产物 houfeng/index.html。
+     要改页面请改模板；直接改产物会在下次生成时被覆盖（产物不入库）。
+     新部署或产物被删时 /houfeng/ 会 403/404，先跑一次 build_houfeng_index.py。
+     "今日"这一块由生成器替换，模板里放的是未采集骨架——单独打开模板也不会显示带结论色彩的假话。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f7fc">
+<title>候风 · 选股方法论平台</title>
+<link rel="stylesheet" href="hf_tokens.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.65 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 24px 64px}
+a{color:inherit;text-decoration:none}
+.kicker{font-size:11px;letter-spacing:1.5px;color:var(--dim)}
+.crumb{margin-bottom:16px;font-size:12px}
+.crumb a{color:var(--muted);border-bottom:1px solid transparent;padding-bottom:1px}
+.crumb a:hover{color:var(--brand);border-bottom-color:var(--brand)}
+.crumb span{color:var(--dim);margin-left:8px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+  flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.top h1{font-size:24px;margin:5px 0 0;font-weight:600;letter-spacing:.5px}
+.top .sub{margin:6px 0 0;font-size:13px;color:var(--muted);max-width:640px}
+.stamp{text-align:right;font-size:12px;color:var(--dim);flex-shrink:0}
+.stamp .badge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:20px;
+  background:var(--panel2);border:1px solid var(--border)}
+.stamp .badge b{font-variant-numeric:tabular-nums;color:var(--text)}
+.stamp .gen{margin-top:6px;font-size:11px}
+.floor{margin:0 0 8px;font-size:11.5px;color:var(--dim)}
+.sech{display:flex;align-items:baseline;gap:10px;margin:30px 0 12px}
+.sech h2{font-size:15px;font-weight:600;margin:0}
+.sech span{font-size:11.5px;color:var(--dim)}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card{display:block;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px}
+a.card:hover{border-color:var(--brand)}
+a.card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.card h3{font-size:14px;font-weight:500;margin:0}
+.card p{font-size:12px;color:var(--muted);margin:5px 0 0;line-height:1.55}
+.card .tagx{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:20px;
+  background:var(--panel2);color:var(--muted);margin-left:6px;vertical-align:1px}
+.card.pub{border-color:var(--brand-2)}
+.card.todo{border-style:dashed;border-color:var(--border);background:transparent}
+.card.todo h3{color:var(--muted)}
+.verdict{border:1px solid;border-radius:14px;padding:18px 20px;margin-top:20px}
+.verdict.ok{background:#eef7ee;border-color:#bfe0bf}
+.verdict.warn{background:#fdf6e6;border-color:#edd9a3}
+.verdict.bad{background:#fdeeee;border-color:#eebfbf}
+.verdict h2{font-size:22px;margin:0;font-weight:600}
+.verdict .why{margin:6px 0 0;font-size:13px;color:#3d4557}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:15px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.kpi .k{font-size:11.5px;color:var(--dim)}
+.kpi .v{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
+.kpi .r{font-size:11px;color:var(--dim);margin-top:2px;line-height:1.45}
+.drill{display:flex;gap:18px;flex-wrap:wrap;margin-top:13px;font-size:12.5px}
+.drill a{color:var(--brand);border-bottom:1px solid transparent}
+.drill a:hover{border-bottom-color:var(--brand)}
+.note{margin-top:10px;font-size:11.5px;color:var(--dim)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);
+  font-size:11.5px;color:var(--dim);line-height:1.85}
+footer b{color:var(--muted);font-weight:500}
+@media(max-width:820px){
+  .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid3{grid-template-columns:1fr}
+  .top h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="crumb" aria-label="主导航">
+  <a href="/">← 零界工作站</a><span>候风</span>
+</nav>
+
+<header class="top">
+  <div>
+    <div class="kicker">候风 HOUFENG</div>
+    <h1>选股方法论平台</h1>
+    <p class="sub">一个方法做到极致，不叠策略。出候选、出观察、出「今天为什么不出票」——
+      不出委托。票是结果，方法的状态才是产出。</p>
+  </div>
+  <div class="stamp">
+    <div class="badge">数据日 <b>未采集</b></div>
+    <div class="gen">模板骨架 · 未经生成器渲染</div>
+  </div>
+</header>
+
+<!--TODAY_BEGIN-->
+<div class="verdict bad">
+  <h2>今日状态未采集</h2>
+  <p class="why">这一块由生成器替换；当前是模板骨架，不含任何当日数字。</p>
+  <div class="kpis">
+    <div class="kpi"><div class="k">可买批次</div><div class="v">未采集</div><div class="r">台账只认多因子共识</div></div>
+    <div class="kpi"><div class="k">候选篮</div><div class="v">未采集</div><div class="r">单因子命中，不成批次</div></div>
+    <div class="kpi"><div class="k">观察池</div><div class="v">未采集</div><div class="r">仅过稳健闸，未过样本外闸</div></div>
+    <div class="kpi"><div class="k">最后批次</div><div class="v">未采集</div><div class="r">最近一次真的产出批次</div></div>
+  </div>
+</div>
+<!--TODAY_END-->
+
+<section>
+  <div class="sech"><h2>这套方法</h2><span>版本级 · 方法改了才动，不是每天变</span></div>
+  <div class="grid2">
+    <a class="card" href="M2_DASHBOARD.html">
+      <h3>规则与冻结口径<span class="tagx">FROZEN 2026-11-07</span></h3>
+      <p>方法长什么样：入场条件、闸门顺序、持仓天数。冻结之后不许改字，
+        要改就是新版本、重新回测。</p>
+    </a>
+    <a class="card" href="HOUFENG_ARENA_36M.html">
+      <h3>竞技场 · 三年期</h3>
+      <p>同一批信号在四种成交价假设下的差距。口径不同，结论差得比策略还多，
+        这一页说的就是这件事。</p>
+    </a>
+    <a class="card" href="HOUFENG_HOLDGRID.html">
+      <h3>持仓周期</h3>
+      <p>持几天最优、为什么不是越久越好。alpha 在哪一天开始衰减。</p>
+    </a>
+    <a class="card" href="HOUFENG_DIVIDEND.html">
+      <h3>红利防御档<span class="tagx">实验档 · 未冻结</span></h3>
+      <p>弱市专用的一套参数。上轮评审结论是暂不进发布集，
+        所以它在这里但不对客户开放。</p>
+    </a>
+  </div>
+</section>
+
+<section>
+  <div class="sech"><h2>账</h2><span>按批次累积 · 日更</span></div>
+  <div class="grid3">
+    <a class="card" href="../daily_report/houfeng.html">
+      <h3>信号台账</h3>
+      <p>在册批次、到期结算、生产池滚动超额。逐只看每只票的买入价与现价。</p>
+    </a>
+    <a class="card" href="HOUFENG_PLAYBOOK.html">
+      <h3>交易回放日历</h3>
+      <p>逐日回放：成交价按什么假设取、哪一天该进、哪一天该出。</p>
+    </a>
+    <a class="card" href="HOUFENG_PICK_20261106.html">
+      <h3>历史选股快照<span class="tagx">2026-11-06 · 归档</span></h3>
+      <p>一次盘后选股的完整留档。快照是证据，不是当前状态——当前看最上面的「今日」。</p>
+    </a>
+  </div>
+</section>
+
+<section>
+  <div class="sech"><h2>对外</h2><span>发布集 · md5 锁定，对外可访问</span></div>
+  <div class="grid3">
+    <a class="card pub" href="HOUFENG_BROCHURE.html">
+      <h3>方案书</h3>
+      <p>客户版：这套方法为交易决策供给什么、怎么用、边界在哪。</p>
+    </a>
+    <a class="card pub" href="HOUFENG_STRATEGY_CARD.html">
+      <h3>策略卡</h3>
+      <p>客户版：一页说清规则与适用条件。</p>
+    </a>
+    <a class="card pub" href="M2_DASHBOARD.html">
+      <h3>冻结看板</h3>
+      <p>客户版：冻结口径下当前的方法状态。</p>
+    </a>
+  </div>
+  <p class="note">发布集只有这三页。其余页面属内部页，正文含因子代号与样本外数值，明文不对外。</p>
+</section>
+
+<section>
+  <div class="sech"><h2>还缺的两页</h2><span>缺就是缺，不藏</span></div>
+  <div class="grid2">
+    <div class="card todo">
+      <h3>成本口径</h3>
+      <p>未建。现在按单边 0.30pct 计入，但那是假设值、没有真实成交回报支撑。
+        这一页该说清：假设从哪来、真实成本可能高多少。</p>
+    </div>
+    <div class="card todo">
+      <h3>失效判据</h3>
+      <p>未建。一个方法平台最该有的一页：什么条件下这套方法就算错了。
+        没有这一页，等于只报成绩、不报风险。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <b>这个平台做什么</b>：候风是司马微（零界工作站）下的独立选股平台，只跑一套方法，
+  不叠策略、不做多策略横切（那是策略中台的事）。<br>
+  <b>不做什么</b>：不产生委托、不接券商接口、不判断你能买多少。
+  候选与观察是研究结论，不是买入指令。<br>
+  <b>三级陈述分开读</b>：可买批次（过了全部闸门）／候选篮（单因子命中，未成共识）／
+  观察池（仅过稳健闸）——三个池子不同源，<b>不要相加</b>。<br>
+  <b>数据来源</b>：<code>factor_proto/data</code> 的选股产物与完成标记；
+  数据日取自交易日历分片，不取文件时间。
+</footer>
+
+</div>
+</body>
+</html>

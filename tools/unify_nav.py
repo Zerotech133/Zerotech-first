@@ -42,6 +42,11 @@ SELF_NAV_PAGES = {
     # （不入库）。两份都自带导航，都要登记——漏了模板，跑本脚本会把全局顶栏注进源文件。
     "home_v3.src.html": (r'<nav\s+class="nav"[^>]*aria-label="主导航"',
                          r'href="/home\.html"[^>]*>打开旧总览'),
+    # 2026-11-16：候风平台入口页，同样是模板入库 / 产物不入库。
+    # 它自带浅色面包屑（回零界工作站），不是深色全局顶栏，必须登记，
+    # 否则一旦扫描范围扩到 _templates/ 就会把深色顶栏注进浅色产品页。
+    "houfeng_index.src.html": (r'<nav\s+class="crumb"[^>]*aria-label="主导航"',
+                               r'href="/"[^>]*>\s*←\s*零界工作站'),
     # JEV 情报工作台原型：嵌入式自有返回按钮，不注入全局深色顶栏（2026-11-09）
     "jev_intel.html": (r'id="embedBack"', r'←\s*返回板块总览'),
 }

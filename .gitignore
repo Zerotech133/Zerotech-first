@@ -340,6 +340,12 @@ docs/dev/devboard.html
 # 页面结构入库的是模板；产物每天重写，入库就会让工作区天天显示 M。
 portal/home_v3.html
 
+# 2026-11-16：候风平台入口页同样是「模板入库 + 产物不入库」。
+# 今日那一块每天重写，入库就会让工作区天天显示 M（和上面 home_v3 同一个原因）。
+# 注意：这个文件是 /houfeng/ 的 index，删了或新部署未生成时该路径会 404，
+# 先跑一次 portal/build_houfeng_index.py。
+portal/houfeng/index.html
+
 # evals runtime reports (regenerable)
 agent_platform/evals/reports/
 

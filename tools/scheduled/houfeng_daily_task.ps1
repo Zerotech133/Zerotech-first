@@ -1,4 +1,4 @@
-﻿# houfeng_daily_task.ps1 - 侯风每日信号产线（pull -> select -> register）
+﻿# houfeng_daily_task.ps1 - 候风每日信号产线（pull -> select -> register）
 #
 # 为什么放在早上而不是盘后：
 #   tushare margin_detail 沪市 T+0、深市 T+1。当天 18:10 跑，深市两融必然为空，
@@ -302,13 +302,13 @@ try {
         Write-TaskLog ('PAGE: ' + $pageLine)
     }
 
-    # 宿主首页「三平台今日一句」：借侯风跑完的这个时刻刷一次。
-    # 为什么挂这里而不另开 08:50 独立任务：侯风是首页三张卡的主驱动，它没跑完时
+    # 宿主首页「三平台今日一句」：借候风跑完的这个时刻刷一次。
+    # 为什么挂这里而不另开 08:50 独立任务：候风是首页三张卡的主驱动，它没跑完时
     # 刷出来的首页就是半成品；且多一个调度对象就多一个会悄悄失效的东西。
     # 代价是一天刷 2-3 次（三个触发点，跳过的触发点也走到这里），每次约 9 秒，
     # 写的是同一份内容 —— 幂等，无副作用。
     # 与 PAGE 同款约定：失败只 WARN 不改退出码，首页是呈现层不是产线。
-    # 注意：本脚本只保证「刷新发生在侯风结论定稿之后」，不等于三平台联合调度 ——
+    # 注意：本脚本只保证「刷新发生在候风结论定稿之后」，不等于三平台联合调度 ——
     # 缠论 observe_board.json 与中台 system_health.json 各按自己的时点更新。
     $platPy  = Join-Path $root 'portal\build_platform_today.py'
     $platOut = (& $py -X utf8 $platPy 2>&1 | Out-String -Width 4096)
@@ -319,13 +319,30 @@ try {
         $platLine = ($platOut -split "`r?`n" | Where-Object { $_ -match '^(HOME|OK)' } | Select-Object -Last 1)
         Write-TaskLog ('PLAT: ' + $platLine)
     }
+    # 候风平台入口页（/houfeng/）：与今日页共用同一个 build()，两页不会说不同的话。
+    # 放在 ps1 里而不是塞进 build_platform_today.py：那个脚本是宿主层聚合器，
+    # 不该去写某个平台自己的页面 —— 谁的门户谁生成。
+    # 注意：本脚本的 $portal 实指 portal\daily_report（第 26 行），不是 portal 本身。
+    # 入口页生成器在 portal 根下，必须用 $root 拼，不能沿用 $portal ——
+    # 13:55 首次实跑就是照抄 $portal 而报 Errno 2（单测全过、生产路径参数错）。
+    $idxPy  = Join-Path $root 'portal\build_houfeng_index.py'
+    $idxOut = (& $py -X utf8 $idxPy 2>&1 | Out-String -Width 4096)
+    if ($LASTEXITCODE -ne 0 -or $idxOut -match 'Traceback') {
+        Write-TaskOut 'idx' $idxOut 6
+        Write-TaskLog 'WARN: 候风入口页生成失败，/houfeng/ 可能停在上一交易日'
+    } else {
+        $idxLine = ($idxOut -split "`r?`n" | Where-Object { $_ -match '^IDX:' } | Select-Object -Last 1)
+        Write-TaskLog ('IDX: ' + $idxLine)
+    }
     Write-TaskLog '===== houfeng_daily done ====='
     exit 0
 } catch {
     Write-TaskLog ('EXCEPTION: ' + $_.Exception.Message)
     # 异常时同样重生成：页面必须反映「今天失败了」，不能停在昨天的结论上。
     try { & $py -X utf8 (Join-Path $portal 'build_houfeng_today.py') 2>&1 | Out-Null } catch { }
-    # 首页同理：侯风失败时首页该显示「侯风读取失败」，不能还挂着昨天的结论。
+    # 首页同理：候风失败时首页该显示「候风读取失败」，不能还挂着昨天的结论。
     try { & $py -X utf8 (Join-Path $root 'portal\build_platform_today.py') 2>&1 | Out-Null } catch { }
+    # 入口页同理：失败时它该显示「未采集」，不能挂着昨天的结论。
+    try { & $py -X utf8 (Join-Path $root 'portal\build_houfeng_index.py') 2>&1 | Out-Null } catch { }
     exit 1
 }

@@ -1,4 +1,4 @@
-﻿# install_houfeng_daily_task.ps1 - 注册侯风每日信号产线的计划任务
+﻿# install_houfeng_daily_task.ps1 - 注册候风每日信号产线的计划任务
 #
 # 默认只打印将要执行的动作，加 -Apply 才真正注册。
 # 若同名任务已存在，Register-ScheduledTask 会报错退出（不覆盖既有任务）。
@@ -51,7 +51,7 @@ if ($exist) {
 }
 
 Register-ScheduledTask -TaskName $name -Action $act -Trigger $trg -Settings $set -Principal $prn `
-    -Description '侯风每日信号产线：拉增量 -> 选股(auto/main) -> 登记批次。08:40/09:40/10:40 三次互为重试，幂等；不跑快照、不广播。' | Out-Null
+    -Description '候风每日信号产线：拉增量 -> 选股(auto/main) -> 登记批次。08:40/09:40/10:40 三次互为重试，幂等；不跑快照、不广播。' | Out-Null
 
 $t = Get-ScheduledTask -TaskName $name
 $i = Get-ScheduledTaskInfo -TaskName $name

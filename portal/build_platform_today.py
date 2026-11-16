@@ -14,7 +14,7 @@
    工作区每天 M，git 的变更信号就被噪声淹了。
 
 三平台的数据真源：
-  侯风    daily_report/build_houfeng_today.py 的 build()（复用，不重写逻辑）
+  候风    daily_report/build_houfeng_today.py 的 build()（复用，不重写逻辑）
   缠论    portal/observe_board.json
   中台    deliverables/quant/data/system_health.json
 
@@ -72,7 +72,7 @@ def fmt_d(s: str) -> str:
 
 
 def _load_houfeng_build():
-    """按真实路径加载侯风生成器，复用它的 build()，不复制其内部逻辑。"""
+    """按真实路径加载候风生成器，复用它的 build()，不复制其内部逻辑。"""
     p = os.path.join(HERE, "daily_report", "build_houfeng_today.py")
     if not os.path.exists(p):
         return None
@@ -86,10 +86,10 @@ def _load_houfeng_build():
 def houfeng(days: list) -> dict:
     base = {
         "id": "houfeng",
-        "name": "侯风",
-        "role": "选票 · 对外产品层",
-        "url": "/houfeng/HOUFENG_TODAY.html",
-        "url_note": "今日状态页",
+        "name": "候风",
+        "role": "一套选股方法 · 做到极致",
+        "url": "/houfeng/",
+        "url_note": "平台入口",
     }
     mod = _load_houfeng_build()
     if mod is None:

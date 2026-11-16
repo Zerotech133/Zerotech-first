@@ -1,4 +1,4 @@
-﻿# install_houfeng_snap_task.ps1 - 注册侯风台账盘后快照任务
+﻿# install_houfeng_snap_task.ps1 - 注册候风台账盘后快照任务
 #
 # 默认只打印将要执行的动作，加 -Apply 才真正注册。
 # 若同名任务已存在，直接报错退出，不覆盖既有任务。
@@ -44,7 +44,7 @@ if ($exist) {
 }
 
 Register-ScheduledTask -TaskName $name -Action $act -Trigger $trg -Settings $set -Principal $prn `
-    -Description '侯风台账盘后快照：先结算到期项，再出全景快照（含滚动降级线）。幂等，可重跑。' | Out-Null
+    -Description '候风台账盘后快照：先结算到期项，再出全景快照（含滚动降级线）。幂等，可重跑。' | Out-Null
 
 $t = Get-ScheduledTask -TaskName $name
 $i = Get-ScheduledTaskInfo -TaskName $name

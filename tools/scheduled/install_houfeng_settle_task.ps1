@@ -1,4 +1,4 @@
-﻿# install_houfeng_settle_task.ps1 - 注册侯风「当日结算」任务（周一至周五 16:40）
+﻿# install_houfeng_settle_task.ps1 - 注册候风「当日结算」任务（周一至周五 16:40）
 #
 # 为什么需要这个任务（2026-11-11 判例）：
 #   15:10 那趟拿不到当日日线（adj_factor 取得到、daily 取不到），当日到期的台账项
@@ -103,7 +103,7 @@ if ($exist) {
 }
 
 Register-ScheduledTask -TaskName $name -Action $act -Trigger $trg -Settings $set -Principal $prn `
-    -Description '侯风台账当日结算：16:40 用当日日线结清到期项，并出第二个收盘后快照（供价格守卫互比）。幂等，可重跑。' | Out-Null
+    -Description '候风台账当日结算：16:40 用当日日线结清到期项，并出第二个收盘后快照（供价格守卫互比）。幂等，可重跑。' | Out-Null
 
 $t = Get-ScheduledTask -TaskName $name
 $i = Get-ScheduledTaskInfo -TaskName $name

@@ -2,7 +2,7 @@
 #
 # 时点：交易日 15:40。为什么是 15:40：
 #   · 15:00 收盘，行情快照 15:05 之后才稳定（含收盘集合竞价结果）；
-#   · 本平台已有的 houfeng_settle_daily 在 16:40，那条线跑的是侯风的口径，
+#   · 本平台已有的 houfeng_settle_daily 在 16:40，那条线跑的是候风的口径，
 #     与本链路的「盘前 15 只成绩」无关，不要合在一起（口径不同不能互相代言）；
 #   · 15:40 出结果，16:00 前能转发，收盘会还能用上。
 #
@@ -91,7 +91,9 @@ $out = & $py @argv 2>&1
 $rc = $global:LASTEXITCODE
 
 $out | Out-File $Log -Append -Encoding utf8
+$skipped = (($out | Out-String) -match '\[SKIP\]')
 Write-Log "=== close_review end 业务rc=$rc ==="
+if ($skipped) { Write-Log "抑制日按规则跳过（SKIP）：不产出复盘、不挂事件账" }
 
 if ($rc -eq 2 -or $rc -eq 3) {
     if (Test-Path $alert) {
@@ -107,7 +109,12 @@ if ($rc -eq 0 -or $rc -eq 1) {
     # 「观测没攒上」与「今天没有观测」是两件事，不能都写成 DONE。
     $aRc = -1
     $attach = Join-Path $root 'tools\review\attach_close_review.py'
-    if (Test-Path $attach) {
+    if ($skipped) {
+        # 没有复盘产物却去挂观测 = 造假证据；按规则跳过也要显式留痕，
+        # 不能写成「今天没有观测」。
+        $aRc = 0
+        Write-Log "SKIP：按抑制令跳过 attach_close_review（无复盘产物，不挂观测）"
+    } elseif (Test-Path $attach) {
         $aArgv = @('-X', 'utf8', $attach)
         if ($Date) { $aArgv += @('--exec-day', $Date) }
         $aOut = & $py @aArgv 2>&1
@@ -118,6 +125,7 @@ if ($rc -eq 0 -or $rc -eq 1) {
         Write-Log "attach_close_review.py missing - 观测未挂（不是没有观测）"
     }
     Write-Launch 'end' @{ rc = $rc; ts_rc = 0; stage = 'done'; attach_rc = $aRc
+                          skipped = [bool]$skipped
                           dur_sec = [int](((Get-Date) - $T0).TotalSeconds) }
     exit 0
 }
