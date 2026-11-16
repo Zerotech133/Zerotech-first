@@ -140,7 +140,8 @@ def _api_key() -> str:
                         return v
         except OSError:
             pass
-        break
+        # 不 break：本层 .env.local 没有该键就继续向上（就近优先，
+        # 避免浅层空文件遮住深层配置 —— 老田的AI助手 quant_backtest/ 就踩过）
     raise SystemExit(
         "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权（auth_mode=enforce）。"
         "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>"
