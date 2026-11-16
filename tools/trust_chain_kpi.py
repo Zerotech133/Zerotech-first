@@ -70,6 +70,7 @@ import hmac
 import http.client
 import importlib.util
 import json
+import os
 import re
 import sys
 import time
@@ -91,9 +92,37 @@ A0_PARTY = "A0/老田"          # 监督签标签（展示用，不参与 requir
 M4_REQUIRED_APPROVALS_MIN = 1  # 至少有 1 条 approve 行（dispatch 只是通知，不等于签字）
 LDE_BASE = "http://127.0.0.1:8103"
 HERMES_BASE = "http://127.0.0.1:8787"
-DEFAULT_RELEASE_ROOT_FALLBACK = Path(r"C:\项目\_vault\legion_ide\release\legion-ide")
-DEFAULT_EVIDENCE_DIR = Path(r"C:\项目\_vault\legion_ide\evidence")
-DEFAULT_CAP_KEY = Path(r"C:\项目\_vault\legion_ide\cap_master.key")
+def _load_env_local() -> None:
+    """把仓库根 .env.local 的键读进 os.environ（不覆盖已存在）。
+
+    2026-11-16：cap 主密钥 / 证据目录 / 发布根原先硬编码，会随 push 暴露本机
+    目录结构（vault_path_inventory_20261116 A 级第 22 条）。
+    """
+    for anc in Path(__file__).resolve().parents:
+        f = anc / ".env.local"
+        if not f.exists():
+            continue
+        try:
+            for raw in f.read_text(encoding="utf-8-sig").splitlines():
+                raw = raw.strip()
+                if not raw or raw.startswith("#") or "=" not in raw:
+                    continue
+                k, v = raw.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k and v and k not in os.environ:
+                    os.environ[k] = v
+        except OSError:
+            pass
+        return
+
+
+_load_env_local()
+
+# 必须在 _load_env_local() 之后取，否则读不到 .env.local 里的项。
+DEFAULT_RELEASE_ROOT_FALLBACK = Path(os.environ.get("LEGION_RELEASE_ROOT", "release/legion-ide"))
+DEFAULT_EVIDENCE_DIR = Path(os.environ.get("LEGION_EVIDENCE_DIR", "legion_evidence"))
+# 缺配置时为空 Path：从 cwd 读不到 cap 密钥 -> 相关检查自然降级（不误判为通过）
+DEFAULT_CAP_KEY = Path(os.environ.get("LEGION_CAP_KEY_FILE", ""))
 DEFAULT_GATE_LOG_DIR = Path(r"C:\Temp")
 GATE_LOG_PATTERNS = ("test_gate_*.log", "gate_after_*.log", "audit_gate_*.log")
 GATE_STALE_SECONDS = 24 * 3600
@@ -935,8 +964,8 @@ _DATA_SOURCES = (
     ("8103 LDE", "http://127.0.0.1:8103（/api/health、/rw、/api/ide/version、patchset/preview）"),
     ("8787 Hermes", "http://127.0.0.1:8787（/api/sessions）"),
     ("凭证入口", "tools/check_auth_surfaces.py → config/auth_surfaces.json"),
-    ("发布单元", "tools/release_legion_ide.py status() → _vault\\legion_ide\\release\\legion-ide"),
-    ("证据", "patchset-*.json → _vault\\legion_ide\\evidence（+ cap_master.key HMAC）"),
+    ("发布单元", "tools/release_legion_ide.py status() → 发布根（LEGION_RELEASE_ROOT）"),
+    ("证据", "patchset-*.json → 证据目录（LEGION_EVIDENCE_DIR，+ cap_master.key HMAC）"),
     ("M4 台账", "agent_platform/data/approvals.jsonl、work/tianfeng_dispatch.jsonl"),
     ("fast gate", "C:\\Temp\\test_gate_*.log / gate_after_*.log / audit_gate_*.log"),
 )

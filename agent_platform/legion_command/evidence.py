@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Phase C：evidence artifact（run manifest）。
 
-每个 A0/OH 执行生成 `_vault/legion_ide/evidence/<run_id>.json`：
+每个 A0/OH 执行生成 `<证据目录>/<run_id>.json`（目录由 LEGION_EVIDENCE_DIR 指定）：
 run_id/task/agent/binding/plan/events/oh_cid/timestamps；有 cap master key 时附 HMAC。
 只读聚合；不替代 OH/LDE 自身审计。
 
@@ -36,10 +36,38 @@ import time
 import uuid
 from pathlib import Path
 
-DEFAULT_DIR = r"C:\项目\_vault\legion_ide\evidence"
+def _load_env_local() -> None:
+    """把仓库根 .env.local 的键读进 os.environ（不覆盖已存在）。
+
+    2026-11-16：证据目录与 cap 主密钥路径原先硬编码，会随 push 暴露本机
+    目录结构（vault_path_inventory_20261116 A 级第 5 条）。改为纯环境变量
+    + 自补 .env.local（该文件被 .gitignore 的 `.env.*` 忽略）。
+    """
+    for anc in Path(__file__).resolve().parents:
+        f = anc / ".env.local"
+        if not f.exists():
+            continue
+        try:
+            for raw in f.read_text(encoding="utf-8-sig").splitlines():
+                raw = raw.strip()
+                if not raw or raw.startswith("#") or "=" not in raw:
+                    continue
+                k, v = raw.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k and v and k not in os.environ:
+                    os.environ[k] = v
+        except OSError:
+            pass
+        return
+
+
+_load_env_local()
 DIR_ENV = "LEGION_EVIDENCE_DIR"
 KEY_ENV = "LEGION_CAP_KEY_FILE"
-DEFAULT_KEY = r"C:\项目\_vault\legion_ide\cap_master.key"
+# 缺配置时为相对名：写证据会落到 cwd（调用方通常显式传目录），
+# 读密钥失败则 _key() 返回 b""（不签名），与原先「文件不存在」语义一致。
+DEFAULT_DIR = os.environ.get(DIR_ENV, "legion_evidence")
+DEFAULT_KEY = os.environ.get(KEY_ENV, "")
 
 GENESIS_HASH = "0" * 64
 CHAIN_FIELDS = ("prev_hash", "record_hash")

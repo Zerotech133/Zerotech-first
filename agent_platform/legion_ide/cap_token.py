@@ -4,7 +4,7 @@
 格式：base64url(payload_json) + "." + hmac_sha256_hex
 payload：{"v":1,"sub":...,"task":...,"scopes":[...],"iat":...,"exp":...,"nonce":...}
 
-master key：LEGION_CAP_KEY_FILE 或默认 C:\\项目\\_vault\\legion_ide\\cap_master.key
+master key：环境变量 LEGION_CAP_KEY_FILE（或仓库根 .env.local 同名项）
 未配置 key = 功能关闭（verify 返回 disabled），保持现状。
 """
 from __future__ import annotations
@@ -18,8 +18,36 @@ import secrets
 import time
 from pathlib import Path
 
-DEFAULT_KEY_FILE = r"C:\项目\_vault\legion_ide\cap_master.key"
+def _load_env_local() -> None:
+    """把仓库根 .env.local 里的键读进 os.environ（不覆盖已存在的）。
+
+    2026-11-16：cap 主密钥路径原先硬编码成绝对路径，会随 push 暴露本机
+    目录结构（vault_path_inventory_20261116 A 级第 7 条）。改为纯环境变量，
+    并在此自补 .env.local（该文件被 .gitignore 的 `.env.*` 忽略）。
+    """
+    for anc in Path(__file__).resolve().parents:
+        f = anc / ".env.local"
+        if not f.exists():
+            continue
+        try:
+            for raw in f.read_text(encoding="utf-8-sig").splitlines():
+                raw = raw.strip()
+                if not raw or raw.startswith("#") or "=" not in raw:
+                    continue
+                k, v = raw.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k and v and k not in os.environ:
+                    os.environ[k] = v
+        except OSError:
+            pass
+        return
+
+
+_load_env_local()
 KEY_ENV = "LEGION_CAP_KEY_FILE"
+# 缺配置时为空串：Path("") 读不到字节 -> load_key() 返回 b"" -> enabled() 为 False，
+# 与原先「文件不存在」的语义完全一致（签名功能关闭，不静默使用错误密钥）。
+DEFAULT_KEY_FILE = os.environ.get(KEY_ENV, "")
 
 
 def key_path() -> Path:
