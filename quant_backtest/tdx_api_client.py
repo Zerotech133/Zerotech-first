@@ -2,7 +2,8 @@
 """TDX-Trading API thin client：ts_stk_limit（每日涨跌停价）拉取与本地缓存。
 
 设计（p0_limit 研发，20261106）：
-- 只读 GET /api/data/table/ts_stk_limit，无鉴权；limit 上限 5000，单日全市场
+- 只读 GET /api/data/table/ts_stk_limit（2026-11-16 起需 X-API-Key）；
+  limit 上限 5000，单日全市场
   ~5500 行，按 offset 分页拉齐。
 - 缓存 data/tdx_api/ts_stk_limit/{YYYYMM}.parquet 按月分片，列
   (trade_date int64, ts_code str, up_limit float, down_limit float)。
@@ -17,8 +18,9 @@
 #    exact vs approx 差 ≤0.4bp/笔、不翻结论——不得据此夸大改造收益。
 # 3) 数据红线：ts_stk_limit 是当日快照、无未来信息，可安全用于 T+1 可成交性
 #    判定；张松 API 的 qfq 系技术指标为追溯调整，回测禁用（PIT）。
-# 4) 安全：该 API 无鉴权（公网 rookie.xtcloud-tech.com:48088 / 内网
-#    192.168.203.48:8088），仅只读 GET；如对外开放需补鉴权，勿写入凭据。
+# 4) 安全：服务端 2026-11-16 起 auth_mode=enforce，所有请求需带 X-API-Key
+#    （公网 rookie.xtcloud-tech.com:48088 / 内网 192.168.203.13:8088）；
+#    Key 由环境变量或仓库根 .env.local 提供，勿写入代码与文档。
 # 5) 缓存缺失自动回退 approx 并在 meta.limit_exact_meta.fallback_dates 留痕，
 #    引用回测结论前先查该字段是否为空。
 
@@ -48,7 +50,7 @@ def _api_key():
     """TDX 服务 API Key。
 
     2026-11-16 起服务端 `auth_mode=enforce`：无凭证 `GET /api/*` 一律 401。
-    （本文件原注释写「该 API 无鉴权」——那条已于 2026-11-16 作废。）
+    （本文件早期注释里关于凭证的表述已于 2026-11-16 作废。）
 
     来源：环境变量 `TDX_API_KEY` > 向上找到的仓库根 `.env.local`（已 gitignore）。
     刻意不设默认值：缺 Key 立刻报错，而不是让请求静默 401 后被当成「没有数据」
