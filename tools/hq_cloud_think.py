@@ -6,6 +6,7 @@
 - 统一云端主绑 glm/glm-5.3（由 8796 org 真源解析）；
 - 输出结构化思考：结论/依据/风险/建议/需查证；
 - 只读调用，不自动派单/不写生产/不代签。
+- 降级信封字段透传（fallback_* / binding_resolved）；degraded 不得伪造云端主绑成功。
 """
 from __future__ import annotations
 
@@ -33,6 +34,13 @@ CLOUD_LEADS = {
 }
 DEFAULT_BASE = "http://127.0.0.1:8796"
 
+# CloudThink v1.1 客户端预算（2026-11-16 第 1 段，A0 照准）：
+#   服务端 GLM 主绑单次 240s（agent_platform/engine/llm.py），降级档 180s，
+#   席位级降级链串行累加；2026-11-16 18:09 受控单发实测用 300s 预算 19s 返回 degraded。
+#   取 300：>= 主绑单次并给降级链留余量；不声称覆盖 240+180 全串行最坏
+#   （那需要服务端异步化，属候选 3 / L2，本单未准）。
+DEFAULT_TIMEOUT_S = 300
+
 
 def build_prompt(lead: str, question: str, context: str = "") -> dict:
     name, dept = CLOUD_LEADS[lead]
@@ -50,7 +58,7 @@ def build_prompt(lead: str, question: str, context: str = "") -> dict:
     return {"agent": lead, "system": system, "purpose": "dept_think", "user": user}
 
 
-def call_cloud(payload: dict, base: str = DEFAULT_BASE, timeout: int = 120) -> dict:
+def call_cloud(payload: dict, base: str = DEFAULT_BASE, timeout: int = DEFAULT_TIMEOUT_S) -> dict:
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
         base.rstrip("/") + "/api/chat", data=body,
@@ -70,6 +78,12 @@ def call_cloud(payload: dict, base: str = DEFAULT_BASE, timeout: int = 120) -> d
         "question": payload["user"],
         "text": text, "binding": env.get("binding") or data.get("binding_resolved") or "",
         "degraded": bool(env.get("degraded")), "latency_ms": env.get("latency_ms"),
+        # 降级取证：serve.py _seat_chat 信封契约；degraded=true 表示主绑失败、降级档成功。
+        # 不得把降级成功写成云端主绑成功（SOP v0.2 §七.5.4 附）。
+        "fallback_from": env.get("fallback_from"),
+        "fallback_reason": env.get("fallback_reason"),
+        "fallback_chain": env.get("fallback_chain"),
+        "binding_resolved": data.get("binding_resolved"),
     }
 
 
@@ -79,7 +93,8 @@ def main(argv=None) -> int:
     ap.add_argument("--question", required=True)
     ap.add_argument("--context", default="")
     ap.add_argument("--base", default=DEFAULT_BASE)
-    ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_S,
+                    help="单次 HTTP 预算，默认 300s（>= 服务端主绑 240s）；串行降级最坏可能更长，不作成功保证")
     ap.add_argument("--out", default="")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
