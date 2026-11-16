@@ -24,8 +24,10 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date, timedelta
+from pathlib import Path
 
 BASE = "http://rookie.xtcloud-tech.com:48088"
 PAGE = 5000
@@ -112,14 +114,55 @@ def _resolve_days(explicit: list[str] | None, max_days: int = MAX_DAYS) -> list[
     return [d.strftime("%Y%m%d") for d in days]
 
 
+def _api_key() -> str:
+    """TDX 服务 API Key。
+
+    2026-11-16 起服务端 `auth_mode=enforce`：无凭证 `GET /api/*` 一律 401
+    （此前 shadow 模式放行，本脚本原为免鉴权调用）。
+
+    来源顺序：环境变量 `TDX_API_KEY` > 仓库根 `.env.local`（`.gitignore` 已忽略）。
+    刻意不设默认值 —— 缺 Key 时立刻报错，而不是让每个请求静默 401 后
+    被当成「当天没数据」（正是「读不到≠没有」那一族）。
+    """
+    k = (os.environ.get("TDX_API_KEY") or "").strip()
+    if k:
+        return k
+    for anc in Path(__file__).resolve().parents:
+        f = anc / ".env.local"
+        if not f.is_file():
+            continue
+        try:
+            for raw in f.read_text(encoding="utf-8-sig").splitlines():
+                raw = raw.strip()
+                if raw.startswith("TDX_API_KEY="):
+                    v = raw.split("=", 1)[1].strip().strip('"').strip("'")
+                    if v:
+                        return v
+        except OSError:
+            pass
+        break
+    raise SystemExit(
+        "未配置 TDX_API_KEY —— 2026-11-16 起 TDX 服务强制鉴权（auth_mode=enforce）。"
+        "请在环境变量或仓库根 .env.local 设置 TDX_API_KEY=<tdx_...>"
+    )
+
+
 def _fetch_day(day: str) -> list[dict]:
     import requests
 
+    headers = {"X-API-Key": _api_key()}
     recs, offset = [], 0
     while True:
         r = requests.get(f"{BASE}/api/data/table/ts_hk_daily",
                          params={"start_date": day, "end_date": day,
-                                 "limit": PAGE, "offset": offset}, timeout=60)
+                                 "limit": PAGE, "offset": offset},
+                         headers=headers, timeout=60)
+        if r.status_code == 401:
+            raise RuntimeError(
+                "TDX 401 unauthorized —— API Key 无效/已停用/已过期"
+                "（服务端 auth_mode=enforce）")
+        if r.status_code == 403:
+            raise RuntimeError("TDX 403 forbidden —— 凭证有效但权限不足（需 read scope）")
         r.raise_for_status()
         j = r.json()
         cols = j["columns"]
