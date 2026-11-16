@@ -59,7 +59,9 @@ def test_no_signal_when_volume_flat():
 def test_breakout_requires_above_high20():
     s = _series(25)
     s[20].update({"pct": 5.0, "vol": 2000.0, "close": 9.8})   # 涨但没破前高
-    assert vb.scan("X", s) == []
+    kinds = [h["signal"] for h in vb.scan("X", s)]
+    assert "breakout_with_volume" not in kinds               # 不构成放量突破
+    assert "break_low20" in kinds                            # 反而触发破 20 日低
 
 
 def test_baseline_shape():
