@@ -61,7 +61,16 @@ class DataCenterGateway:
     def __init__(self) -> None:
         s = get_settings()
         self._base = s.datacenter_base_url.rstrip("/")
-        self._api_key = s.datacenter_api_key
+        # 2026-11-16：空 Key 必须立刻失败。
+        # 此前带空 X-API-Key 发请求，服务端回 401/403，而这里只 raise_for_status，
+        # 上层容易把「鉴权失败」当成「今天这个市场没数据」——
+        # 与本日抑制令判例同族（读不到 ≠ 没有）。
+        self._api_key = (s.datacenter_api_key or "").strip()
+        if not self._api_key:
+            raise DataCenterError(
+                "datacenter_api_key 未配置 —— DataCenter Open API 强制 X-API-Key 鉴权。"
+                "请在环境变量或 .env.local 设置 DATACENTER_API_KEY=<key>"
+            )
         self._retry_max = max(1, int(s.datacenter_retry_max))
         timeout = max(1.0, s.datacenter_timeout_ms / 1000.0)
         self._client = httpx.Client(
