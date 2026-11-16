@@ -31,6 +31,11 @@ $log      = 'C:\Temp\houfeng_daily_task.log'
 function Write-TaskLog([string]$m) {
     # -Width 4096：Out-File 默认按控制台宽度折行，长路径与 JSON 会被切断，
     # 折过行的日志没法再被程序解析，也没法 grep 完整路径。
+    # 但 -Width 只管 Out-File 自己的折行，管不到 $m 里已混进来的换行：native 命令
+    # （python.exe）的输出进 PS5.1 时会被按当前控制台宽度包装，而计划任务启动的
+    # 会话没有控制台、宽度与手工运行不同 —— 同一份日志里 PAGE 行手工跑完整、
+    # 调度跑被拦腰截断（实测 2026-11-16 13:08）。故此处显式压成单行。
+    $m = ($m -replace "`r?`n", ' ').Trim()
     ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ' + $m) |
         Out-File $log -Append -Encoding utf8 -Width 4096
 }
@@ -296,11 +301,31 @@ try {
         $pageLine = ($pageOut -split "`r?`n" | Where-Object { $_ -match '^TODAY:' } | Select-Object -Last 1)
         Write-TaskLog ('PAGE: ' + $pageLine)
     }
+
+    # 宿主首页「三平台今日一句」：借侯风跑完的这个时刻刷一次。
+    # 为什么挂这里而不另开 08:50 独立任务：侯风是首页三张卡的主驱动，它没跑完时
+    # 刷出来的首页就是半成品；且多一个调度对象就多一个会悄悄失效的东西。
+    # 代价是一天刷 2-3 次（三个触发点，跳过的触发点也走到这里），每次约 9 秒，
+    # 写的是同一份内容 —— 幂等，无副作用。
+    # 与 PAGE 同款约定：失败只 WARN 不改退出码，首页是呈现层不是产线。
+    # 注意：本脚本只保证「刷新发生在侯风结论定稿之后」，不等于三平台联合调度 ——
+    # 缠论 observe_board.json 与中台 system_health.json 各按自己的时点更新。
+    $platPy  = Join-Path $root 'portal\build_platform_today.py'
+    $platOut = (& $py -X utf8 $platPy 2>&1 | Out-String -Width 4096)
+    if ($LASTEXITCODE -ne 0 -or $platOut -match 'Traceback') {
+        Write-TaskOut 'plat' $platOut 6
+        Write-TaskLog 'WARN: 首页三平台数据刷新失败，首页可能停在上一交易日'
+    } else {
+        $platLine = ($platOut -split "`r?`n" | Where-Object { $_ -match '^(HOME|OK)' } | Select-Object -Last 1)
+        Write-TaskLog ('PLAT: ' + $platLine)
+    }
     Write-TaskLog '===== houfeng_daily done ====='
     exit 0
 } catch {
     Write-TaskLog ('EXCEPTION: ' + $_.Exception.Message)
     # 异常时同样重生成：页面必须反映「今天失败了」，不能停在昨天的结论上。
     try { & $py -X utf8 (Join-Path $portal 'build_houfeng_today.py') 2>&1 | Out-Null } catch { }
+    # 首页同理：侯风失败时首页该显示「侯风读取失败」，不能还挂着昨天的结论。
+    try { & $py -X utf8 (Join-Path $root 'portal\build_platform_today.py') 2>&1 | Out-Null } catch { }
     exit 1
 }
