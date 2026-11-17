@@ -57,7 +57,13 @@ def test_risk_seat_names():
     profiles = {p["agent_id"]: p for p in _org_profiles()}
     assert profiles["R1"]["display_name"] == "甘宁·风控R1"
     assert profiles["R2"]["display_name"] == "赵云·风控R2"
-    assert profiles["R2"]["cn_name"] == "赵云"
+    # [R6 2026-11-17 收口] 2c83927cf「组织编制对齐（老田 2026-11-16 逐条裁定）」：
+    # R2 cn_name 由「赵云」改为「赵云·风控」，与指挥部治理官 ZHAOYUN 显式消歧。
+    # display_name 未变；下方额外断言把「消歧」语义钉死，防止又被改回同名。
+    assert profiles["R2"]["cn_name"] == "赵云·风控"
+    assert profiles["R2"]["cn_name"] != _load("profile_seats.json")["seats"][
+        [i for i, s in enumerate(_load("profile_seats.json")["seats"])
+         if s["agent_id"] == "ZHAOYUN"][0]]["cn_name"]
     assert profiles["R3"]["display_name"] == "陆逊·风控R3"
 
 

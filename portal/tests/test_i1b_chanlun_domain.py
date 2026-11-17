@@ -87,8 +87,26 @@ def test_bare_domain_redirects_and_unknown_path_404():
     assert "&lt;script&gt;" in html2
 
 
-def test_two_pages_with_real_pipeline_verdict_show_conclusion():
-    """today / radar 有判定：必须出现「一句话结论」+ asof 徽章。"""
+def test_two_pages_with_real_pipeline_verdict_show_conclusion(monkeypatch):
+    """today / radar 有判定：必须出现「一句话结论」+ asof 徽章。
+
+    [R6 2026-11-17 收口] 干净 runner 不带运行时产物（chanlun_pool.jsonl /
+    chanlun_paper.json / news.db 均不入库），_page_today / _page_radar 读取失败
+    会走 _degraded 降级分支，页面只剩「本页不编造结论」，自然没有结论区块——
+    这是**测试缺夹具**，不是产品 bug，也不是文案改名：ui_parts.conclusion()
+    至今仍用 sec("一句话结论")，_TITLES 里的「📌 今日结论」是页面标题，
+    两者不是一回事。同文件 test_empty_pool_uses_honest_path /
+    test_dynamic_values_are_escaped 已有 monkeypatch 自造夹具先例，此处沿用
+    同一手法注入最小内存数据，让**真实渲染管线**（handle_get → render_page →
+    chanlun_pool_conclusion / brief_conclusion → ui_parts.sec）产出结论。
+    三条断言一字未改：不放宽、不登记基线、不碰产品代码。
+    """
+    pool = [{"detect_date": "2026-11-14", "code": "600000", "name": "夹具样本",
+             "type": "1卖", "tbe": True, "tradable": False}]
+    paper = {"open": [], "closed": []}
+    monkeypatch.setattr(CD, "_load_pool", lambda: pool)
+    monkeypatch.setattr(CD, "_load_paper", lambda: paper)
+    monkeypatch.setattr(CD, "_load_brief_rows", lambda: (None, None))
     for path in ("/chanlun/", "/chanlun/radar"):
         _h, html = _get(path)
         assert "一句话结论" in _text(html), path

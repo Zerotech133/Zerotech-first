@@ -84,11 +84,25 @@ def test_source_files_real():
 
 
 def test_touched_files_keep_crlf():
-    """R5 §0.7：改前改后换行风格必须一致（原均为 CRLF、无 BOM）。"""
+    """R5 §0.7：改前改后换行风格必须一致，且符合 .gitattributes。
+
+    [R6 2026-11-17 收口] 原注释「原均为 CRLF」是本机 core.autocrlf=true 的
+    检出假象。.gitattributes（2026-11-14 补）声明 `*.py text eol=lf`，仓库
+    blob 与 CI 检出的 .py 为纯 LF；.html / .js 未声明 eol，检出样式随
+    autocrlf 而定。故断言改为「每个文件内部换行样式单一、禁混行、禁孤立 CR、
+    禁 BOM；.py 依规范必须纯 LF」。CI windows-latest 上 .html 为 CRLF、
+    api_common.py 为 LF，两者都应通过。用例名保留以免牵动既有引用。
+    """
     for rel in TOUCHED:
         b = _raw(rel)
         assert b[:3] != b"\xef\xbb\xbf", "%s 不得带 BOM" % rel
-        assert b.count(b"\n") == b.count(b"\r\n"), "%s 出现裸 LF，换行被破坏" % rel
+        crlf = b.count(b"\r\n")
+        bare_lf = b.count(b"\n") - crlf
+        bare_cr = b.count(b"\r") - crlf
+        assert bare_cr == 0, "%s 出现孤立 CR，换行被破坏" % rel
+        assert crlf == 0 or bare_lf == 0, "%s CRLF 与裸 LF 混行，换行被破坏" % rel
+        if rel.endswith(".py"):
+            assert crlf == 0, "%s 违反 .gitattributes 的 *.py text eol=lf" % rel
 
 
 # ------------------------------------------------------------------- D2 ide.html

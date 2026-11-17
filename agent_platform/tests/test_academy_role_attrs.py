@@ -6,11 +6,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ORG = ROOT / "registry" / "org.json"
 TEAM = ROOT / "registry" / "team_academy.json"
-# ORG 投影（org.json departments.academy.formal_agents）：本批未扩 org，保持 7 席；
-# TEAM 投影（team_academy.json）：2026-11-01 A0 批准 A 方案新增 STRAT2（市场策略研究员·
-# 庞统，E2），研究院 team 正式 8 席。两个真源当前不同步属已知缺口（见 STRAT2FIX 回执）。
+# [R6 2026-11-17 收口] 2c83927cf「组织编制对齐（老田 2026-11-16 逐条裁定）」：
+#   · 关羽/黄忠从研究院移出（指挥部直属），仅保留在 liaison_agents 作协作记录；
+#   · STRAT2（庞统·市场策略研究员，E2）补入 org 正式编制，研究院 8 席。
+# 至此 ORG 投影与 TEAM 投影均为 8 席，注释里「两个真源不同步」的 STRAT2FIX
+# 已知缺口已收口。FORMAL(7) 仍对应 org.json 的 formal_agents 字段（该字段未变），
+# ORG_FORMAL(8) 对应 agents / agent_profiles 字段。
 FORMAL = ("ACAD1", "STRAT1", "BACK1", "COMM1", "INTEL1", "AI1", "PROD1")
 TEAM_FORMAL = FORMAL + ("STRAT2",)
+ORG_FORMAL = FORMAL + ("STRAT2",)
 LIAISON = ("GUANYU", "HUANGZHONG")
 
 
@@ -25,9 +29,13 @@ def _academy():
 
 def test_dept_membership_clear():
     dep = _academy()
+    # formal_agents 字段仍是 7 席（裁定未改该字段）；agents / agent_profiles
+    # 已是 ORG_FORMAL 8 席（含 STRAT2，且关羽/黄忠已移出）。
     assert dep["formal_agents"] == list(FORMAL)
     assert [x["agent_id"] for x in dep["liaison_agents"]] == list(LIAISON)
-    assert set(dep["agents"]) == set(FORMAL) | set(LIAISON)
+    assert set(dep["agents"]) == set(ORG_FORMAL)
+    assert "GUANYU" not in dep["agents"] and "HUANGZHONG" not in dep["agents"]
+    assert "STRAT2" in dep["agents"]
     for x in dep["liaison_agents"]:
         assert x.get("reports_to") == "A0"
         assert x.get("basis")
@@ -36,19 +44,24 @@ def test_dept_membership_clear():
 def test_org_profiles_analysis_and_reporting():
     dep = _academy()
     profs = {p["agent_id"]: p for p in dep["agent_profiles"]}
-    for aid in FORMAL + LIAISON:
+    # 2c83927cf 后 agent_profiles 只含 org 正式 8 席；liaison 的属性迁到
+    # liaison_agents（关羽/黄忠已移出研究院，改指挥部直属）。
+    assert set(profs) == set(ORG_FORMAL), "agent_profiles 应为 org 正式 8 席"
+    for aid in ORG_FORMAL:
         p = profs[aid]
         assert p.get("analysis_type"), aid
         assert p.get("reports_to"), aid
     assert profs["ACAD1"]["reports_to"] == "A0"
     assert profs["ACAD1"]["parent_node_keys"] == []
-    for aid in FORMAL[1:]:
+    for aid in ORG_FORMAL[1:]:
         assert profs[aid]["reports_to"] == "ACAD1"
         assert profs[aid]["parent_node_keys"] == ["acad1_core"]
-    for aid in ("GUANYU", "HUANGZHONG"):
-        assert profs[aid]["reports_to"] == "A0"
-        assert profs[aid]["parent_node_keys"] == []
-        assert profs[aid].get("academy_status") == "liaison"
+    liaisons = {x["agent_id"]: x for x in dep["liaison_agents"]}
+    for aid in LIAISON:
+        p = liaisons[aid]
+        assert p["reports_to"] == "A0"
+        assert p["parent_node_keys"] == []
+        assert p.get("academy_status") == "liaison"
 
 
 def test_team_formal_eight_and_reporting():

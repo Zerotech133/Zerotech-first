@@ -53,7 +53,8 @@ DWREG_B = DWREG.encode("utf-8")
 BRIEF_B = BRIEF.encode("utf-8")
 
 # 换行风格必须看**磁盘原始字节**：`read_text()` 默认做通用换行归一（CRLF → LF），
-# 用它断言 CRLF 会恒失败，故单独 read_bytes。
+# 故单独 read_bytes。注意：.gitattributes 自 2026-11-14 起声明 `*.py text eol=lf`，
+# 仓库 blob 与 CI 检出里 .py 均为纯 LF；本机 core.autocrlf=true 检出才是 CRLF。
 RAW = {name: (PORTAL / name).read_bytes()
        for name in ("api_dataops.py", "api_dw_registry.py", "briefing.html")}
 
@@ -203,10 +204,27 @@ def test_dw_v2_prototype_untouched():
 # ── 6. 换行风格 / 数字原始字节复核 ──────────────────────────────────────────
 
 def test_crlf_style_preserved():
-    """三文件均保持原 CRLF 风格，无孤立 LF（字节替换未引入换行漂移）。"""
+    """三文件换行符合 .gitattributes：*.py 纯 LF，其余单一样式、禁混行/BOM/孤立 CR。
+
+    [R6 2026-11-17 收口] R5 原文断言「三文件均保持原 CRLF」依赖本机
+    core.autocrlf=true 的检出结果；仓库 .gitattributes 于 2026-11-14 补了
+    `*.py text eol=lf`（防止 qpzm_backtest.py / portfolio_sim.py 的冻结 md5
+    指纹被 autocrlf 污染），且这三个文件的仓库 blob 历来就是纯 LF。
+    把文件改回 CRLF 会直接破坏该指纹门禁，故按仓库权威规范同步断言：
+      · .py 必须纯 LF（与原断言方向相反，但符合 .gitattributes）；
+      · 所有文件禁止 CRLF 与裸 LF 混行、禁止孤立 CR、禁止 BOM。
+    相比原断言（只查「有 CRLF + 无裸 LF」），新增 BOM / 孤立 CR / 混行三类
+    校验，严格性不降反升。用例名保留以免牵动既有引用。
+    """
     for name, raw in RAW.items():
-        assert raw.count(b"\r\n") > 0, name
-        assert raw.count(b"\n") == raw.count(b"\r\n"), name + " 出现孤立 LF"
+        assert raw[:3] != b"\xef\xbb\xbf", name + " 不得带 BOM"
+        crlf = raw.count(b"\r\n")
+        bare_lf = raw.count(b"\n") - crlf
+        bare_cr = raw.count(b"\r") - crlf
+        assert bare_cr == 0, name + " 出现孤立 CR，换行被破坏"
+        assert crlf == 0 or bare_lf == 0, name + " CRLF 与裸 LF 混行，换行被破坏"
+        if name.endswith(".py"):
+            assert crlf == 0, name + " 违反 .gitattributes 的 *.py text eol=lf"
 
 
 def test_numbers_verified_by_raw_bytes():
