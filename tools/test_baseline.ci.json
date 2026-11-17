@@ -73,15 +73,5 @@
       "tools/datawarehouse/tests/test_dw_quality_mcp.py::test_mcp_call_manifest_and_backup",
       "tools/datawarehouse/tests/test_registry_repo_anchor.py::test_relative_dataset_path_resolves_under_registry_repo"
     ]
-  },
-  "analysis/tests": {
-    "_why": "【2026-11-12 run 43155480051 新建键，5 项】analysis/tests/test_smoke.py::TestPipeline 的 5 个用例在 setup 阶段 ERROR：缺本机行情快照资产导致 snap['last_trade_date'] 为 None，analysis/features.py:295 直接 .replace() 抛 AttributeError（日志 315 passed, 5 errors）。属干净 runner 云端不可判定；收口条件：改为自造夹具 / 给 features.py 补 None 防御后，必须从本文件删除本键。",
-    "env_failures": [
-      "analysis/tests/test_smoke.py::TestPipeline::test_extras_optional",
-      "analysis/tests/test_smoke.py::TestPipeline::test_features",
-      "analysis/tests/test_smoke.py::TestPipeline::test_gate_g1",
-      "analysis/tests/test_smoke.py::TestPipeline::test_snapshot",
-      "analysis/tests/test_smoke.py::TestPipeline::test_verdict"
-    ]
   }
 }

@@ -106,7 +106,10 @@ def build_features(snap):
         val["market_cap_yi"] = _f(float(row.get("total_mv", 0)) / 1e4)
         for k, src in (("pe_ttm", "pe_ttm"), ("pb", "pb"), ("ps_ttm", "ps_ttm")):
             val[k] = _f(row.get(src))
-        if db["trade_date"].max() < snap["last_trade_date"]:
+        # 2026-11-17 治本：无行情日时 last_trade_date 为 None，旧实现拿 None 参与
+        # 字符串比较会抛 TypeError；缺日期就不判「滞后」，不制造新噪声。
+        last_td = snap.get("last_trade_date")
+        if last_td and db["trade_date"].max() < str(last_td):
             val["stale_days_note"] = "daily_basic 落后于行情"
         # P0M：估值自身历史分位（近 5 年，样本 ≥120）——同业分位的补充口径
         try:
@@ -291,12 +294,19 @@ def build_features(snap):
         out["chips"]["cost_85pct"] = _f(r.get("cost_85pct"))
         out["chips"]["as_of"] = str(r.get("trade_date"))
     # 门户筹码（含获利盘）
-    ch = _api_json("http://127.0.0.1:8091/api/chips?c=%s&d=%s&x=%s" % (
-        snap["code"].split(".")[0], snap["last_trade_date"].replace("-", ""), tech.get("price", "")), timeout=8)
-    if ch and ch.get("ok"):
-        out["chips"]["winner_rate"] = ch.get("winner")
-        if ch.get("avg"):
-            out["chips"]["avg_cost"] = ch.get("avg")
+    # 2026-11-17 治本：干净 runner 上 load_snapshot 无行情快照时
+    # last_trade_date 为 None，旧实现直接 .replace() 抛 AttributeError，
+    # 连带 analysis/tests 5 个冒烟用例在 setUpClass 全 ERROR。
+    # 没有交易日就不该拼这个 URL：跳过门户补充口径，cyq 分支已填好筹码主值。
+    last_td = snap.get("last_trade_date")
+    if last_td:
+        ch = _api_json("http://127.0.0.1:8091/api/chips?c=%s&d=%s&x=%s" % (
+            snap["code"].split(".")[0], str(last_td).replace("-", ""),
+            tech.get("price", "")), timeout=8)
+        if ch and ch.get("ok"):
+            out["chips"]["winner_rate"] = ch.get("winner")
+            if ch.get("avg"):
+                out["chips"]["avg_cost"] = ch.get("avg")
 
     # ---- 事件（外部注入） ----
     out["events"] = snap.get("events", [])
